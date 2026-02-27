@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.12';
+  const GAME_VERSION = '0.9.13';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2240,7 +2240,8 @@
       let desire = 0;
       desire += Math.max(0, 0.55 - avgMood) * 1.6;      // mood is the biggest driver
       desire += Math.max(0, (wp - 1)) * 0.9;            // overwork
-      desire += (rat.foodUse > 1.05 ? 0.08 : rat.foodUse < 0.95 ? -0.06 : 0); // tight/feast proxy
+      // Rations proxy: Tight (<1.0) increases dissent; Feast (>1.0) reduces it a bit.
+      desire += (rat.foodUse < 0.95 ? 0.08 : rat.foodUse > 1.05 ? -0.06 : 0);
       desire += Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
       desire += alarmStress * 0.06;
 

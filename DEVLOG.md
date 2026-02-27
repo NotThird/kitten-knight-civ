@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 17:23 CST - v0.9.13 Fix: Tight rations now correctly raise dissent (Feast eases it)
+
+Summary
+- Fixed a logic inversion in the **Dissent** model: **Tight rations** (lower food use) now *increase* dissent pressure, while **Feast** rations now *reduce* it slightly.
+- This makes the social layer behave intuitively: starving them “politely” causes murmurs/slowdowns faster; feeding well buys cohesion.
+- No save-breaking changes; just a corrected driver in the 1s dissent update.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Flip rations **Tight → Feast** for ~30–60s and watch **Dissent%** trend reverse (especially if Work pace is high).
+
+---
+
 ## 2026-02-27 17:08 CST - v0.9.12 Social slowdown: new Loaf action (dissent → visible productivity drag)
 
 Summary
