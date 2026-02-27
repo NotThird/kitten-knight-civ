@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.4';
+  const GAME_VERSION = '0.9.5';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2482,6 +2482,20 @@
   const roleQuotasEl = el('roleQuotas');
   const planDebugEl = el('planDebug');
 
+  // Advisor: quick actions (wired via render-time recommendations)
+  let advisorRecs = [];
+  if (advisorEl) advisorEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('button[data-advice]');
+    if (!btn) return;
+    const id = String(btn.dataset.advice || '');
+    const rec = advisorRecs.find(r => r.id === id);
+    if (!rec || typeof rec.apply !== 'function') return;
+    rec.apply(state);
+    log(`Advisor applied: ${rec.label}`);
+    save();
+    render();
+  });
+
   // --- Inspect modal (explainability)
   const inspectModalEl = el('inspectModal');
   const inspectTitleEl = el('inspectTitle');
@@ -2554,7 +2568,23 @@
 
   // --- Advisor (explainable, non-binding suggestions)
   // Reads current targets + trends and recommends which *policy knobs* to nudge.
-  function buildAdvisorText(s, targets){
+  // Now also emits "quick actions" you can click to apply a small policy nudge.
+  function clampPolicyMult(v){
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(0, Math.min(2, n));
+  }
+  function nudgePolicyMult(s, key, delta){
+    s.policyMult = s.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 };
+    const cur = Number(s.policyMult[key] ?? 1);
+    s.policyMult[key] = clampPolicyMult(cur + delta);
+  }
+  function raiseReserve(s, key, min){
+    s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };
+    s.reserve[key] = Math.max(getReserve(s, key), Math.max(0, Number(min) || 0));
+  }
+
+  function buildAdvisor(s, targets){
     ensureRateState(s);
     const r = s._rate ?? {};
 
@@ -2568,6 +2598,7 @@
     const scienceRate = Number(r.science ?? 0);
 
     const lines = [];
+    const recs = [];
 
     // 1) Food stability
     const foodBad = (foodPerKitten < (targets.foodPerKitten - 5)) || (foodRate < -0.15);
@@ -2576,6 +2607,20 @@
       lines.push(`• ${howBad}`);
       lines.push(`  - Nudge: +Forage / +Farm / +PreserveFood (policy) or toggle FOOD signal`);
       if (secondsToNextWinter(s) < 40 && season.name !== 'Winter') lines.push(`  - Winter soon: consider Winter Prep or raise Food reserve`);
+
+      recs.push({
+        id: 'food',
+        label: 'Food stabilize',
+        tip: 'Boost Forage/Farm/Preserve, toggle FOOD crisis, and raise food reserve a bit (soft nudge).',
+        apply: (st) => {
+          nudgePolicyMult(st,'Forage', 0.5);
+          nudgePolicyMult(st,'Farm', 0.5);
+          nudgePolicyMult(st,'PreserveFood', 0.5);
+          st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+          st.signals.FOOD = true;
+          raiseReserve(st,'food', Math.ceil(pop * targets.foodPerKitten * 0.35));
+        }
+      });
     }
 
     // 2) Warmth
@@ -2583,6 +2628,16 @@
     if (warmthBad) {
       lines.push(`• warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
       lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10–20`);
+
+      recs.push({
+        id: 'warmth',
+        label: 'Warmth push',
+        tip: 'Boost StokeFire and raise wood reserve (prevents stoke thrash when building).',
+        apply: (st) => {
+          nudgePolicyMult(st,'StokeFire', 0.5);
+          raiseReserve(st,'wood', 18);
+        }
+      });
     }
 
     // 3) Threat / raids
@@ -2591,6 +2646,18 @@
     if (threatBad) {
       lines.push(`• raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
       lines.push(`  - Nudge: +Guard / +BuildPalisade (policy) or toggle ALARM (requires Security)`);
+
+      recs.push({
+        id: 'defense',
+        label: 'Defense posture',
+        tip: 'Boost Guard + BuildPalisade, and toggle ALARM if Security is unlocked.',
+        apply: (st) => {
+          nudgePolicyMult(st,'Guard', 0.5);
+          nudgePolicyMult(st,'BuildPalisade', 0.5);
+          st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+          if (st.unlocked?.security) st.signals.ALARM = true;
+        }
+      });
     }
 
     // 4) Overcrowding / growth
@@ -2598,6 +2665,19 @@
     if ((s.kittens?.length ?? 0) >= cap) {
       lines.push(`• overcrowded (${s.kittens.length}/${cap})`);
       lines.push(`  - Nudge: +BuildHut (policy) or set Project focus → Housing`);
+
+      recs.push({
+        id: 'housing',
+        label: 'Housing build',
+        tip: 'Set Project focus → Housing and boost BuildHut.',
+        apply: (st) => {
+          st.director = st.director ?? { projectFocus:'Auto' };
+          st.director.projectFocus = 'Housing';
+          nudgePolicyMult(st,'BuildHut', 0.5);
+          st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+          st.signals.BUILD = true;
+        }
+      });
     }
 
     // 5) Tech pacing (only if basics ok)
@@ -2607,17 +2687,60 @@
       if (wantsIndustry) {
         lines.push(`• tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
         lines.push(`  - Nudge: +CraftTools (policy); if blocked, prioritize Workshop inputs (wood+science)`);
+
+        recs.push({
+          id: 'tools',
+          label: 'Tools catch-up',
+          tip: 'Boost CraftTools and set a small tools reserve so tools don\'t get instantly spent.',
+          apply: (st) => {
+            nudgePolicyMult(st,'CraftTools', 0.5);
+            raiseReserve(st,'tools', Math.ceil(pop * 2));
+          }
+        });
       } else if (scienceRate < 0.25) {
         lines.push(`• slow science (trend ${fmtRate(scienceRate)})`);
         lines.push(`  - Nudge: +Research (policy); consider Library focus once unlocked`);
+
+        recs.push({
+          id: 'science',
+          label: 'Research push',
+          tip: 'Boost Research and (if available) bias Project focus toward Knowledge.',
+          apply: (st) => {
+            nudgePolicyMult(st,'Research', 0.5);
+            st.director = st.director ?? { projectFocus:'Auto' };
+            if (st.unlocked?.library) st.director.projectFocus = 'Knowledge';
+          }
+        });
       }
     }
 
     if (!lines.length) {
-      return 'All green. Now you can push growth/tech:\n• Try Preset: Expand or Advance\n• Or set Project focus → (Auto) and watch the plan debug';
+      return {
+        text: 'All green. Now you can push growth/tech:\n• Try Preset: Expand or Advance\n• Or set Project focus → (Auto) and watch the plan debug',
+        recs: []
+      };
     }
 
-    return lines.slice(0, 10).join('\n');
+    return { text: lines.slice(0, 10).join('\n'), recs };
+  }
+
+  function renderAdvisor(s, targets){
+    if (!advisorEl) return;
+    const a = buildAdvisor(s, targets);
+    advisorRecs = Array.isArray(a.recs) ? a.recs : [];
+
+    if (!advisorRecs.length) {
+      advisorEl.textContent = String(a.text ?? '');
+      return;
+    }
+
+    const btns = advisorRecs
+      .slice(0, 4)
+      .map(r => `<button class=\"btn\" data-advice=\"${escapeHtml(r.id)}\" title=\"${escapeHtml(r.tip || '')}\">${escapeHtml(r.label || r.id)}</button>`)
+      .join(' ');
+
+    advisorEl.innerHTML = `<div class=\"row\" style=\"gap:6px; margin-bottom:6px\">${btns}</div>` +
+      `<div class=\"why\">${escapeHtml(String(a.text ?? ''))}</div>`;
   }
 
   function render(){
@@ -2857,7 +2980,7 @@
     ];
     goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
 
-    if (advisorEl) advisorEl.textContent = buildAdvisorText(state, targets);
+    renderAdvisor(state, targets);
 
     unlocksEl.textContent = unlockDefs.map(u => `${state.seenUnlocks[u.id]?'[x]':'[ ]'} ${u.name} @ ${u.at} - ${u.desc}`).join('\n');
 

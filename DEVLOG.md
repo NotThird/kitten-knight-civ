@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 15:22 CST - v0.9.5 Advisor quick actions (click to apply policy nudges)
+
+Summary
+- Advisor now generates **clickable quick actions** when it detects a problem (food, warmth, defense, housing, tools, science).
+- Each action applies a **small, explainable nudge**: bumps relevant policy multipliers, toggles the right signal (FOOD/BUILD/ALARM where allowed), and may raise a matching reserve to reduce overspend thrash.
+- Keeps the "policy management" vibe: you’re still steering, but now the advisor can be acted on in 1 click instead of manual slider hunting.
+- Save-safe: no schema changes required; it only edits existing policy/signal/reserve fields.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Intentionally starve (drop Forage/Farm), then click **Food stabilize** and watch the plan debug swing back toward food within a few seconds.
+
+---
+
 ## 2026-02-27 15:07 CST - v0.9.4 Season forecast (end-of-season + Winter projections)
 
 Summary
