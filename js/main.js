@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.9';
+  const GAME_VERSION = '0.9.0';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -61,6 +61,7 @@
     ChopWood: 'Woodcutting',
     Guard: 'Combat',
     Research: 'Scholarship',
+    Mentor: 'Scholarship',
     CraftTools: 'Building',
     BuildHut: 'Building',
     BuildPalisade: 'Building',
@@ -306,6 +307,8 @@
       // Execution debugging: if a sink task was blocked by reserves/missing inputs, we surface it in "Why".
       _blockedAction: null,
       _blockedMsg: '',
+      _fallbackTo: null,
+      _mentor: null,
 
       // Anti-thrash: short per-action cooldown if we just discovered an action is blocked.
       // Prevents kittens from repeatedly "trying" the same no-op sink every 1s.
@@ -820,6 +823,62 @@
         gainXP(k,'Scholarship', dt * 0.4 * effXp);
       }
     },
+    Mentor: {
+      enabled: (s) => !!s.unlocked.library,
+      tick: (s,k,dt) => {
+        // Spend science to accelerate long-run specialization.
+        // Mentoring is intentionally a "stable times" action: if science is scarce or protected by reserves, it falls back to Research.
+        const sciAvail = availableAboveReserve(s,'science');
+        if ((s.res.science ?? 0) <= 0 || sciAvail <= 0.01) {
+          doFallback(s, k, dt, 'Research', `Mentor blocked by science reserve (avail ${sciAvail.toFixed(1)}) → Research`);
+          return;
+        }
+
+        // Choose a skill to teach: mentor's top skill (excluding Cooking) if it exists; otherwise Scholarship.
+        const top = topSkillInfo(k);
+        const teachSkill = (top.skill && top.skill !== 'Cooking') ? top.skill : 'Scholarship';
+
+        // Pick a target: someone else with the lowest level in that skill (so mentoring actually balances the colony).
+        const others = (s.kittens ?? []).filter(x => x && x.id !== k.id);
+        if (!others.length) {
+          taskDefs.Research.tick(s,k,dt);
+          return;
+        }
+        let target = others[0];
+        let bestLvl = Number(target.skills?.[teachSkill] ?? 1);
+        for (const o of others) {
+          const lvl = Number(o.skills?.[teachSkill] ?? 1);
+          if (lvl < bestLvl) { bestLvl = lvl; target = o; }
+        }
+
+        const eff = efficiency(s, k);
+        const mom = momentumMul(k, 'Mentor');
+        const mult = 1 + 0.07 * ((k.skills.Scholarship ?? 1) - 1);
+
+        // Science cost scales with teaching throughput.
+        const wantSci = 0.42 * mult * dt * eff * mom;
+        const spent = spendUpToReserve(s,'science', wantSci);
+        if (spent <= 0.0001) {
+          doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
+          return;
+        }
+
+        // Teaching value: convert spent science into XP for the target.
+        const teach = (spent / 0.42) * 1.20 * libraryBonus(s);
+        gainXP(target, teachSkill, teach);
+        gainXP(k, 'Scholarship', teach * 0.45);
+
+        // Small morale bump for both; mentoring feels good.
+        k.mood = clamp01(Number(k.mood ?? 0.55) + dt * 0.004);
+        target.mood = clamp01(Number(target.mood ?? 0.55) + dt * 0.003);
+
+        // Track for UI explainability.
+        k._mentor = { id: target.id, skill: teachSkill };
+
+        k.energy = clamp01(k.energy - dt * 0.032);
+        k.hunger = clamp01(k.hunger + dt * 0.028);
+      }
+    },
     Research: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
@@ -1137,6 +1196,7 @@
     else if (task === 'PreserveFood') { sub('food', 0.95); sub('wood', 0.22); }
     else if (task === 'BuildWorkshop') { sub('wood', 0.85); sub('science', 0.55); }
     else if (task === 'BuildLibrary') { sub('wood', 0.75); sub('science', 0.65); sub('tools', 0.35); }
+    else if (task === 'Mentor') { sub('science', 0.42); }
     else if (task === 'CraftTools') { sub('wood', 0.55); sub('science', 0.40); }
   }
 
@@ -1217,6 +1277,7 @@
     const toolsAvail = Number(ctx?.shadowAvail?.tools ?? _toolsAvail);
 
     const actions = ['Eat','Rest','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    if (s.unlocked.library) actions.push('Mentor');
     if (s.unlocked.workshop) actions.push('CraftTools');
     if (s.unlocked.construction && s.unlocked.workshop) actions.push('BuildWorkshop');
     if (s.unlocked.construction && s.unlocked.library) actions.push('BuildLibrary');
@@ -1525,6 +1586,40 @@
         if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science → -35'); }
       }
 
+      // Mentoring: spend science to accelerate skill growth (long-run compounding).
+      // This is intentionally a "stable times" task; it should lose to food/warmth/threat emergencies.
+      if (a === 'Mentor') {
+        const sciRes = getReserve(s,'science');
+        if (sciRes > 0 && sciAvail <= 0.05) {
+          score -= 65;
+          reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`);
+        }
+
+        const stableFood = foodPerKitten >= targets.foodPerKitten * 1.02;
+        const stableWarmth = (Number(s.res.warmth ?? 0) >= targets.warmth);
+        const stableThreat = (Number(s.res.threat ?? 0) <= targets.maxThreat * 0.95);
+
+        // Only do it when you have spare science above reserve.
+        if (s.res.science < (sciRes + 40)) {
+          score -= 22;
+          reasons.push('science buffer too low for mentoring → -22');
+        }
+
+        if (mode === 'Advance' && stableFood && stableWarmth && stableThreat) {
+          score += 38;
+          reasons.push('stable basics + Advance → +38');
+        } else if (stableFood && stableWarmth && stableThreat) {
+          score += 18;
+          reasons.push('stable basics → +18');
+        } else {
+          score -= 18;
+          reasons.push('not stable enough to mentor → -18');
+        }
+
+        // Winter: mentoring is indoor and safe, but still avoid it if warmth is low.
+        if (season.name === 'Winter' && s.res.warmth >= 45) { score += 8; reasons.push('winter indoor work → +8'); }
+      }
+
       // tools pressure (new midgame sink)
       if (a === 'CraftTools') {
         const t = s.res.tools ?? 0;
@@ -1664,6 +1759,7 @@
       BuildWorkshop: 0,
       BuildLibrary: 0,
       CraftTools: 0,
+      Mentor: 0,
       Research: 0,
     };
 
@@ -1771,8 +1867,19 @@
       if (t < want * 0.55 && s.mode === 'Advance' && s.res.wood > 25 && s.res.science > 60) desired.CraftTools = Math.min(n, 2);
     }
 
+    // Mentoring: during stable periods with Library tech, spend science to train lagging skills.
+    // This is a long-run compounding lever (specialists get better at the jobs you keep leaning on).
+    if (s.unlocked.library && s.mode === 'Advance') {
+      const sciRes = getReserve(s,'science');
+      const stableWarmth = Number(s.res.warmth ?? 0) >= targets.warmth;
+      const stableThreat = Number(s.res.threat ?? 0) <= targets.maxThreat;
+      if (stableWarmth && stableThreat && Number(s.res.science ?? 0) > sciRes + 80) {
+        desired.Mentor = Math.min(n, 1);
+      }
+    }
+
     // Research: fill leftover workers into research in Advance mode; otherwise keep it modest.
-    const hardReserved = Object.entries(desired).filter(([a,v]) => ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools'].includes(a)).reduce((acc,[,v])=>acc+(v||0),0);
+    const hardReserved = Object.entries(desired).filter(([a,v]) => ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor'].includes(a)).reduce((acc,[,v])=>acc+(v||0),0);
     const leftover = Math.max(0, n - hardReserved);
     desired.Research = (s.mode === 'Advance') ? leftover : Math.floor(leftover * 0.5);
 
@@ -1791,6 +1898,7 @@
       desired.BuildWorkshop = 0;
       desired.BuildLibrary = 0;
       desired.CraftTools = 0;
+      desired.Mentor = 0;
       desired.Research = 0;
       // Nudge extra labor toward food if possible.
       if (s.unlocked.farm) desired.Farm = Math.min(n, Math.max(desired.Farm, 1));
@@ -1810,6 +1918,7 @@
       desired.BuildWorkshop = 0;
       desired.BuildLibrary = 0;
       desired.CraftTools = 0;
+      desired.Mentor = 0;
     }
     if ((s.res.tools ?? 0) <= toolsRes) {
       desired.BuildLibrary = 0;
@@ -1834,6 +1943,7 @@
     // Remove invalid actions (locked content)
     if (!s.unlocked.farm) desired.Farm = 0;
     if (!s.unlocked.workshop) desired.CraftTools = 0;
+    if (!s.unlocked.library) desired.Mentor = 0;
     if (!(s.unlocked.construction && s.unlocked.workshop)) desired.BuildWorkshop = 0;
     if (!(s.unlocked.construction && s.unlocked.library)) desired.BuildLibrary = 0;
     if (!s.unlocked.granary) desired.BuildGranary = 0;
@@ -2190,6 +2300,8 @@
       // Per-tick execution marker for blocked sink actions that fallback to a different task.
       // Cleared every tick; set by doFallback(...).
       k._fallbackTo = null;
+      // Per-tick mentoring target (only set when the Mentor action runs).
+      k._mentor = null;
 
       const def = taskDefs[k.task] ?? taskDefs.Rest;
       def.tick(state, k, dt);
@@ -2609,13 +2721,13 @@
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td title="${k._fallbackTo ? escapeHtml('fallback → ' + k._fallbackTo) : ''}">${k.task}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td title="${k._fallbackTo ? escapeHtml('fallback → ' + k._fallbackTo) : ''}">${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
         <td title="Mood (personality alignment + stress + aptitude fit; small effect on efficiency)">${fmt(mood*100)}%</td>
         <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
-        <td title="Aptitude (highest skill level)  kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
+        <td title="Aptitude (highest skill level) — kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td>${escapeHtml(traits)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
@@ -2809,6 +2921,7 @@
 
   function actEditor(act, idx){
     const opts = ['Eat','Rest','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    if (state.unlocked.library) opts.push('Mentor');
     if (state.unlocked.workshop) opts.push('CraftTools');
     if (state.unlocked.construction && state.unlocked.workshop) opts.push('BuildWorkshop');
     if (state.unlocked.construction && state.unlocked.library) opts.push('BuildLibrary');
@@ -3434,6 +3547,7 @@
         k._blockedAction = k._blockedAction ?? null;
         k._blockedMsg = k._blockedMsg ?? '';
         k._fallbackTo = null;
+        k._mentor = null;
         k.blockedCooldown = k.blockedCooldown ?? {};
       }
       return s;
@@ -3457,9 +3571,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Aptitude bias — kittens prefer tasks they are skilled at (emergent specialization).');
-    log('- Mood now includes a small "doing what I am good at" factor (and a small penalty for being forced far off-skill).');
-    log('- UI: new Apt column shows each kitten\'s top skill; Mood tooltip updated.');
+    log('- New: Mentor task (unlocks with Libraries). Spend science to train a lagging kitten in your top skill.');
+    log('- Mentor is a "stable times" action: it loses to food/warmth/threat emergencies and respects science reserves.');
+    log('- UI: Mentor shows its target (#id + skill) in the Task column for explainability.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

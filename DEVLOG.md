@@ -1,10 +1,10 @@
-# DEVLOG — Kitten Knight (Civ)
+# DEVLOG - Kitten Knight (Civ)
 
 Human-readable change log for iterative runs.
 
 ---
 
-## 2026-02-27 12:19 CST — Modularization prep (CSS/JS extraction)
+## 2026-02-27 12:19 CST - Modularization prep (CSS/JS extraction)
 
 Summary
 - Extracted the large inline `<style>` into `dist/css/app.css`.
@@ -26,11 +26,11 @@ What to try
 
 ---
 
-## 2026-02-27 12:22 CST — v0.8.4 Mood + policy friction
+## 2026-02-27 12:22 CST - v0.8.4 Mood + policy friction
 
 Summary
-- Added a per-kitten **Mood** stat (0–100%) that drifts based on personality alignment + stressors (hunger/cold/ALARM).
-- Mood softly affects **efficiency** (small multiplier) so “happy specialists” feel a bit more productive.
+- Added a per-kitten **Mood** stat (0-100%) that drifts based on personality alignment + stressors (hunger/cold/ALARM).
+- Mood softly affects **efficiency** (small multiplier) so "happy specialists" feel a bit more productive.
 - Low-mood kittens slightly bias toward **Rest**, creating emergent slowdowns if policy fights personalities too hard.
 - UI: added **Mood** column in the kitten table and **avg mood** in the Season panel.
 - Save-safe migration: older saves default mood to 55%.
@@ -46,7 +46,7 @@ What to try
 
 ---
 
-## 2026-02-27 12:37 CST — v0.8.5 Festivals (morale lever)
+## 2026-02-27 12:37 CST - v0.8.5 Festivals (morale lever)
 
 Summary
 - Added **Hold Festival** button (Director): spend food+wood above reserves to trigger a ~50s morale boost.
@@ -65,7 +65,7 @@ What to try
 
 ---
 
-## 2026-02-27 12:52 CST — v0.8.6 Offline gains (small cap)
+## 2026-02-27 12:52 CST - v0.8.6 Offline gains (small cap)
 
 Summary
 - Added **offline gains**: on load, the sim advances based on last real-world save time.
@@ -82,17 +82,17 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Play for ~30s, refresh the page, and confirm you get an “Offline gains” log line and visible resource changes.
+- Play for ~30s, refresh the page, and confirm you get an "Offline gains" log line and visible resource changes.
 
 ---
 
-## 2026-02-27 13:07 CST — v0.8.7 Policy Advisor panel
+## 2026-02-27 13:07 CST - v0.8.7 Policy Advisor panel
 
 Summary
 - Added an **Advisor** panel that reads current goals + trends and suggests which policy knobs to nudge (non-binding, explainable).
 - Advisor focuses on the 3 core failure modes: **food stability**, **warmth pressure**, and **raid/threat risk**, plus housing caps.
-- Suggestions reference existing controls (Policy multipliers, FOOD/ALARM signals, Winter Prep, reserves) to reduce “what do I do now?” stalls.
-- Kept output intentionally short (top issues only) so it’s scannable mid-run.
+- Suggestions reference existing controls (Policy multipliers, FOOD/ALARM signals, Winter Prep, reserves) to reduce "what do I do now?" stalls.
+- Kept output intentionally short (top issues only) so it's scannable mid-run.
 
 Files touched
 - `prototype/index.html`
@@ -101,11 +101,11 @@ Files touched
 - `dist/js/main.js`
 
 What to try
-- Intentionally dip below food/kitten or warmth target and see if Advisor recommends the same nudge you’d do manually (Forage/Farm/StokeFire/Guard).
+- Intentionally dip below food/kitten or warmth target and see if Advisor recommends the same nudge you'd do manually (Forage/Farm/StokeFire/Guard).
 
 ---
 
-## 2026-02-27 13:22 CST — v0.8.8 Auto Mode (director mode switching)
+## 2026-02-27 13:22 CST - v0.8.8 Auto Mode (director mode switching)
 
 Summary
 - Added **Auto Mode** toggle (Director) to automatically switch Mode (Survive/Expand/Defend/Advance) based on simple stability checks.
@@ -131,7 +131,7 @@ What to try
 Summary
 - Added an **Aptitude bias** in action scoring: kittens now gently prefer tasks they have higher skill in (emergent specialization).
 - Mood now includes a small **aptitude fit** factor: doing your top-skill work feels slightly better; being forced far off-skill feels slightly worse.
-- UI: added **Apt** column in the kitten table (shows each kitten’s top skill + level); updated Mood tooltip.
+- UI: added **Apt** column in the kitten table (shows each kitten's top skill + level); updated Mood tooltip.
 - Save-safe migration: older saves now auto-fill missing `k.skills` / `k.xp` keys.
 
 Files touched
@@ -142,3 +142,25 @@ Files touched
 
 What to try
 - Set a strong policy bias (e.g., ChopWood x2) for a few minutes, then relax it and watch the colony keep naturally assigning high-Woodcutting kittens back to wood tasks (and see mood stay higher when they get their aptitude work).
+
+---
+
+## 2026-02-27 13:52 CST � v0.9.0 Mentoring (science ? skills)
+
+Summary
+- Added a new **Mentor** task (unlocks with **Libraries**): spend science to train a lagging kitten in the mentor�s top skill.
+- Mentor respects **science reserves**; if science is protected/scarce, it immediately falls back to **Research** (no wasted ticks).
+- AI now considers Mentor during **stable** periods (especially in **Advance** mode) as a long-run compounding choice.
+- UI: when a kitten is Mentoring, the Task column shows the **target kitten #** and **skill** for explainability.
+- Added a small build helper script to rebuild dist/ directly from prototype/index.html to keep them in sync.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/css/app.css
+- dist/js/main.js
+- scripts/build_dist_from_prototype.js
+- DEVLOG.md
+
+What to try
+- Reach **Libraries**, set Mode ? **Advance**, keep science above your reserve, and watch Mentoring raise underleveled skills (especially Building/Combat) over time.
