@@ -4,9 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kitten Knight Proto (Civ)</title>
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <meta name="theme-color" content="#0b0f14" />
   <style>
     :root { --bg:#0b0f14; --text:#d9e2ef; --muted:#94a3b8; --accent:#7dd3fc; --good:#34d399; --warn:#fbbf24; --bad:#fb7185; }
     * { box-sizing: border-box; }
@@ -64,6 +61,8 @@
   <span class="pill" id="ver"></span>
   <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
   <button id="btnPause">Pause</button>
+  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)">Export Save</button>
+  <button id="btnImport" title="Paste a save string to restore">Import Save</button>
   <button id="btnReset" title="Resets everything">Hard Reset</button>
   <span class="small" id="clock"></span>
 </header>
@@ -231,7 +230,7 @@
 
 <script>
 (() => {
-  const GAME_VERSION = '0.8.0';
+  const GAME_VERSION = '0.8.2';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -566,6 +565,10 @@
     const blocked = k.task;
     k._blockedAction = blocked;
     k._blockedMsg = msg;
+
+    // Explainability: show what we actually did this tick (since the "task" column will still
+    // display the intended action selected at 1s decision time).
+    k._fallbackTo = altTask;
 
     // Mark a short cooldown so scoring avoids retrying the same blocked action repeatedly.
     k.blockedCooldown = k.blockedCooldown ?? {};
@@ -2227,6 +2230,10 @@
     }
 
     for (const k of state.kittens) {
+      // Per-tick execution marker for blocked sink actions that fallback to a different task.
+      // Cleared every tick; set by doFallback(...).
+      k._fallbackTo = null;
+
       const def = taskDefs[k.task] ?? taskDefs.Rest;
       def.tick(state, k, dt);
 
@@ -2498,7 +2505,7 @@
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td>${k.task}</td>
+        <td title="${k._fallbackTo ? escapeHtml('fallback → ' + k._fallbackTo) : ''}">${k.task}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
@@ -2722,6 +2729,77 @@
   });
 
   document.getElementById('btnTick').addEventListener('click', () => { for (let i=0;i<100;i++) step(0.1); render(); });
+
+  // --- Save export/import (quality-of-life; makes it easy to share saves + reproduce bugs)
+  function getSaveString(){
+    // Force a clean snapshot first.
+    save();
+    return localStorage.getItem(SAVE_KEY) ?? '';
+  }
+
+  async function copyToClipboard(text){
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+
+    // Fallback (older browsers / insecure context)
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return !!ok;
+    } catch { return false; }
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById('btnExport').addEventListener('click', async () => {
+    const txt = getSaveString();
+    if (!txt) { log('No save data found to export.'); render(); return; }
+
+    const ok = await copyToClipboard(txt);
+    if (ok) log('Save exported: copied to clipboard. (Also downloading a .json file)');
+    else log('Save exported: clipboard copy failed (downloaded a .json file instead).');
+
+    const stamp = new Date().toISOString().replaceAll(':','-');
+    downloadText(`kitten-knight-civ-save-${stamp}.json`, txt);
+    render();
+  });
+
+  document.getElementById('btnImport').addEventListener('click', () => {
+    const pasted = prompt('Paste a save string (JSON). This will overwrite your current save.');
+    if (!pasted) return;
+    try {
+      const obj = JSON.parse(pasted);
+      if (!obj || !obj.res || !obj.kittens || !obj.rules) throw new Error('Missing required keys.');
+      localStorage.setItem(SAVE_KEY, JSON.stringify(obj));
+      state = load() ?? defaultState();
+      log('Save imported successfully.');
+      render();
+    } catch (e) {
+      log(`Import failed: ${(e && e.message) ? e.message : 'invalid JSON'}`);
+      render();
+    }
+  });
 
   function snapshotDirectorSettings(){
     return {
@@ -3101,6 +3179,7 @@
         k.taskLock = k.taskLock ?? 0;
         k._blockedAction = k._blockedAction ?? null;
         k._blockedMsg = k._blockedMsg ?? '';
+        k._fallbackTo = null;
         k.blockedCooldown = k.blockedCooldown ?? {};
       }
       return s;
@@ -3124,10 +3203,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- NEW: Tools Reserve. Added a Tools buffer slider under Reserves; the AI will not spend tools below this amount (mainly affects Library construction).');
-    log('- AI: planning-time reservations now include tools, reducing multi-kitten thrash when several try to build Libraries at once.');
-    log('- Explainability: BuildLibrary now reports when it is blocked specifically by the tools reserve ("tools avail"), instead of silently eating all tools.');
-    log('- Try it: after unlocking Libraries, set Tools reserve to ~5–10×pop and watch productivity stay stable while you slowly accumulate enough extra tools to commit to a Library build.');
+    log('- QoL: Export Save / Import Save buttons in the header.');
+    log('- Export copies your save JSON to clipboard and downloads a .json file (great for bug reports or moving devices).');
+    log('- Import lets you paste a save JSON to restore (overwrites current save).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
@@ -3138,12 +3216,6 @@
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
 })();
-</script>
-<script>
-  // PWA service worker (safe no-op on unsupported browsers)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-  }
 </script>
 </body>
 </html>
