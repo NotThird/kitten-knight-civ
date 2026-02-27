@@ -102,6 +102,7 @@
         <button class="btn good" id="btnAddKitten">+ Kitten (cost: <span id="kittenCost">50</span> food)</button>
         <button class="btn" id="btnTick">+10s</button>
         <button class="btn mode" id="btnWinterPrep" title="One-click seasonal policy: prioritize food+wood+warmth, raise reserves, reduce research/build spending.">Winter Prep</button>
+        <button class="btn mode" id="btnCrisis" title="Emergency policy overlay: clamp spending, raise buffers, and force stabilization (food/warmth/threat) until you toggle it off.">Crisis Protocol</button>
         <label class="small" title="If enabled, the Director will automatically toggle Winter Prep ON in late Fall and OFF in Spring."><input type="checkbox" id="autoWinterPrep"> Auto Winter Prep</label>
         <label class="small" title="If enabled, the Director will automatically toggle FOOD CRISIS based on food/kitten vs target (helps prevent silent starvation spirals)."><input type="checkbox" id="autoFoodCrisis"> Auto Food Crisis</label>
         <label class="small" title="If enabled, the Director will auto-tune reserves based on season + population (reduces overspend thrash; makes buffers 'set-and-forget')."><input type="checkbox" id="autoReserves"> Auto Reserves</label>
@@ -230,7 +231,7 @@
 
 <script>
 (() => {
-  const GAME_VERSION = '0.8.2';
+  const GAME_VERSION = '0.8.3';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -431,7 +432,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' },
     meta: { version: GAME_VERSION, seenVersion: '' },
     log: []
   });
@@ -1986,7 +1987,9 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    if (!('crisis' in state.director)) state.director.crisis = false;
+    if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
@@ -2295,16 +2298,26 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    if (!('crisis' in state.director)) state.director.crisis = false;
+    if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
+
     const wp = !!state.director.winterPrep;
     const wpBtn = el('btnWinterPrep');
     if (wpBtn) {
       wpBtn.classList.toggle('active', wp);
       wpBtn.textContent = wp ? 'Winter Prep: ON' : 'Winter Prep';
+    }
+
+    const cp = !!state.director.crisis;
+    const cpBtn = el('btnCrisis');
+    if (cpBtn) {
+      cpBtn.classList.toggle('active', cp);
+      cpBtn.textContent = cp ? 'Crisis: ON' : 'Crisis Protocol';
     }
     const autoWp = el('autoWinterPrep');
     if (autoWp) autoWp.checked = !!state.director.autoWinterPrep;
@@ -2828,7 +2841,7 @@
   }
 
   function setWinterPrep(on){
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     if (on && !state.director.winterPrep) {
       // Save current director knobs so the player can cleanly revert.
       state.director.saved = snapshotDirectorSettings();
@@ -2870,14 +2883,68 @@
     }
   }
 
+  function setCrisisProtocol(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    if (on && !state.director.crisis) {
+      state.director.crisisSaved = snapshotDirectorSettings();
+
+      const n = Math.max(1, state.kittens.length);
+      state.mode = 'Survive';
+      state.rations = 'Tight';
+
+      // Targets: stabilize before anything else.
+      state.targets.foodPerKitten = Math.max(state.targets.foodPerKitten ?? 120, 140);
+      state.targets.warmth = Math.max(state.targets.warmth ?? 60, 66);
+      state.targets.maxThreat = Math.min(state.targets.maxThreat ?? 70, 60);
+
+      // Signals: force food focus; raise ALARM if the tech exists.
+      state.signals = state.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+      state.signals.FOOD = true;
+      state.signals.BUILD = false;
+      state.signals.ALARM = state.unlocked.security ? true : false;
+
+      // Reserves: clamp spending so the colony can't "eat" its own lifelines.
+      state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 };
+      state.reserve.food = Math.max(getReserve(state,'food'), Math.round((90 * n) / 10) * 10);
+      state.reserve.wood = Math.max(getReserve(state,'wood'), 26);
+      state.reserve.science = Math.max(getReserve(state,'science'), 25);
+      state.reserve.tools = Math.max(getReserve(state,'tools'), 0);
+
+      // Policy: heavy stabilization, almost no shiny sinks.
+      setPolicy({ Forage:1.65, Farm:1.55, PreserveFood:0.60, ChopWood:1.15, StokeFire:1.70, Guard:1.45, BuildHut:0.10, BuildPalisade:0.65, BuildGranary:0.10, BuildWorkshop:0.00, BuildLibrary:0.00, CraftTools:0.00, Research:0.10 }, 'Crisis Protocol ON: clamp spending + force stabilization (food/warmth/threat). Toggle OFF once stable.');
+
+      // Gentle role steering: keep at least one guard + firekeeper if population supports it.
+      state.roleQuota = state.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
+      if (n >= 4) state.roleQuota.Firekeeper = Math.max(state.roleQuota.Firekeeper ?? 0, 1);
+      if (n >= 5) state.roleQuota.Guard = Math.max(state.roleQuota.Guard ?? 0, 1);
+
+      state.director.crisis = true;
+      save();
+      render();
+    } else if (!on && state.director.crisis) {
+      const snap = state.director.crisisSaved;
+      applyDirectorSettings(snap);
+      state.director.crisisSaved = null;
+      state.director.crisis = false;
+      log('Crisis Protocol OFF: restored previous director settings.');
+      save();
+      render();
+    }
+  }
+
   document.getElementById('btnWinterPrep').addEventListener('click', () => {
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     setWinterPrep(!state.director.winterPrep);
+  });
+
+  document.getElementById('btnCrisis').addEventListener('click', () => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    setCrisisProtocol(!state.director.crisis);
   });
 
   const autoWpEl = document.getElementById('autoWinterPrep');
   if (autoWpEl) autoWpEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     state.director.autoWinterPrep = !!e.target.checked;
     log(`Auto Winter Prep → ${state.director.autoWinterPrep ? 'ON' : 'OFF'}`);
     save();
@@ -2886,7 +2953,7 @@
 
   const autoFoodEl = document.getElementById('autoFoodCrisis');
   if (autoFoodEl) autoFoodEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     state.director.autoFoodCrisis = !!e.target.checked;
     log(`Auto Food Crisis → ${state.director.autoFoodCrisis ? 'ON' : 'OFF'}`);
     save();
@@ -2895,7 +2962,7 @@
 
   const autoResEl = document.getElementById('autoReserves');
   if (autoResEl) autoResEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     state.director.autoReserves = !!e.target.checked;
     log(`Auto Reserves → ${state.director.autoReserves ? 'ON' : 'OFF'}`);
     save();
@@ -2904,7 +2971,7 @@
 
   const pfEl = document.getElementById('projectFocus');
   if (pfEl) pfEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
     state.director.projectFocus = String(e.target.value || 'Auto');
     log(`Project focus → ${state.director.projectFocus}`);
     save();
@@ -3125,7 +3192,7 @@
       s.res.workshops = s.res.workshops ?? 0;
       s.res.libraries = s.res.libraries ?? 0;
       s.signals = s.signals ?? { BUILD:false, FOOD:false, ALARM:false };
-      s.director = s.director ?? { winterPrep:false, saved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+      s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
       s.meta = s.meta ?? { version: '', seenVersion: '' };
@@ -3136,6 +3203,8 @@
       // Migration safety: if older saves stored these separately
       if (!('winterPrep' in s.director)) s.director.winterPrep = false;
       if (!('saved' in s.director)) s.director.saved = null;
+      if (!('crisis' in s.director)) s.director.crisis = false;
+      if (!('crisisSaved' in s.director)) s.director.crisisSaved = null;
       if (!('autoWinterPrep' in s.director)) s.director.autoWinterPrep = false;
       if (!('autoFoodCrisis' in s.director)) s.director.autoFoodCrisis = false;
       if (!('autoReserves' in s.director)) s.director.autoReserves = false;
@@ -3203,9 +3272,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- QoL: Export Save / Import Save buttons in the header.');
-    log('- Export copies your save JSON to clipboard and downloads a .json file (great for bug reports or moving devices).');
-    log('- Import lets you paste a save JSON to restore (overwrites current save).');
+    log('- New: Crisis Protocol button (Director) — emergency stabilization overlay.');
+    log('- When ON: forces Survive + Tight rations, raises reserves, turns on FOOD CRISIS (and ALARM if Security unlocked).');
+    log('- When OFF: restores your previous Director settings (mode/targets/reserves/policy/role quotas/signals).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
