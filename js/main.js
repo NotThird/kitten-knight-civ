@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.6';
+  const GAME_VERSION = '0.8.7';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2174,11 +2174,80 @@
   const rulesEl = el('rules');
   const logEl = el('log');
   const goalsEl = el('goals');
+  const advisorEl = el('advisor');
   const unlocksEl = el('unlocks');
   const seasonEl = el('season');
   const policyEl = el('policy');
   const roleQuotasEl = el('roleQuotas');
   const planDebugEl = el('planDebug');
+
+  // --- Advisor (explainable, non-binding suggestions)
+  // Reads current targets + trends and recommends which *policy knobs* to nudge.
+  function buildAdvisorText(s, targets){
+    ensureRateState(s);
+    const r = s._rate ?? {};
+
+    const season = seasonAt(s.t);
+    const pop = Math.max(1, s.kittens?.length ?? 1);
+    const foodPerKitten = Number(s.res.food ?? 0) / pop;
+
+    const foodRate = Number(r.food ?? 0);
+    const warmthRate = Number(r.warmth ?? 0);
+    const threatRate = Number(r.threat ?? 0);
+    const scienceRate = Number(r.science ?? 0);
+
+    const lines = [];
+
+    // 1) Food stability
+    const foodBad = (foodPerKitten < (targets.foodPerKitten - 5)) || (foodRate < -0.15);
+    if (foodBad) {
+      const howBad = (foodRate < -0.15) ? `food trending down (${fmtRate(foodRate)})` : `food/kitten low (${fmt(foodPerKitten)} < ${targets.foodPerKitten})`;
+      lines.push(`• ${howBad}`);
+      lines.push(`  - Nudge: +Forage / +Farm / +PreserveFood (policy) or toggle FOOD signal`);
+      if (secondsToNextWinter(s) < 40 && season.name !== 'Winter') lines.push(`  - Winter soon: consider Winter Prep or raise Food reserve`);
+    }
+
+    // 2) Warmth
+    const warmthBad = (Number(s.res.warmth ?? 0) < (targets.warmth - 6)) || (season.name === 'Winter' && warmthRate < -0.08);
+    if (warmthBad) {
+      lines.push(`• warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
+      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10–20`);
+    }
+
+    // 3) Threat / raids
+    const threat = Number(s.res.threat ?? 0);
+    const threatBad = (threat > targets.maxThreat + 5) || (threatRate > 0.10 && threat > 70);
+    if (threatBad) {
+      lines.push(`• raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
+      lines.push(`  - Nudge: +Guard / +BuildPalisade (policy) or toggle ALARM (requires Security)`);
+    }
+
+    // 4) Overcrowding / growth
+    const cap = housingCap(s);
+    if ((s.kittens?.length ?? 0) >= cap) {
+      lines.push(`• overcrowded (${s.kittens.length}/${cap})`);
+      lines.push(`  - Nudge: +BuildHut (policy) or set Project focus → Housing`);
+    }
+
+    // 5) Tech pacing (only if basics ok)
+    const basicsOk = !foodBad && !warmthBad && !threatBad;
+    if (basicsOk) {
+      const wantsIndustry = (s.unlocked?.workshop && (Number(s.res.tools ?? 0) < pop * 10));
+      if (wantsIndustry) {
+        lines.push(`• tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
+        lines.push(`  - Nudge: +CraftTools (policy); if blocked, prioritize Workshop inputs (wood+science)`);
+      } else if (scienceRate < 0.25) {
+        lines.push(`• slow science (trend ${fmtRate(scienceRate)})`);
+        lines.push(`  - Nudge: +Research (policy); consider Library focus once unlocked`);
+      }
+    }
+
+    if (!lines.length) {
+      return 'All green. Now you can push growth/tech:\n• Try Preset: Expand or Advance\n• Or set Project focus → (Auto) and watch the plan debug';
+    }
+
+    return lines.slice(0, 10).join('\n');
+  }
 
   function render(){
     const season = seasonAt(state.t);
@@ -2377,6 +2446,8 @@
       { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
     ];
     goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
+
+    if (advisorEl) advisorEl.textContent = buildAdvisorText(state, targets);
 
     unlocksEl.textContent = unlockDefs.map(u => `${state.seenUnlocks[u.id]?'[x]':'[ ]'} ${u.name} @ ${u.at} - ${u.desc}`).join('\n');
 

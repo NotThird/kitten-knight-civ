@@ -83,3 +83,22 @@ Files touched
 
 What to try
 - Play for ~30s, refresh the page, and confirm you get an “Offline gains” log line and visible resource changes.
+
+---
+
+## 2026-02-27 13:07 CST — v0.8.7 Policy Advisor panel
+
+Summary
+- Added an **Advisor** panel that reads current goals + trends and suggests which policy knobs to nudge (non-binding, explainable).
+- Advisor focuses on the 3 core failure modes: **food stability**, **warmth pressure**, and **raid/threat risk**, plus housing caps.
+- Suggestions reference existing controls (Policy multipliers, FOOD/ALARM signals, Winter Prep, reserves) to reduce “what do I do now?” stalls.
+- Kept output intentionally short (top issues only) so it’s scannable mid-run.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- Intentionally dip below food/kitten or warmth target and see if Advisor recommends the same nudge you’d do manually (Forage/Farm/StokeFire/Guard).
