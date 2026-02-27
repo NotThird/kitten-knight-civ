@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.13';
+  const GAME_VERSION = '0.9.14';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3102,6 +3102,12 @@
     const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
     el('kittenCost').textContent = String(kittenCost());
 
+    // Social visibility (explainability): dissent directly weakens central planning.
+    // Putting it in the top stats makes the "why are they loafing/ignoring plan?" moment instantly legible.
+    const diss = dissent01(state);
+    const dissBand = String(state.social?.band ?? (diss >= 0.70 ? 'strike' : diss >= 0.45 ? 'murmur' : 'calm'));
+    const compMul = compliance01(state);
+
     statsEl.innerHTML = '';
     const stats = [
       ['Food', fmt(state.res.food)],
@@ -3121,6 +3127,8 @@
       ['Research x', fmt(libraryBonus(state)) + 'x'],
       ['Food Cap', fmt(foodStorageCap(state))],
       ['Food/Kitten', fmt(foodPerKitten)],
+      ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
+      ['Compliance', `x${compMul.toFixed(2)}`],
     ];
     for (const [k,v] of stats) {
       const d = document.createElement('div');
@@ -4343,8 +4351,8 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Projects panel now tells you which reserve is blocking progress (wood/science/tools), not just wood.');
-    log('- This makes it easier to diagnose why workshops/libraries stall (e.g., science reserve too high).');
+    log('- Added Dissent + Compliance to the top stat cards (so "why are they loafing/ignoring plan?" is obvious).');
+    log('- Dissent band (calm/murmur/strike) is now always visible without scrolling into the Season panel.');
     log('- No save changes: existing saves load cleanly.');
 
     state.meta.seenVersion = GAME_VERSION;

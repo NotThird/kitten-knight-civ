@@ -431,3 +431,21 @@ Files touched
 
 What to try
 - Set **Autonomy** to 80ï¿½100%, then click kittens and look for ï¿½autonomy picked #2/3ï¿½ in the inspector + **Autonomy** tags in Pref.
+
+---
+
+## 2026-02-27 17:38 CST - v0.9.14 Social loop clarity: Dissent + Compliance surfaced in top stats
+
+Summary
+- Added **Dissent** and **Compliance** to the top stat cards so the social layer is visible at-a-glance.
+- Dissent now shows its current band (**calm / murmur / strike**) right in the main stats, reducing the “why are they loafing / ignoring plan?” confusion moment.
+- Compliance is shown as a multiplier (x0.45..x1.15) so players can immediately see how hard the plan/roles will actually push.
+- Updated patch notes + bumped version to **0.9.14**.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Crank **Work pace** up and/or set **Tight** rations until dissent rises, then watch **Compliance** drop and task variance/loafing increase.
