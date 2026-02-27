@@ -278,3 +278,21 @@ Files touched
 
 What to try
 - In Winter, set Work pace to **120%** for ~20â€“30s to stabilize warmth/threat, then drop to **90%** and watch mood/efficiency recover.
+
+---
+
+## 2026-02-27 15:37 CST - v0.9.6 Autonomy now sometimes picks #2/#3 scored tasks
+
+Summary
+- Autonomy no longer just weights likes/dislikes/roles: at higher autonomy, kittens will occasionally choose a **near-top alternative** instead of always taking the single best score.
+- This makes the colony feel more “civ sim”: same policy can produce different individual behaviors (without turning into pure randomness).
+- Kept explainable: the **Why** line now shows when autonomy caused a non-top pick (e.g. `autonomy picked #2/3`).
+- Inspector still shows the full top scoring list so you can see what they *could* have done.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens “freestyle” into research/industry even while the plan biases food/wood.

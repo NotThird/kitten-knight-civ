@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.5';
+  const GAME_VERSION = '0.9.6';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1063,6 +1063,34 @@
     return clamp01(a);
   }
 
+  // Autonomy sampling: at higher autonomy, kittens sometimes pick a near-top alternative.
+  // This makes behavior feel less perfectly optimized while staying explainable (we still show scores).
+  function pickWithAutonomy(scored, a01){
+    const a = clamp01(Number(a01 ?? 0));
+    if (!Array.isArray(scored) || !scored.length) return { row: { action:'Rest', score:0, reasons:[] }, note:'' };
+    if (a <= 0.02) return { row: scored[0], note:'' };
+
+    const n = Math.max(1, Math.min(3, scored.length));
+    const top = scored.slice(0, n);
+
+    // Temperature: higher autonomy → flatter choice distribution.
+    const temp = 2 + a * 10; // 2..12
+    const max = Math.max(...top.map(r => Number(r.score) || 0));
+    const weights = top.map(r => Math.exp(((Number(r.score) || 0) - max) / temp));
+    const sum = weights.reduce((acc,x)=>acc+x,0) || 1;
+
+    let roll = Math.random() * sum;
+    let idx = 0;
+    for (let i=0;i<weights.length;i++) {
+      roll -= weights[i];
+      if (roll <= 0) { idx = i; break; }
+    }
+
+    const row = top[idx];
+    const note = (idx > 0) ? `autonomy picked #${idx+1}/${n}` : '';
+    return { row, note };
+  }
+
   function applyRolePressure(scored, k){
     const role = k.role ?? 'Generalist';
     if (role === 'Generalist') return;
@@ -1276,9 +1304,13 @@
     applyRolePressure(scored, k);
     applyPersonalityPressure(scored, k);
     scored.sort((a,b)=>b.score-a.score);
-    const top = scored[0];
+
+    const pick = pickWithAutonomy(scored, autonomy01(s));
+    const top = pick.row;
+
     const mom = momentumMul(k, top.action);
     const momNote = (mom > 1.0001) ? ` | mom x${mom.toFixed(2)}` : '';
+    const autoNote = pick.note ? ` | ${pick.note}` : '';
     const planNote = plan ? ` | plan: ${top.action} ${plan.assigned[top.action] ?? 0}/${plan.desired[top.action] ?? 0}` : '';
     const blockedNote = k._blockedMsg ? ` | last: ${k._blockedMsg}` : '';
     // Snapshot the scoring breakdown for UI inspection (transient; stripped on save)
@@ -1290,7 +1322,7 @@
     k._blockedMsg = '';
     k._blockedAction = null;
 
-    return { task: top.action, why: `eff=${(eff*100).toFixed(0)}%${momNote} | role=${k.role ?? '-'} | score: ${top.action}=${top.score.toFixed(1)}${planNote}${blockedNote} | ${top.reasons.slice(0,3).join(' ; ')}` };
+    return { task: top.action, why: `eff=${(eff*100).toFixed(0)}%${momNote}${autoNote} | role=${k.role ?? '-'} | score: ${top.action}=${top.score.toFixed(1)}${planNote}${blockedNote} | ${top.reasons.slice(0,3).join(' ; ')}` };
   }
 
   function shortRule(r){
@@ -3962,9 +3994,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Explainability: added Season forecast lines (end-of-season + Winter) for food/kitten and warmth, based on recent trends.');
-    log('- This is a projection, not a promise: it assumes the last few seconds of rates continue.');
-    log('- Use it to decide when to toggle Winter Prep / Crisis, or when you can safely push growth.');
+    log('- Autonomy now includes a small “near-top choice” sampler: at higher autonomy, kittens sometimes pick the #2/#3 scored task.');
+    log('- Explainability: the Why column shows when autonomy caused a non-top pick ("autonomy picked #2/3").');
+    log('- Tip: try Autonomy 70%+ and watch individual quirks show up even under the same colony policy.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
