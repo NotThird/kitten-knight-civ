@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 14:37 CST - v0.9.3 Decision inspector (click kitten for full scoring)
+
+Summary
+- Added a clickable **Decision inspector** modal: click any kitten row to see its top scored actions + detailed reason strings.
+- Stored a small per-kitten scoring snapshot each decision tick (top 10 actions) and strip it from saves to avoid save bloat.
+- Added modal UX polish: click backdrop or press Esc to close.
+- UI hint: table now tells you you can click rows for the breakdown.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Start a colony, let it run ~5s, then click a kitten row and verify the scoring list updates as needs/season/policy change.
+
+---
+
 ## 2026-02-27 12:19 CST - Modularization prep (CSS/JS extraction)
 
 Summary

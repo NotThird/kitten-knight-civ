@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.2';
+  const GAME_VERSION = '0.9.3';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1279,9 +1279,15 @@
     const momNote = (mom > 1.0001) ? ` | mom x${mom.toFixed(2)}` : '';
     const planNote = plan ? ` | plan: ${top.action} ${plan.assigned[top.action] ?? 0}/${plan.desired[top.action] ?? 0}` : '';
     const blockedNote = k._blockedMsg ? ` | last: ${k._blockedMsg}` : '';
+    // Snapshot the scoring breakdown for UI inspection (transient; stripped on save)
+    // Keep this small so we don't bloat memory: top few actions + their reason strings.
+    k._lastScores = scored.slice(0, Math.min(10, scored.length)).map(r => ({ action: r.action, score: r.score, reasons: (r.reasons ?? []).slice(0, 12) }));
+    k._lastScoredAt = s.t;
+
     // Clear after surfacing once (keeps UI readable).
     k._blockedMsg = '';
     k._blockedAction = null;
+
     return { task: top.action, why: `eff=${(eff*100).toFixed(0)}%${momNote} | role=${k.role ?? '-'} | score: ${top.action}=${top.score.toFixed(1)}${planNote}${blockedNote} | ${top.reasons.slice(0,3).join(' ; ')}` };
   }
 
@@ -2432,6 +2438,76 @@
   const roleQuotasEl = el('roleQuotas');
   const planDebugEl = el('planDebug');
 
+  // --- Inspect modal (explainability)
+  const inspectModalEl = el('inspectModal');
+  const inspectTitleEl = el('inspectTitle');
+  const inspectSubEl = el('inspectSub');
+  const inspectBodyEl = el('inspectBody');
+  const btnInspectClose = el('btnInspectClose');
+  const ui = { inspectOpen:false, inspectKidx: -1 };
+
+  function closeInspect(){
+    ui.inspectOpen = false;
+    ui.inspectKidx = -1;
+    if (inspectModalEl) inspectModalEl.classList.add('hidden');
+  }
+
+  function openInspect(kidx){
+    ui.inspectOpen = true;
+    ui.inspectKidx = kidx;
+    if (inspectModalEl) inspectModalEl.classList.remove('hidden');
+    renderInspect();
+  }
+
+  function renderInspect(){
+    if (!inspectModalEl || !inspectTitleEl || !inspectSubEl || !inspectBodyEl) return;
+    if (!ui.inspectOpen || ui.inspectKidx < 0 || ui.inspectKidx >= state.kittens.length) {
+      inspectModalEl.classList.add('hidden');
+      return;
+    }
+
+    const k = state.kittens[ui.inspectKidx];
+    const p = k.personality ?? genPersonality(k.id ?? 0);
+    inspectTitleEl.textContent = `Kitten #${k.id} — ${k.role ?? 'Generalist'} (${k.task ?? '-'})`;
+
+    const likes = (p.likes ?? []).join(', ') || '-';
+    const hates = (p.dislikes ?? []).join(', ') || '-';
+    const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
+    inspectSubEl.textContent = `likes: ${likes} | hates: ${hates}${at ? ' | ' + at : ''}`;
+
+    const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
+    if (!rows.length) {
+      inspectBodyEl.textContent = 'No scoring snapshot yet (tick once).';
+      return;
+    }
+
+    const lines = [];
+    for (let i=0;i<Math.min(10, rows.length);i++) {
+      const r = rows[i];
+      lines.push(`${String(i+1).padStart(2,' ')}. ${String(r.action).padEnd(14)} ${Number(r.score).toFixed(1)}`);
+      const reasons = Array.isArray(r.reasons) ? r.reasons : [];
+      for (const why of reasons.slice(0, 12)) lines.push(`    - ${why}`);
+      if (i < Math.min(10, rows.length)-1) lines.push('');
+    }
+    inspectBodyEl.textContent = lines.join('\n');
+  }
+
+  if (btnInspectClose) btnInspectClose.addEventListener('click', closeInspect);
+  if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
+    if (e.target === inspectModalEl) closeInspect();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeInspect();
+  });
+
+  if (kittensEl) kittensEl.addEventListener('click', (e) => {
+    const tr = e.target?.closest?.('tr');
+    if (!tr) return;
+    const kidx = Number(tr.dataset.kidx ?? -1);
+    if (!Number.isFinite(kidx) || kidx < 0) return;
+    openInspect(kidx);
+  });
+
   // --- Advisor (explainable, non-binding suggestions)
   // Reads current targets + trends and recommends which *policy knobs* to nudge.
   function buildAdvisorText(s, targets){
@@ -2792,8 +2868,11 @@
 
     // kittens
     kittensEl.innerHTML = '';
-    for (const k of state.kittens) {
+    for (let kidx=0; kidx<state.kittens.length; kidx++) {
+      const k = state.kittens[kidx];
       const tr = document.createElement('tr');
+      tr.dataset.kidx = String(kidx);
+      tr.style.cursor = 'pointer';
       const top = topSkillInfo(k);
       const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([s,l])=>`${s}:${l}`).join(' ');
       const eff = efficiency(state, k);
@@ -2848,6 +2927,9 @@
 
     logEl.textContent = state.log.slice(-40).join('\n');
     logEl.scrollTop = logEl.scrollHeight;
+
+    // Keep inspector in sync with latest snapshots.
+    renderInspect();
   }
 
   function escapeHtml(s){
@@ -3543,6 +3625,15 @@
     delete s._decTimer; delete s._saveTimer; delete s._lastPlan;
     delete s._rate; delete s._prevRes;
     delete s._lastFoodOvercap;
+
+    // Strip transient UI/debug keys (avoid save bloat)
+    if (Array.isArray(s.kittens)) {
+      for (const k of s.kittens) {
+        delete k._lastScores;
+        delete k._lastScoredAt;
+      }
+    }
+
     // Stamp version for patch-note gating.
     s.meta = s.meta ?? {};
     s.meta.version = GAME_VERSION;

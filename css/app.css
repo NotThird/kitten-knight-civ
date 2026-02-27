@@ -47,3 +47,9 @@
     .bar > div { height:100%; width:50%; background:rgba(125,211,252,.35); }
 
     @media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+
+    /* Modal (inspect scoring) */
+    .hidden { display:none !important; }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-start; justify-content:center; padding:24px; z-index: 50; }
+    .modalCard { width:min(920px, 96vw); margin-top:40px; background:#0b1220; border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:14px; box-shadow:0 18px 60px rgba(0,0,0,.55); }
+    .modalCard h3 { font-size: 18px; }
