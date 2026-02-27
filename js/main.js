@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.4';
+  const GAME_VERSION = '0.8.5';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -206,6 +206,8 @@
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
     director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' },
+    // Lightweight timed colony-wide effects (kept simple + transparent)
+    effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '' },
     log: []
   });
@@ -978,6 +980,51 @@
     }
   }
 
+  // --- Colony-wide effects (simple timers)
+  function festivalActive(s){
+    return Number(s.effects?.festivalUntil ?? 0) > Number(s.t ?? 0);
+  }
+
+  function festivalSecondsLeft(s){
+    return Math.max(0, Number(s.effects?.festivalUntil ?? 0) - Number(s.t ?? 0));
+  }
+
+  function festivalCost(s){
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    return { food: 50 + 12*n, wood: 8 + 2*n };
+  }
+
+  function canHoldFestival(s){
+    const c = festivalCost(s);
+    return availableAboveReserve(s,'food') >= c.food && availableAboveReserve(s,'wood') >= c.wood;
+  }
+
+  function holdFestival(s){
+    s.effects = s.effects ?? { festivalUntil: 0 };
+    if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
+
+    const c = festivalCost(s);
+    if (!canHoldFestival(s)) return { ok:false, msg:`Need ${c.food} food + ${c.wood} wood above reserves.` };
+
+    // Spend (respecting reserves). Should be exact since canHoldFestival checked.
+    const gotFood = spendUpToReserve(s,'food',c.food);
+    const gotWood = spendUpToReserve(s,'wood',c.wood);
+    if (gotFood < c.food || gotWood < c.wood) {
+      // Safety: refund partial spends (should be rare; protects against edge-case ordering).
+      s.res.food = Number(s.res.food ?? 0) + gotFood;
+      s.res.wood = Number(s.res.wood ?? 0) + gotWood;
+      return { ok:false, msg:`Festival blocked by reserves/inputs (try lowering reserves).` };
+    }
+
+    const base = Math.max(Number(s.effects.festivalUntil ?? 0), Number(s.t ?? 0));
+    s.effects.festivalUntil = base + 50; // seconds
+
+    // Tiny immediate happiness bump.
+    for (const k of (s.kittens ?? [])) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.05);
+
+    return { ok:true, msg:`Festival held (-${c.food} food, -${c.wood} wood). Mood rises for ~50s.` };
+  }
+
   function updateMoodPerSecond(s, k, task){
     // Mood is “how good this minute feels”: alignment with personality + basic stressors.
     // It intentionally moves slowly and has small effects.
@@ -989,6 +1036,9 @@
 
     // Comfort actions feel good.
     if (task === 'Eat' || task === 'Rest') m += 0.010;
+
+    // Festivals: colony-wide morale boost (purely a timed policy lever).
+    if (festivalActive(s)) m += 0.012;
 
     // Background stress.
     if ((k.hunger ?? 0) > 0.85) m -= 0.010;
@@ -2142,6 +2192,22 @@
     const autoRes = el('autoReserves');
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
 
+    // Timed effects (for old saves)
+    state.effects = state.effects ?? { festivalUntil: 0 };
+    if (!('festivalUntil' in state.effects)) state.effects.festivalUntil = 0;
+
+    // Festival (morale lever)
+    const festBtn = el('btnFestival');
+    if (festBtn) {
+      const left = festivalSecondsLeft(state);
+      const c = festivalCost(state);
+      festBtn.classList.toggle('active', left > 0);
+      festBtn.disabled = (left <= 0) && !canHoldFestival(state);
+      festBtn.textContent = (left > 0)
+        ? `Festival: ${Math.ceil(left)}s`
+        : `Hold Festival (${c.food}f, ${c.wood}w)`;
+    }
+
     // Project focus (build order nudge)
     const pfSel = el('projectFocus');
     if (pfSel) pfSel.value = String(state.director.projectFocus ?? 'Auto');
@@ -2240,9 +2306,13 @@
       ? `Project focus (auto): ${pfEff.focus}${pfEff.focus === 'Auto' ? '' : ` — ${pfEff.why}`}\n`
       : `Project focus (manual): ${pfSet}\n`;
 
+    const festLeft = festivalSecondsLeft(state);
+    const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) — morale drifting up\n` : '';
+
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
+      festLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       `Danger forecast: food→0 in ${starveEta} | warmth→0 in ${freezeEta}\n` +
@@ -2760,6 +2830,15 @@
     setCrisisProtocol(!state.director.crisis);
   });
 
+  const festEl = document.getElementById('btnFestival');
+  if (festEl) festEl.addEventListener('click', () => {
+    state.effects = state.effects ?? { festivalUntil: 0 };
+    const res = holdFestival(state);
+    log(res.msg);
+    save();
+    render();
+  });
+
   const autoWpEl = document.getElementById('autoWinterPrep');
   if (autoWpEl) autoWpEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
@@ -3011,6 +3090,7 @@
       s.res.libraries = s.res.libraries ?? 0;
       s.signals = s.signals ?? { BUILD:false, FOOD:false, ALARM:false };
       s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+      s.effects = s.effects ?? { festivalUntil: 0 };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
       s.meta = s.meta ?? { version: '', seenVersion: '' };
@@ -3027,6 +3107,11 @@
       if (!('autoFoodCrisis' in s.director)) s.director.autoFoodCrisis = false;
       if (!('autoReserves' in s.director)) s.director.autoReserves = false;
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
+
+      // Effects migration
+      s.effects = s.effects ?? { festivalUntil: 0 };
+      if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
+      s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;
 
       s.policyMult = s.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 };
       // Add any missing keys for forward-compatible saves
@@ -3091,9 +3176,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Mood (0–100%) per kitten, influenced by personality alignment + hunger/cold/alarm stress.');
-    log('- Mood softly affects efficiency and scoring (low mood → more Rest; high mood → tolerates work).');
-    log('- UI: Mood column + avg mood in Season panel.');
+    log('- New: Hold Festival (Director) — spend food+wood for a timed colony-wide morale boost.');
+    log('- Festival shows in the Season panel and gently increases mood drift (better efficiency + less Rest pressure).');
+    log('- Save-safe: older saves auto-add an effects timer bucket.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
