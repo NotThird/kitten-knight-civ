@@ -23,3 +23,23 @@ Files touched
 
 What to try
 - Load the local build and confirm the game still runs; then open DevTools → Network and ensure `css/app.css` + `js/main.js` load (no 404s).
+
+---
+
+## 2026-02-27 12:22 CST — v0.8.4 Mood + policy friction
+
+Summary
+- Added a per-kitten **Mood** stat (0–100%) that drifts based on personality alignment + stressors (hunger/cold/ALARM).
+- Mood softly affects **efficiency** (small multiplier) so “happy specialists” feel a bit more productive.
+- Low-mood kittens slightly bias toward **Rest**, creating emergent slowdowns if policy fights personalities too hard.
+- UI: added **Mood** column in the kitten table and **avg mood** in the Season panel.
+- Save-safe migration: older saves default mood to 55%.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Policy preset **Advance**, then toggle **ALARM** / run through Winter: watch mood dip and see which kittens start seeking Rest (and whether role quotas/policy can keep productivity stable).

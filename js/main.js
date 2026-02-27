@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.3';
+  const GAME_VERSION = '0.8.4';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -32,7 +32,12 @@
     const health = clamp01(Number(k.health ?? 1));
     const healthMul = 0.55 + 0.45 * health; // 0.55..1.00
 
-    return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul);
+    // Mood: tiny boost/penalty based on how "aligned" they feel (personality + stress).
+    // Kept intentionally small so needs (food/warmth) still dominate.
+    const mood = clamp01(Number(k.mood ?? 0.55));
+    const moodMul = 0.88 + 0.24 * mood; // 0.88..1.12
+
+    return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul * moodMul);
   }
 
   // --- Momentum (emergent specialization via "getting in the groove")
@@ -248,6 +253,8 @@
       hunger: 0.2,
       // Health: 1.0 = healthy, lower = sick/injured (reduces efficiency). Recovers via Rest/Eat + good warmth.
       health: 1.0,
+      // Mood: 0..1. Softly affects efficiency + preferences (adds “civ sim” texture without hard locks).
+      mood: 0.55,
       skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 },
       xp: { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 },
       // Personality: soft preferences that bias scoring (adds emergent specialization)
@@ -971,6 +978,27 @@
     }
   }
 
+  function updateMoodPerSecond(s, k, task){
+    // Mood is “how good this minute feels”: alignment with personality + basic stressors.
+    // It intentionally moves slowly and has small effects.
+    let m = clamp01(Number(k.mood ?? 0.55));
+    const p = k.personality ?? genPersonality(k.id ?? 0);
+
+    if (p.likes?.includes(task)) m += 0.020;
+    if (p.dislikes?.includes(task)) m -= 0.030;
+
+    // Comfort actions feel good.
+    if (task === 'Eat' || task === 'Rest') m += 0.010;
+
+    // Background stress.
+    if ((k.hunger ?? 0) > 0.85) m -= 0.010;
+    const season = seasonAt(s.t);
+    if (season.name === 'Winter' && (s.res?.warmth ?? 0) < 35) m -= 0.008;
+    if (s.signals?.ALARM) m -= 0.005;
+
+    k.mood = clamp01(m);
+  }
+
   // --- AI
   // Colony-level coordination: we compute a lightweight "plan" (desired worker counts per task)
   // and then each kitten picks actions with a congestion/need modifier.
@@ -1072,6 +1100,7 @@
     const foodPerKitten = s.res.food / Math.max(1, s.kittens.length);
     const foodRes = getReserve(s,'food');
     const tired = (1 - k.energy);
+    const mood = clamp01(Number(k.mood ?? 0.55));
     const mode = s.mode;
     const pfInfo = getEffectiveProjectFocus(s);
     const pf = String(pfInfo.focus ?? 'Auto');
@@ -1111,6 +1140,21 @@
       if (!taskDefs[a].enabled(s)) continue;
       let score = base(a);
       const reasons = [`mode=${mode} base +${base(a)}`];
+
+      // Mood: unhappy kittens are more likely to seek rest; happy kittens tolerate productive work better.
+      // (Still overridden by safety rules + emergencies.)
+      if (a === 'Rest' && mood < 0.35) {
+        const add = (0.35 - mood) * 45;
+        score += add;
+        reasons.push(`low mood ${mood.toFixed(2)} → +${add.toFixed(1)} Rest`);
+      }
+      if (a !== 'Eat' && a !== 'Rest') {
+        const add = (mood - 0.55) * 10; // small
+        if (Math.abs(add) >= 1) {
+          score += add;
+          reasons.push(`mood ${mood.toFixed(2)} → ${add >= 0 ? '+' : ''}${add.toFixed(1)}`);
+        }
+      }
 
       // If we were blocked on this exact action very recently (usually due to reserves), penalize it hard
       // so the kitten doesn't keep "trying" a no-op sink.
@@ -1982,6 +2026,9 @@
         const prevTask = k.task;
         const d = decideTask(state, k, plan, ctx);
 
+        // Mood update (1s cadence) so the colony feels a bit more “alive”.
+        updateMoodPerSecond(state, k, d.task);
+
         // Memory: track how long we've been doing the same job (1s resolution)
         k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
 
@@ -2059,6 +2106,7 @@
 
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
+    const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
 
     el('modeSurvive').classList.toggle('active', state.mode==='Survive');
     el('modeExpand').classList.toggle('active', state.mode==='Expand');
@@ -2195,7 +2243,7 @@
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
-      `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health slows work) | avg health ${(avgHealth*100).toFixed(0)}%\n` +
+      `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       `Danger forecast: food→0 in ${starveEta} | warmth→0 in ${freezeEta}\n` +
       `Preserved: jerky ${fmt(state.res.jerky ?? 0)} (no spoilage)\n` +
@@ -2281,6 +2329,7 @@
       const tr = document.createElement('tr');
       const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([s,l])=>`${s}:${l}`).join(' ');
       const eff = efficiency(state, k);
+      const mood = clamp01(Number(k.mood ?? 0.55));
       const p = k.personality ?? genPersonality(k.id ?? 0);
       const traits = `${(p.likes ?? []).join(',')}${(p.dislikes?.length?` | hates ${p.dislikes.join(',')}`:'')}`;
       tr.innerHTML = `
@@ -2290,7 +2339,8 @@
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
-        <td title="Work effectiveness (hungry/tired/cold/health)">${fmt(eff*100)}%</td>
+        <td title="Mood (personality alignment + stress; small effect on efficiency)">${fmt(mood*100)}%</td>
+        <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
         <td>${topSkills}</td>
         <td>${escapeHtml(traits)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
@@ -3012,6 +3062,7 @@
         k.roleWhy = k.roleWhy ?? '';
         k.personality = k.personality ?? genPersonality(k.id ?? 0);
         k.health = clamp01(Number(k.health ?? 1));
+        k.mood = clamp01(Number(k.mood ?? 0.55));
         k.taskStreak = k.taskStreak ?? 0;
         k.taskLock = k.taskLock ?? 0;
         k._blockedAction = k._blockedAction ?? null;
@@ -3040,9 +3091,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Crisis Protocol button (Director) — emergency stabilization overlay.');
-    log('- When ON: forces Survive + Tight rations, raises reserves, turns on FOOD CRISIS (and ALARM if Security unlocked).');
-    log('- When OFF: restores your previous Director settings (mode/targets/reserves/policy/role quotas/signals).');
+    log('- New: Mood (0–100%) per kitten, influenced by personality alignment + hunger/cold/alarm stress.');
+    log('- Mood softly affects efficiency and scoring (low mood → more Rest; high mood → tolerates work).');
+    log('- UI: Mood column + avg mood in Season panel.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
