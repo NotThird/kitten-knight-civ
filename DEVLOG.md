@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 14:52 CST - v0.9.3 Auto Recruit (Spring immigration)
+
+Summary
+- Added **Auto Recruit** Director toggle: once per year, during Spring, a stray kitten can join if the colony is clearly stable.
+- Recruitment is explainable + not free: it consumes food, respects your **Food reserve**, and requires low threat + good mood + surplus food/kitten.
+- Added season panel line showing Auto Recruit eligibility (and whether you already recruited this year).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Recruit**, stabilize food/kitten above target in Spring, and watch for the “stray kitten joined” log event.
+
+---
+
 ## 2026-02-27 14:37 CST - v0.9.3 Decision inspector (click kitten for full scoring)
 
 Summary

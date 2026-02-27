@@ -93,11 +93,13 @@
   // --- Season model (no map yet, but real pressure)
   const SEASON_LEN = 90; // seconds per season
   const seasons = ['Spring','Summer','Fall','Winter'];
+  const YEAR_LEN = SEASON_LEN * seasons.length;
   const seasonAt = (t) => {
     const idx = Math.floor((t / SEASON_LEN) % seasons.length);
     const phase = (t % SEASON_LEN) / SEASON_LEN;
     return { name: seasons[idx], idx, phase };
   };
+  const yearAt = (t) => Math.floor(Math.max(0, t) / YEAR_LEN);
 
   // --- Seasonal target shaping (small "AI foresight" without hidden rules)
   // We keep player-set targets as the baseline, then apply a transparent seasonal adjustment.
@@ -243,7 +245,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -2076,7 +2078,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2085,6 +2087,8 @@
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
+    if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
+    if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
@@ -2118,6 +2122,46 @@
       if (state.signals.FOOD && foodPerKitten > offAt) {
         state.signals.FOOD = false;
         log(`Auto Food Crisis: OFF (food/kitten ${foodPerKitten.toFixed(1)} > ${offAt.toFixed(1)})`);
+      }
+    }
+
+    // Director automation: optional auto RECRUIT (Spring immigration).
+    // Goal: make growth feel more like a civ sim (kittens show up when things are going well) without making it "free".
+    if (state.director.autoRecruit) {
+      state._autoRecruitTimer = (state._autoRecruitTimer ?? 0) + dt;
+      if (state._autoRecruitTimer >= 1) {
+        state._autoRecruitTimer = 0;
+
+        const yr = yearAt(state.t);
+        const cap = housingCap(state);
+        const hasHousing = state.kittens.length < cap;
+        const targets = seasonTargets(state);
+        const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
+        const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
+
+        // Conditions are intentionally strict to avoid "win-more" runaway:
+        // - Only once per year, during Spring
+        // - Must be stable on basics (surplus food, low threat, decent mood)
+        const inSpring = (season.name === 'Spring' && season.phase >= 0.06 && season.phase <= 0.80);
+        const stableFood = (foodPerKitten >= targets.foodPerKitten * 1.08);
+        const stableThreat = (state.res.threat <= targets.maxThreat * 0.92);
+        const stableMood = (avgMood >= 0.56);
+
+        // Cost scales lightly with population so manual kitten-buy stays relevant.
+        const pop = Math.max(1, state.kittens.length);
+        const cost = Math.round((28 + Math.floor(pop / 5) * 4) / 2) * 2; // 28,32,36,...
+
+        if (inSpring && hasHousing && yr !== Number(state.director.recruitYear ?? -1) && stableFood && stableThreat && stableMood) {
+          // Respect food reserve (director won't "immigrate" below your buffer).
+          const minFoodAfter = getReserve(state,'food');
+          if ((state.res.food - cost) >= minFoodAfter) {
+            state.res.food -= cost;
+            const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
+            state.kittens.push(makeKitten(id));
+            state.director.recruitYear = yr;
+            log(`A stray kitten joined this Spring! (-${cost} food) Population: ${state.kittens.length}/${cap}`);
+          }
+        }
       }
     }
 
@@ -2593,7 +2637,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2602,6 +2646,8 @@
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
+    if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
+    if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
@@ -2629,6 +2675,8 @@
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
     const autoMode = el('autoMode');
     if (autoMode) autoMode.checked = !!state.director.autoMode;
+    const autoRec = el('autoRecruit');
+    if (autoRec) autoRec.checked = !!state.director.autoRecruit;
 
     // Timed effects (for old saves)
     state.effects = state.effects ?? { festivalUntil: 0 };
@@ -2751,6 +2799,11 @@
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
 
+    const arOn = !!state.director?.autoRecruit;
+    const arYear = Number(state.director?.recruitYear ?? -1);
+    const curYear = yearAt(state.t);
+    const arLine = arOn ? `Auto recruit: ON (Spring; ${arYear === curYear ? 'already recruited this year' : 'eligible'})\n` : '';
+
     const aut = autonomy01(state);
     const autLine = `Autonomy: ${Math.round(aut*100)}% (likes +${(6+10*aut).toFixed(0)} / dislikes -${(4+8*aut).toFixed(0)})\n`;
 
@@ -2759,6 +2812,7 @@
       pfLine +
       autLine +
       amLine +
+      arLine +
       festLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
@@ -3355,6 +3409,15 @@
     // Allow an immediate switch when toggled on.
     if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
     log(`Auto Mode → ${state.director.autoMode ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoRecruitEl = document.getElementById('autoRecruit');
+  if (autoRecruitEl) autoRecruitEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director.autoRecruit = !!e.target.checked;
+    log(`Auto Recruit → ${state.director.autoRecruit ? 'ON' : 'OFF'}`);
     save();
     render();
   });
