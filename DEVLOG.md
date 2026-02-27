@@ -296,3 +296,22 @@ Files touched
 
 What to try
 - Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens “freestyle” into research/industry even while the plan biases food/wood.
+
+---
+
+## 2026-02-27 15:52 CST - v0.9.7 Projects panel (progress bars + focus buttons)
+
+Summary
+- Added a **Projects** panel under Plan debug: shows live progress bars for Hut/Palisade/Granary/Workshop/Library.
+- Each project includes a 1-click **Focus** button that sets Project focus (a build-order nudge) without hunting the dropdown.
+- Explicitly surfaces when building is **blocked by your Wood reserve**, so "stalled" progress is explainable (buffers did it).
+- Kept Season panel’s compact "Projects:" summary line for quick scanning.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Start a Hut, then crank **Wood reserve** above current wood and confirm the Projects panel shows "blocked by wood reserve" (and progress stops) until you lower the reserve.

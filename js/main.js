@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.6';
+  const GAME_VERSION = '0.9.7';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2513,6 +2513,7 @@
   const policyEl = el('policy');
   const roleQuotasEl = el('roleQuotas');
   const planDebugEl = el('planDebug');
+  const projectsEl = el('projects');
 
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
@@ -2524,6 +2525,18 @@
     if (!rec || typeof rec.apply !== 'function') return;
     rec.apply(state);
     log(`Advisor applied: ${rec.label}`);
+    save();
+    render();
+  });
+
+  // Projects panel: quick "focus this" buttons
+  if (projectsEl) projectsEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('button[data-focus]');
+    if (!btn) return;
+    const focus = String(btn.dataset.focus || 'Auto');
+    state.director = state.director ?? { projectFocus:'Auto' };
+    state.director.projectFocus = focus;
+    log(`Project focus → ${focus}`);
     save();
     render();
   });
@@ -2924,17 +2937,45 @@
     const nextUnlock = unlockDefs.find(u => !state.seenUnlocks[u.id]);
     const nextUnlockEta = nextUnlock ? fmtEtaSeconds(etaToTarget(state.res.science, nextUnlock.at, scienceRate)) : '-';
 
-    const hutProg = Number(state._hutProgress ?? 0);
-    const palProg = Number(state._palProgress ?? 0);
-    const granProg = Number(state._granProgress ?? 0);
-    const workProg = Number(state._workProgress ?? 0);
-    const libProg = Number(state._libProgress ?? 0);
-    const proj = [];
-    if (hutProg > 0) proj.push(`Hut ${hutProg.toFixed(1)}/12`);
-    if (palProg > 0) proj.push(`Palisade ${palProg.toFixed(1)}/16`);
-    if (granProg > 0) proj.push(`Granary ${granProg.toFixed(1)}/22`);
-    if (workProg > 0) proj.push(`Workshop ${workProg.toFixed(1)}/26`);
-    if (libProg > 0) proj.push(`Library ${libProg.toFixed(1)}/30`);
+    // Projects (build progress)
+    const projDefs = [
+      { key:'_hutProgress',  req:12, name:'Hut',      owned: () => state.res.huts,          focus:'Housing',  show: () => !!state.unlocked?.construction },
+      { key:'_palProgress',  req:16, name:'Palisade', owned: () => state.res.palisade,      focus:'Defense',  show: () => !!state.unlocked?.construction },
+      { key:'_granProgress', req:22, name:'Granary',  owned: () => state.res.granaries??0,  focus:'Storage',  show: () => !!state.unlocked?.construction && !!state.unlocked?.granary },
+      { key:'_workProgress', req:26, name:'Workshop', owned: () => state.res.workshops??0,  focus:'Industry', show: () => !!state.unlocked?.construction && !!state.unlocked?.workshop },
+      { key:'_libProgress',  req:30, name:'Library',  owned: () => state.res.libraries??0,  focus:'Knowledge',show: () => !!state.unlocked?.construction && !!state.unlocked?.library },
+    ];
+
+    const proj = []; // season summary line
+    const projHtml = [];
+    const woodBlock = (availableAboveReserve(state,'wood') <= 0.01);
+    for (const pd of projDefs) {
+      if (!pd.show()) continue;
+      const prog = Number(state[pd.key] ?? 0);
+      const req = Number(pd.req);
+      const pct = clamp01(req > 0 ? prog / req : 0);
+      const owned = Number(pd.owned?.() ?? 0);
+
+      if (prog > 0.0001) proj.push(`${pd.name} ${prog.toFixed(1)}/${req}`);
+
+      const blocked = woodBlock ? ' (blocked by wood reserve)' : '';
+      projHtml.push(`
+        <div style="margin-bottom:10px">
+          <div class="row" style="justify-content:space-between; gap:10px">
+            <div class="small" style="flex:1 1 auto">${pd.name}: owned ${owned} — ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
+            <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
+          </div>
+          <div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>
+        </div>
+      `);
+    }
+
+    if (projectsEl) {
+      projectsEl.innerHTML = projHtml.length
+        ? projHtml.join('')
+        : `<span class="small">No active build projects yet. Unlock Construction via Science, then nudge build tasks with policy or Project focus.</span>`;
+    }
+
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
 
     const nextSeasonEta = fmtEtaSeconds(secondsToNextSeason(state));
@@ -3994,9 +4035,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Autonomy now includes a small “near-top choice” sampler: at higher autonomy, kittens sometimes pick the #2/#3 scored task.');
-    log('- Explainability: the Why column shows when autonomy caused a non-top pick ("autonomy picked #2/3").');
-    log('- Tip: try Autonomy 70%+ and watch individual quirks show up even under the same colony policy.');
+    log('- Added a Projects panel: live progress bars for your build tracks (Hut/Palisade/Granary/Workshop/Library).');
+    log('- Each project has a one-click Focus button that sets Project focus (a build-order nudge) without hunting the dropdown.');
+    log('- Shows when building is blocked by your Wood reserve (so you can tell if buffers are the reason progress stalled).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
