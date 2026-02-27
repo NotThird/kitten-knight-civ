@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.11';
+  const GAME_VERSION = '0.9.12';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -45,7 +45,7 @@
   // This pairs with commitment windows + role bias to create readable specialization without hard locks.
   function momentumMul(k, action){
     const a = String(action ?? '');
-    if (!a || a === 'Eat' || a === 'Rest') return 1;
+    if (!a || a === 'Eat' || a === 'Rest' || a === 'Loaf') return 1;
     const streak = Math.max(0, Number(k.taskStreak ?? 0) || 0);
     if (streak <= 1) return 1;
     // +2% per second after the first, capped at +20%.
@@ -498,6 +498,23 @@
         // Rest recovers health; warmth speeds recovery.
         const w = clamp01(Number(s.res?.warmth ?? 0) / 100);
         k.health = clamp01((k.health ?? 1) + dt * (0.018 + 0.020 * w));
+      }
+    },
+    Loaf: {
+      enabled: (s) => true,
+      tick: (s,k,dt) => {
+        // "Soft strike" / morale recovery.
+        // Loafing is less efficient than Rest at recovering energy/health, but better at recovering mood.
+        // It creates an emergent social slowdown when Dissent is high.
+        k.energy = clamp01(k.energy + dt * 0.09);
+        k.hunger = clamp01(k.hunger + dt * 0.02);
+
+        const w = clamp01(Number(s.res?.warmth ?? 0) / 100);
+        k.health = clamp01((k.health ?? 1) + dt * (0.010 + 0.010 * w));
+
+        // Mood: meaningful bump (especially if the colony is celebrating).
+        const fest = festivalActive(s) ? 1 : 0;
+        k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.020 + 0.006 * fest));
       }
     },
     Forage: {
@@ -1235,7 +1252,7 @@
     if (p.dislikes?.includes(task)) m -= (0.012 + 0.030 * a);
 
     // Comfort actions feel good.
-    if (task === 'Eat' || task === 'Rest') m += 0.010;
+    if (task === 'Eat' || task === 'Rest' || task === 'Loaf') m += 0.010;
 
     // Aptitude: feels good to do what you're good at; feels bad to be forced far off your strengths.
     // This is intentionally subtle; policy + emergencies can still override.
@@ -1278,7 +1295,7 @@
     if (['BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary'].includes(task)) return 4;
     if (['CraftTools','Research','Forage','Farm','ChopWood'].includes(task)) return 3;
     if (['Guard','StokeFire'].includes(task)) return 2;
-    if (['Eat','Rest'].includes(task)) return 1;
+    if (['Eat','Rest','Loaf'].includes(task)) return 1;
     return 2;
   }
 
@@ -1404,7 +1421,7 @@
     const sciAvail  = Number(ctx?.shadowAvail?.science ?? _sciAvail);
     const toolsAvail = Number(ctx?.shadowAvail?.tools ?? _toolsAvail);
 
-    const actions = ['Eat','Rest','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    const actions = ['Eat','Rest','Loaf','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (s.unlocked.library) actions.push('Mentor');
     if (s.unlocked.workshop) actions.push('CraftTools');
     if (s.unlocked.construction && s.unlocked.workshop) actions.push('BuildWorkshop');
@@ -1416,10 +1433,10 @@
     }
 
     const base = (a) => {
-      if (mode === 'Survive') return ({ Eat:20, Rest:14, Forage:14, PreserveFood:6, Farm:18, ChopWood:8, StokeFire:18, Guard:6, BuildHut:2, BuildPalisade:3, BuildGranary:6, BuildWorkshop:4, CraftTools:0, Research:4 })[a] ?? 0;
-      if (mode === 'Expand') return ({ Eat:16, Rest:10, Forage:10, PreserveFood:6, Farm:12, ChopWood:18, StokeFire:10, Guard:6, BuildHut:20, BuildPalisade:10, BuildGranary:10, BuildWorkshop:12, CraftTools:6, Research:4 })[a] ?? 0;
-      if (mode === 'Defend') return ({ Eat:16, Rest:10, Forage:10, PreserveFood:5, Farm:12, ChopWood:12, StokeFire:10, Guard:22, BuildHut:4, BuildPalisade:20, BuildGranary:6, BuildWorkshop:6, CraftTools:3, Research:4 })[a] ?? 0;
-      return ({ Eat:16, Rest:10, Forage:10, PreserveFood:7, Farm:12, ChopWood:10, StokeFire:10, Guard:10, BuildHut:6, BuildPalisade:8, BuildGranary:8, BuildWorkshop:14, CraftTools:16, Research:22 })[a] ?? 0;
+      if (mode === 'Survive') return ({ Eat:20, Rest:14, Loaf:2, Forage:14, PreserveFood:6, Farm:18, ChopWood:8, StokeFire:18, Guard:6, BuildHut:2, BuildPalisade:3, BuildGranary:6, BuildWorkshop:4, CraftTools:0, Research:4 })[a] ?? 0;
+      if (mode === 'Expand') return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:6, Farm:12, ChopWood:18, StokeFire:10, Guard:6, BuildHut:20, BuildPalisade:10, BuildGranary:10, BuildWorkshop:12, CraftTools:6, Research:4 })[a] ?? 0;
+      if (mode === 'Defend') return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:5, Farm:12, ChopWood:12, StokeFire:10, Guard:22, BuildHut:4, BuildPalisade:20, BuildGranary:6, BuildWorkshop:6, CraftTools:3, Research:4 })[a] ?? 0;
+      return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:7, Farm:12, ChopWood:10, StokeFire:10, Guard:10, BuildHut:6, BuildPalisade:8, BuildGranary:8, BuildWorkshop:14, CraftTools:16, Research:22 })[a] ?? 0;
     };
 
     const out = [];
@@ -1435,7 +1452,28 @@
         score += add;
         reasons.push(`low mood ${mood.toFixed(2)} → +${add.toFixed(1)} Rest`);
       }
-      if (a !== 'Eat' && a !== 'Rest') {
+
+      // Loafing is a "soft strike" / morale recovery action.
+      // It becomes attractive when mood is low and especially when dissent is high.
+      if (a === 'Loaf') {
+        if (mood < 0.55) {
+          const add = (0.55 - mood) * 55;
+          score += add;
+          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
+        }
+        const dis = dissent01(s);
+        if (dis > 0.45) {
+          // Under murmurs/strike, some kittens idle/drag their paws unless you restore cohesion.
+          const disAdj = (dis - 0.45) * 85 * (1 - 0.55 * discipline01(s));
+          score += disAdj;
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${disAdj.toFixed(1)}`);
+        }
+        // If we're actually starving or freezing, loafing should lose hard.
+        if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency → -45'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
+      }
+
+      if (a !== 'Eat' && a !== 'Rest' && a !== 'Loaf') {
         const add = (mood - 0.55) * 10; // small
         if (Math.abs(add) >= 1) {
           score += add;
@@ -1459,7 +1497,7 @@
       }
 
       // Momentum: staying on a productive task gets a small bonus (pairs with throughput bonus).
-      if (a === (k.task ?? '') && a !== 'Eat' && a !== 'Rest') {
+      if (a === (k.task ?? '') && a !== 'Eat' && a !== 'Rest' && a !== 'Loaf') {
         const mom = momentumMul(k, a);
         if (mom > 1.0001) {
           const add = Math.min(12, (mom - 1) * 55);
@@ -1827,7 +1865,7 @@
 
     for (const a of Object.keys(desired)) {
       // Eat/Rest are personal needs; policy doesn't touch them.
-      if (a === 'Eat' || a === 'Rest') continue;
+      if (a === 'Eat' || a === 'Rest' || a === 'Loaf') continue;
       desired[a] = Math.round(desired[a] * mul(a));
     }
 
@@ -3576,7 +3614,7 @@
   }
 
   function actEditor(act, idx){
-    const opts = ['Eat','Rest','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    const opts = ['Eat','Rest','Loaf','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (state.unlocked.library) opts.push('Mentor');
     if (state.unlocked.workshop) opts.push('CraftTools');
     if (state.unlocked.construction && state.unlocked.workshop) opts.push('BuildWorkshop');

@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 17:08 CST - v0.9.12 Social slowdown: new Loaf action (dissent → visible productivity drag)
+
+Summary
+- Added a new personal task: **Loaf** — a morale-recovery action that becomes more attractive when **Mood is low** and especially when **Dissent is high**.
+- This turns the Dissent system into a more *legible* civ-sim effect: high dissent now shows up as a real **soft strike / idle time** (instead of only abstract plan-compliance drift).
+- Loaf is intentionally self-limiting: it is heavily penalized during **food emergencies** and when **Winter is cold**, so the colony still fights to survive.
+- Updated safety-rule action picker + action list to include Loaf (you can force it with a rule if you want, but it’s mainly emergent).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `scripts/parse_check.js`
+- `DEVLOG.md`
+
+What to try
+- Crank **Work pace 120% + Tight rations** and watch Dissent rise; you should start seeing some kittens pick **Loaf** (then restore cohesion with Discipline / better rations / festival).
+
+---
+
 ## 2026-02-27 16:53 CST - v0.9.11 Projects: show which reserve blocks each build
 
 Summary
