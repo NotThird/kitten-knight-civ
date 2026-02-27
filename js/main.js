@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.7';
+  const GAME_VERSION = '0.9.8';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2514,6 +2514,8 @@
   const roleQuotasEl = el('roleQuotas');
   const planDebugEl = el('planDebug');
   const projectsEl = el('projects');
+  const profilesEl = el('profiles');
+  const profilesHintEl = el('profilesHint');
 
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
@@ -2537,6 +2539,42 @@
     state.director = state.director ?? { projectFocus:'Auto' };
     state.director.projectFocus = focus;
     log(`Project focus → ${focus}`);
+    save();
+    render();
+  });
+
+  // Director profiles: save/load policy stacks
+  function ensureProfiles(s){
+    s.director = s.director ?? { projectFocus:'Auto', autonomy:0.60, workPace:1.00 };
+    if (!('profiles' in s.director) || !s.director.profiles) s.director.profiles = { A:null, B:null, C:null };
+    for (const k of ['A','B','C']) if (!(k in s.director.profiles)) s.director.profiles[k] = null;
+  }
+
+  if (profilesEl) profilesEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('button[data-prof]');
+    if (!btn) return;
+    const slot = String(btn.dataset.prof || '');
+    const act = String(btn.dataset.pact || '');
+    if (!['A','B','C'].includes(slot)) return;
+
+    ensureProfiles(state);
+
+    if (act === 'save') {
+      state.director.profiles[slot] = {
+        savedAt: Date.now(),
+        snap: snapshotDirectorSettings(),
+      };
+      log(`Saved profile ${slot}.`);
+    } else if (act === 'load') {
+      const p = state.director.profiles[slot];
+      if (!p?.snap) { log(`Profile ${slot} is empty.`); render(); return; }
+      applyDirectorSettings(p.snap);
+      log(`Loaded profile ${slot}.`);
+    } else if (act === 'clear') {
+      state.director.profiles[slot] = null;
+      log(`Cleared profile ${slot}.`);
+    }
+
     save();
     render();
   });
@@ -2883,6 +2921,35 @@
       } else {
         pfHint.textContent = `${desc(setPf)} (manual)`;
       }
+    }
+
+    // Director profiles UI
+    if (profilesEl) {
+      ensureProfiles(state);
+      const fmtTime = (ts) => {
+        if (!ts) return '';
+        try {
+          return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        } catch { return ''; }
+      };
+
+      const slotBtn = (slot) => {
+        const p = state.director.profiles?.[slot];
+        const has = !!(p && p.snap);
+        const when = has ? fmtTime(p.savedAt) : '';
+        const label = has ? `saved ${when}` : 'empty';
+        return `
+          <div class="row" style="gap:6px; margin-right:10px">
+            <span class="tag">${slot}</span>
+            <button class="btn" data-prof="${slot}" data-pact="load" ${has?'':'disabled'}>Load</button>
+            <button class="btn" data-prof="${slot}" data-pact="save">Save</button>
+            <button class="btn bad" data-prof="${slot}" data-pact="clear" ${has?'':'disabled'}>Clear</button>
+            <span class="small" style="opacity:.8">${label}</span>
+          </div>`;
+      };
+
+      profilesEl.innerHTML = ['A','B','C'].map(slotBtn).join('');
+      if (profilesHintEl) profilesHintEl.textContent = 'Tip: save a Winter Prep setup in A, an Expand setup in B, and an Advance setup in C.';
     }
 
     const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
@@ -3446,6 +3513,7 @@
   });
 
   function snapshotDirectorSettings(){
+    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     return {
       mode: state.mode,
       rations: state.rations,
@@ -3454,6 +3522,11 @@
       policyMult: structuredClone(state.policyMult ?? {}),
       roleQuota: structuredClone(state.roleQuota ?? {}),
       signals: structuredClone(state.signals ?? { BUILD:false, FOOD:false, ALARM:false }),
+      director: {
+        projectFocus: String(state.director.projectFocus ?? 'Auto'),
+        autonomy: clamp01(Number(state.director.autonomy ?? 0.60)),
+        workPace: Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00)),
+      },
     };
   }
 
@@ -3466,6 +3539,14 @@
     state.policyMult = snap.policyMult ?? state.policyMult;
     state.roleQuota = snap.roleQuota ?? state.roleQuota;
     state.signals = snap.signals ?? state.signals;
+
+    // Restore director knobs (project focus + autonomy/work pace) if present.
+    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    if (snap.director) {
+      if ('projectFocus' in snap.director) state.director.projectFocus = String(snap.director.projectFocus ?? 'Auto');
+      if ('autonomy' in snap.director) state.director.autonomy = clamp01(Number(snap.director.autonomy ?? 0.60));
+      if ('workPace' in snap.director) state.director.workPace = Math.max(0.8, Math.min(1.2, Number(snap.director.workPace ?? 1.00) || 1.00));
+    }
 
     // Safety: ALARM is gated by Security unlock.
     if (!state.unlocked.security) state.signals.ALARM = false;
@@ -3960,7 +4041,13 @@
       if (!('autoModeWhy' in s.director)) s.director.autoModeWhy = '';
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
       if (!('autonomy' in s.director)) s.director.autonomy = 0.60;
+      if (!('workPace' in s.director)) s.director.workPace = 1.00;
       s.director.autonomy = clamp01(Number(s.director.autonomy ?? 0.60));
+      s.director.workPace = Math.max(0.8, Math.min(1.2, Number(s.director.workPace ?? 1.00) || 1.00));
+
+      // Director profile slots (save/load policy stacks)
+      if (!('profiles' in s.director) || !s.director.profiles) s.director.profiles = { A:null, B:null, C:null };
+      for (const k of ['A','B','C']) if (!(k in s.director.profiles)) s.director.profiles[k] = null;
 
       // Effects migration
       s.effects = s.effects ?? { festivalUntil: 0 };
@@ -4035,9 +4122,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Added a Projects panel: live progress bars for your build tracks (Hut/Palisade/Granary/Workshop/Library).');
-    log('- Each project has a one-click Focus button that sets Project focus (a build-order nudge) without hunting the dropdown.');
-    log('- Shows when building is blocked by your Wood reserve (so you can tell if buffers are the reason progress stalled).');
+    log('- Added Director Profiles: 3 save/load slots (A/B/C) for your current mode + targets + reserves + policy + quotas.');
+    log('- Profiles also remember Project Focus + Autonomy + Work pace (so seasonal playbooks are one click).');
+    log('- Tip: save Winter Prep in A, Expand in B, and Advance in C.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

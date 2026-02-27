@@ -315,3 +315,22 @@ Files touched
 
 What to try
 - Start a Hut, then crank **Wood reserve** above current wood and confirm the Projects panel shows "blocked by wood reserve" (and progress stops) until you lower the reserve.
+
+---
+
+## 2026-02-27 16:07 CST - v0.9.8 Director Profiles (save/load policy stacks)
+
+Summary
+- Added **Director Profiles**: three slots (A/B/C) you can Save/Load/Clear.
+- Each profile captures your full **policy stack**: mode, targets, reserves, policy multipliers, role quotas, and signals.
+- Profiles also remember **Project Focus + Autonomy + Work pace**, so seasonal playbooks become one-click swaps.
+- Save-safe migration: old saves simply get empty profile slots.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1–2 decision ticks.
