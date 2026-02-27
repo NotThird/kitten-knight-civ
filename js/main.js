@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.8';
+  const GAME_VERSION = '0.9.9';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1308,6 +1308,10 @@
     const pick = pickWithAutonomy(scored, autonomy01(s));
     const top = pick.row;
 
+    // Surface autonomy sampling in the UI (tiny “emergence” flag).
+    k._autonomyPickNote = pick.note || '';
+    k._autonomyPickAt = s.t;
+
     const mom = momentumMul(k, top.action);
     const momNote = (mom > 1.0001) ? ` | mom x${mom.toFixed(2)}` : '';
     const autoNote = pick.note ? ` | ${pick.note}` : '';
@@ -2614,7 +2618,8 @@
     const likes = (p.likes ?? []).join(', ') || '-';
     const hates = (p.dislikes ?? []).join(', ') || '-';
     const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
-    inspectSubEl.textContent = `likes: ${likes} | hates: ${hates}${at ? ' | ' + at : ''}`;
+    const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
+    inspectSubEl.textContent = `likes: ${likes} | hates: ${hates}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -3206,7 +3211,22 @@
       const eff = efficiency(state, k);
       const mood = clamp01(Number(k.mood ?? 0.55));
       const p = k.personality ?? genPersonality(k.id ?? 0);
-      const traits = `${(p.likes ?? []).join(',')}${(p.dislikes?.length?` | hates ${p.dislikes.join(',')}`:'')}`;
+      const likes = Array.isArray(p.likes) ? p.likes : [];
+      const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
+
+      // Traits: keep the table readable; put the full list in a tooltip.
+      const traitsShort = `likes:${likes.length}${dislikes.length ? ` hates:${dislikes.length}` : ''}`;
+      const traitsTitle = `${likes.join(',')}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`;
+
+      // Pref: show whether the current task aligns with the kitten's likes/dislikes.
+      // Also surface an “Autonomy sampled” tag if they didn’t pick the #1 scored action this tick.
+      const prefParts = [];
+      if (likes.includes(k.task)) prefParts.push('Like');
+      if (dislikes.includes(k.task)) prefParts.push('Dislike');
+      const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2);
+      if (autoFresh) prefParts.push('Autonomy');
+      const pref = prefParts.length ? prefParts.join(' / ') : '-';
+
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
@@ -3218,7 +3238,8 @@
         <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
         <td title="Aptitude (highest skill level) — kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
-        <td>${escapeHtml(traits)}</td>
+        <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
+        <td title="Preference alignment for current task (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
       `;
       kittensEl.appendChild(tr);
@@ -3982,6 +4003,8 @@
       for (const k of s.kittens) {
         delete k._lastScores;
         delete k._lastScoredAt;
+        delete k._autonomyPickNote;
+        delete k._autonomyPickAt;
       }
     }
 
@@ -4097,6 +4120,8 @@
         k.taskLock = k.taskLock ?? 0;
         k._blockedAction = k._blockedAction ?? null;
         k._blockedMsg = k._blockedMsg ?? '';
+        k._autonomyPickNote = k._autonomyPickNote ?? '';
+        k._autonomyPickAt = Number(k._autonomyPickAt ?? 0) || 0;
         k._fallbackTo = null;
         k._mentor = null;
         k.blockedCooldown = k.blockedCooldown ?? {};
@@ -4122,9 +4147,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Added Director Profiles: 3 save/load slots (A/B/C) for your current mode + targets + reserves + policy + quotas.');
-    log('- Profiles also remember Project Focus + Autonomy + Work pace (so seasonal playbooks are one click).');
-    log('- Tip: save Winter Prep in A, Expand in B, and Advance in C.');
+    log('- Colony table: Traits are now compact (counts) with full details in tooltip.');
+    log('- New Pref column: shows when a kitten is doing a liked/disliked task, plus an “Autonomy” tag when they sampled a non-#1 choice.');
+    log('- Inspector now also shows the autonomy sampling note when it happens.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

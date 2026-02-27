@@ -334,3 +334,22 @@ Files touched
 
 What to try
 - Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1–2 decision ticks.
+
+---
+
+## 2026-02-27 16:23 CST - v0.9.9 Preference + autonomy flags in colony table
+
+Summary
+- Colony table **Traits** column is now compact (likes/hates counts) with the full list in a tooltip.
+- Added a new **Pref** column that shows when a kitten is doing a **liked** or **disliked** task.
+- Pref also surfaces an **Autonomy** tag when the kitten sampled a non-#1 scored option (tiny emergent behavior signal).
+- Decision inspector now includes the autonomy sampling note when it happens.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set **Autonomy** to 80–100%, then click kittens and look for “autonomy picked #2/3” in the inspector + **Autonomy** tags in Pref.
