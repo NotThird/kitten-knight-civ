@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.9';
+  const GAME_VERSION = '0.9.10';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -245,7 +245,9 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 },
+    // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
+    social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -1063,6 +1065,36 @@
     return clamp01(a);
   }
 
+  function discipline01(s){
+    const d = Number(s?.director?.discipline ?? 0.40);
+    return clamp01(d);
+  }
+
+  function dissent01(s){
+    const x = Number(s?.social?.dissent ?? 0);
+    return clamp01(x);
+  }
+
+  // Effective autonomy is the *felt* autonomy after discipline + dissent.
+  // - Discipline reduces wandering / "near-top" sampling (more compliance)
+  // - Dissent increases it (more emergent, less plan-perfect)
+  function effectiveAutonomy01(s){
+    const a = autonomy01(s);
+    const d = discipline01(s);
+    const dis = dissent01(s);
+    return clamp01(a * (1 - 0.60*d) + dis * 0.25);
+  }
+
+  // Compliance scales how strongly plan/role pressure works.
+  // Higher dissent reduces it; higher discipline restores it.
+  function compliance01(s){
+    const dis = dissent01(s);
+    const a = autonomy01(s);
+    const d = discipline01(s);
+    const c = 1 - dis * (0.35 + 0.35*a) + d * 0.35;
+    return Math.max(0.45, Math.min(1.15, c));
+  }
+
   // Autonomy sampling: at higher autonomy, kittens sometimes pick a near-top alternative.
   // This makes behavior feel less perfectly optimized while staying explainable (we still show scores).
   function pickWithAutonomy(scored, a01){
@@ -1099,24 +1131,25 @@
 
     // Autonomy: higher autonomy means individuals resist rigid specialization a bit.
     // (They still specialize via skills + the plan; this just dampens the role push.)
-    const a = autonomy01(state);
+    const a = effectiveAutonomy01(state);
+    const comp = compliance01(state);
     const roleMul = 1.10 - 0.35 * a; // 1.10 @ 0% autonomy → 0.75 @ 100%
 
     for (const row of scored) {
       if (!def.actions.includes(row.action)) continue;
       const lvl = k.skills[def.skill] ?? 1;
       const base = Math.min(22, 8 + (lvl-1) * 3.5);
-      const add = base * roleMul;
+      const add = base * roleMul * comp;
       row.score += add;
-      row.reasons.push(`role=${role} (${def.skill} L${lvl}) → +${add.toFixed(0)}`);
+      row.reasons.push(`role=${role} (${def.skill} L${lvl}) → +${add.toFixed(0)}` + (comp < 0.95 ? ` (comp x${comp.toFixed(2)})` : ''));
     }
   }
 
   function applyPersonalityPressure(scored, k){
     // Preferences add a nudge so individuals feel different.
-    // Autonomy controls how strongly likes/dislikes pull vs colony policy.
+    // Effective autonomy controls how strongly likes/dislikes pull vs colony policy.
     const p = k.personality ?? genPersonality(k.id ?? 0);
-    const a = autonomy01(state);
+    const a = effectiveAutonomy01(state);
 
     const likeBonus = 6 + 10 * a;      // 6..16
     const dislikePenalty = 4 + 8 * a;  // 4..12
@@ -1195,7 +1228,7 @@
     // It intentionally moves slowly and has small effects.
     let m = clamp01(Number(k.mood ?? 0.55));
     const p = k.personality ?? genPersonality(k.id ?? 0);
-    const a = autonomy01(s);
+    const a = effectiveAutonomy01(s);
 
     // Autonomy makes personality alignment matter more (good *and* bad).
     if (p.likes?.includes(task)) m += (0.010 + 0.020 * a);
@@ -1227,6 +1260,11 @@
     const wp = workPaceMul(s);
     if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 → -0.0036 / sec
     if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 → +0.0020 / sec
+
+    // Discipline (cohesion) has a small, steady morale cost.
+    // It's intentionally subtle so it's a strategic lever, not a "never use" trap.
+    const d = discipline01(s);
+    m -= d * 0.0018; // at 100% → -0.0018 / sec
 
     k.mood = clamp01(m);
   }
@@ -1305,7 +1343,7 @@
     applyPersonalityPressure(scored, k);
     scored.sort((a,b)=>b.score-a.score);
 
-    const pick = pickWithAutonomy(scored, autonomy01(s));
+    const pick = pickWithAutonomy(scored, effectiveAutonomy01(s));
     const top = pick.row;
 
     // Surface autonomy sampling in the UI (tiny “emergence” flag).
@@ -2045,6 +2083,10 @@
 
   function applyPlanPressure(scored, plan){
     if (!plan) return;
+
+    // Social layer: dissent reduces obedience to the central plan; discipline restores it.
+    const comp = compliance01(state);
+
     for (const row of scored) {
       const a = row.action;
       const want = plan.desired[a] ?? 0;
@@ -2054,13 +2096,15 @@
       const need = want - have;
       // Underfilled tasks get a strong but bounded bonus; overfilled get a mild penalty.
       if (need > 0) {
-        const add = Math.min(26, 10 + need * 9);
+        const add0 = Math.min(26, 10 + need * 9);
+        const add = add0 * comp;
         row.score += add;
-        row.reasons.push(`plan need ${have}/${want} → +${add.toFixed(0)}`);
+        row.reasons.push(`plan need ${have}/${want} → +${add.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       } else {
-        const sub = Math.min(18, 6 + (-need) * 6);
+        const sub0 = Math.min(18, 6 + (-need) * 6);
+        const sub = sub0 * comp;
         row.score -= sub;
-        row.reasons.push(`plan full ${have}/${want} → -${sub.toFixed(0)}`);
+        row.reasons.push(`plan full ${have}/${want} → -${sub.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       }
     }
   }
@@ -2114,7 +2158,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2127,9 +2171,66 @@
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
+    state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
+
+    // --- Social pressure: Dissent
+    // Emergent behavior layer: when mood is low and policy is harsh, kittens become less compliant.
+    // Discipline restores compliance but has a morale cost (see updateMoodPerSecond).
+    state.social = state.social ?? { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 };
+    if (!('dissent' in state.social)) state.social.dissent = 0;
+    if (!('band' in state.social)) state.social.band = 'calm';
+    if (!('lastLogBand' in state.social)) state.social.lastLogBand = '';
+    if (!('lastLogAt' in state.social)) state.social.lastLogAt = 0;
+
+    state._dissentTimer = (state._dissentTimer ?? 0) + dt;
+    if (state._dissentTimer >= 1) {
+      state._dissentTimer = 0;
+
+      const n = Math.max(1, state.kittens.length);
+      const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)),0) / n) : 0.55;
+      const wp = workPaceMul(state);
+      const rat = getRations(state);
+      const hungerStress = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.hunger ?? 0)),0) / n) : 0;
+      const alarmStress = state.signals?.ALARM ? 1 : 0;
+
+      // Desired dissent is intentionally coarse: it responds to "this feels bad" signals.
+      // avgMood below ~0.55 drives it up; higher work pace + tight rations drive it up.
+      let desire = 0;
+      desire += Math.max(0, 0.55 - avgMood) * 1.6;      // mood is the biggest driver
+      desire += Math.max(0, (wp - 1)) * 0.9;            // overwork
+      desire += (rat.foodUse > 1.05 ? 0.08 : rat.foodUse < 0.95 ? -0.06 : 0); // tight/feast proxy
+      desire += Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
+      desire += alarmStress * 0.06;
+
+      // Discipline reduces how quickly dissent forms (but never to zero).
+      const disPol = discipline01(state);
+      desire *= (1 - 0.45 * disPol);
+
+      const target = clamp01(desire);
+      const cur = clamp01(Number(state.social.dissent ?? 0));
+      const next = cur + (target - cur) * 0.045; // smoothing (≈ 20-25s to swing hard)
+      state.social.dissent = clamp01(next);
+
+      // Banding + explainable log events on crossing.
+      const dis = state.social.dissent;
+      const band = (dis >= 0.70) ? 'strike' : (dis >= 0.45) ? 'murmur' : 'calm';
+      state.social.band = band;
+
+      const now = Number(state.t ?? 0);
+      const cooldown = 22;
+      if (band !== state.social.lastLogBand && (now - Number(state.social.lastLogAt ?? 0)) > cooldown) {
+        state.social.lastLogBand = band;
+        state.social.lastLogAt = now;
+        if (band === 'murmur') log('Murmurs of dissent: kittens are less compliant with the plan (consider easing work pace, improving rations, or raising Discipline).');
+        if (band === 'strike') log('Work slowdown: dissent is high — kittens wander/rotate more and central planning weakens until conditions improve.');
+        if (band === 'calm') log('Cohesion restored: dissent falls; the colony follows the plan more reliably again.');
+      }
+    }
+
     if (state.director.autoWinterPrep) {
       // Turn ON in late Fall (stockpile window) and keep it through Winter.
       if (!state.director.winterPrep && season.name === 'Fall' && season.phase >= 0.60) {
@@ -2848,7 +2949,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2861,8 +2962,10 @@
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
+    state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
 
     const wp = !!state.director.winterPrep;
@@ -3073,7 +3176,11 @@
     const arLine = arOn ? `Auto recruit: ON (Spring; ${arYear === curYear ? 'already recruited this year' : 'eligible'})\n` : '';
 
     const aut = autonomy01(state);
-    const autLine = `Autonomy: ${Math.round(aut*100)}% (likes +${(6+10*aut).toFixed(0)} / dislikes -${(4+8*aut).toFixed(0)})\n`;
+    const disPol = discipline01(state);
+    const dis = dissent01(state);
+    const effAut = effectiveAutonomy01(state);
+    const comp = compliance01(state);
+    const autLine = `Autonomy: ${Math.round(aut*100)}% (effective ${Math.round(effAut*100)}%) | Discipline: ${Math.round(disPol*100)}% | Dissent: ${Math.round(dis*100)}% (compliance x${comp.toFixed(2)})\n`;
 
     // Simple projections (explainability): "if the last ~8s trend holds, where will we be by season change / Winter?"
     const nPop = Math.max(1, state.kittens.length);
@@ -3137,15 +3244,31 @@
 
     // Autonomy (central planning vs individual preference)
     const a = autonomy01(state);
+    const effA = effectiveAutonomy01(state);
+    const disNow = dissent01(state);
+    const compNow = compliance01(state);
+
     const aPct = Math.round(a * 100);
     const aEl = el('autonomy');
     if (aEl) aEl.value = String(Math.round(aPct/5)*5);
     const ah = el('autonomyHint');
     if (ah) {
-      const likeBonus = 6 + 10 * a;
-      const dislikePenalty = 4 + 8 * a;
-      const roleMul = 1.10 - 0.35 * a;
-      ah.textContent = `${aPct}% | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)}`;
+      const likeBonus = 6 + 10 * effA;
+      const dislikePenalty = 4 + 8 * effA;
+      const roleMul = 1.10 - 0.35 * effA;
+      ah.textContent = `${aPct}% (effective ${Math.round(effA*100)}%) | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)} | dissent ${Math.round(disNow*100)}% (comp x${compNow.toFixed(2)})`;
+    }
+
+    // Discipline (cohesion / compliance)
+    const d = discipline01(state);
+    const dPct = Math.round(d * 100);
+    const dEl = el('discipline');
+    if (dEl) dEl.value = String(Math.round(dPct/5)*5);
+    const dh = el('disciplineHint');
+    if (dh) {
+      const effAut = effectiveAutonomy01(state);
+      const compNow = compliance01(state);
+      dh.textContent = `${dPct}% | compliance x${compNow.toFixed(2)} | effective autonomy ${Math.round(effAut*100)}% | morale cost (small)`;
     }
 
     // Work pace (global throughput vs fatigue lever)
@@ -3534,7 +3657,7 @@
   });
 
   function snapshotDirectorSettings(){
-    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     return {
       mode: state.mode,
       rations: state.rations,
@@ -3546,6 +3669,7 @@
       director: {
         projectFocus: String(state.director.projectFocus ?? 'Auto'),
         autonomy: clamp01(Number(state.director.autonomy ?? 0.60)),
+        discipline: clamp01(Number(state.director.discipline ?? 0.40)),
         workPace: Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00)),
       },
     };
@@ -3561,11 +3685,12 @@
     state.roleQuota = snap.roleQuota ?? state.roleQuota;
     state.signals = snap.signals ?? state.signals;
 
-    // Restore director knobs (project focus + autonomy/work pace) if present.
-    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    // Restore director knobs (project focus + autonomy/discipline/work pace) if present.
+    state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (snap.director) {
       if ('projectFocus' in snap.director) state.director.projectFocus = String(snap.director.projectFocus ?? 'Auto');
       if ('autonomy' in snap.director) state.director.autonomy = clamp01(Number(snap.director.autonomy ?? 0.60));
+      if ('discipline' in snap.director) state.director.discipline = clamp01(Number(snap.director.discipline ?? 0.40));
       if ('workPace' in snap.director) state.director.workPace = Math.max(0.8, Math.min(1.2, Number(snap.director.workPace ?? 1.00) || 1.00));
     }
 
@@ -3841,16 +3966,28 @@
 
   const autEl = document.getElementById('autonomy');
   if (autEl) autEl.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    if (!('discipline' in state.director)) state.director.discipline = 0.40;
     const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     state.director.autonomy = clamp01(pct / 100);
     save();
     render();
   });
 
+  const disEl = document.getElementById('discipline');
+  if (disEl) disEl.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    state.director.discipline = clamp01(pct / 100);
+    log(`Discipline → ${Math.round(state.director.discipline * 100)}%`);
+    save();
+    render();
+  });
+
   const wpEl = document.getElementById('workPace');
   if (wpEl) wpEl.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    if (!('discipline' in state.director)) state.director.discipline = 0.40;
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
     log(`Work pace → ${Math.round(state.director.workPace * 100)}%`);

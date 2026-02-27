@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 16:38 CST - v0.9.10 Social layer: Dissent + Discipline (plan compliance becomes emergent)
+
+Summary
+- Added a **Dissent** meter (0â€“100%) that rises when mood is low + policies are harsh (high work pace, tight rations, prolonged hunger, alarms).
+- Dissent directly reduces **plan + role pressure** via a new *Compliance* multiplier; high dissent means more wandering/rotation and less perfect central planning.
+- Added a new Director slider: **Discipline** â€” restores compliance and reduces effective autonomy sampling, but has a small steady **morale cost**.
+- Added explainability: Season panel shows Autonomy (base + effective), Discipline, Dissent, and current **compliance xâ€¦**.
+- Save-safe: new fields default in (director.discipline, social.dissent). Old saves auto-initialize.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Set **Work pace 120% + Tight rations** and watch Dissent climb (plan compliance drops), then raise **Discipline** or ease policies to restore cohesion.
+
+---
+
 ## 2026-02-27 15:22 CST - v0.9.5 Advisor quick actions (click to apply policy nudges)
 
 Summary
@@ -285,7 +306,7 @@ What to try
 
 Summary
 - Autonomy no longer just weights likes/dislikes/roles: at higher autonomy, kittens will occasionally choose a **near-top alternative** instead of always taking the single best score.
-- This makes the colony feel more “civ sim”: same policy can produce different individual behaviors (without turning into pure randomness).
+- This makes the colony feel more ï¿½civ simï¿½: same policy can produce different individual behaviors (without turning into pure randomness).
 - Kept explainable: the **Why** line now shows when autonomy caused a non-top pick (e.g. `autonomy picked #2/3`).
 - Inspector still shows the full top scoring list so you can see what they *could* have done.
 
@@ -295,7 +316,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens “freestyle” into research/industry even while the plan biases food/wood.
+- Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens ï¿½freestyleï¿½ into research/industry even while the plan biases food/wood.
 
 ---
 
@@ -305,7 +326,7 @@ Summary
 - Added a **Projects** panel under Plan debug: shows live progress bars for Hut/Palisade/Granary/Workshop/Library.
 - Each project includes a 1-click **Focus** button that sets Project focus (a build-order nudge) without hunting the dropdown.
 - Explicitly surfaces when building is **blocked by your Wood reserve**, so "stalled" progress is explainable (buffers did it).
-- Kept Season panel’s compact "Projects:" summary line for quick scanning.
+- Kept Season panelï¿½s compact "Projects:" summary line for quick scanning.
 
 Files touched
 - `prototype/index.html`
@@ -333,7 +354,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1–2 decision ticks.
+- Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1ï¿½2 decision ticks.
 
 ---
 
@@ -352,4 +373,4 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set **Autonomy** to 80–100%, then click kittens and look for “autonomy picked #2/3” in the inspector + **Autonomy** tags in Pref.
+- Set **Autonomy** to 80ï¿½100%, then click kittens and look for ï¿½autonomy picked #2/3ï¿½ in the inspector + **Autonomy** tags in Pref.
