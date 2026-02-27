@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.3';
+  const GAME_VERSION = '0.9.4';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2807,6 +2807,16 @@
     const aut = autonomy01(state);
     const autLine = `Autonomy: ${Math.round(aut*100)}% (likes +${(6+10*aut).toFixed(0)} / dislikes -${(4+8*aut).toFixed(0)})\n`;
 
+    // Simple projections (explainability): "if the last ~8s trend holds, where will we be by season change / Winter?"
+    const nPop = Math.max(1, state.kittens.length);
+    const remSeason = secondsToNextSeason(state);
+    const remWinter = secondsToNextWinter(state);
+    const projFoodSeason = Math.max(0, Number(state.res.food ?? 0) + foodRate * remSeason);
+    const projWarmSeason = Math.max(0, Number(state.res.warmth ?? 0) + warmthRate * remSeason);
+    const projFoodWinter = Math.max(0, Number(state.res.food ?? 0) + foodRate * remWinter);
+    const projWarmWinter = Math.max(0, Number(state.res.warmth ?? 0) + warmthRate * remWinter);
+    const forecastLine = `Forecast (trends hold): end-season food ${fmt(projFoodSeason)} (${fmt(projFoodSeason/nPop)}/kitten), warmth ${fmt(projWarmSeason)} | at Winter food ${fmt(projFoodWinter)} (${fmt(projFoodWinter/nPop)}/kitten), warmth ${fmt(projWarmWinter)}\n`;
+
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
@@ -2816,6 +2826,7 @@
       festLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
+      forecastLine +
       `Danger forecast: food→0 in ${starveEta} | warmth→0 in ${freezeEta}\n` +
       `Preserved: jerky ${fmt(state.res.jerky ?? 0)} (no spoilage)\n` +
       (() => {
@@ -3828,9 +3839,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Autonomy slider (central planning vs kitten individuality). Higher autonomy boosts likes/dislikes + rotation; lower autonomy boosts role pressure.');
-    log('- Mood: personality alignment now scales with Autonomy (emergent behavior becomes more noticeable).');
-    log('- Explainability: Season panel shows Autonomy details (+likes/-dislikes).');
+    log('- Explainability: added Season forecast lines (end-of-season + Winter) for food/kitten and warmth, based on recent trends.');
+    log('- This is a projection, not a promise: it assumes the last few seconds of rates continue.');
+    log('- Use it to decide when to toggle Winter Prep / Crisis, or when you can safely push growth.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

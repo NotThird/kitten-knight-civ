@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 15:07 CST - v0.9.4 Season forecast (end-of-season + Winter projections)
+
+Summary
+- Added **Season forecast** lines: projects food/kitten + warmth at **end of season** and **at Winter start** using the smoothed trend rates.
+- Forecast is explicitly *best-effort*: it assumes the last few seconds of rates continue (good for spotting spirals early).
+- Makes Director policy more legible: you can see whether you’re safe to push growth or should toggle Winter Prep / Crisis.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Watch the Season forecast while toggling **Rations** and **Work pace**; see if the Winter projection flips from red-zone to stable.
+
+---
+
 ## 2026-02-27 14:52 CST - v0.9.3 Auto Recruit (Spring immigration)
 
 Summary
