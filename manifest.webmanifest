@@ -1,0 +1,11 @@
+{
+  "name": "Kitten Knight (Civ)",
+  "short_name": "KittenKnight",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "icons": [
+    {"src": "./icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
