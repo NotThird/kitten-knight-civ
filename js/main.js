@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.7';
+  const GAME_VERSION = '0.8.8';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -205,7 +205,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -1849,12 +1849,15 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoMode' in state.director)) state.director.autoMode = false;
+    if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
+    if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (state.director.autoWinterPrep) {
       // Turn ON in late Fall (stockpile window) and keep it through Winter.
@@ -1937,6 +1940,27 @@
         const changed = (Math.abs(prev.food - recFood) >= 10) || (Math.abs(prev.wood - recWood) >= 2) || (Math.abs(prev.science - recSci) >= 5) || (Math.abs(prev.tools - recTools) >= 5);
         if (changed) {
           log(`Auto Reserves: food≥${recFood}, wood≥${recWood}, science≥${recSci}, tools≥${recTools}`);
+        }
+      }
+    }
+
+    // Director automation: optional auto-mode switching.
+    // Goal: reduce micro by picking Survive/Expand/Defend/Advance based on obvious stability signals.
+    // It respects Crisis Protocol (manual) and only changes occasionally to avoid flapping.
+    if (state.director.autoMode && !state.director.crisis) {
+      state._autoModeTimer = (state._autoModeTimer ?? 0) + dt;
+      if (state._autoModeTimer >= 1) {
+        state._autoModeTimer = 0;
+
+        // Guard against mode-flapping: require a small cooldown between switches.
+        state.director.autoModeNextChangeAt = Number(state.director.autoModeNextChangeAt ?? 0) || 0;
+        if (state.t >= state.director.autoModeNextChangeAt) {
+          const choice = chooseAutoMode(state);
+          state.director.autoModeWhy = choice.why;
+          if (choice.mode && choice.mode !== state.mode) {
+            setModeCore(choice.mode, `Auto Mode: ${choice.why}`);
+            state.director.autoModeNextChangeAt = state.t + 15;
+          }
         }
       }
     }
@@ -2266,12 +2290,15 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoMode' in state.director)) state.director.autoMode = false;
+    if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
+    if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
 
     const wp = !!state.director.winterPrep;
@@ -2293,6 +2320,8 @@
     if (autoFood) autoFood.checked = !!state.director.autoFoodCrisis;
     const autoRes = el('autoReserves');
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
+    const autoMode = el('autoMode');
+    if (autoMode) autoMode.checked = !!state.director.autoMode;
 
     // Timed effects (for old saves)
     state.effects = state.effects ?? { festivalUntil: 0 };
@@ -2411,9 +2440,14 @@
     const festLeft = festivalSecondsLeft(state);
     const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) — morale drifting up\n` : '';
 
+    const amOn = !!state.director?.autoMode;
+    const amWhy = String(state.director?.autoModeWhy ?? '').trim();
+    const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
+
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
+      amLine +
       festLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
@@ -2970,6 +3004,17 @@
     render();
   });
 
+  const autoModeEl = document.getElementById('autoMode');
+  if (autoModeEl) autoModeEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
+    state.director.autoMode = !!e.target.checked;
+    // Allow an immediate switch when toggled on.
+    if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
+    log(`Auto Mode → ${state.director.autoMode ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
   const pfEl = document.getElementById('projectFocus');
   if (pfEl) pfEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
@@ -2995,14 +3040,69 @@
   document.getElementById('modeDefend').addEventListener('click', () => setMode('Defend'));
   document.getElementById('modeResearch').addEventListener('click', () => setMode('Advance'));
 
-  function setMode(m){
+  function chooseAutoMode(s){
+    const season = seasonAt(s.t);
+    const targets = seasonTargets(s);
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    const foodPerKitten = Number(s.res?.food ?? 0) / n;
+    const warmth = Number(s.res?.warmth ?? 0);
+    const threat = Number(s.res?.threat ?? 0);
+    const cap = housingCap(s);
+
+    // Threat spikes should get immediate attention.
+    if (s.signals?.ALARM || threat > targets.maxThreat * 1.15) {
+      return { mode: 'Defend', why: s.signals?.ALARM ? 'ALARM active' : `threat high (${fmt(threat)} > ${(targets.maxThreat*1.15).toFixed(0)})` };
+    }
+
+    // Hard survival checks.
+    if (season.name === 'Winter' && warmth < (targets.warmth - 8)) {
+      return { mode: 'Survive', why: `winter warmth low (${fmt(warmth)} < ${targets.warmth-8})` };
+    }
+    if (foodPerKitten < targets.foodPerKitten * 0.75) {
+      return { mode: 'Survive', why: `food/kitten low (${fmt(foodPerKitten)} < ${(targets.foodPerKitten*0.75).toFixed(0)})` };
+    }
+
+    // Housing pressure: expand.
+    if ((s.kittens?.length ?? 0) >= cap || s.signals?.BUILD) {
+      return { mode: 'Expand', why: (s.kittens?.length ?? 0) >= cap ? `housing cap (${s.kittens.length}/${cap})` : 'BUILD push' };
+    }
+
+    // If stable, push tech/industry.
+    const stableFood = foodPerKitten >= targets.foodPerKitten * 1.02;
+    const stableWarmth = warmth >= targets.warmth;
+    const stableThreat = threat <= targets.maxThreat * 0.95;
+
+    if (stableFood && stableWarmth && stableThreat) {
+      // If tools are lagging, Advance tends to self-correct via workshop/craft/research.
+      if (s.unlocked?.workshop && (Number(s.res?.tools ?? 0) < n * 8) && (Number(s.res?.science ?? 0) > 120)) {
+        return { mode: 'Advance', why: `stable + tools behind (${fmt(s.res.tools ?? 0)}/${(n*8).toFixed(0)})` };
+      }
+      return { mode: 'Advance', why: 'stable basics → push tech' };
+    }
+
+    // Default: Survive (keeps buffers healthy without overcommitting).
+    return { mode: 'Survive', why: 'not clearly stable yet' };
+  }
+
+  function setModeCore(m, note){
+    if (state.mode === m) return;
     state.mode = m;
+
+    // Keep mode effects centralized so Auto Mode + manual clicks behave identically.
     if (m === 'Survive') { state.targets.foodPerKitten = Math.max(state.targets.foodPerKitten, 130); state.targets.warmth = Math.max(state.targets.warmth, 65); state.signals.BUILD = false; }
     if (m === 'Expand') { state.targets.foodPerKitten = Math.max(115, Math.min(145, state.targets.foodPerKitten)); state.targets.warmth = Math.max(55, state.targets.warmth); state.signals.BUILD = true; }
     if (m === 'Defend') { state.targets.maxThreat = Math.min(55, state.targets.maxThreat); state.signals.ALARM = !!state.unlocked.security; }
     if (m === 'Advance') { state.targets.foodPerKitten = Math.max(state.targets.foodPerKitten, 120); state.signals.BUILD = false; }
-    log(`Mode → ${m}`);
+
+    // Security gate
+    if (!state.unlocked.security) state.signals.ALARM = false;
+
+    log(note || `Mode → ${m}`);
     save();
+  }
+
+  function setMode(m){
+    setModeCore(m, `Mode → ${m}`);
     render();
   }
 
@@ -3194,7 +3294,7 @@
       s.res.workshops = s.res.workshops ?? 0;
       s.res.libraries = s.res.libraries ?? 0;
       s.signals = s.signals ?? { BUILD:false, FOOD:false, ALARM:false };
-      s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+      s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
       s.effects = s.effects ?? { festivalUntil: 0 };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
@@ -3213,6 +3313,9 @@
       if (!('autoWinterPrep' in s.director)) s.director.autoWinterPrep = false;
       if (!('autoFoodCrisis' in s.director)) s.director.autoFoodCrisis = false;
       if (!('autoReserves' in s.director)) s.director.autoReserves = false;
+      if (!('autoMode' in s.director)) s.director.autoMode = false;
+      if (!('autoModeNextChangeAt' in s.director)) s.director.autoModeNextChangeAt = 0;
+      if (!('autoModeWhy' in s.director)) s.director.autoModeWhy = '';
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
 
       // Effects migration
@@ -3283,9 +3386,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Offline gains — on load, the sim auto-advances up to ~3 minutes based on last save time.');
-    log('- The cap is intentional (prevents runaway spirals + keeps the event log readable).');
-    log('- Save-safe: adds meta.lastTs to saves (older saves default to 0).');
+    log('- New: Auto Mode (Director) — optional mode switching (Survive/Expand/Defend/Advance) based on stability.');
+    log('- It changes slowly (cooldown) to avoid mode-flapping; explanation shows in the Season panel.');
+    log('- Save-safe: adds director.autoMode* fields (older saves default OFF).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

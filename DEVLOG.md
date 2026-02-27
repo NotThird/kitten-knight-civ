@@ -102,3 +102,24 @@ Files touched
 
 What to try
 - Intentionally dip below food/kitten or warmth target and see if Advisor recommends the same nudge you’d do manually (Forage/Farm/StokeFire/Guard).
+
+---
+
+## 2026-02-27 13:22 CST — v0.8.8 Auto Mode (director mode switching)
+
+Summary
+- Added **Auto Mode** toggle (Director) to automatically switch Mode (Survive/Expand/Defend/Advance) based on simple stability checks.
+- Added an **explanation line** to the Season panel showing *why* Auto Mode is currently choosing its behavior.
+- Implemented a **15s cooldown** between Auto Mode switches to prevent mode-flapping.
+- Refactored mode switching into a shared `setModeCore(...)` so manual clicks and Auto Mode behave identically.
+- Save-safe migration: older saves default `director.autoMode*` fields to OFF.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Turn on **Auto Mode**, then deliberately trigger a shortage (drop warmth or food/kitten) and watch it snap to Survive/Defend; stabilize and see it drift back to Advance.
