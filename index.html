@@ -83,6 +83,14 @@
 
       <div style="height:8px"></div>
       <div class="row">
+        <label class="small" title="Central planning vs autonomy. Higher autonomy makes kittens follow their likes/dislikes more strongly (more emergent behavior) but can reduce perfect compliance with your policy nudges.">Autonomy
+          <input type="range" id="autonomy" min="0" max="100" step="5">
+        </label>
+        <span class="small" id="autonomyHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
         <label class="small">Target food/kitten <input type="number" id="targetFood" min="0" step="10" style="width:90px"></label>
         <label class="small">Target warmth <input type="number" id="targetWarmth" min="0" step="10" style="width:90px"></label>
         <label class="small">Max threat <input type="number" id="targetThreat" min="0" step="10" style="width:90px"></label>

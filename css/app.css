@@ -20,7 +20,8 @@
 
     .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .row > * { flex:0 0 auto; }
-    select, input[type="number"] { background:rgba(0,0,0,.22); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:6px 8px; border-radius:10px; }
+    select, input[type="number"], input[type="range"] { background:rgba(0,0,0,.22); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:6px 8px; border-radius:10px; }
+    input[type="range"] { padding:0; height:22px; width:160px; }
     input[type="checkbox"] { transform: translateY(1px); }
 
     table { width:100%; border-collapse:collapse; }

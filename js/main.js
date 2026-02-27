@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.0';
+  const GAME_VERSION = '0.9.1';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -243,7 +243,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -1034,33 +1034,50 @@
     }
   }
 
+  function autonomy01(s){
+    const a = Number(s?.director?.autonomy ?? 0.60);
+    return clamp01(a);
+  }
+
   function applyRolePressure(scored, k){
     const role = k.role ?? 'Generalist';
     if (role === 'Generalist') return;
     const def = roleDefs.find(r=>r.id===role);
     if (!def) return;
+
+    // Autonomy: higher autonomy means individuals resist rigid specialization a bit.
+    // (They still specialize via skills + the plan; this just dampens the role push.)
+    const a = autonomy01(state);
+    const roleMul = 1.10 - 0.35 * a; // 1.10 @ 0% autonomy → 0.75 @ 100%
+
     for (const row of scored) {
       if (!def.actions.includes(row.action)) continue;
       const lvl = k.skills[def.skill] ?? 1;
-      const add = Math.min(22, 8 + (lvl-1) * 3.5);
+      const base = Math.min(22, 8 + (lvl-1) * 3.5);
+      const add = base * roleMul;
       row.score += add;
       row.reasons.push(`role=${role} (${def.skill} L${lvl}) → +${add.toFixed(0)}`);
     }
   }
 
   function applyPersonalityPressure(scored, k){
-    // Preferences add a small nudge so individuals feel different.
-    // Also add a boredom penalty for doing the exact same task for too long.
+    // Preferences add a nudge so individuals feel different.
+    // Autonomy controls how strongly likes/dislikes pull vs colony policy.
     const p = k.personality ?? genPersonality(k.id ?? 0);
+    const a = autonomy01(state);
+
+    const likeBonus = 6 + 10 * a;      // 6..16
+    const dislikePenalty = 4 + 8 * a;  // 4..12
+    const boreMul = 0.6 + 0.8 * a;     // 0.6..1.4
 
     for (const row of scored) {
       if (p.likes?.includes(row.action)) {
-        row.score += 10;
-        row.reasons.push(`likes ${row.action} → +10`);
+        row.score += likeBonus;
+        row.reasons.push(`likes ${row.action} → +${likeBonus.toFixed(0)}`);
       }
       if (p.dislikes?.includes(row.action)) {
-        row.score -= 6;
-        row.reasons.push(`dislikes ${row.action} → -6`);
+        row.score -= dislikePenalty;
+        row.reasons.push(`dislikes ${row.action} → -${dislikePenalty.toFixed(0)}`);
       }
 
       if (row.action === (k.task ?? '')) {
@@ -1068,7 +1085,7 @@
         const streak = Number(k.taskStreak ?? 0);
         const noBore = ['BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary'];
         if (!noBore.includes(row.action) && streak > 8) {
-          const sub = Math.min(18, (streak - 8) * 2);
+          const sub = Math.min(18, (streak - 8) * 2) * boreMul;
           row.score -= sub;
           row.reasons.push(`bored of ${row.action} (${streak}s) → -${sub.toFixed(0)}`);
         }
@@ -1126,9 +1143,11 @@
     // It intentionally moves slowly and has small effects.
     let m = clamp01(Number(k.mood ?? 0.55));
     const p = k.personality ?? genPersonality(k.id ?? 0);
+    const a = autonomy01(s);
 
-    if (p.likes?.includes(task)) m += 0.020;
-    if (p.dislikes?.includes(task)) m -= 0.030;
+    // Autonomy makes personality alignment matter more (good *and* bad).
+    if (p.likes?.includes(task)) m += (0.010 + 0.020 * a);
+    if (p.dislikes?.includes(task)) m -= (0.012 + 0.030 * a);
 
     // Comfort actions feel good.
     if (task === 'Eat' || task === 'Rest') m += 0.010;
@@ -2024,7 +2043,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2034,6 +2053,8 @@
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
+    if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     if (state.director.autoWinterPrep) {
       // Turn ON in late Fall (stockpile window) and keep it through Winter.
       if (!state.director.winterPrep && season.name === 'Fall' && season.phase >= 0.60) {
@@ -2467,7 +2488,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2477,6 +2498,8 @@
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
+    if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
 
     const wp = !!state.director.winterPrep;
     const wpBtn = el('btnWinterPrep');
@@ -2621,9 +2644,13 @@
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
 
+    const aut = autonomy01(state);
+    const autLine = `Autonomy: ${Math.round(aut*100)}% (likes +${(6+10*aut).toFixed(0)} / dislikes -${(4+8*aut).toFixed(0)})\n`;
+
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
+      autLine +
       amLine +
       festLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
@@ -2667,6 +2694,19 @@
     el('rations').value = state.rations;
     const rat = getRations(state);
     el('rationsHint').textContent = `food use x${rat.foodUse.toFixed(2)} | hunger relief x${rat.hungerRelief.toFixed(2)}`;
+
+    // Autonomy (central planning vs individual preference)
+    const a = autonomy01(state);
+    const aPct = Math.round(a * 100);
+    const aEl = el('autonomy');
+    if (aEl) aEl.value = String(Math.round(aPct/5)*5);
+    const ah = el('autonomyHint');
+    if (ah) {
+      const likeBonus = 6 + 10 * a;
+      const dislikePenalty = 4 + 8 * a;
+      const roleMul = 1.10 - 0.35 * a;
+      ah.textContent = `${aPct}% | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)}`;
+    }
 
     el('sigBuild').checked = !!state.signals.BUILD;
     el('sigFood').checked = !!state.signals.FOOD;
@@ -3139,12 +3179,12 @@
   }
 
   document.getElementById('btnWinterPrep').addEventListener('click', () => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     setWinterPrep(!state.director.winterPrep);
   });
 
   document.getElementById('btnCrisis').addEventListener('click', () => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     setCrisisProtocol(!state.director.crisis);
   });
 
@@ -3159,7 +3199,7 @@
 
   const autoWpEl = document.getElementById('autoWinterPrep');
   if (autoWpEl) autoWpEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoWinterPrep = !!e.target.checked;
     log(`Auto Winter Prep → ${state.director.autoWinterPrep ? 'ON' : 'OFF'}`);
     save();
@@ -3168,7 +3208,7 @@
 
   const autoFoodEl = document.getElementById('autoFoodCrisis');
   if (autoFoodEl) autoFoodEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoFoodCrisis = !!e.target.checked;
     log(`Auto Food Crisis → ${state.director.autoFoodCrisis ? 'ON' : 'OFF'}`);
     save();
@@ -3177,7 +3217,7 @@
 
   const autoResEl = document.getElementById('autoReserves');
   if (autoResEl) autoResEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoReserves = !!e.target.checked;
     log(`Auto Reserves → ${state.director.autoReserves ? 'ON' : 'OFF'}`);
     save();
@@ -3186,7 +3226,7 @@
 
   const autoModeEl = document.getElementById('autoMode');
   if (autoModeEl) autoModeEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoMode = !!e.target.checked;
     // Allow an immediate switch when toggled on.
     if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
@@ -3197,7 +3237,7 @@
 
   const pfEl = document.getElementById('projectFocus');
   if (pfEl) pfEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.projectFocus = String(e.target.value || 'Auto');
     log(`Project focus → ${state.director.projectFocus}`);
     save();
@@ -3299,6 +3339,15 @@
   document.getElementById('rations').addEventListener('change', (e)=>{
     state.rations = e.target.value;
     log(`Rations → ${state.rations}`);
+    save();
+    render();
+  });
+
+  const autEl = document.getElementById('autonomy');
+  if (autEl) autEl.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
+    const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    state.director.autonomy = clamp01(pct / 100);
     save();
     render();
   });
@@ -3474,7 +3523,7 @@
       s.res.workshops = s.res.workshops ?? 0;
       s.res.libraries = s.res.libraries ?? 0;
       s.signals = s.signals ?? { BUILD:false, FOOD:false, ALARM:false };
-      s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto' };
+      s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
       s.effects = s.effects ?? { festivalUntil: 0 };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
@@ -3497,6 +3546,8 @@
       if (!('autoModeNextChangeAt' in s.director)) s.director.autoModeNextChangeAt = 0;
       if (!('autoModeWhy' in s.director)) s.director.autoModeWhy = '';
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
+      if (!('autonomy' in s.director)) s.director.autonomy = 0.60;
+      s.director.autonomy = clamp01(Number(s.director.autonomy ?? 0.60));
 
       // Effects migration
       s.effects = s.effects ?? { festivalUntil: 0 };
@@ -3571,9 +3622,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Mentor task (unlocks with Libraries). Spend science to train a lagging kitten in your top skill.');
-    log('- Mentor is a "stable times" action: it loses to food/warmth/threat emergencies and respects science reserves.');
-    log('- UI: Mentor shows its target (#id + skill) in the Task column for explainability.');
+    log('- New: Autonomy slider (central planning vs kitten individuality). Higher autonomy boosts likes/dislikes + rotation; lower autonomy boosts role pressure.');
+    log('- Mood: personality alignment now scales with Autonomy (emergent behavior becomes more noticeable).');
+    log('- Explainability: Season panel shows Autonomy details (+likes/-dislikes).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

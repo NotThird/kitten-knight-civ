@@ -164,3 +164,24 @@ Files touched
 
 What to try
 - Reach **Libraries**, set Mode ? **Advance**, keep science above your reserve, and watch Mentoring raise underleveled skills (especially Building/Combat) over time.
+
+---
+
+## 2026-02-27 14:07 CST - v0.9.1 Autonomy slider (central planning vs individuality)
+
+Summary
+- Added **Autonomy** slider (0–100%) to tune how strongly kittens follow their personality likes/dislikes.
+- Autonomy now scales **personality scoring** (likes/dislikes) and **boredom/rotation** pressure.
+- Autonomy inversely scales **role pressure**, so low autonomy feels more "central planning" (stronger specialization push).
+- Mood alignment (likes/dislikes) now scales with Autonomy, making emergent behavior more noticeable.
+- Explainability: Season panel now prints Autonomy details (+likes/-dislikes weights).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Autonomy to **100%**, run +10s a few times, and watch kittens self-sort into liked tasks even if you keep policy multipliers at 1.0.
