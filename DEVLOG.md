@@ -62,3 +62,24 @@ Files touched
 
 What to try
 - Hoard some food/wood, hit **Hold Festival**, then watch avg mood climb and see if low-mood kittens stop bailing into Rest during a stressful Winter/ALARM window.
+
+---
+
+## 2026-02-27 12:52 CST — v0.8.6 Offline gains (small cap)
+
+Summary
+- Added **offline gains**: on load, the sim advances based on last real-world save time.
+- Capped offline simulation to **~180s** to avoid log spam and runaway spirals.
+- Save-safe migration: saves now store `meta.lastTs` (older saves default to 0).
+- Added patch notes for the new offline behavior.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `dist/js/pwa.js`
+- `DEVLOG.md`
+
+What to try
+- Play for ~30s, refresh the page, and confirm you get an “Offline gains” log line and visible resource changes.

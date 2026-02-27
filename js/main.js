@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.5';
+  const GAME_VERSION = '0.8.6';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -208,7 +208,7 @@
     director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
-    meta: { version: GAME_VERSION, seenVersion: '' },
+    meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
     log: []
   });
 
@@ -2134,6 +2134,39 @@
     if (state._saveTimer >= 2) { state._saveTimer = 0; save(); }
   }
 
+  // --- Offline gains (incremental QoL)
+  // On load, simulate some time passage based on last real-world save timestamp.
+  // Cap is intentionally small to prevent huge log spam or runaway spirals.
+  function applyOfflineProgressOnce(){
+    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0 };
+    const lastTs = Number(state.meta.lastTs ?? 0) || 0;
+    const nowTs = Date.now();
+    if (!lastTs || nowTs <= lastTs) return;
+
+    const away = (nowTs - lastTs) / 1000;
+    const cap = 180; // seconds to simulate (kept small + safe)
+    const sim = Math.min(cap, Math.max(0, away));
+
+    if (sim < 2) return;
+
+    const wasPaused = !!state.paused;
+    state.paused = false;
+
+    let rem = sim;
+    while (rem > 0) {
+      const d = Math.min(0.25, rem);
+      step(d);
+      rem -= d;
+    }
+
+    state.paused = wasPaused;
+    log(`Offline gains: simulated ${fmt(sim)}s (away ${fmt(away)}s).`);
+    save();
+  }
+
+  // Run once at boot.
+  applyOfflineProgressOnce();
+
   // --- UI
   const el = (id) => document.getElementById(id);
   const statsEl = el('stats');
@@ -3061,6 +3094,7 @@
     // Stamp version for patch-note gating.
     s.meta = s.meta ?? {};
     s.meta.version = GAME_VERSION;
+    s.meta.lastTs = Date.now();
 
     localStorage.setItem(SAVE_KEY, JSON.stringify(s));
   }
@@ -3093,11 +3127,13 @@
       s.effects = s.effects ?? { festivalUntil: 0 };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
-      s.meta = s.meta ?? { version: '', seenVersion: '' };
+      s.meta = s.meta ?? { version: '', seenVersion: '', lastTs: 0 };
       if (!('version' in s.meta)) s.meta.version = '';
       if (!('seenVersion' in s.meta)) s.meta.seenVersion = '';
+      if (!('lastTs' in s.meta)) s.meta.lastTs = 0;
       s.meta.version = String(s.meta.version ?? '');
       s.meta.seenVersion = String(s.meta.seenVersion ?? '');
+      s.meta.lastTs = Number(s.meta.lastTs ?? 0) || 0;
       // Migration safety: if older saves stored these separately
       if (!('winterPrep' in s.director)) s.director.winterPrep = false;
       if (!('saved' in s.director)) s.director.saved = null;
@@ -3171,14 +3207,14 @@
   }
 
   function maybeShowPatchNotes(){
-    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '' };
+    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0 };
     const seen = String(state.meta.seenVersion ?? '');
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Hold Festival (Director) — spend food+wood for a timed colony-wide morale boost.');
-    log('- Festival shows in the Season panel and gently increases mood drift (better efficiency + less Rest pressure).');
-    log('- Save-safe: older saves auto-add an effects timer bucket.');
+    log('- New: Offline gains — on load, the sim auto-advances up to ~3 minutes based on last save time.');
+    log('- The cap is intentional (prevents runaway spirals + keeps the event log readable).');
+    log('- Save-safe: adds meta.lastTs to saves (older saves default to 0).');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.
