@@ -91,6 +91,14 @@
 
       <div style="height:8px"></div>
       <div class="row">
+        <label class="small" title="Work pace policy. Higher = more output and faster building, but kittens burn energy/hunger faster and mood drifts down. Lower = steadier + happier but slower progress.">Work pace
+          <input type="range" id="workPace" min="80" max="120" step="5">
+        </label>
+        <span class="small" id="workPaceHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
         <label class="small">Target food/kitten <input type="number" id="targetFood" min="0" step="10" style="width:90px"></label>
         <label class="small">Target warmth <input type="number" id="targetWarmth" min="0" step="10" style="width:90px"></label>
         <label class="small">Max threat <input type="number" id="targetThreat" min="0" step="10" style="width:90px"></label>

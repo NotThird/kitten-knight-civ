@@ -170,7 +170,7 @@ What to try
 ## 2026-02-27 14:07 CST - v0.9.1 Autonomy slider (central planning vs individuality)
 
 Summary
-- Added **Autonomy** slider (0–100%) to tune how strongly kittens follow their personality likes/dislikes.
+- Added **Autonomy** slider (0ï¿½100%) to tune how strongly kittens follow their personality likes/dislikes.
 - Autonomy now scales **personality scoring** (likes/dislikes) and **boredom/rotation** pressure.
 - Autonomy inversely scales **role pressure**, so low autonomy feels more "central planning" (stronger specialization push).
 - Mood alignment (likes/dislikes) now scales with Autonomy, making emergent behavior more noticeable.
@@ -185,3 +185,22 @@ Files touched
 
 What to try
 - Set Autonomy to **100%**, run +10s a few times, and watch kittens self-sort into liked tasks even if you keep policy multipliers at 1.0.
+
+---
+
+## 2026-02-27 14:22 CST - v0.9.2 Work Pace policy lever
+
+Summary
+- Added **Work pace** (80%..120%) as a new Director policy lever: higher pace increases output/build speed, but also increases fatigue/hunger costs and slowly drifts mood downward.
+- Applied Work pace across productive tasks (forage/farm/wood/guard/research/build/craft/mentor) so the tradeoff is consistent and readable.
+- UI: added a Work pace slider + live hint (output vs fatigue + mood drift direction).
+- Save-safe migration: older saves default to Work pace = 100%.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Winter, set Work pace to **120%** for ~20â€“30s to stabilize warmth/threat, then drop to **90%** and watch mood/efficiency recover.

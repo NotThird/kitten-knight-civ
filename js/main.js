@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.1';
+  const GAME_VERSION = '0.9.2';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -243,7 +243,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -453,6 +453,14 @@
     return rationDefs[key] ?? rationDefs.Normal;
   }
 
+  // --- Work pace (player-facing policy lever)
+  // 1.00 = baseline. Higher pace increases output/build speed, but costs (fatigue/hunger) are higher and mood drifts down a bit.
+  function workPaceMul(s){
+    const raw = Number(s?.director?.workPace ?? 1.00);
+    if (!Number.isFinite(raw)) return 1.00;
+    return Math.max(0.8, Math.min(1.2, raw));
+  }
+
   // --- Task defs
   const taskDefs = {
     Eat: {
@@ -496,10 +504,11 @@
         const mult = 1 + 0.07*(k.skills.Foraging-1);
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
-        const out = 1.85 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom;
+        const wp = workPaceMul(s);
+        const out = 1.85 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
         s.res.food += out;
-        k.energy = clamp01(k.energy - dt * 0.04);
-        k.hunger = clamp01(k.hunger + dt * 0.04);
+        k.energy = clamp01(k.energy - dt * 0.04 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
         gainXP(k,'Foraging', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -520,10 +529,11 @@
         const eff = efficiency(s, k);
         const mult = 1 + 0.06*(k.skills.Cooking-1);
         const mom = momentumMul(k, 'PreserveFood');
+        const wp = workPaceMul(s);
 
         // Costs per second at eff=1 (tuned to be a midgame sink, not a free win).
-        const wantFood = 0.95 * mult * dt * eff * mom;
-        const wantWood = 0.22 * mult * dt * eff * mom;
+        const wantFood = 0.95 * mult * dt * eff * mom * wp;
+        const wantWood = 0.22 * mult * dt * eff * mom * wp;
         const useFood = Math.min(foodAvail, wantFood);
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
@@ -538,8 +548,8 @@
         const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72; // yield < 1 to keep it from dominating
 
         s.res.jerky = (s.res.jerky ?? 0) + made;
-        k.energy = clamp01(k.energy - dt * 0.03);
-        k.hunger = clamp01(k.hunger + dt * 0.02);
+        k.energy = clamp01(k.energy - dt * 0.03 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
         gainXP(k,'Cooking', dt * 0.95 * efficiency(s,k));
       }
     },
@@ -551,10 +561,11 @@
         const mult = 1 + 0.08*(k.skills.Farming-1);
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
-        const out = 2.35 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom;
+        const wp = workPaceMul(s);
+        const out = 2.35 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
         s.res.food += out;
-        k.energy = clamp01(k.energy - dt * 0.035);
-        k.hunger = clamp01(k.hunger + dt * 0.025);
+        k.energy = clamp01(k.energy - dt * 0.035 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.025 * wp);
         gainXP(k,'Farming', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -564,10 +575,11 @@
         const mult = 1 + 0.07*(k.skills.Woodcutting-1);
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
-        const out = 1.05 * mult * toolsBonus(s) * dt * eff * mom;
+        const wp = workPaceMul(s);
+        const out = 1.05 * mult * toolsBonus(s) * dt * eff * mom * wp;
         s.res.wood += out;
-        k.energy = clamp01(k.energy - dt * 0.05);
-        k.hunger = clamp01(k.hunger + dt * 0.035);
+        k.energy = clamp01(k.energy - dt * 0.05 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.035 * wp);
         gainXP(k,'Woodcutting', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -580,12 +592,13 @@
           k.hunger = clamp01(k.hunger + dt * 0.02);
           return;
         }
-        const use = Math.min(s.res.wood, 0.9 * dt);
+        const wp = workPaceMul(s);
+        const use = Math.min(s.res.wood, 0.9 * dt * wp);
         const mom = momentumMul(k, 'StokeFire');
         s.res.wood -= use;
         s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom);
-        k.energy = clamp01(k.energy - dt * 0.02);
-        k.hunger = clamp01(k.hunger + dt * 0.02);
+        k.energy = clamp01(k.energy - dt * 0.02 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
       }
     },
     Guard: {
@@ -595,9 +608,10 @@
         const base = s.unlocked.security ? 2.6 : 2.1;
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
-        s.res.threat = Math.max(0, s.res.threat - base * mult * dt * eff * mom);
-        k.energy = clamp01(k.energy - dt * 0.03);
-        k.hunger = clamp01(k.hunger + dt * 0.03);
+        const wp = workPaceMul(s);
+        s.res.threat = Math.max(0, s.res.threat - base * mult * dt * eff * mom * wp);
+        k.energy = clamp01(k.energy - dt * 0.03 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
         gainXP(k,'Combat', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -611,7 +625,8 @@
         }
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildHut');
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom;
+        const wp = workPaceMul(s);
+        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
@@ -623,8 +638,8 @@
           s.res.huts += 1;
           log(`Built a hut. Huts: ${s.res.huts}`);
         }
-        k.energy = clamp01(k.energy - dt * 0.06);
-        k.hunger = clamp01(k.hunger + dt * 0.04);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
         gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -638,7 +653,8 @@
         }
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildPalisade');
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom;
+        const wp = workPaceMul(s);
+        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
@@ -650,8 +666,8 @@
           s.res.palisade += 1;
           log(`Built palisade segment. Palisade: ${s.res.palisade}`);
         }
-        k.energy = clamp01(k.energy - dt * 0.06);
-        k.hunger = clamp01(k.hunger + dt * 0.04);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
         gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -665,7 +681,8 @@
         }
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildGranary');
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom;
+        const wp = workPaceMul(s);
+        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
@@ -677,8 +694,8 @@
           s.res.granaries = (s.res.granaries ?? 0) + 1;
           log(`Built a granary. Granaries: ${s.res.granaries}`);
         }
-        k.energy = clamp01(k.energy - dt * 0.055);
-        k.hunger = clamp01(k.hunger + dt * 0.035);
+        k.energy = clamp01(k.energy - dt * 0.055 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.035 * wp);
         gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -700,7 +717,8 @@
         }
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildWorkshop');
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom;
+        const wp = workPaceMul(s);
+        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         // Respect reserves (hard stop at execution time).
         const maxByWood = woodAvail / 0.85;
         const maxBySci  = sciAvail / 0.55;
@@ -719,8 +737,8 @@
           s.res.workshops = (s.res.workshops ?? 0) + 1;
           log(`Built a workshop. Workshops: ${s.res.workshops} (industry x${workshopBonus(s).toFixed(2)})`);
         }
-        k.energy = clamp01(k.energy - dt * 0.06);
-        k.hunger = clamp01(k.hunger + dt * 0.04);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
         const effXp = efficiency(s,k);
         gainXP(k,'Building', dt * 0.9 * effXp);
         gainXP(k,'Scholarship', dt * 0.3 * effXp);
@@ -753,7 +771,8 @@
 
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildLibrary');
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom;
+        const wp = workPaceMul(s);
+        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
 
         // Costs per 1 progress.
         const maxByWood  = woodAvail / 0.75;
@@ -778,8 +797,8 @@
           log(`Built a library. Libraries: ${s.res.libraries} (research x${libraryBonus(s).toFixed(2)})`);
         }
 
-        k.energy = clamp01(k.energy - dt * 0.06);
-        k.hunger = clamp01(k.hunger + dt * 0.04);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
         const effXp = efficiency(s,k);
         gainXP(k,'Building', dt * 0.75 * effXp);
         gainXP(k,'Scholarship', dt * 0.55 * effXp);
@@ -804,9 +823,10 @@
         const eff = efficiency(s, k);
         const mult = 1 + 0.06*(k.skills.Building-1);
         const mom = momentumMul(k, 'CraftTools');
+        const wp = workPaceMul(s);
         // Respect reserves (hard stop at execution time).
-        const useWood = Math.min(woodAvail, 0.55 * mult * dt * eff);
-        const useSci  = Math.min(sciAvail, 0.40 * mult * dt * eff);
+        const useWood = Math.min(woodAvail, 0.55 * mult * dt * eff * wp);
+        const useSci  = Math.min(sciAvail, 0.40 * mult * dt * eff * wp);
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
@@ -816,8 +836,8 @@
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
-        k.energy = clamp01(k.energy - dt * 0.05);
-        k.hunger = clamp01(k.hunger + dt * 0.03);
+        k.energy = clamp01(k.energy - dt * 0.05 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
         const effXp = efficiency(s,k);
         gainXP(k,'Building', dt * 0.6 * effXp);
         gainXP(k,'Scholarship', dt * 0.4 * effXp);
@@ -854,9 +874,10 @@
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Mentor');
         const mult = 1 + 0.07 * ((k.skills.Scholarship ?? 1) - 1);
+        const wp = workPaceMul(s);
 
         // Science cost scales with teaching throughput.
-        const wantSci = 0.42 * mult * dt * eff * mom;
+        const wantSci = 0.42 * mult * dt * eff * mom * wp;
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
@@ -875,8 +896,8 @@
         // Track for UI explainability.
         k._mentor = { id: target.id, skill: teachSkill };
 
-        k.energy = clamp01(k.energy - dt * 0.032);
-        k.hunger = clamp01(k.hunger + dt * 0.028);
+        k.energy = clamp01(k.energy - dt * 0.032 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.028 * wp);
       }
     },
     Research: {
@@ -885,10 +906,11 @@
         const mult = 1 + 0.08*(k.skills.Scholarship-1);
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
-        const out = 0.95 * mult * libraryBonus(s) * dt * eff * mom;
+        const wp = workPaceMul(s);
+        const out = 0.95 * mult * libraryBonus(s) * dt * eff * mom * wp;
         s.res.science += out;
-        k.energy = clamp01(k.energy - dt * 0.035);
-        k.hunger = clamp01(k.hunger + dt * 0.03);
+        k.energy = clamp01(k.energy - dt * 0.035 * wp);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
         gainXP(k,'Scholarship', dt * 1.0 * efficiency(s,k));
       }
     },
@@ -1170,6 +1192,11 @@
     const season = seasonAt(s.t);
     if (season.name === 'Winter' && (s.res?.warmth ?? 0) < 35) m -= 0.008;
     if (s.signals?.ALARM) m -= 0.005;
+
+    // Work pace policy: pushing hard makes the colony a bit grumpier over time; relaxed pace is a small morale relief.
+    const wp = workPaceMul(s);
+    if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 → -0.0036 / sec
+    if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 → +0.0020 / sec
 
     k.mood = clamp01(m);
   }
@@ -2043,7 +2070,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2054,7 +2081,9 @@
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    if (!('workPace' in state.director)) state.director.workPace = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
+    state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
     if (state.director.autoWinterPrep) {
       // Turn ON in late Fall (stockpile window) and keep it through Winter.
       if (!state.director.winterPrep && season.name === 'Fall' && season.phase >= 0.60) {
@@ -2488,7 +2517,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2499,7 +2528,9 @@
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
+    if (!('workPace' in state.director)) state.director.workPace = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
+    state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
 
     const wp = !!state.director.winterPrep;
     const wpBtn = el('btnWinterPrep');
@@ -2706,6 +2737,17 @@
       const dislikePenalty = 4 + 8 * a;
       const roleMul = 1.10 - 0.35 * a;
       ah.textContent = `${aPct}% | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)}`;
+    }
+
+    // Work pace (global throughput vs fatigue lever)
+    const wpMul = workPaceMul(state);
+    const wpPct = Math.round(wpMul * 100);
+    const wpEl = el('workPace');
+    if (wpEl) wpEl.value = String(Math.round(wpPct/5)*5);
+    const wph = el('workPaceHint');
+    if (wph) {
+      const moodDrift = wpMul > 1.02 ? `mood drift ↓` : (wpMul < 0.98 ? `mood drift ↑` : `mood steady`);
+      wph.textContent = `${wpPct}% | output x${wpMul.toFixed(2)} | fatigue x${wpMul.toFixed(2)} | ${moodDrift}`;
     }
 
     el('sigBuild').checked = !!state.signals.BUILD;
@@ -3345,9 +3387,19 @@
 
   const autEl = document.getElementById('autonomy');
   if (autEl) autEl.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     state.director.autonomy = clamp01(pct / 100);
+    save();
+    render();
+  });
+
+  const wpEl = document.getElementById('workPace');
+  if (wpEl) wpEl.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
+    state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
+    log(`Work pace → ${Math.round(state.director.workPace * 100)}%`);
     save();
     render();
   });
