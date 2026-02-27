@@ -1,16 +1,25 @@
-# Kitten Knight Civ — DEVLOG
+# DEVLOG — Kitten Knight (Civ)
 
-## 2026-02-27 12:07 PM (America/Chicago) — v0.8.3
-- Added **Crisis Protocol** (Director button): an emergency stabilization overlay you can toggle on/off.
-- When ON it forces Survive + Tight rations, raises buffers (reserves), and turns on FOOD CRISIS (+ ALARM if unlocked).
-- When OFF it restores your previous Director settings (mode/targets/reserves/policy/role quotas/signals) for clean “panic → recover → resume” play.
-- Updated patch notes to reflect the new control.
-- Kept changes save-safe via director-field migrations (older saves get sensible defaults).
+Human-readable change log for iterative runs.
 
-Files touched:
-- prototype/index.html
-- dist/index.html
-- DEVLOG.md
+---
 
-What to try:
-- Let threat/food drift into danger, toggle **Crisis Protocol** ON for ~20–40s, then OFF and see if the colony cleanly returns to your prior plan.
+## 2026-02-27 12:19 CST — Modularization prep (CSS/JS extraction)
+
+Summary
+- Extracted the large inline `<style>` into `dist/css/app.css`.
+- Extracted the large inline game `<script>` into `dist/js/main.js`.
+- Left PWA service worker registration in `dist/js/pwa.js`.
+- Rewrote `dist/index.html` to load `main.js` as an ES module.
+- Verified the modularized build still renders + runs in a browser.
+
+Files touched
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `dist/js/pwa.js`
+- `scripts/extract_inline_to_modules.js`
+- `DEVLOG.md`
+
+What to try
+- Load the local build and confirm the game still runs; then open DevTools → Network and ensure `css/app.css` + `js/main.js` load (no 404s).
