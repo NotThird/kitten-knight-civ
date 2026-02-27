@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.8.8';
+  const GAME_VERSION = '0.8.9';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -50,6 +50,43 @@
     if (streak <= 1) return 1;
     // +2% per second after the first, capped at +20%.
     return 1 + Math.min(0.20, (streak - 1) * 0.02);
+  }
+
+  // --- Aptitude: kittens slowly become specialists (via skill levels) and prefer work they are good at.
+  // This gives "policy management" long-term consequences: if you keep leaning on Forage, those kittens get better at it.
+  const ACTION_SKILL = {
+    Forage: 'Foraging',
+    PreserveFood: 'Cooking',
+    Farm: 'Farming',
+    ChopWood: 'Woodcutting',
+    Guard: 'Combat',
+    Research: 'Scholarship',
+    CraftTools: 'Building',
+    BuildHut: 'Building',
+    BuildPalisade: 'Building',
+    BuildGranary: 'Building',
+    BuildWorkshop: 'Building',
+    BuildLibrary: 'Building',
+    StokeFire: null,
+    Eat: null,
+    Rest: null,
+  };
+
+  function skillForAction(action){
+    const a = String(action ?? '');
+    return ACTION_SKILL[a] ?? null;
+  }
+
+  function topSkillInfo(k){
+    const skills = k?.skills ?? {};
+    let best = null;
+    let bestLvl = -1;
+    for (const [name, lvlRaw] of Object.entries(skills)) {
+      const lvl = Number(lvlRaw ?? 1);
+      if (!Number.isFinite(lvl)) continue;
+      if (lvl > bestLvl) { bestLvl = lvl; best = name; }
+    }
+    return { skill: best, level: (bestLvl > 0 ? bestLvl : 1) };
   }
 
   // --- Season model (no map yet, but real pressure)
@@ -1037,6 +1074,16 @@
     // Comfort actions feel good.
     if (task === 'Eat' || task === 'Rest') m += 0.010;
 
+    // Aptitude: feels good to do what you're good at; feels bad to be forced far off your strengths.
+    // This is intentionally subtle; policy + emergencies can still override.
+    const aSkill = skillForAction(task);
+    if (aSkill) {
+      const top = topSkillInfo(k);
+      const lvl = Number(k.skills?.[aSkill] ?? 1);
+      if (top.skill && aSkill === top.skill && task !== 'Eat' && task !== 'Rest') m += 0.010;
+      else if (top.skill && (top.level - lvl) >= 3) m -= 0.006;
+    }
+
     // Festivals: colony-wide morale boost (purely a timed policy lever).
     if (festivalActive(s)) m += 0.012;
 
@@ -1154,6 +1201,7 @@
     const mode = s.mode;
     const pfInfo = getEffectiveProjectFocus(s);
     const pf = String(pfInfo.focus ?? 'Auto');
+    const topSkill = topSkillInfo(k);
 
     // Availability above reserves (execution layer hard-stops spending below reserve; scoring should reflect this)
     // ctx.shadowAvail is a 1s planning-time reservation system so multiple kittens don't all pick the same
@@ -1228,6 +1276,23 @@
           const add = Math.min(12, (mom - 1) * 55);
           score += add;
           reasons.push(`momentum x${mom.toFixed(2)} → +${add.toFixed(1)}`);
+        }
+      }
+
+      // Aptitude bias: kittens prefer tasks they are skilled at (emergent specialization).
+      // This is a *bias*, not a lock: safety rules, quotas, and shortages can still override.
+      const aSkill = skillForAction(a);
+      if (aSkill) {
+        const lvl = Number(k.skills?.[aSkill] ?? 1);
+        const add = Math.min(12, Math.max(0, (lvl - 1) * 1.4));
+        if (add >= 0.5) {
+          score += add;
+          reasons.push(`skill ${aSkill}=${lvl} → +${add.toFixed(1)}`);
+        }
+        if (topSkill.skill && topSkill.skill === aSkill && topSkill.level >= 3) {
+          const add2 = Math.min(6, 1.2 * (topSkill.level - 2));
+          score += add2;
+          reasons.push(`top skill match → +${add2.toFixed(1)}`);
         }
       }
 
@@ -2535,7 +2600,8 @@
     kittensEl.innerHTML = '';
     for (const k of state.kittens) {
       const tr = document.createElement('tr');
-      const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([s,l])=>`${s}:${l}`).join(' ');
+      const top = topSkillInfo(k);
+      const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([s,l])=>`${s}:${l}`).join(' ');
       const eff = efficiency(state, k);
       const mood = clamp01(Number(k.mood ?? 0.55));
       const p = k.personality ?? genPersonality(k.id ?? 0);
@@ -2547,8 +2613,9 @@
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
-        <td title="Mood (personality alignment + stress; small effect on efficiency)">${fmt(mood*100)}%</td>
+        <td title="Mood (personality alignment + stress + aptitude fit; small effect on efficiency)">${fmt(mood*100)}%</td>
         <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
+        <td title="Aptitude (highest skill level)  kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td>${escapeHtml(traits)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
@@ -3356,6 +3423,10 @@
         k.role = k.role ?? 'Generalist';
         k.roleWhy = k.roleWhy ?? '';
         k.personality = k.personality ?? genPersonality(k.id ?? 0);
+        k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 };
+        k.xp = k.xp ?? { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 };
+        for (const [sk,lv] of Object.entries({ Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 })) if (!(sk in k.skills)) k.skills[sk] = lv;
+        for (const [sk,xp] of Object.entries({ Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 })) if (!(sk in k.xp)) k.xp[sk] = xp;
         k.health = clamp01(Number(k.health ?? 1));
         k.mood = clamp01(Number(k.mood ?? 0.55));
         k.taskStreak = k.taskStreak ?? 0;
@@ -3386,9 +3457,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- New: Auto Mode (Director) — optional mode switching (Survive/Expand/Defend/Advance) based on stability.');
-    log('- It changes slowly (cooldown) to avoid mode-flapping; explanation shows in the Season panel.');
-    log('- Save-safe: adds director.autoMode* fields (older saves default OFF).');
+    log('- New: Aptitude bias — kittens prefer tasks they are skilled at (emergent specialization).');
+    log('- Mood now includes a small "doing what I am good at" factor (and a small penalty for being forced far off-skill).');
+    log('- UI: new Apt column shows each kitten\'s top skill; Mood tooltip updated.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

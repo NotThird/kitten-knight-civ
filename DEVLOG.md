@@ -123,3 +123,22 @@ Files touched
 
 What to try
 - Turn on **Auto Mode**, then deliberately trigger a shortage (drop warmth or food/kitten) and watch it snap to Survive/Defend; stabilize and see it drift back to Advance.
+
+---
+
+## 2026-02-27 13:37 CST — v0.8.9 Aptitude bias (skills influence AI + mood)
+
+Summary
+- Added an **Aptitude bias** in action scoring: kittens now gently prefer tasks they have higher skill in (emergent specialization).
+- Mood now includes a small **aptitude fit** factor: doing your top-skill work feels slightly better; being forced far off-skill feels slightly worse.
+- UI: added **Apt** column in the kitten table (shows each kitten’s top skill + level); updated Mood tooltip.
+- Save-safe migration: older saves now auto-fill missing `k.skills` / `k.xp` keys.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set a strong policy bias (e.g., ChopWood x2) for a few minutes, then relax it and watch the colony keep naturally assigning high-Woodcutting kittens back to wood tasks (and see mood stay higher when they get their aptitude work).
