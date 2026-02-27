@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.10';
+  const GAME_VERSION = '0.9.11';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3123,7 +3123,25 @@
 
     const proj = []; // season summary line
     const projHtml = [];
-    const woodBlock = (availableAboveReserve(state,'wood') <= 0.01);
+
+    // Project blocking (explainability): show which *reserve-protected input* is preventing build progress.
+    // Previously we only surfaced wood blocks; but workshops/libraries can also be gated by science/tools reserves.
+    const avail = {
+      food: availableAboveReserve(state,'food'),
+      wood: availableAboveReserve(state,'wood'),
+      science: availableAboveReserve(state,'science'),
+      tools: availableAboveReserve(state,'tools'),
+    };
+    const blockKeys = (keys) => (keys || []).filter(k => Number(avail[k] ?? 0) <= 0.01);
+    const projInputs = (name) => {
+      if (name === 'Hut') return ['wood'];
+      if (name === 'Palisade') return ['wood'];
+      if (name === 'Granary') return ['wood'];
+      if (name === 'Workshop') return ['wood','science'];
+      if (name === 'Library') return ['wood','science','tools'];
+      return ['wood'];
+    };
+
     for (const pd of projDefs) {
       if (!pd.show()) continue;
       const prog = Number(state[pd.key] ?? 0);
@@ -3133,7 +3151,9 @@
 
       if (prog > 0.0001) proj.push(`${pd.name} ${prog.toFixed(1)}/${req}`);
 
-      const blocked = woodBlock ? ' (blocked by wood reserve)' : '';
+      const blockedBy = blockKeys(projInputs(pd.name));
+      const blocked = blockedBy.length ? ` (blocked by ${blockedBy.join('+')} reserve)` : '';
+
       projHtml.push(`
         <div style="margin-bottom:10px">
           <div class="row" style="justify-content:space-between; gap:10px">
@@ -4284,9 +4304,9 @@
     if (seen === GAME_VERSION) return;
 
     log(`Patch notes v${GAME_VERSION}:`);
-    log('- Colony table: Traits are now compact (counts) with full details in tooltip.');
-    log('- New Pref column: shows when a kitten is doing a liked/disliked task, plus an “Autonomy” tag when they sampled a non-#1 choice.');
-    log('- Inspector now also shows the autonomy sampling note when it happens.');
+    log('- Projects panel now tells you which reserve is blocking progress (wood/science/tools), not just wood.');
+    log('- This makes it easier to diagnose why workshops/libraries stall (e.g., science reserve too high).');
+    log('- No save changes: existing saves load cleanly.');
 
     state.meta.seenVersion = GAME_VERSION;
     // Save immediately so refresh won’t repeat.

@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 16:53 CST - v0.9.11 Projects: show which reserve blocks each build
+
+Summary
+- Projects panel now shows **which reserve-protected inputs** are blocking progress (wood/science/tools), per project.
+- Workshops and libraries are now much easier to debug (e.g., “blocked by science reserve” vs looking like AI is just idling).
+- Keeps the system incremental + explainable: this is purely UI feedback, no new hidden rules.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Set a high **Science reserve** (e.g., 200), then try to build a Workshop/Library and confirm the Projects panel calls out **science reserve** as the blocker.
+
+---
+
 ## 2026-02-27 16:38 CST - v0.9.10 Social layer: Dissent + Discipline (plan compliance becomes emergent)
 
 Summary
