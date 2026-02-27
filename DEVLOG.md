@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 17:53 CST - v0.9.15 Policy control: Mentor multiplier + preset support
+
+Summary
+- Added **Mentor** to the **Policy multipliers** panel (0..2), letting you explicitly throttle or boost colony-wide skill training.
+- Mentor now shows up (and is editable) once **Libraries** are unlocked; it stays disabled/hidden behind the tech gate before that.
+- Updated all **Policy presets** to include Mentor (Advance boosts it; Defend/Survive de-emphasize it).
+- Plan summary now includes Mentor, and over-budget shaving now considers Mentor earlier (so it won’t “crowd out” critical work when population is small).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In **Advance** mode with **Libraries** unlocked, crank **Mentor mult → 2.0** and watch low-skill kittens catch up faster (then set it to 0.0 to stockpile science).
+
+---
+
 ## 2026-02-27 17:23 CST - v0.9.13 Fix: Tight rations now correctly raise dissent (Feast eases it)
 
 Summary
@@ -438,7 +457,7 @@ What to try
 
 Summary
 - Added **Dissent** and **Compliance** to the top stat cards so the social layer is visible at-a-glance.
-- Dissent now shows its current band (**calm / murmur / strike**) right in the main stats, reducing the �why are they loafing / ignoring plan?� confusion moment.
+- Dissent now shows its current band (**calm / murmur / strike**) right in the main stats, reducing the �why are they loafing / ignoring plan?� confusion moment.
 - Compliance is shown as a multiplier (x0.45..x1.15) so players can immediately see how hard the plan/roles will actually push.
 - Updated patch notes + bumped version to **0.9.14**.
 

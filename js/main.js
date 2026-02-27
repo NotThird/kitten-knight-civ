@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.14';
+  const GAME_VERSION = '0.9.15';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -240,7 +240,7 @@
     seenUnlocks: {},
     kittens: [ makeKitten(1), makeKitten(2), makeKitten(3) ],
     // Player policy: biases the colony-level plan (not hard locks; rules still override).
-    policyMult: { Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, PreserveFood:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 },
+    policyMult: { Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, PreserveFood:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 },
     // Optional role quotas: "try to keep N kittens in this role" (0 = no quota).
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
@@ -1873,7 +1873,7 @@
     for (const a of Object.keys(desired)) desired[a] = Math.max(0, Math.min(n, desired[a] | 0));
 
     // If over budget, shave least-critical first.
-    const shaveOrder = ['Research','CraftTools','BuildLibrary','BuildWorkshop','BuildGranary','BuildPalisade','BuildHut','PreserveFood','Guard','StokeFire','ChopWood','Farm','Forage'];
+    const shaveOrder = ['Research','Mentor','CraftTools','BuildLibrary','BuildWorkshop','BuildGranary','BuildPalisade','BuildHut','PreserveFood','Guard','StokeFire','ChopWood','Farm','Forage'];
     let sum = Object.values(desired).reduce((a,b)=>a+b,0);
     let guard = 0;
     while (sum > n && guard++ < 99) {
@@ -3483,7 +3483,7 @@
   function log(msg){ state.log.push(`[${fmt(state.t)}] ${msg}`); }
 
   function summarizePlan(desired){
-    const order = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Research'];
+    const order = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor','Research'];
     return order
       .map(a => ({ a, n: desired[a] ?? 0 }))
       .filter(x => x.n > 0)
@@ -3493,7 +3493,7 @@
 
   function renderPolicy(){
     // Migration safety
-    state.policyMult = state.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 };
+    state.policyMult = state.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
 
     const rows = [
       ['Forage','Forage'],
@@ -3508,6 +3508,7 @@
       ['BuildWorkshop','BuildWorkshop'],
       ['BuildLibrary','BuildLibrary'],
       ['CraftTools','CraftTools'],
+      ['Mentor','Mentor'],
       ['Research','Research'],
     ];
 
@@ -3515,6 +3516,7 @@
       (a === 'Farm' && !state.unlocked.farm) ||
       (a === 'PreserveFood' && !state.unlocked.construction) ||
       (a === 'CraftTools' && !state.unlocked.workshop) ||
+      (a === 'Mentor' && !state.unlocked.library) ||
       (a === 'BuildWorkshop' && (!state.unlocked.construction || !state.unlocked.workshop)) ||
       (a === 'BuildLibrary' && (!state.unlocked.construction || !state.unlocked.library)) ||
       (a === 'BuildGranary' && (!state.unlocked.construction || !state.unlocked.granary)) ||
@@ -4117,6 +4119,7 @@
       BuildWorkshop: mult.BuildWorkshop ?? 1,
       BuildLibrary: mult.BuildLibrary ?? 1,
       CraftTools: mult.CraftTools ?? 1,
+      Mentor: mult.Mentor ?? 1,
       Research: mult.Research ?? 1,
     };
     log(note);
@@ -4127,13 +4130,13 @@
   function applyPolicyPreset(name){
     // Presets are *nudges*; safety rules still override and scoring still matters.
     if (name === 'Survive') {
-      setPolicy({ Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Research:0.85 }, 'Policy preset → Survive (food + warmth first).');
+      setPolicy({ Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Mentor:0.80, Research:0.85 }, 'Policy preset → Survive (food + warmth first).');
     } else if (name === 'Expand') {
-      setPolicy({ Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Research:0.85 }, 'Policy preset → Expand (wood + building).');
+      setPolicy({ Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Mentor:0.90, Research:0.85 }, 'Policy preset → Expand (wood + building).');
     } else if (name === 'Defend') {
-      setPolicy({ Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Research:0.75 }, 'Policy preset → Defend (guard + palisade).');
+      setPolicy({ Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Mentor:0.70, Research:0.75 }, 'Policy preset → Defend (guard + palisade).');
     } else if (name === 'Advance') {
-      setPolicy({ Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Research:1.60 }, 'Policy preset → Advance (research + tools).');
+      setPolicy({ Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Mentor:1.35, Research:1.60 }, 'Policy preset → Advance (research + tools).');
     }
   }
 
@@ -4143,7 +4146,7 @@
   document.getElementById('btnPolicyPresetAdvance').addEventListener('click', () => applyPolicyPreset('Advance'));
 
   document.getElementById('btnPolicyReset').addEventListener('click', () => {
-    setPolicy({ Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 }, 'Policy reset to defaults (all 1.0).');
+    setPolicy({ Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 }, 'Policy reset to defaults (all 1.0).');
   });
 
   document.getElementById('btnAddRule').addEventListener('click', () => { state.rules.push(rule('New safety rule', {type:'always', v:0}, {type:'Rest'})); render(); });
@@ -4281,9 +4284,9 @@
       if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
       s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;
 
-      s.policyMult = s.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 };
+      s.policyMult = s.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
       // Add any missing keys for forward-compatible saves
-      for (const [k, v] of Object.entries({ Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Research:1 })) {
+      for (const [k, v] of Object.entries({ Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 })) {
         if (!(k in s.policyMult)) s.policyMult[k] = v;
       }
 
