@@ -1743,3 +1743,22 @@ What to try
 - Turn on **Auto Policy**, set food target a bit high (e.g., 140), then intentionally overbuild: watch it shift policy away from Research/Build and back once basics stabilize.
 
 ---
+
+## 2026-02-28 11:12 CST - v0.9.84 Storage Inspector modal (cap + spoilage breakdown)
+
+Summary
+- UI/Explainability: **Food Cap** and **Spoilage** stat cards are now clickable.
+- NEW: Storage Inspector modal explains the **soft cap ? spoilage** system, shows the **cap breakdown** (base + huts + granaries), and prints your current overcap + season context.
+- Gives clear “what to do” levers (Granary focus / PreserveFood ? Jerky / stop over-foraging) without changing simulation balance.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Intentionally overstock food above **Food Cap**, then click **Spoilage** to verify you can immediately see *why* food is bleeding and what to do about it.
+
+---

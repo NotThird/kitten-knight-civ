@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.83';
+  const GAME_VERSION = '0.9.84';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3745,6 +3745,7 @@
     if (!card) return;
     const key = String(card.dataset.stat || '');
     if (key === 'dissent' || key === 'compliance') openSocial();
+    if (key === 'storage') openStorage();
   });
 
   // Advisor: quick actions (wired via render-time recommendations)
@@ -3947,6 +3948,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.84',
+      notes: [
+        'UI/Explainability: Food Cap and Spoilage stat cards are now clickable and open a Storage Inspector with the full cap breakdown and guidance.',
+        'This makes the overcap/spoilage system easier to reason about (why you are bleeding food, and what levers to pull).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.83',
       notes: [
@@ -4467,7 +4476,13 @@
   const socialBodyEl = el('socialBody');
   const btnSocialClose = el('btnSocialClose');
 
-  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false };
+  const storageModalEl = el('storageModal');
+  const storageTitleEl = el('storageTitle');
+  const storageSubEl = el('storageSub');
+  const storageBodyEl = el('storageBody');
+  const btnStorageClose = el('btnStorageClose');
+
+  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false, storageOpen:false };
 
   function closeInspect(){
     ui.inspectOpen = false;
@@ -4671,6 +4686,58 @@
     socialBodyEl.textContent = lines.join('\n');
   }
 
+  function closeStorage(){
+    ui.storageOpen = false;
+    if (storageModalEl) storageModalEl.classList.add('hidden');
+  }
+
+  function openStorage(){
+    ui.storageOpen = true;
+    if (storageModalEl) storageModalEl.classList.remove('hidden');
+    renderStorage();
+  }
+
+  function renderStorage(){
+    if (!storageModalEl || !storageTitleEl || !storageSubEl || !storageBodyEl) return;
+    if (!ui.storageOpen) { storageModalEl.classList.add('hidden'); return; }
+
+    const cap = foodStorageCap(state);
+    const food = Number(state.res.food ?? 0) || 0;
+    const oc = state._lastFoodOvercap ?? { cap, food, mult: 1 };
+    const spoilMult = clamp01((Number(oc.mult ?? 1) - 1) / 3) * 3 + 1; // sanitize to [1..4]
+
+    const huts = Math.max(0, Number(state.res?.huts ?? 0));
+    const gran = Math.max(0, Number(state.res?.granaries ?? 0));
+    const base = 260;
+    const hutBonus = huts * 28;
+    const granBonus = gran * 120;
+
+    const season = seasonAt(state.t);
+    const over = Math.max(0, food - cap);
+    const overPct = cap > 0 ? (over / cap) : 0;
+
+    storageTitleEl.textContent = `Food cap: ${fmt(cap)} | Spoilage x${Number(spoilMult).toFixed(2)}`;
+    storageSubEl.textContent = `Season: ${season.name} | Food stored: ${fmt(food)} (${over > 0 ? `over by ${fmt(over)} / ${(overPct*100).toFixed(0)}%` : 'under cap'})`;
+
+    const lines = [];
+    lines.push('What this is:');
+    lines.push('• Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
+    lines.push('• Spoilage multiplier is capped at x4 to keep it a pressure, not a wipeout.');
+    lines.push('');
+    lines.push('Cap breakdown (current):');
+    lines.push(`• base: ${fmt(base)}`);
+    lines.push(`• huts: +${fmt(hutBonus)}  (${huts} × 28)`);
+    lines.push(`• granaries: +${fmt(granBonus)}  (${gran} × 120)`);
+    lines.push(`= total cap: ${fmt(base + hutBonus + granBonus)}`);
+    lines.push('');
+    lines.push('How to respond (management levers):');
+    lines.push('• If spoilage is high: build Granary (Project focus → Storage) and/or PreserveFood into Jerky.');
+    lines.push('• If you are stable: don’t over-forage; redirect labor into wood/science/industry.');
+    lines.push('• If Winter is soon: a *little* overcap is fine, but watch spoilage and edible/kitten.');
+
+    storageBodyEl.textContent = lines.join('\n');
+  }
+
   if (btnInspectClose) btnInspectClose.addEventListener('click', closeInspect);
   if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
     if (e.target === inspectModalEl) closeInspect();
@@ -4679,6 +4746,11 @@
   if (btnSocialClose) btnSocialClose.addEventListener('click', closeSocial);
   if (socialModalEl) socialModalEl.addEventListener('click', (e) => {
     if (e.target === socialModalEl) closeSocial();
+  });
+
+  if (btnStorageClose) btnStorageClose.addEventListener('click', closeStorage);
+  if (storageModalEl) storageModalEl.addEventListener('click', (e) => {
+    if (e.target === storageModalEl) closeStorage();
   });
 
   function uiIsTypingTarget(t){
@@ -4698,6 +4770,7 @@
       closeInspect();
       closePatchNotes();
       closeSocial();
+      closeStorage();
       return;
     }
 
@@ -6073,6 +6146,11 @@
         d.title = 'Click to inspect what is driving dissent/compliance (compliance scales how strongly the colony follows the plan)';
         d.style.cursor = 'pointer';
       }
+      if (k === 'Food Cap' || k === 'Spoilage') {
+        d.dataset.stat = 'storage';
+        d.title = 'Click to inspect food storage cap + spoilage mechanics';
+        d.style.cursor = 'pointer';
+      }
       if (k === 'Grievance') {
         d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure.';
       }
@@ -6632,6 +6710,7 @@
     renderInspect();
     renderPatchNotes();
     renderSocial();
+    renderStorage();
   }
 
   function escapeHtml(s){
