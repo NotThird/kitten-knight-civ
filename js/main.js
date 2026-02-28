@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.104';
+  const GAME_VERSION = '0.9.105';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -7526,9 +7526,9 @@
         <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:6px">
           <span class="small" style="min-width:110px">${label}${planNote}</span>
           <div class="row" style="gap:6px">
-            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''}>-</button>
-            <span class="small" style="display:inline-block; width:44px; text-align:center">${val.toFixed(2)}</span>
-            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''}>+</button>
+            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">-</button>
+            <span class="small" style="display:inline-block; width:44px; text-align:center" title="Multiplier for ${a}. Tip: Shift=0.50 steps, Alt=1.00 steps, Ctrl/⌘ sets to min/max.">${val.toFixed(2)}</span>
+            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">+</button>
             <button class="btn mode ${isLocked?'active':''}" data-pol="lock" data-a="${a}" title="Auto Policy will not modify this multiplier while locked.">${isLocked?'Locked':'Lock'}</button>
             <span class="small" style="opacity:.85">(0..2)</span>
           </div>
@@ -8482,8 +8482,19 @@
 
     state.policyMult = state.policyMult ?? {};
     const cur = Number(state.policyMult[a] ?? 1);
-    const step = 0.25;
-    const next = pol === 'inc' ? (cur + step) : (cur - step);
+
+    // QoL: modifier keys for faster tuning.
+    // - default: 0.25 steps
+    // - Shift:   0.50 steps
+    // - Alt:     1.00 steps
+    // - Ctrl/⌘:  snap to 0 (dec) or 2 (inc)
+    const snap = !!(e.ctrlKey || e.metaKey);
+    const step = e.altKey ? 1.00 : e.shiftKey ? 0.50 : 0.25;
+
+    let next = cur;
+    if (snap) next = (pol === 'inc') ? 2 : 0;
+    else next = (pol === 'inc') ? (cur + step) : (cur - step);
+
     state.policyMult[a] = Math.max(0, Math.min(2, Math.round(next * 100) / 100));
     save();
     render();

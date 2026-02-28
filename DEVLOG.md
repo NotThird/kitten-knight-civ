@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 16:42 CST - v0.9.105 Policy quick-tune modifiers
+
+Summary
+- QoL: Policy +/- buttons now support modifier keys for faster tuning.
+- Shift-click changes by ±0.50, Alt-click changes by ±1.00, Ctrl/⌘-click snaps to min/max (0 or 2).
+- Added tooltips to make the shortcuts discoverable.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- In Policy, Shift/Alt/Ctrl-click +/- to quickly stabilize before Winter (e.g., snap StokeFire/Forage to 2 during crises).
+
+---
+
 ## 2026-02-28 16:27 CST - v0.9.104 Auto Recruit fix + why text
 
 Summary
