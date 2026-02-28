@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.107';
+  const GAME_VERSION = '0.9.108';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4041,6 +4041,16 @@
   const profilesEl = el('profiles');
   const profilesHintEl = el('profilesHint');
 
+  // UI log debounce (prevents Event log spam when dragging sliders)
+  const _uiLogTimers = Object.create(null);
+  function uiDebouncedLog(key, msg, delayMs=350){
+    const k = String(key || 'ui');
+    if (_uiLogTimers[k]) clearTimeout(_uiLogTimers[k]);
+    _uiLogTimers[k] = setTimeout(() => {
+      try { log(String(msg || '')); } catch (e) {}
+    }, Math.max(0, Number(delayMs) || 0));
+  }
+
   // Clickable stat cards (explainability)
   if (statsEl) statsEl.addEventListener('click', (e) => {
     const card = e.target?.closest?.('[data-stat]');
@@ -4377,6 +4387,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.108',
+      notes: [
+        'QoL: slider-driven policy logs are now debounced (Discipline / Work pace / Priorities) to prevent Event log spam while you drag.',
+        'Explainability: log entries still fire after you stop dragging, so you can audit what you changed without noise.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.107',
       notes: [
@@ -8418,7 +8436,7 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     state.director.discipline = clamp01(pct / 100);
-    log(`Discipline → ${Math.round(state.director.discipline * 100)}%`);
+    uiDebouncedLog('discipline', `Discipline → ${Math.round(state.director.discipline * 100)}%`);
     save();
     render();
   });
@@ -8430,7 +8448,7 @@
     if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
-    log(`Work pace → ${Math.round(state.director.workPace * 100)}%`);
+    uiDebouncedLog('workPace', `Work pace → ${Math.round(state.director.workPace * 100)}%`);
     save();
     render();
   });
@@ -8441,7 +8459,7 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, pct / 100));
-    log(`Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
+    uiDebouncedLog('prioFood', `Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
     save();
     render();
   });
@@ -8451,7 +8469,7 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, pct / 100));
-    log(`Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
+    uiDebouncedLog('prioSafety', `Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
     save();
     render();
   });
@@ -8461,7 +8479,7 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, pct / 100));
-    log(`Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
+    uiDebouncedLog('prioProgress', `Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
     save();
     render();
   });

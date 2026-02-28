@@ -2172,7 +2172,7 @@ What to try
 ## 2026-02-28 16:57 CST - v0.9.106 Governance log (audit trail)
 
 Summary
-- NEW: added a ìGovernance logî panel that records Director-driven policy shifts.
+- NEW: added a ÔøΩGovernance logÔøΩ panel that records Director-driven policy shifts.
 - Auto Policy now writes an audit entry when it nudges multipliers (includes top diffs + the reason string).
 - Faction negotiations also write to the Governance log (so politics-driven drift is traceable).
 - Coalesces rapid Auto Policy nudges into a single recent entry to avoid spam.
@@ -2194,8 +2194,8 @@ What to try
 
 Summary
 - AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to pick Socialize/Care to actively restore cohesion (instead of everyone defaulting to Loaf).
-- Balance: Loaf gets a small penalty in ìstrike but stableî states to prevent passive stall loops.
-- Explainability: Decision Inspector scoring now includes explicit ìstrike recoveryî reasons (Socialize/Care) and a matching Loaf reason when it is deprioritized.
+- Balance: Loaf gets a small penalty in ÔøΩstrike but stableÔøΩ states to prevent passive stall loops.
+- Explainability: Decision Inspector scoring now includes explicit ÔøΩstrike recoveryÔøΩ reasons (Socialize/Care) and a matching Loaf reason when it is deprioritized.
 - Version bump + dist rebuild.
 - No save-breaking changes.
 
@@ -2206,4 +2206,21 @@ Files touched
 - `dist/js/main.js`
 
 What to try
-- Intentionally let dissent climb into strike, then stabilize food/warmth and watch for one kitten to become an organizer via Socialize/Care (click them to inspect ìstrike recoveryî).
+- Intentionally let dissent climb into strike, then stabilize food/warmth and watch for one kitten to become an organizer via Socialize/Care (click them to inspect ÔøΩstrike recoveryÔøΩ).
+
+---
+
+## 2026-02-28 17:27 CST - v0.9.108 Debounced policy slider logs
+
+Summary
+- QoL: dragging **Discipline / Work pace / Priorities** sliders no longer spams the Event log.
+- Logs are now debounced: you still get a clear ‚ÄúX ‚Üí Y%‚Äù entry shortly after you stop dragging.
+- Patch notes updated + version bump.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+
+What to try
+- Drag Work pace from 80%‚Üí120% back and forth: you should only see 1‚Äì2 log lines total (not dozens).
+
