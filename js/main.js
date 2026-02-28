@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.27';
+  const GAME_VERSION = '0.9.28';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3130,6 +3130,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.28',
+      notes: [
+        'Explainability: food storage over-cap now shows Spoilage multiplier (x1..x4) in stats.',
+        'Advisor: warns when you are bleeding food to over-cap spoilage, with a one-click Storage response.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.27',
       notes: [
         'Patch notes: now cumulative (shows everything since your last seen version).',
@@ -3402,6 +3410,28 @@
 
     const lines = [];
     const recs = [];
+
+    // 0) Storage cap / spoilage pressure (new player-visible midgame problem)
+    const overcap = state._lastFoodOvercap ?? { cap: foodStorageCap(s), food: Number(s.res.food ?? 0), mult: 1 };
+    const spoilMult = Number(overcap.mult ?? 1);
+    const storageBad = Number.isFinite(spoilMult) && spoilMult > 1.05;
+    if (storageBad) {
+      lines.push(`• storage over-cap: spoilage x${spoilMult.toFixed(2)} (cap ${fmt(overcap.cap)}; food ${fmt(overcap.food)})`);
+      lines.push(`  - Nudge: build Granary / preserve surplus into Jerky (PreserveFood) / stop overstocking`);
+
+      recs.push({
+        id: 'storage',
+        label: 'Storage fix',
+        tip: 'Set Project focus → Storage, boost BuildGranary + PreserveFood, and raise wood reserve a bit so granary builds don\'t stall.',
+        apply: (st) => {
+          st.director = st.director ?? { projectFocus:'Auto' };
+          st.director.projectFocus = (st.unlocked?.granary ? 'Storage' : 'Auto');
+          nudgePolicyMult(st,'BuildGranary', 0.5);
+          nudgePolicyMult(st,'PreserveFood', 0.5);
+          raiseReserve(st,'wood', 22);
+        }
+      });
+    }
 
     // 1) Food stability
     const foodBad = (foodPerKitten < (targets.foodPerKitten - 5)) || (foodRate < -0.15);
@@ -3726,6 +3756,12 @@
     const compMul = compliance01(state);
 
     statsEl.innerHTML = '';
+
+    const spoilMult = (() => {
+      const m = Number(state._lastFoodOvercap?.mult ?? 1);
+      return Number.isFinite(m) ? Math.max(1, Math.min(4, m)) : 1;
+    })();
+
     const stats = [
       ['Food', fmt(state.res.food)],
       ['Jerky', fmt(state.res.jerky ?? 0)],
@@ -3743,6 +3779,7 @@
       ['Industry x', fmt(workshopBonus(state)) + 'x'],
       ['Research x', fmt(libraryBonus(state)) + 'x'],
       ['Food Cap', fmt(foodStorageCap(state))],
+      ['Spoilage', `x${spoilMult.toFixed(2)}`],
       ['Food/Kitten', fmt(foodPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],

@@ -700,3 +700,21 @@ Files touched
 
 What to try
 - Get to pop cap, then hover +Kitten to confirm the tooltip explains the block; build a hut and watch it re-enable.
+
+---
+
+## 2026-02-27 21:09 CST - v0.9.28 Spoilage multiplier + storage overcap advisor
+
+Summary
+- Explainability: top stats now show **Spoilage x…** (x1.00..x4.00) so food over-cap loss is visible at a glance.
+- Advisor: detects **storage over-cap** and offers a 1-click **Storage fix** (Project focus ? Storage when available, +BuildGranary, +PreserveFood, and a small wood reserve nudge).
+- Patch notes updated for v0.9.28.
+
+Files touched
+- prototype/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Hoard food above the Food Cap and confirm Spoilage rises above x1.00, then click **Storage fix** and watch the colony pivot into Granary/Jerky to stop bleeding food.
+
