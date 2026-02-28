@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.105';
+  const GAME_VERSION = '0.9.106';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4004,6 +4004,7 @@
   const logEl = el('log');
   const goalsEl = el('goals');
   const advisorEl = el('advisor');
+  const govLogEl = el('govlog');
   const councilPanelEl = el('council');
   const factionsEl = el('factions');
   const unlocksEl = el('unlocks');
@@ -4057,6 +4058,62 @@
   function fmtPolicyChange(ch){
     const sign = ch.d >= 0 ? '+' : '';
     return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
+  }
+
+  // Governance log (explainability): record policy changes driven by automation/politics.
+  // Save-safe: stored under director.govLog.
+  function ensureGovLog(s){
+    s.director = s.director ?? {};
+    if (!Array.isArray(s.director.govLog)) s.director.govLog = [];
+  }
+
+  function recordGovLog(s, entry){
+    ensureGovLog(s);
+    const e = entry && typeof entry === 'object' ? entry : { kind:'Note', why:String(entry || '') };
+    const nowT = Number(s?.t ?? 0) || 0;
+    const kind = String(e.kind ?? 'Note');
+
+    const row = {
+      at: nowT,
+      kind,
+      why: String(e.why ?? ''),
+      changes: Array.isArray(e.changes) ? e.changes.slice(0, 10).map(String) : [],
+    };
+
+    // Coalesce spam: if the last entry is the same kind and very recent, overwrite it.
+    const arr = s.director.govLog;
+    const last = arr.length ? arr[arr.length - 1] : null;
+    if (last && String(last.kind ?? '') === kind && Math.abs((Number(last.at ?? 0) || 0) - nowT) <= 12) {
+      arr[arr.length - 1] = row;
+    } else {
+      arr.push(row);
+      // Keep only the most recent N.
+      while (arr.length > 12) arr.shift();
+    }
+  }
+
+  function renderGovLog(s){
+    if (!govLogEl) return;
+    ensureGovLog(s);
+
+    const arr = (s.director.govLog ?? []).slice().reverse();
+    if (!arr.length) {
+      govLogEl.textContent = '— No governance events yet. Turn on Auto Policy or negotiate with a faction to see entries.';
+      return;
+    }
+
+    const lines = [];
+    for (const e of arr) {
+      const at = Number(e.at ?? 0) || 0;
+      const head = `[t+${fmt(at)}s] ${String(e.kind ?? 'Note')}`;
+      const why = String(e.why ?? '').trim();
+      const changes = Array.isArray(e.changes) ? e.changes : [];
+
+      lines.push(head + (why ? ` — ${why}` : ''));
+      for (const ch of changes.slice(0, 6)) lines.push(`  - ${ch}`);
+    }
+
+    govLogEl.textContent = lines.join('\n');
   }
 
   // Policy undo (player QoL): restore last manual policy/role-quota change.
@@ -4295,6 +4352,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.106',
+      notes: [
+        'NEW: Governance log panel: records policy/priorities changes caused by Auto Policy and Faction negotiations.',
+        'Explainability: Auto Policy entries include the top policy multiplier diffs so you can audit what changed (and why).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.104',
       notes: [
@@ -5347,6 +5412,8 @@
 
     s.policyMult = s.policyMult ?? { Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
 
+    const beforeMult = { ...(s.policyMult ?? {}) };
+
     const targets = seasonTargets(s);
     const season = seasonAt(s.t);
     const n = Math.max(1, s.kittens?.length ?? 1);
@@ -5457,6 +5524,13 @@
     else if (threatGreat) parts.push(`threat low → ease guard`);
 
     const why = parts.length ? parts.join(' | ') : 'stable: drifting policy toward neutral';
+
+    if (changed.any) {
+      const diff = policyDiff(beforeMult, s.policyMult ?? {});
+      const changes = diff.slice(0, 6).map(fmtPolicyChange);
+      recordGovLog(s, { kind:'Auto Policy', why, changes });
+    }
+
     return { changed: !!changed.any, why };
   }
 
@@ -6187,6 +6261,9 @@
 
     const dissMsg = `${Math.round(before.dissent*100)}%→${Math.round(after.dissent*100)}%`;
     const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
+
+    // Explainability: mirror to Governance log.
+    recordGovLog(s, { kind:'Faction Negotiation', why:`${ax} bloc`, changes: changes.slice(0, 6) });
 
     return { ok:true, msg:`Negotiated with the ${ax} bloc: ${changeMsg}. Dissent ${dissMsg}. (cooldown ~45s)` };
   }
@@ -7076,6 +7153,7 @@
     goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
 
     renderAdvisor(state, targets);
+    renderGovLog(state);
     renderCouncil(state, targets);
     renderFactions(state);
 

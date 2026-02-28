@@ -2168,3 +2168,22 @@ Files touched
 What to try
 - Let population exceed cap (e.g. buy/add a kitten) and confirm the Advisor offers **Fix housing** and that huts start finishing without extra micro.
 
+
+## 2026-02-28 16:57 CST - v0.9.106 Governance log (audit trail)
+
+Summary
+- NEW: added a “Governance log” panel that records Director-driven policy shifts.
+- Auto Policy now writes an audit entry when it nudges multipliers (includes top diffs + the reason string).
+- Faction negotiations also write to the Governance log (so politics-driven drift is traceable).
+- Coalesces rapid Auto Policy nudges into a single recent entry to avoid spam.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- Enable **Auto Policy**, let it run through a wobble (food/warmth/threat), then check **Governance log** to see exactly what it changed and why.
