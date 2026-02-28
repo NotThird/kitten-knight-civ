@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.57';
+  const GAME_VERSION = '0.9.58';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3565,6 +3565,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.58',
+      notes: [
+        'Explainability/QoL: added Director policy stats to the top panel (Autonomy, Effective autonomy, Discipline, Work pace).',
+        'These numbers make it easier to understand why kittens sometimes ignore the central plan (effective autonomy rises with dissent and falls with discipline).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.57',
       notes: [
         'QoL/Explainability: Reserves panel now shows a live "Recommended" line (season + population aware) so the buffer system is less guessy.',
@@ -4927,6 +4935,10 @@
       ['Food/Kitten', fmt(foodPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
+      ['Autonomy', `${Math.round(autonomy01(state)*100)}%`],
+      ['Eff Auto', `${Math.round(effectiveAutonomy01(state)*100)}%`],
+      ['Discipline', `${Math.round(discipline01(state)*100)}%`],
+      ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
       ['Focus-fit', `${Math.round(avgAlign*100)}%`],
     ];
 
@@ -4937,6 +4949,18 @@
         d.dataset.stat = 'dissent';
         d.title = 'Click to inspect what is driving dissent/compliance';
         d.style.cursor = 'pointer';
+      }
+      if (k === 'Autonomy') {
+        d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
+      }
+      if (k === 'Eff Auto') {
+        d.title = 'Effective autonomy (felt autonomy). Starts from Autonomy, then shifts with Discipline (down) and Dissent (up). Higher effective autonomy = more individual variation and less plan obedience.';
+      }
+      if (k === 'Discipline') {
+        d.title = 'Director Discipline policy (0–100%). Higher discipline increases compliance and reduces dissent formation, but has a small steady mood cost.';
+      }
+      if (k === 'Work pace') {
+        d.title = 'Director Work pace policy. Higher pace increases output but increases fatigue/hunger and slowly drags mood; lower pace is steadier but slower.';
       }
       if (k === 'Focus-fit') {
         d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline.';

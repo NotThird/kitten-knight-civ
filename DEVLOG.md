@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 04:40 CST - v0.9.58 Stats: surface Director policy levers (autonomy/discipline/work pace)
+
+Summary
+- QoL/Explainability: added Director policy stats to the top panel: **Autonomy**, **Effective autonomy**, **Discipline**, and **Work pace**.
+- Clarifies why kittens sometimes diverge from the central plan: effective autonomy rises with dissent and falls with discipline.
+- Added tooltips to each new stat card so the numbers are self-explanatory.
+- Save-safe: display-only change; no simulation logic changed.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Crank Discipline up, then increase Dissent (e.g., Tight rations + high work pace) and watch **Eff Auto** climb even though Autonomy stays fixed.
+
+---
+
 ## 2026-02-28 04:25 CST - v0.9.57 Reserves: live recommendations + one-click apply
 
 Summary
