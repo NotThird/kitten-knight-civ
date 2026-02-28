@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.71';
+  const GAME_VERSION = '0.9.72';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -418,6 +418,10 @@
       // When both buddies Socialize at the same time, dissent drops faster and both feel better.
       // This is tiny on purpose: it's a civ-sim texture layer, not a hard mechanic.
       buddyId: null,
+      // Buddy need (0..1): rises when separated, falls when spending time together. High need nudges Socialize and can add mild stress.
+      buddyNeed: 0,
+      // Timestamp of last meaningful buddy interaction (explainability hook; save-safe default 0).
+      lastBuddyAt: 0,
 
       // Memory: how long they've been stuck doing the same thing (adds natural rotation)
       taskStreak: 0,
@@ -468,6 +472,37 @@
     const bid = Number(k?.buddyId ?? 0);
     if (!bid) return null;
     return (s.kittens ?? []).find(x => Number(x?.id ?? 0) === bid) ?? null;
+  }
+
+  // Buddy need (relationship pressure)
+  // Increases slowly when separated; decreases when spending time together.
+  // Purpose: small emergent social texture + a policy lever (Socialize/Care + Autonomy).
+  function updateBuddyNeedPerSecond(s, k, task){
+    const b = buddyOf(s, k);
+    if (!b) { k.buddyNeed = clamp01(Number(k.buddyNeed ?? 0)); return; }
+
+    const t = String(task ?? k.task ?? '');
+    const bt = String(b.task ?? '');
+
+    // "Together" heuristics (no map/positions yet):
+    // - Explicitly together if both Socialize.
+    // - Also count as together if doing the same non-rest task (working side-by-side).
+    const together = (t === 'Socialize' && bt === 'Socialize') || (t && t === bt && t !== 'Rest');
+
+    const a = effectiveAutonomy01(s);
+    let need = clamp01(Number(k.buddyNeed ?? 0));
+
+    if (together) {
+      // Faster relief at higher autonomy (they can actually choose to pair up).
+      need = clamp01(need - (0.10 + 0.06 * a));
+      k.lastBuddyAt = Number(s.t ?? 0);
+    } else {
+      // Under strong planning (low autonomy), "missing your buddy" stress rises a bit faster.
+      const planPressure = (1 - a);
+      need = clamp01(need + (0.006 + 0.006 * planPressure));
+    }
+
+    k.buddyNeed = need;
   }
 
   function defaultRules(){
@@ -1767,6 +1802,14 @@
     if (councilActive(s)) stress *= 0.85;
     m -= stress * 0.0035; // max-ish ~ -0.0035/sec in extreme mismatch/low autonomy
 
+    // Buddy separation stress: if they haven't "seen" their buddy in a while,
+    // mood slowly drifts down (tiny, but noticeable under high discipline/low autonomy).
+    const need = clamp01(Number(k.buddyNeed ?? 0));
+    if (need > 0.65) {
+      const addStress = (need - 0.65) * (0.0045 + 0.0035 * d) * (1 + 0.35 * (1 - a));
+      m -= addStress;
+    }
+
     k.mood = clamp01(m);
   }
 
@@ -1807,6 +1850,12 @@
     // Timed colony-wide relief.
     if (festivalActive(s)) delta *= 0.70;
     if (councilActive(s)) delta *= 0.80;
+
+    // Buddy separation can also translate into low-grade resentment under strong planning.
+    const need = clamp01(Number(k.buddyNeed ?? 0));
+    if (need > 0.70) {
+      delta += (need - 0.70) * (0.006 + 0.006 * planPressure) * (1 + 0.35 * disPol);
+    }
 
     g = clamp01(g + delta);
     k.grievance = g;
@@ -2078,6 +2127,15 @@
           score += add;
           reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
         }
+
+        // Buddy need: if you're missing your buddy, Socialize becomes more attractive.
+        const need = clamp01(Number(k.buddyNeed ?? 0));
+        if (need > 0.55 && buddyOf(s, k)) {
+          const add = (need - 0.55) * 48;
+          score += add;
+          reasons.push(`misses buddy (${Math.round(need*100)}%) → +${add.toFixed(1)}`);
+        }
+
         // If we're in danger, don't chat.
         if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure → -40'); }
         if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
@@ -3409,6 +3467,9 @@
         // Grievance update (1s cadence): slow-burn resentment that can translate into dissent.
         updateGrievancePerSecond(state, k, d.task);
 
+        // Relationship pressure (buddy system): small emergent social texture.
+        updateBuddyNeedPerSecond(state, k, d.task);
+
         // Memory: track how long we've been doing the same job (1s resolution)
         k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
 
@@ -3736,6 +3797,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.72',
+      notes: [
+        'Buddy bonds upgraded: kittens now track Buddy-need (rises when separated; falls when spending time together).',
+        'Behavior: high Buddy-need nudges Socialize choices and adds mild mood/grievance pressure (especially under strong central planning).',
+        'Explainability: Decision Inspector header now shows buddy-need % when a buddy exists.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.71',
       notes: [
@@ -4188,8 +4258,9 @@
     const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
     const buddy = buddyOf(state, k);
     const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
+    const needNote = buddy ? ` | buddy-need: ${Math.round(clamp01(Number(k.buddyNeed ?? 0))*100)}%` : '';
     const align = valuesAlignment01(state, k);
-    inspectSubEl.textContent = `traits: ${traits} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    inspectSubEl.textContent = `traits: ${traits} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {

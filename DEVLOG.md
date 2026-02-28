@@ -1519,3 +1519,23 @@ Files touched
 
 What to try
 - Set **Discipline high** + **Autonomy low** and watch kittens stick to build/research tasks; then flip to **Autonomy high** and notice more preference-driven switching.
+
+
+---
+
+## 2026-02-28 08:11 CST - v0.9.72 Buddy-need (relationship pressure)
+
+Summary
+- Buddy bonds now include a persistent **Buddy-need** meter (0..1) that rises when buddies are apart and falls when they spend time together.
+- High Buddy-need gently nudges kittens toward **Socialize** and adds mild **mood/grievance** pressure (most noticeable under low Autonomy / high Discipline).
+- Explainability: the Decision Inspector header now shows **buddy-need %** when a kitten has a buddy.
+- Patch notes updated.
+
+Files touched
+- prototype/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Set **Autonomy low** and watch Buddy-need creep up; then bump **Socialize** policy multiplier (or let buddies socialize) and see it drain + stabilize mood.
+
