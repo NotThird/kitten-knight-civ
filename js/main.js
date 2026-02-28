@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.79';
+  const GAME_VERSION = '0.9.80';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3918,6 +3918,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.80',
+      notes: [
+        'UI/Explainability: Policy panel now shows per-action plan impact (without policy → with policy) next to each multiplier.',
+        'This makes it easier to see which quotas actually change the colony plan (vs what is being overridden by needs/autonomy).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.79',
       notes: [
         'NEW: Auto Policy (Director checkbox). The Director gently nudges policy multipliers toward your Targets (food/kitten, warmth, threat).',
@@ -6475,14 +6483,25 @@
       (a === 'BuildGranary' && (!state.unlocked.construction || !state.unlocked.granary)) ||
       ((a === 'BuildHut' || a === 'BuildPalisade') && !state.unlocked.construction);
 
+    const plan = state._lastPlan ?? null;
+    const desiredNow = plan?.desired ? summarizePlan(plan.desired) : '';
+    const desiredBase = plan?.desiredBase ? summarizePlan(plan.desiredBase) : '';
+
     const line = (label, a) => {
       const v = Number(state.policyMult[a] ?? 1);
       const val = Math.max(0, Math.min(2, Number.isFinite(v)?v:1));
       state.policyMult[a] = val;
       const disabled = lock(a);
+
+      const b = (plan && plan.desiredBase && (a in plan.desiredBase)) ? Number(plan.desiredBase[a] ?? 0) : null;
+      const w = (plan && plan.desired && (a in plan.desired)) ? Number(plan.desired[a] ?? 0) : null;
+      const planNote = (b !== null || w !== null)
+        ? `<span class=\"small\" style=\"opacity:.75; margin-left:6px\" title=\"Plan preview for this action (without policy → with policy).\">plan ${b===null?'-':b}→${w===null?'-':w}</span>`
+        : '';
+
       return `
         <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:6px">
-          <span class="small" style="min-width:110px">${label}</span>
+          <span class="small" style="min-width:110px">${label}${planNote}</span>
           <div class="row" style="gap:6px">
             <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''}>-</button>
             <span class="small" style="display:inline-block; width:44px; text-align:center">${val.toFixed(2)}</span>
@@ -6491,10 +6510,6 @@
           </div>
         </div>`;
     };
-
-    const plan = state._lastPlan ?? null;
-    const desiredNow = plan?.desired ? summarizePlan(plan.desired) : '';
-    const desiredBase = plan?.desiredBase ? summarizePlan(plan.desiredBase) : '';
 
     const head = (desiredNow || desiredBase) ? `
       <div class="small" style="margin-bottom:8px; opacity:.9">

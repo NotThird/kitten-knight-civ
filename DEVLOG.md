@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 10:11 CST - v0.9.80 Policy per-action plan impact (explainability)
+
+Summary
+- UI/Explainability: Policy panel now shows per-action plan impact next to each multiplier (**without policy â†’ with policy**).
+- Makes it obvious when a quota is changing the colony-level plan vs when behavior is being overridden by needs/autonomy/safety rules.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Toggle a single policy (e.g., Guard x1.50) and watch the per-action plan preview change immediately, then compare to actual assigned tasks.
+
+---
+
 ## 2026-02-28 09:41 CST - v0.9.78 Buddy-need visibility in colony table
 
 Summary
@@ -1652,8 +1670,8 @@ What to try
 ## 2026-02-28 10:02 CST - v0.9.79 Auto Policy (targets ? policy nudges)
 
 Summary
-- NEW: **Auto Policy** checkbox (Director): a small “governor” that nudges policy multipliers toward your Targets (food/kitten, warmth, threat).
-- Makes tiny, reversible changes (±0.05 steps) with cooldowns; logs sparingly to avoid spam.
+- NEW: **Auto Policy** checkbox (Director): a small ï¿½governorï¿½ that nudges policy multipliers toward your Targets (food/kitten, warmth, threat).
+- Makes tiny, reversible changes (ï¿½0.05 steps) with cooldowns; logs sparingly to avoid spam.
 - Pauses automatically during **Crisis Protocol** so emergency overlays remain authoritative.
 - Explainability: Season panel shows the last Auto Policy reason (what deficit it reacted to).
 - Patch notes updated.
