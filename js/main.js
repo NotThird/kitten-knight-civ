@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.33';
+  const GAME_VERSION = '0.9.34';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2508,7 +2508,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2520,6 +2520,9 @@
     if (!('autoDoctrine' in state.director)) state.director.autoDoctrine = false;
     if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
     if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
+    if (!('autoRations' in state.director)) state.director.autoRations = false;
+    if (!('autoRationsNextChangeAt' in state.director)) state.director.autoRationsNextChangeAt = 0;
+    if (!('autoRationsWhy' in state.director)) state.director.autoRationsWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
     if (!('autoCrisis' in state.director)) state.director.autoCrisis = false;
     if (!('autoCrisisTriggered' in state.director)) state.director.autoCrisisTriggered = false;
@@ -2650,6 +2653,31 @@
       if (state.signals.FOOD && foodPerKitten > offAt) {
         state.signals.FOOD = false;
         log(`Auto Food Crisis: OFF (food/kitten ${foodPerKitten.toFixed(1)} > ${offAt.toFixed(1)})`);
+      }
+    }
+
+    // Director automation: optional auto RATIONS.
+    // Goal: reduce micro by switching Tight/Normal/Feast based on obvious stability + cohesion signals.
+    // Uses a cooldown so it doesn't flap every second.
+    if (state.director.autoRations) {
+      state._autoRationsTimer = (state._autoRationsTimer ?? 0) + dt;
+      if (state._autoRationsTimer >= 1) {
+        state._autoRationsTimer = 0;
+
+        state.director.autoRationsNextChangeAt = Number(state.director.autoRationsNextChangeAt ?? 0) || 0;
+        if (state.t >= state.director.autoRationsNextChangeAt) {
+          const choice = chooseAutoRations(state);
+          const cur = String(state.rations ?? 'Normal');
+          if (choice?.rations && choice.rations !== cur) {
+            state.rations = choice.rations;
+            state.director.autoRationsWhy = choice.why || '';
+            log(`Auto Rations: ${choice.rations} (${choice.why || 'auto'})`);
+            state.director.autoRationsNextChangeAt = state.t + 14;
+          } else {
+            // Keep reason fresh even if we didn't change.
+            state.director.autoRationsWhy = choice?.why || state.director.autoRationsWhy || '';
+          }
+        }
       }
     }
 
@@ -3196,6 +3224,13 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.34',
+      notes: [
+        'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
+        'Explainability: Season panel shows Auto rations status + the last reason.'
+      ]
+    },
     {
       v: '0.9.33',
       notes: [
@@ -3753,7 +3788,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -3765,6 +3800,9 @@
     if (!('autoDoctrine' in state.director)) state.director.autoDoctrine = false;
     if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
     if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
+    if (!('autoRations' in state.director)) state.director.autoRations = false;
+    if (!('autoRationsNextChangeAt' in state.director)) state.director.autoRationsNextChangeAt = 0;
+    if (!('autoRationsWhy' in state.director)) state.director.autoRationsWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
     if (!('autoCrisis' in state.director)) state.director.autoCrisis = false;
     if (!('autoCrisisTriggered' in state.director)) state.director.autoCrisisTriggered = false;
@@ -3803,6 +3841,8 @@
     if (autoMode) autoMode.checked = !!state.director.autoMode;
     const autoDoc = el('autoDoctrine');
     if (autoDoc) autoDoc.checked = !!state.director.autoDoctrine;
+    const autoRat = el('autoRations');
+    if (autoRat) autoRat.checked = !!state.director.autoRations;
     const autoRec = el('autoRecruit');
     if (autoRec) autoRec.checked = !!state.director.autoRecruit;
     const autoCrisis = el('autoCrisis');
@@ -4066,6 +4106,10 @@
     const adWhy = String(state.director?.autoDoctrineWhy ?? '').trim();
     const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` - ${adWhy}` : ''}\n` : '';
 
+    const aRatOn = !!state.director?.autoRations;
+    const aRatWhy = String(state.director?.autoRationsWhy ?? '').trim();
+    const aRatLine = aRatOn ? `Auto rations: ON (${String(state.rations ?? 'Normal')})${aRatWhy ? ` - ${aRatWhy}` : ''}\n` : '';
+
     const arOn = !!state.director?.autoRecruit;
     const arYear = Number(state.director?.recruitYear ?? -1);
     const curYear = yearAt(state.t);
@@ -4098,6 +4142,7 @@
       autLine +
       amLine +
       adLine +
+      aRatLine +
       arLine +
       acLine +
       festLine +
@@ -4799,11 +4844,23 @@
 
   const autoDoctrineEl = document.getElementById('autoDoctrine');
   if (autoDoctrineEl) autoDoctrineEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00, doctrine:'Balanced' };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00, doctrine:'Balanced' };
     state.director.autoDoctrine = !!e.target.checked;
     // Allow an immediate switch when toggled on.
     if (state.director.autoDoctrine) state.director.autoDoctrineNextChangeAt = 0;
     log(`Auto Doctrine → ${state.director.autoDoctrine ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoRationsEl = document.getElementById('autoRations');
+  if (autoRationsEl) autoRationsEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00, doctrine:'Balanced' };
+    state.director.autoRations = !!e.target.checked;
+    // Allow an immediate change when toggled on.
+    if (state.director.autoRations) state.director.autoRationsNextChangeAt = 0;
+    if (!state.director.autoRations) state.director.autoRationsWhy = '';
+    log(`Auto Rations → ${state.director.autoRations ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -4898,6 +4955,28 @@
 
     // Default: Survive (keeps buffers healthy without overcommitting).
     return { mode: 'Survive', why: 'not clearly stable yet' };
+  }
+
+  function chooseAutoRations(s){
+    const targets = seasonTargets(s);
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    const foodPerKitten = Number(s.res?.food ?? 0) / n;
+    const dis = dissent01(s);
+
+    // Tight: when food is genuinely scary.
+    if (foodPerKitten < targets.foodPerKitten * 0.82) {
+      return { rations: 'Tight', why: `food/kitten ${fmt(foodPerKitten)} < ${(targets.foodPerKitten*0.82).toFixed(0)}` };
+    }
+
+    // Feast: when food is stable but cohesion is failing.
+    // (Feeding well is a civ-sim lever to buy compliance back.)
+    const stableFood = foodPerKitten >= targets.foodPerKitten * 1.05;
+    if (stableFood && dis >= 0.58) {
+      return { rations: 'Feast', why: `stable food + dissent ${Math.round(dis*100)}%` };
+    }
+
+    // Default: Normal.
+    return { rations: 'Normal', why: 'steady' };
   }
 
   function chooseAutoDoctrine(s){

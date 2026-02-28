@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 22:39 CST - v0.9.34 Director: Auto Rations
+
+Summary
+- NEW: **Auto Rations** toggle — the Director can automatically switch **Tight / Normal / Feast** based on food stability + dissent (with a cooldown to avoid flapping).
+- Tight triggers when food/kitten is genuinely low; Feast triggers when food is stable but cohesion is failing (high dissent).
+- Explainability: Season panel shows **Auto rations** status + the last reason.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Rations**, then tank food/kitten to force **Tight**, stabilize, and spike dissent (high Work pace + Tight) to see it flip to **Feast** when food is safe.
+
+---
+
 ## 2026-02-27 22:24 CST - v0.9.33 Explainability: decision override badges in Task
 
 Summary
