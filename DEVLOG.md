@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 23:39 CST - v0.9.38 Director: Priorities sliders (policy weights)
+
+Summary
+- Added **Director Priorities** sliders: **Food / Safety / Progress** (50%–150%).
+- These priorities bias **individual kitten action scoring** (not just the colony plan), creating a clearer "policy → behavior" loop.
+- Explainability: affected actions include a `prio ...` line in the **Decision Inspector** score breakdown.
+- Priorities are saved + included in Director profiles (save-safe; defaults to 100% for old saves).
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Set **Food 150% / Progress 50%** and confirm kittens strongly prefer Forage/Farm/PreserveFood even in Expand mode (then flip to **Progress 150%** once stable).
+
+---
+
 ## 2026-02-27 23:24 CST - v0.9.37 QoL: Auto-pause on hidden tab
 
 Summary

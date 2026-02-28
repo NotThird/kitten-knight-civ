@@ -119,6 +119,30 @@
 
       <div style="height:8px"></div>
       <div class="row">
+        <label class="small" title="Director priorities: these are high-level weight sliders that bias *individual* kitten scoring (not just the colony plan). They combine with Mode, your Policy multipliers, and kitten preferences. This is meant to create more legible 'policy → behavior' loops.">Priorities
+        </label>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value food actions more (Forage/Farm/PreserveFood). Lower = they'll only do food work when the situation demands it.">Food
+          <input type="range" id="prioFood" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioFoodHint"></span>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value stability actions more (Guard/StokeFire + emergency-building). Useful for winter and pre-raid.">Safety
+          <input type="range" id="prioSafety" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioSafetyHint"></span>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value advancement actions more (Research/Tools/Workshop/Library). Good when stable; dangerous when resources are tight.">Progress
+          <input type="range" id="prioProgress" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioProgressHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
         <label class="small" title="Labor doctrine: how hard you push specialization vs rotation. Specialize makes roles stick (higher role pressure, lower boredom rotation). Rotate reduces role pressure, increases boredom rotation, and slightly reduces dissent buildup.">Labor doctrine
           <select id="doctrine">
             <option value="Balanced">Balanced</option>

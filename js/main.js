@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.37';
+  const GAME_VERSION = '0.9.38';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -531,6 +531,14 @@
     const raw = Number(s?.director?.workPace ?? 1.00);
     if (!Number.isFinite(raw)) return 1.00;
     return Math.max(0.8, Math.min(1.2, raw));
+  }
+
+  // --- Director priorities (high-level weights that bias *individual* action scoring)
+  // Values are multipliers in [0.50..1.50]. 1.00 = neutral.
+  function prioMul(s, key){
+    const v = Number(s?.director?.[key] ?? 1.00);
+    if (!Number.isFinite(v)) return 1.00;
+    return Math.max(0.50, Math.min(1.50, v));
   }
 
   // --- Task defs
@@ -1681,6 +1689,15 @@
     const pf = String(pfInfo.focus ?? 'Auto');
     const topSkill = topSkillInfo(k);
 
+    // Director priorities (policy weights)
+    const pFood = prioMul(s,'prioFood');
+    const pSafety = prioMul(s,'prioSafety');
+    const pProg = prioMul(s,'prioProgress');
+    const FOOD_ACT = new Set(['Forage','Farm','PreserveFood']);
+    const SAFETY_ACT = new Set(['Guard','StokeFire']);
+    const PROG_ACT = new Set(['Research','Mentor','CraftTools','BuildWorkshop','BuildLibrary']);
+    // Builders are special: they are both "safety" (palisade/huts/granary) and "progress" (infrastructure).
+
     // Availability above reserves (execution layer hard-stops spending below reserve; scoring should reflect this)
     // ctx.shadowAvail is a 1s planning-time reservation system so multiple kittens don't all pick the same
     // wood/science sink and then bounce off reserves.
@@ -1717,6 +1734,27 @@
       if (!taskDefs[a].enabled(s)) continue;
       let score = base(a);
       const reasons = [`mode=${mode} base +${base(a)}`];
+
+      // Director priorities bias individual scoring (not a hard lock).
+      // We apply it as an additive bump proportional to the mode base so it stays readable and doesn't dominate emergencies.
+      if (FOOD_ACT.has(a)) {
+        const add = base(a) * (pFood - 1);
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Food x${pFood.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
+      if (SAFETY_ACT.has(a)) {
+        const add = base(a) * (pSafety - 1);
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Safety x${pSafety.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
+      if (PROG_ACT.has(a)) {
+        const add = base(a) * (pProg - 1);
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
+      if (a === 'BuildHut' || a === 'BuildGranary' || a === 'BuildPalisade') {
+        // Infrastructure: treat as a blend of Safety + Progress, so you can push building without always pushing research.
+        const mul = (0.55 * pSafety + 0.45 * pProg);
+        const add = base(a) * (mul - 1);
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
 
       // Mood: unhappy kittens are more likely to seek rest; happy kittens tolerate productive work better.
       // (Still overridden by safety rules + emergencies.)
@@ -2579,9 +2617,15 @@
     if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
     if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
+    if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
+    if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
+    if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
+    state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(state.director.prioFood ?? 1.00) || 1.00));
+    state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(state.director.prioSafety ?? 1.00) || 1.00));
+    state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(state.director.prioProgress ?? 1.00) || 1.00));
 
     // --- Social pressure: Dissent
     // Emergent behavior layer: when mood is low and policy is harsh, kittens become less compliant.
@@ -3271,6 +3315,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.38',
+      notes: [
+        'NEW: Director Priorities sliders (Food / Safety / Progress) — high-level policy weights that bias individual kitten scoring (not just the colony plan).',
+        'Explainability: the action score breakdown now includes the priority line when it applies (look in the Decision Inspector).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.37',
       notes: [
         'QoL: Auto-pause when the tab is hidden; automatically resumes when you come back (does not override manual Pause).',
@@ -3280,7 +3332,7 @@
     {
       v: '0.9.36',
       notes: [
-        'NEW: Buddy bonds - each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
+        'NEW: Buddy bonds — each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
         'When a kitten and their buddy Socialize at the same time, dissent drops a bit faster and their mood recovers slightly faster.',
         'Explainability: Buddy is shown in the Decision Inspector header.'
       ]
@@ -3288,14 +3340,14 @@
     {
       v: '0.9.35',
       notes: [
-        'Advisor: new quick actions for social stability - it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
+        'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
         'Explainability: makes the "colony is grumbling" fix path more discoverable without adding hidden automation.'
       ]
     },
     {
       v: '0.9.34',
       notes: [
-        'NEW: Auto Rations toggle - the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
+        'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
         'Explainability: Season panel shows Auto rations status + the last reason.'
       ]
     },
@@ -3519,7 +3571,7 @@
     const comp = compliance01(state);
     const drivers = state._dissentDrivers ?? null;
 
-    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) - Compliance x${comp.toFixed(2)}`;
+    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) — Compliance x${comp.toFixed(2)}`;
 
     const season = seasonAt(state.t);
     const rat = getRations(state);
@@ -3534,7 +3586,7 @@
     lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, alarm).');
     lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
     lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
-    lines.push('• Dissent is then smoothed toward that desire (~20-25s to swing hard).');
+    lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
     lines.push('');
 
     if (drivers && typeof drivers === 'object') {
@@ -3765,7 +3817,7 @@
     // If dissent is high and you can afford it, Council is the cleanest "push the colony back into compliance" lever.
     const disNow = dissent01(s);
     if (disNow > 0.55 && !councilActive(s) && canHoldCouncil(s)) {
-      lines.push(`• high dissent (${Math.round(disNow*100)}%) - Council can reduce grumbling quickly`);
+      lines.push(`• high dissent (${Math.round(disNow*100)}%) — Council can reduce grumbling quickly`);
       recs.push({
         id: 'council',
         label: 'Hold Council',
@@ -3779,7 +3831,7 @@
 
     // If mood is low and you can afford it, Festival is the fastest morale lever.
     if (avgMood < 0.48 && !festivalActive(s) && canHoldFestival(s)) {
-      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) - Festival can boost morale + output`);
+      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) — Festival can boost morale + output`);
       recs.push({
         id: 'festival',
         label: 'Hold Festival',
@@ -3917,9 +3969,15 @@
     if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
     if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
+    if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
+    if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
+    if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
+    state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(state.director.prioFood ?? 1.00) || 1.00));
+    state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(state.director.prioSafety ?? 1.00) || 1.00));
+    state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(state.director.prioProgress ?? 1.00) || 1.00));
 
     const wp = !!state.director.winterPrep;
     const wpBtn = el('btnWinterPrep');
@@ -4334,6 +4392,31 @@
       const moodDrift = wpMul > 1.02 ? `mood drift ↓` : (wpMul < 0.98 ? `mood drift ↑` : `mood steady`);
       wph.textContent = `${wpPct}% | output x${wpMul.toFixed(2)} | fatigue x${wpMul.toFixed(2)} | ${moodDrift}`;
     }
+
+    // Director priorities (high-level policy weights)
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood:1.00, prioSafety:1.00, prioProgress:1.00 };
+    if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
+    if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
+    if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
+
+    const prFoodMul = prioMul(state,'prioFood');
+    const prSafetyMul = prioMul(state,'prioSafety');
+    const prProgMul = prioMul(state,'prioProgress');
+
+    const prFoodEl = el('prioFood');
+    if (prFoodEl) prFoodEl.value = String(Math.round(prFoodMul*100/5)*5);
+    const prFoodH = el('prioFoodHint');
+    if (prFoodH) prFoodH.textContent = `${Math.round(prFoodMul*100)}% | biases Forage/Farm/PreserveFood scores`;
+
+    const prSafetyEl = el('prioSafety');
+    if (prSafetyEl) prSafetyEl.value = String(Math.round(prSafetyMul*100/5)*5);
+    const prSafetyH = el('prioSafetyHint');
+    if (prSafetyH) prSafetyH.textContent = `${Math.round(prSafetyMul*100)}% | biases Guard/StokeFire (+build infra blend)`;
+
+    const prProgEl = el('prioProgress');
+    if (prProgEl) prProgEl.value = String(Math.round(prProgMul*100/5)*5);
+    const prProgH = el('prioProgressHint');
+    if (prProgH) prProgH.textContent = `${Math.round(prProgMul*100)}% | biases Research/Tools/Workshop/Library (+infra blend)`;
 
     // Labor doctrine (specialization vs rotation)
     const doc = doctrineKey(state);
@@ -4760,6 +4843,9 @@
         discipline: clamp01(Number(state.director.discipline ?? 0.40)),
         workPace: Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00)),
         doctrine: doctrineKey(state),
+        prioFood: prioMul(state,'prioFood'),
+        prioSafety: prioMul(state,'prioSafety'),
+        prioProgress: prioMul(state,'prioProgress'),
       },
     };
   }
@@ -4781,6 +4867,9 @@
       if ('autonomy' in snap.director) state.director.autonomy = clamp01(Number(snap.director.autonomy ?? 0.60));
       if ('discipline' in snap.director) state.director.discipline = clamp01(Number(snap.director.discipline ?? 0.40));
       if ('workPace' in snap.director) state.director.workPace = Math.max(0.8, Math.min(1.2, Number(snap.director.workPace ?? 1.00) || 1.00));
+      if ('prioFood' in snap.director) state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(snap.director.prioFood ?? 1.00) || 1.00));
+      if ('prioSafety' in snap.director) state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(snap.director.prioSafety ?? 1.00) || 1.00));
+      if ('prioProgress' in snap.director) state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(snap.director.prioProgress ?? 1.00) || 1.00));
       if ('doctrine' in snap.director) {
         const v = String(snap.director.doctrine ?? 'Balanced');
         state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
@@ -5173,6 +5262,37 @@
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
     log(`Work pace → ${Math.round(state.director.workPace * 100)}%`);
+    save();
+    render();
+  });
+
+  // Director priorities (Food/Safety/Progress)
+  const prioFoodInput = document.getElementById('prioFood');
+  if (prioFoodInput) prioFoodInput.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
+    state.director.prioFood = Math.max(0.50, Math.min(1.50, pct / 100));
+    log(`Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
+    save();
+    render();
+  });
+
+  const prioSafetyInput = document.getElementById('prioSafety');
+  if (prioSafetyInput) prioSafetyInput.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
+    state.director.prioSafety = Math.max(0.50, Math.min(1.50, pct / 100));
+    log(`Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
+    save();
+    render();
+  });
+
+  const prioProgressInput = document.getElementById('prioProgress');
+  if (prioProgressInput) prioProgressInput.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
+    state.director.prioProgress = Math.max(0.50, Math.min(1.50, pct / 100));
+    log(`Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
     save();
     render();
   });
