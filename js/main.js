@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.80';
+  const GAME_VERSION = '0.9.81';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2971,6 +2971,10 @@
             : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
 
       log(msg + (from ? ` (from ${from})` : ''));
+
+      // Civ-sim: faction demands often emerge at season boundaries when priorities naturally shift.
+      const fd = maybeStartFactionDemand(state, `season ${from}→${season.name}`);
+      if (fd) log(`Faction demand: the ${fd.axis} bloc wants concessions (accept or ignore in Factions).`);
     }
 
     // Seasonal telegraphing (warnings you can react to)
@@ -3818,6 +3822,19 @@
 
   // Factions: values blocs
   if (factionsEl) factionsEl.addEventListener('click', (e) => {
+    // Demand resolution (accept/ignore)
+    const dBtn = e.target?.closest?.('button[data-demand]');
+    if (dBtn) {
+      const act = String(dBtn.dataset.demand || '');
+      const accept = (act === 'accept');
+      const res = resolveFactionDemand(state, accept);
+      if (res?.msg) log(res.msg);
+      save();
+      render();
+      return;
+    }
+
+    // Normal negotiation
     const btn = e.target?.closest?.('button[data-faction]');
     if (!btn) return;
     const axis = String(btn.dataset.faction || '');
@@ -3917,6 +3934,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.81',
+      notes: [
+        'NEW: Faction Demands. On some season changes (when dissent is meaningful and the dominant values bloc feels misaligned), a bloc will issue a demand.',
+        'You can Accept (small policy concession + stronger cohesion boost) or Ignore (dissent spikes + grievance for that bloc).',
+        'Explainability: Demand shows its trigger reason + expiry timer in the Factions panel.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.80',
       notes: [
@@ -5491,6 +5517,123 @@
     return { ok:true, msg:`Negotiated with the ${ax} bloc: ${changeMsg}. Dissent ${dissMsg}. (cooldown ~45s)` };
   }
 
+  // --- Faction Demands (civ-sim pressure)
+  // Once in a while (usually on season change), the dominant values bloc will make a demand.
+  // Accepting makes a small policy concession (same knobs as "Negotiate"), but gives a stronger cohesion boost.
+  // Ignoring increases dissent and grievance for that bloc (politics has consequences).
+  // Save-safe: stored in director.factionDemand; missing fields default harmlessly.
+  function activeFactionDemand(s){
+    const d = s?.director?.factionDemand;
+    if (!d || typeof d !== 'object') return null;
+    const nowT = Number(s?.t ?? 0) || 0;
+    const exp = Number(d.expiresAt ?? 0) || 0;
+    const resolved = !!d.resolved;
+    if (resolved) return null;
+    if (exp > 0 && nowT > exp) return null;
+    const ax = String(d.axis ?? '');
+    if (!['Food','Safety','Progress','Social'].includes(ax)) return null;
+    return { axis: ax, at: Number(d.at ?? 0) || 0, expiresAt: exp, why: String(d.why ?? '') };
+  }
+
+  function dominantFactionAxis(s){
+    const groups = { Food:0, Safety:0, Progress:0, Social:0 };
+    for (const k of (s.kittens ?? [])) {
+      const ax = dominantValueAxis(k);
+      if (ax in groups) groups[ax] += 1;
+    }
+    let best = 'Food';
+    let bestN = -1;
+    for (const ax of Object.keys(groups)) {
+      if (groups[ax] > bestN) { bestN = groups[ax]; best = ax; }
+    }
+    return { axis: best, n: bestN };
+  }
+
+  function factionDemandShouldTrigger(s){
+    const n = Number(s?.kittens?.length ?? 0) || 0;
+    if (n < 4) return { ok:false, why:'pop too low' };
+
+    // Don’t spam: at most once per ~2 seasons.
+    const last = Number(s?.director?.factionDemandLastAt ?? 0) || 0;
+    if ((Number(s?.t ?? 0) || 0) - last < 120) return { ok:false, why:'cooldown' };
+
+    // Only when there’s meaningful political tension.
+    const dis = clamp01(Number(s?.social?.dissent ?? 0));
+    if (dis < 0.38) return { ok:false, why:'dissent low' };
+
+    // Only when the dominant bloc feels misaligned.
+    const dom = dominantFactionAxis(s);
+    let fitSum = 0;
+    let count = 0;
+    for (const k of (s.kittens ?? [])) {
+      if (dominantValueAxis(k) !== dom.axis) continue;
+      fitSum += valuesAlignment01(s, k);
+      count += 1;
+    }
+    const fit = count ? (fitSum / count) : 1;
+    if (fit > 0.74) return { ok:false, why:`dominant bloc fit ok (${fit.toFixed(2)})` };
+
+    return { ok:true, why:`${dom.axis} bloc uneasy (fit ${fit.toFixed(2)}, dissent ${(dis*100).toFixed(0)}%)` };
+  }
+
+  function maybeStartFactionDemand(s, triggerLabel){
+    s.director = s.director ?? {};
+
+    // If one is already active, do nothing.
+    if (activeFactionDemand(s)) return null;
+
+    const chk = factionDemandShouldTrigger(s);
+    if (!chk.ok) return null;
+
+    const dom = dominantFactionAxis(s);
+    const nowT = Number(s.t ?? 0) || 0;
+
+    s.director.factionDemand = {
+      axis: dom.axis,
+      at: nowT,
+      expiresAt: nowT + 45,
+      resolved: false,
+      why: `${triggerLabel}: ${chk.why}`,
+    };
+    s.director.factionDemandLastAt = nowT;
+
+    return s.director.factionDemand;
+  }
+
+  function resolveFactionDemand(s, accept){
+    s.director = s.director ?? {};
+    s.social = s.social ?? { dissent: 0 };
+
+    const d = activeFactionDemand(s);
+    if (!d) return { ok:false, msg:'No active demand.' };
+
+    // Mark resolved first to avoid double-press.
+    s.director.factionDemand = s.director.factionDemand ?? {};
+    s.director.factionDemand.resolved = true;
+    s.director.factionDemand.resolvedAt = Number(s.t ?? 0) || 0;
+    s.director.factionDemand.accepted = !!accept;
+
+    if (accept) {
+      // Stronger than a normal negotiation: being "heard" matters.
+      const res = negotiateWithFaction(s, d.axis);
+      // Extra cohesion bump + small grievance relief for that bloc.
+      s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.92);
+      for (const k of (s.kittens ?? [])) {
+        if (dominantValueAxis(k) === d.axis) k.grievance = clamp01(Number(k.grievance ?? 0) * 0.88);
+      }
+      return { ok:true, msg:`Demand accepted (${d.axis}). ${res?.msg || ''}`.trim() };
+    } else {
+      // Consequence: dissent spike + bloc resentment.
+      s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + 0.04);
+      for (const k of (s.kittens ?? [])) {
+        if (dominantValueAxis(k) !== d.axis) continue;
+        k.grievance = clamp01(Number(k.grievance ?? 0) + 0.05);
+        k.mood = clamp01(Number(k.mood ?? 0.55) - 0.03);
+      }
+      return { ok:true, msg:`Demand ignored (${d.axis}). Dissent rises; the bloc grows resentful.` };
+    }
+  }
+
   function renderFactions(s){
     if (!factionsEl) return;
 
@@ -5498,6 +5641,8 @@
     const nextAt = Number(s.director.factionsNextAt ?? 0) || 0;
     const can = Number(s.t ?? 0) >= nextAt;
     const left = Math.max(0, nextAt - Number(s.t ?? 0));
+
+    const demand = activeFactionDemand(s);
 
     const preview = (ax) => {
       if (ax === 'Food') return 'Concession: +prioFood, -prioProgress';
@@ -5544,7 +5689,30 @@
       `</div>`;
     }).join('');
 
-    factionsEl.innerHTML = lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Now with a short cooldown so you don’t accidentally drift too far.</div>`;
+    const demandHtml = demand
+      ? (() => {
+          const left = Math.max(0, Math.ceil((Number(demand.expiresAt ?? 0) - Number(s.t ?? 0))));
+          const title = `A political demand from the ${demand.axis} bloc. Accepting makes a small concession but reduces dissent; ignoring raises dissent and grievance. Expires in ~${left}s.`;
+          return `<div class="rule" style="border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.05)">` +
+            `<div class="top">` +
+              `<div>` +
+                `<div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">` +
+                  `<span class="tag">Demand</span>` +
+                  `<span class="small" style="opacity:.9">${escapeHtml(demand.axis)} bloc</span>` +
+                  `<span class="small" style="opacity:.75">(expires ~${left}s)</span>` +
+                `</div>` +
+                `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(String(demand.why || 'Seasonal tensions'))}</div>` +
+              `</div>` +
+              `<div class="row" style="gap:8px">` +
+                `<button class="btn good" data-demand="accept" title="Accept: concede slightly + reduce dissent more.">Accept</button>` +
+                `<button class="btn bad" data-demand="ignore" title="Ignore: dissent spikes; the bloc gains grievance.">Ignore</button>` +
+              `</div>` +
+            `</div>` +
+          `</div>`;
+        })()
+      : '';
+
+    factionsEl.innerHTML = demandHtml + lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Now with a short cooldown so you don’t accidentally drift too far.</div>`;
   }
 
   function render(){

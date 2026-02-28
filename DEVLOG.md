@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 10:27 CST - v0.9.81 Faction Demands (seasonal politics)
+
+Summary
+- NEW: **Faction Demands** can trigger on season change when dissent is meaningful and the dominant values bloc feels misaligned.
+- Demand appears in the **Factions** panel with an expiry timer and its trigger reason (explainability).
+- You can **Accept** (small policy concession, bigger cohesion/dissent drop) or **Ignore** (dissent spike + grievance for that bloc).
+- Logged as an event when it spawns.
+- No save-breaking changes (demand state is optional + safe defaults).
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Get dissent into the ~40–70% range, then hit a season change and choose **Accept vs Ignore** to see how quickly cohesion recovers (and which bloc gets mad).
+
+---
+
 ## 2026-02-28 10:11 CST - v0.9.80 Policy per-action plan impact (explainability)
 
 Summary
