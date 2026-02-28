@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 03:55 CST - v0.9.55 Focus-fit stat (values alignment) for policy explainability
+
+Summary
+- Explainability: added a new top stat, **Focus-fit**, showing average values-alignment between kittens and the colony focus (Mode + priority sliders).
+- The stat includes a mini breakdown: minimum alignment in the colony + how many kittens are in the low-alignment zone.
+- Makes “policy mismatch → mood drift → dissent” more legible without opening the inspector.
+- Save-safe: no schema changes (pure UI/explainability).
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Autonomy low + Discipline high, then flip Mode/priority presets; watch Focus-fit drop and (over time) mood/dissent respond.
+
+---
+
 ## 2026-02-28 03:40 CST - v0.9.54 Plan debug shows blocked sinks (reserves/inputs)
 
 Summary

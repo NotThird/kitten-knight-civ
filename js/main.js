@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.54';
+  const GAME_VERSION = '0.9.55';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3552,6 +3552,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.55',
+      notes: [
+        'Explainability: added a Focus-fit stat (avg values alignment) so you can see at a glance when colony policy is mismatched with kitten values (often a precursor to mood/dissent issues).',
+        'The stat also shows min fit + how many kittens are in the "low alignment" zone.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.54',
       notes: [
         'Explainability: Plan debug now shows when sink actions were blocked by reserves/inputs ("Blocked sinks"), so "desired vs assigned" mismatches are actionable.',
@@ -4632,6 +4640,13 @@
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
     const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
 
+    // Policy fit (values alignment): how much the colony's current focus (Mode + priority sliders)
+    // matches what kittens *want*. Low fit under low autonomy tends to drag mood and raise dissent.
+    const _aligns = state.kittens.map(k => valuesAlignment01(state, k));
+    const avgAlign = _aligns.length ? (_aligns.reduce((a,b)=>a+b,0) / _aligns.length) : 0.75;
+    const minAlign = _aligns.length ? Math.min(..._aligns) : 0.75;
+    const lowAlignCt = _aligns.filter(a => a < 0.55).length;
+
     el('modeSurvive').classList.toggle('active', state.mode==='Survive');
     el('modeExpand').classList.toggle('active', state.mode==='Expand');
     el('modeDefend').classList.toggle('active', state.mode==='Defend');
@@ -4852,6 +4867,7 @@
       if (key === 'Threat') return `${fmtRate(threatRate)} | tgt in ${threatTargetEta} | raid in ${raidEta}`;
       if (key === 'Science') return `${fmtRate(scienceRate)} | next unlock in ${nextUnlockEta}`;
       if (key === 'Tools') return `${fmtRate(toolsRate)}`;
+      if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
       return '';
     };
 
@@ -4876,6 +4892,7 @@
       ['Food/Kitten', fmt(foodPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
+      ['Focus-fit', `${Math.round(avgAlign*100)}%`],
     ];
 
     for (const [k,v] of stats) {
@@ -4885,6 +4902,9 @@
         d.dataset.stat = 'dissent';
         d.title = 'Click to inspect what is driving dissent/compliance';
         d.style.cursor = 'pointer';
+      }
+      if (k === 'Focus-fit') {
+        d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline.';
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
