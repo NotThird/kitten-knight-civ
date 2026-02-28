@@ -150,7 +150,49 @@
   // "Project focus" is a player nudge to bias build choices.
   // When set to Auto, we pick a focus each second based on obvious colony pain points.
   // This keeps the loop incremental (one priority at a time) while staying explainable.
+
+  // --- Pinned Project (build-order micro loop)
+  // Goal: let the player say "finish ONE Hut/Granary/etc" without having to permanently crank policy sliders.
+  // Implementation: a pinned project temporarily overrides effective Project focus until ONE unit completes.
+  function pinnedProjectDef(type){
+    const t = String(type || '');
+    if (t === 'Hut')      return { type:'Hut',      task:'BuildHut',      focus:'Housing',   owned: (s) => Number(s?.res?.huts ?? 0),        req:12, progressKey:'_hutProgress' };
+    if (t === 'Palisade') return { type:'Palisade', task:'BuildPalisade', focus:'Defense',   owned: (s) => Number(s?.res?.palisade ?? 0),    req:16, progressKey:'_palProgress' };
+    if (t === 'Granary')  return { type:'Granary',  task:'BuildGranary',  focus:'Storage',   owned: (s) => Number(s?.res?.granaries ?? 0),   req:22, progressKey:'_granProgress' };
+    if (t === 'Workshop') return { type:'Workshop', task:'BuildWorkshop', focus:'Industry',  owned: (s) => Number(s?.res?.workshops ?? 0),   req:26, progressKey:'_workProgress' };
+    if (t === 'Library')  return { type:'Library',  task:'BuildLibrary',  focus:'Knowledge', owned: (s) => Number(s?.res?.libraries ?? 0),   req:30, progressKey:'_libProgress' };
+    return null;
+  }
+
+  function pinnedProjectInfo(s){
+    const p = s?.director?.pinnedProject;
+    if (!p || typeof p !== 'object') return null;
+    const type = String(p.type || '');
+    const def = pinnedProjectDef(type);
+    if (!def) return null;
+
+    // Only meaningful once Construction exists.
+    if (!s.unlocked?.construction) return null;
+
+    const startOwned = Number(p.startOwned ?? 0);
+    const curOwned = Number(def.owned?.(s) ?? 0);
+    const completed = curOwned > startOwned;
+    return { ...def, startOwned, curOwned, completed };
+  }
+
+  function clearPinnedProject(s, msg){
+    s.director = s.director ?? {};
+    s.director.pinnedProject = null;
+    if (msg) log(msg);
+  }
+
   function getEffectiveProjectFocus(s){
+    // Pinned project overrides focus until ONE unit completes.
+    const pinned = pinnedProjectInfo(s);
+    if (pinned && !pinned.completed) {
+      return { focus: pinned.focus, why: `pinned project: ${pinned.type} (${pinned.curOwned}/${pinned.startOwned + 1})`, auto: false };
+    }
+
     const set = String(s.director?.projectFocus ?? 'Auto');
     if (set !== 'Auto') return { focus: set, why: 'player-set', auto: false };
 
@@ -247,7 +289,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2749,6 +2791,12 @@
     const pfInfo = getEffectiveProjectFocus(s);
     const pf = String(pfInfo.focus ?? 'Auto');
 
+    // Pinned project: guarantee at least 1 builder is *desired* for the specific pinned build track.
+    // (Reserves can still block execution; the Projects panel will show the blocker.)
+    const pinned = pinnedProjectInfo(s);
+    const pinnedTask = (pinned && !pinned.completed) ? String(pinned.task || '') : '';
+    const pinnedActive = !!pinnedTask;
+
     // Start with gentle defaults; plan is *advisory* and can be overridden by scores/rules.
     const desired = {
       Eat: 0,
@@ -2771,6 +2819,10 @@
       Mentor: 0,
       Research: 0,
     };
+
+    if (pinnedActive && (pinnedTask in desired)) {
+      desired[pinnedTask] = Math.max(desired[pinnedTask] ?? 0, 1);
+    }
 
     // Food always gets at least 1 worker once pop grows.
     if (n >= 2) {
@@ -3869,6 +3921,12 @@
       }
     }
 
+    // Pinned project completion: clear the pin once ONE unit completes.
+    const pin = pinnedProjectInfo(state);
+    if (pin && pin.completed) {
+      clearPinnedProject(state, `Pinned project complete: built 1 ${pin.type}.`);
+    }
+
     // Explainability: maintain smoothed deltas (not saved)
     updateRates(state, dt);
 
@@ -4097,6 +4155,32 @@
   // - Focus: sets Project focus (build order nudge)
   // - Unblock: lowers reserve(s) that are currently stalling an in-progress project (safe small steps)
   if (projectsEl) projectsEl.addEventListener('click', (e) => {
+    const pinBtn = e.target?.closest?.('button[data-pin]');
+    if (pinBtn) {
+      const act = String(pinBtn.dataset.pin || '');
+      const type = String(pinBtn.dataset.pintype || '');
+      state.director = state.director ?? {};
+
+      if (act === 'on') {
+        const def = pinnedProjectDef(type);
+        if (!def) { log('Pin failed: unknown project.'); return; }
+        const startOwned = Number(def.owned?.(state) ?? 0);
+        state.director.pinnedProject = { type: def.type, startOwned, at: state.t };
+
+        // Convenience: pin also sets focus to the matching track (still visible + reversible).
+        const focus = String(pinBtn.dataset.focus || def.focus || 'Auto');
+        if (focus) state.director.projectFocus = focus;
+
+        log(`Pinned project: ${def.type} (finish 1).`);
+      } else {
+        clearPinnedProject(state, 'Pinned project cleared.');
+      }
+
+      save();
+      render();
+      return;
+    }
+
     const ub = e.target?.closest?.('button[data-unblock]');
     if (ub) {
       const raw = String(ub.dataset.unblock || '');
@@ -6707,6 +6791,9 @@
       return ['wood'];
     };
 
+    const pinnedNow = pinnedProjectInfo(state);
+    const pinnedType = String(pinnedNow?.type ?? '');
+
     for (const pd of projDefs) {
       if (!pd.show()) continue;
       const prog = Number(state[pd.key] ?? 0);
@@ -6719,11 +6806,18 @@
       const blockedBy = blockKeys(projInputs(pd.name));
       const blocked = blockedBy.length ? ` (blocked by ${blockedBy.join('+')} reserve)` : '';
 
+      const isPinned = (pinnedType === pd.name);
+      const pinTag = isPinned ? ' <span class="tag good">PINNED</span>' : '';
+      const pinBtn = isPinned
+        ? `<button class=\"btn bad\" data-pin=\"off\" data-pintype=\"${pd.name}\" title=\"Unpin this project (stop forcing focus)\">Unpin</button>`
+        : `<button class=\"btn\" data-pin=\"on\" data-pintype=\"${pd.name}\" data-focus=\"${pd.focus}\" title=\"Pin: temporarily force focus to finish ONE ${pd.name}. Clears automatically on completion.\">Pin</button>`;
+
       projHtml.push(`
         <div style="margin-bottom:10px">
           <div class="row" style="justify-content:space-between; gap:10px">
-            <div class="small" style="flex:1 1 auto">${pd.name}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
+            <div class="small" style="flex:1 1 auto">${pd.name}${pinTag}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
             <div class="row" style="gap:6px">
+              ${pinBtn}
               ${blockedBy.length ? `<button class=\"btn\" data-unblock=\"${blockedBy.join(',')}\" data-focus=\"${pd.focus}\" title=\"Lowers only the reserve(s) currently blocking this project (safe small steps), then sets focus\">Unblock</button>` : ''}
               <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
             </div>
@@ -8469,6 +8563,16 @@
       if (!('autoDangerPauseNextAt' in s.director)) s.director.autoDangerPauseNextAt = 0;
       if (!('autoDangerPauseWhy' in s.director)) s.director.autoDangerPauseWhy = '';
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
+      if (!('pinnedProject' in s.director)) s.director.pinnedProject = null;
+      // Migration: sanitize pinned project payload (keep it small + safe)
+      if (s.director.pinnedProject && typeof s.director.pinnedProject === 'object') {
+        const t = String(s.director.pinnedProject.type ?? '');
+        const so = Number(s.director.pinnedProject.startOwned ?? 0);
+        if (!['Hut','Palisade','Granary','Workshop','Library'].includes(t) || !Number.isFinite(so) || so < 0) s.director.pinnedProject = null;
+        else s.director.pinnedProject = { type: t, startOwned: so, at: Number(s.director.pinnedProject.at ?? 0) || 0 };
+      } else {
+        s.director.pinnedProject = null;
+      }
       if (!('autonomy' in s.director)) s.director.autonomy = 0.60;
       if (!('workPace' in s.director)) s.director.workPace = 1.00;
       s.director.autonomy = clamp01(Number(s.director.autonomy ?? 0.60));

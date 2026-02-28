@@ -2012,3 +2012,22 @@ What to try
 
 ---
 ## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesn�t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n
+
+
+---
+## 2026-02-28 14:57 CST - v0.9.98 Pinned Projects (finish one building)
+
+Summary
+- NEW Projects panel action: **Pin** a Hut / Palisade / Granary / Workshop / Library to temporarily force Project focus until **one** completes.
+- Pin automatically clears itself on completion (logs a message), so it behaves like a small build-order command, not a permanent policy change.
+- Explainability: pinned projects show a **PINNED** tag in the Projects list; focus line shows the reason ("pinned project: …").
+- Save-safe: stored in `director.pinnedProject` (sanitized on load).
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Unlock Construction, then **Pin a Hut** while not housing-capped; confirm builders finish 1 hut and the pin clears itself.
