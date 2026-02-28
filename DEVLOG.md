@@ -2031,3 +2031,22 @@ Files touched
 
 What to try
 - Unlock Construction, then **Pin a Hut** while not housing-capped; confirm builders finish 1 hut and the pin clears itself.
+
+## 2026-02-28 15:12 CST - v0.9.99 Offline progress (capped) + clean summary log
+
+Summary
+- NEW: **Offline progress** — on load, the sim now advances up to **5 minutes** since your last save.
+- Explainability: adds a single compact log line showing offline deltas (food/jerky/wood/warmth/threat/science/tools).
+- Safety: offline sim suppresses spammy logs (season warnings, etc.) and reports how many were suppressed.
+- Save-safe: uses existing meta.lastTs stamping; no schema changes required.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/css/app.css
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Close the tab for ~60–180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
+

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.98';
+  const GAME_VERSION = '0.9.99';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -638,6 +638,16 @@
   }
 
   let state = load() ?? defaultState();
+
+  // --- Offline progress (tiny idle-game slice)
+  // On boot, we simulate a capped amount of time since the last save.
+  // This keeps the prototype incremental even when you're not staring at the tab.
+  // Explainability: we log a compact summary of what happened.
+  const _lastTs = Number(state?.meta?.lastTs ?? 0) || 0;
+  const _offlineSecRaw = _lastTs ? Math.max(0, (Date.now() - _lastTs) / 1000) : 0;
+  state._offlinePending = Math.min(300, _offlineSecRaw); // cap 5 minutes (keeps CPU sane + avoids huge surprise jumps)
+  state._offlineWasCapped = (_offlineSecRaw > state._offlinePending + 0.5);
+
 
   function workshopBonus(s){
     // Workshops amplify crafting/industry. Diminishing returns so it doesn't explode.
@@ -7337,7 +7347,15 @@
       .replaceAll("'",'&#39;');
   }
   function kittenCost(){ const n = state.kittens.length; return Math.floor(60 * Math.pow(1.27, Math.max(0, n-3))); }
-  function log(msg){ state.log.push(`[${fmt(state.t)}] ${msg}`); }
+
+  function log(msg){
+    // Optional suppression (used for offline simulation to avoid dumping 300 lines of season warnings).
+    if (state?._suppressLog) {
+      state._suppressedLogCount = (state._suppressedLogCount ?? 0) + 1;
+      return;
+    }
+    state.log.push(`[${fmt(state.t)}] ${msg}`);
+  }
 
   function summarizePlan(desired){
     const order = ['Care','Socialize','Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor','Research'];
@@ -8695,6 +8713,70 @@
     // Then show UI.
     openPatchNotes();
   }
+
+  function applyOfflineProgressOnBoot(){
+    const pending = Number(state?._offlinePending ?? 0) || 0;
+    if (pending < 3) { state._offlinePending = 0; return; }
+
+    // Snapshot for a concise delta log.
+    const before = {
+      t: Number(state.t ?? 0),
+      food: Number(state.res?.food ?? 0),
+      jerky: Number(state.res?.jerky ?? 0),
+      wood: Number(state.res?.wood ?? 0),
+      warmth: Number(state.res?.warmth ?? 0),
+      threat: Number(state.res?.threat ?? 0),
+      science: Number(state.res?.science ?? 0),
+      tools: Number(state.res?.tools ?? 0),
+    };
+
+    state._suppressLog = true;
+    state._suppressedLogCount = 0;
+
+    // Run the sim in small dt slices so 1s decision logic stays correct.
+    let left = Math.min(300, pending);
+    const dt = 0.25;
+    while (left > 0) {
+      step(Math.min(dt, left));
+      left -= dt;
+    }
+
+    state._suppressLog = false;
+
+    const after = {
+      t: Number(state.t ?? 0),
+      food: Number(state.res?.food ?? 0),
+      jerky: Number(state.res?.jerky ?? 0),
+      wood: Number(state.res?.wood ?? 0),
+      warmth: Number(state.res?.warmth ?? 0),
+      threat: Number(state.res?.threat ?? 0),
+      science: Number(state.res?.science ?? 0),
+      tools: Number(state.res?.tools ?? 0),
+    };
+
+    const d = (k) => (after[k] - before[k]);
+    const sim = Math.round(Math.min(300, pending));
+
+    const capped = state._offlineWasCapped ? ' (capped at 5m)' : '';
+    const suppressed = Number(state._suppressedLogCount ?? 0) || 0;
+
+    log(
+      `Offline progress: simulated ${sim}s${capped}. ` +
+      `Δfood ${fmt(d('food'))}, Δjerky ${fmt(d('jerky'))}, Δwood ${fmt(d('wood'))}, ` +
+      `Δwarmth ${fmt(d('warmth'))}, Δthreat ${fmt(d('threat'))}, ` +
+      `Δscience ${fmt(d('science'))}, Δtools ${fmt(d('tools'))}` +
+      (suppressed ? ` (suppressed ${suppressed} log lines)` : '')
+    );
+
+    state._offlinePending = 0;
+    state._offlineWasCapped = false;
+    state._suppressedLogCount = 0;
+
+    // Persist immediately so refreshing doesn't repeatedly re-run offline sim.
+    save();
+  }
+
+  applyOfflineProgressOnBoot();
 
   render();
   requestAnimationFrame(frame);
