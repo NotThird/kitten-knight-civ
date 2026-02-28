@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.52';
+  const GAME_VERSION = '0.9.53';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3536,6 +3536,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.53',
+      notes: [
+        'Explainability: Threat stat now shows ETA to your Max threat target (when threat is rising), in addition to raid ETA.',
+        'This makes it clearer when you are drifting into danger *before* an actual raid timer appears.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.52',
       notes: [
         'QoL: Stats cards now show tiny per-second trends + a few key ETAs (starve/freeze/raid/next unlock).',
@@ -4799,8 +4807,12 @@
     const toolsRate = Number(r.tools ?? 0);
     const jerkyRate = Number(r.jerky ?? 0);
 
-    const raidEta = fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate));
-    const threatTargetEta = fmtEtaSeconds(etaToTarget(state.res.threat, targets.maxThreat, threatRate));
+    const raidEta = (threatRate > 0.02 && state.res.threat < 100)
+      ? fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate))
+      : '-';
+    const threatTargetEta = (threatRate > 0.02 && state.res.threat < targets.maxThreat)
+      ? fmtEtaSeconds(etaToTarget(state.res.threat, targets.maxThreat, threatRate))
+      : '-';
     const warmthToTargetEta = fmtEtaSeconds(etaToTarget(state.res.warmth, targets.warmth, warmthRate));
     const nextUnlock = unlockDefs.find(u => !state.seenUnlocks[u.id]);
     const nextUnlockEta = nextUnlock ? fmtEtaSeconds(etaToTarget(state.res.science, nextUnlock.at, scienceRate)) : '-';
@@ -4814,7 +4826,7 @@
       if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
       if (key === 'Wood') return `${fmtRate(woodRate)}`;
       if (key === 'Warmth') return `${fmtRate(warmthRate)} | tgt in ${warmthToTargetEta} | 0 in ${freezeEta}`;
-      if (key === 'Threat') return `${fmtRate(threatRate)} | raid in ${raidEta}`;
+      if (key === 'Threat') return `${fmtRate(threatRate)} | tgt in ${threatTargetEta} | raid in ${raidEta}`;
       if (key === 'Science') return `${fmtRate(scienceRate)} | next unlock in ${nextUnlockEta}`;
       if (key === 'Tools') return `${fmtRate(toolsRate)}`;
       return '';

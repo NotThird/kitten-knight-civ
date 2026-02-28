@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 03:25 CST - v0.9.53 Threat ETA now includes target warning
+
+Summary
+- Explainability: Threat stat now shows ETA to your **Max threat** target (when threat is rising), not just the raid ETA.
+- This makes “we’re drifting into danger” visible earlier, so Defend/Guard nudges feel more proactive.
+- Small UX polish: hides the ETAs when threat is falling or already above target (avoids confusing negative timers).
+- Save-safe: no schema changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Let threat climb slowly and watch the Threat stat show “tgt in …” before “raid in …”, then switch to Defend and see the ETAs disappear as threat falls.
+
+---
+
 ## 2026-02-28 03:10 CST - v0.9.52 Stats trends + ETAs in the top bar
 
 Summary
