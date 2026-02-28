@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 19:23 CST - v0.9.21 Socialize action (labor → cohesion lever)
+
+Summary
+- Added a new action: **Socialize** — kittens can spend time organizing/chatting to **reduce Dissent** (improves Compliance) and gently lift Mood.
+- AI scoring now treats Socialize as attractive when Dissent is high, but heavily deprioritizes it during **food/warmth/threat** emergencies.
+- Planner will reserve **1 kitten** for Socialize when Dissent > ~50% *and* basics are stable, making “slow-motion strikes” self-correcting.
+- Policy multipliers now include **Socialize** so the Director can explicitly trade throughput for cohesion.
+- Migration-safe: older saves auto-add the new policy key (defaults to 1.0).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Push Dissent into **murmur/strike** (Tight rations + high Work pace), then set **Socialize mult → 2.0** and watch Dissent trend down + Compliance recover.
+
+---
+
 ## 2026-02-27 19:08 CST - v0.9.20 Decision Inspector: show decision origin (rule vs score)
 
 Summary

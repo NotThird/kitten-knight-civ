@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.20';
+  const GAME_VERSION = '0.9.21';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -45,7 +45,7 @@
   // This pairs with commitment windows + role bias to create readable specialization without hard locks.
   function momentumMul(k, action){
     const a = String(action ?? '');
-    if (!a || a === 'Eat' || a === 'Rest' || a === 'Loaf') return 1;
+    if (!a || a === 'Eat' || a === 'Rest' || a === 'Loaf' || a === 'Socialize') return 1;
     const streak = Math.max(0, Number(k.taskStreak ?? 0) || 0);
     if (streak <= 1) return 1;
     // +2% per second after the first, capped at +20%.
@@ -69,6 +69,7 @@
     BuildWorkshop: 'Building',
     BuildLibrary: 'Building',
     StokeFire: null,
+    Socialize: null,
     Eat: null,
     Rest: null,
   };
@@ -240,7 +241,7 @@
     seenUnlocks: {},
     kittens: [ makeKitten(1), makeKitten(2), makeKitten(3) ],
     // Player policy: biases the colony-level plan (not hard locks; rules still override).
-    policyMult: { Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, PreserveFood:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 },
+    policyMult: { Socialize:1, Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, PreserveFood:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 },
     // Optional role quotas: "try to keep N kittens in this role" (0 = no quota).
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
@@ -515,6 +516,40 @@
         // Mood: meaningful bump (especially if the colony is celebrating).
         const fest = festivalActive(s) ? 1 : 0;
         k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.020 + 0.006 * fest));
+      }
+    },
+    Socialize: {
+      enabled: (s) => true,
+      tick: (s,k,dt) => {
+        // Socialize: a “civ sim” pressure valve.
+        // Reduces dissent (improves compliance) and gently boosts mood, at the cost of no direct resources.
+        // This gives the player a labor lever that trades throughput for stability.
+        s.social = s.social ?? { dissent: 0, band: 'calm' };
+        if (!('dissent' in s.social)) s.social.dissent = 0;
+
+        const eff = efficiency(s, k);
+        const mom = momentumMul(k, 'Socialize');
+
+        // Self-care: chatting/organizing is less physically taxing than work.
+        k.energy = clamp01(k.energy + dt * 0.06);
+        k.hunger = clamp01(k.hunger + dt * 0.015);
+
+        // Mood: meaningful but bounded.
+        const fest = festivalActive(s) ? 1 : 0;
+        k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.018 + 0.006 * fest));
+
+        // Colony cohesion: bring dissent down.
+        // Discipline makes this more effective (you have “institutions” to channel the organizing).
+        const d = discipline01(s);
+        const reduce = dt * (0.010 + 0.010 * d) * eff * mom;
+        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce);
+
+        // Small spillover: boost one other kitten's mood a tiny amount.
+        const others = (s.kittens ?? []).filter(x => x && x.id !== k.id);
+        if (others.length) {
+          const target = others[(Math.random() * others.length) | 0];
+          target.mood = clamp01(Number(target.mood ?? 0.55) + dt * 0.004);
+        }
       }
     },
     Forage: {
@@ -1507,7 +1542,7 @@
     const sciAvail  = Number(ctx?.shadowAvail?.science ?? _sciAvail);
     const toolsAvail = Number(ctx?.shadowAvail?.tools ?? _toolsAvail);
 
-    const actions = ['Eat','Rest','Loaf','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    const actions = ['Eat','Rest','Loaf','Socialize','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (s.unlocked.library) actions.push('Mentor');
     if (s.unlocked.workshop) actions.push('CraftTools');
     if (s.unlocked.construction && s.unlocked.workshop) actions.push('BuildWorkshop');
@@ -1519,10 +1554,10 @@
     }
 
     const base = (a) => {
-      if (mode === 'Survive') return ({ Eat:20, Rest:14, Loaf:2, Forage:14, PreserveFood:6, Farm:18, ChopWood:8, StokeFire:18, Guard:6, BuildHut:2, BuildPalisade:3, BuildGranary:6, BuildWorkshop:4, CraftTools:0, Research:4 })[a] ?? 0;
-      if (mode === 'Expand') return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:6, Farm:12, ChopWood:18, StokeFire:10, Guard:6, BuildHut:20, BuildPalisade:10, BuildGranary:10, BuildWorkshop:12, CraftTools:6, Research:4 })[a] ?? 0;
-      if (mode === 'Defend') return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:5, Farm:12, ChopWood:12, StokeFire:10, Guard:22, BuildHut:4, BuildPalisade:20, BuildGranary:6, BuildWorkshop:6, CraftTools:3, Research:4 })[a] ?? 0;
-      return ({ Eat:16, Rest:10, Loaf:1, Forage:10, PreserveFood:7, Farm:12, ChopWood:10, StokeFire:10, Guard:10, BuildHut:6, BuildPalisade:8, BuildGranary:8, BuildWorkshop:14, CraftTools:16, Research:22 })[a] ?? 0;
+      if (mode === 'Survive') return ({ Eat:20, Rest:14, Loaf:2, Socialize:4, Forage:14, PreserveFood:6, Farm:18, ChopWood:8, StokeFire:18, Guard:6, BuildHut:2, BuildPalisade:3, BuildGranary:6, BuildWorkshop:4, CraftTools:0, Research:4 })[a] ?? 0;
+      if (mode === 'Expand') return ({ Eat:16, Rest:10, Loaf:1, Socialize:2, Forage:10, PreserveFood:6, Farm:12, ChopWood:18, StokeFire:10, Guard:6, BuildHut:20, BuildPalisade:10, BuildGranary:10, BuildWorkshop:12, CraftTools:6, Research:4 })[a] ?? 0;
+      if (mode === 'Defend') return ({ Eat:16, Rest:10, Loaf:1, Socialize:2, Forage:10, PreserveFood:5, Farm:12, ChopWood:12, StokeFire:10, Guard:22, BuildHut:4, BuildPalisade:20, BuildGranary:6, BuildWorkshop:6, CraftTools:3, Research:4 })[a] ?? 0;
+      return ({ Eat:16, Rest:10, Loaf:1, Socialize:2, Forage:10, PreserveFood:7, Farm:12, ChopWood:10, StokeFire:10, Guard:10, BuildHut:6, BuildPalisade:8, BuildGranary:8, BuildWorkshop:14, CraftTools:16, Research:22 })[a] ?? 0;
     };
 
     const out = [];
@@ -1559,7 +1594,37 @@
         if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
       }
 
-      if (a !== 'Eat' && a !== 'Rest' && a !== 'Loaf') {
+      // Socialize is an active cohesion action: lowers dissent (improves plan compliance) and boosts mood.
+      // It's strongest when dissent is high, but should lose to real emergencies.
+      if (a === 'Socialize') {
+        const dis = dissent01(s);
+        if (dis > 0.35) {
+          const add = Math.min(60, 12 + (dis - 0.35) * 110);
+          score += add;
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${add.toFixed(1)}`);
+        } else {
+          score -= 8;
+          reasons.push('low dissent → -8');
+        }
+        if (mood < 0.55) {
+          const add = (0.55 - mood) * 40;
+          score += add;
+          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
+        }
+        // If we're in danger, don't chat.
+        if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure → -40'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
+        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 28; reasons.push('threat pressure → -28'); }
+        // Small synergy: Discipline makes organizing more effective (less chaotic).
+        const dpol = discipline01(s);
+        if (dpol > 0.35) {
+          const add = (dpol - 0.35) * 18;
+          score += add;
+          reasons.push(`discipline ${(dpol*100).toFixed(0)}% → +${add.toFixed(1)}`);
+        }
+      }
+
+      if (a !== 'Eat' && a !== 'Rest' && a !== 'Loaf' && a !== 'Socialize') {
         const add = (mood - 0.55) * 10; // small
         if (Math.abs(add) >= 1) {
           score += add;
@@ -1583,7 +1648,7 @@
       }
 
       // Momentum: staying on a productive task gets a small bonus (pairs with throughput bonus).
-      if (a === (k.task ?? '') && a !== 'Eat' && a !== 'Rest' && a !== 'Loaf') {
+      if (a === (k.task ?? '') && a !== 'Eat' && a !== 'Rest' && a !== 'Loaf' && a !== 'Socialize') {
         const mom = momentumMul(k, a);
         if (mom > 1.0001) {
           const add = Math.min(12, (mom - 1) * 55);
@@ -1959,7 +2024,7 @@
     for (const a of Object.keys(desired)) desired[a] = Math.max(0, Math.min(n, desired[a] | 0));
 
     // If over budget, shave least-critical first.
-    const shaveOrder = ['Research','Mentor','CraftTools','BuildLibrary','BuildWorkshop','BuildGranary','BuildPalisade','BuildHut','PreserveFood','Guard','StokeFire','ChopWood','Farm','Forage'];
+    const shaveOrder = ['Socialize','Research','Mentor','CraftTools','BuildLibrary','BuildWorkshop','BuildGranary','BuildPalisade','BuildHut','PreserveFood','Guard','StokeFire','ChopWood','Farm','Forage'];
     let sum = Object.values(desired).reduce((a,b)=>a+b,0);
     let guard = 0;
     while (sum > n && guard++ < 99) {
@@ -1999,6 +2064,8 @@
     const desired = {
       Eat: 0,
       Rest: 0,
+      Loaf: 0,
+      Socialize: 0,
       Forage: 0,
       Farm: 0,
       PreserveFood: 0,
@@ -2049,6 +2116,12 @@
     // Threat: keep at least 1 guard once threat is non-trivial; scale up when alarm or over target.
     if (s.res.threat > 25 || s.signals.ALARM) desired.Guard = 1;
     if (s.res.threat > targets.maxThreat || s.signals.ALARM) desired.Guard = Math.min(n, 1 + Math.ceil((s.res.threat - targets.maxThreat) / 30));
+
+    // Cohesion: if dissent is high, plan for 1 kitten to actively socialize/organize.
+    // (Trades throughput for compliance; helps prevent slow-motion strikes.)
+    const dis = dissent01(s);
+    const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.92) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10);
+    if (basicsOk && dis > 0.50) desired.Socialize = Math.min(n, 1);
 
     // Housing/building: if capped or build push, try to allocate builders.
     if (s.unlocked.construction) {
@@ -2131,7 +2204,7 @@
     }
 
     // Research: fill leftover workers into research in Advance mode; otherwise keep it modest.
-    const hardReserved = Object.entries(desired).filter(([a,v]) => ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor'].includes(a)).reduce((acc,[,v])=>acc+(v||0),0);
+    const hardReserved = Object.entries(desired).filter(([a,v]) => ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor','Socialize'].includes(a)).reduce((acc,[,v])=>acc+(v||0),0);
     const leftover = Math.max(0, n - hardReserved);
     desired.Research = (s.mode === 'Advance') ? leftover : Math.floor(leftover * 0.5);
 
@@ -2853,10 +2926,10 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Decision Inspector now shows *how* the kitten picked its task (RULE / EMERGENCY / COMMIT / SCORE).',
-    'If autonomy sampling picked something other than the strict best score, the inspector calls it out.',
-    'Rule/emergency/commit picks still show the last computed scoring table as context ("informational").',
-    'No save-breaking changes: decision metadata is transient and stripped on save.'
+    'NEW: Socialize action — a cohesion lever that reduces dissent (boosts compliance) and gently lifts mood.',
+    'The AI will plan 1 kitten to Socialize when dissent gets high *and* basics are stable (food/warmth/threat).',
+    'Policy sliders now include Socialize (so you can nudge stability vs throughput).',
+    'No save-breaking changes: Socialize defaults to multiplier 1 and missing keys migrate safely.'
   ];
 
   function closePatchNotes(){
@@ -3608,7 +3681,7 @@
       if (!p) {
         planDebugEl.textContent = '-';
       } else {
-        const order = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Research','Eat','Rest'];
+        const order = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Research','Socialize','Loaf','Eat','Rest'];
         const lines = [];
         for (const a of order) {
           const want = p.desired?.[a] ?? 0;
@@ -3716,7 +3789,7 @@
   function log(msg){ state.log.push(`[${fmt(state.t)}] ${msg}`); }
 
   function summarizePlan(desired){
-    const order = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor','Research'];
+    const order = ['Socialize','Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard','BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary','CraftTools','Mentor','Research'];
     return order
       .map(a => ({ a, n: desired[a] ?? 0 }))
       .filter(x => x.n > 0)
@@ -3858,7 +3931,7 @@
   }
 
   function actEditor(act, idx){
-    const opts = ['Eat','Rest','Loaf','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    const opts = ['Eat','Rest','Loaf','Socialize','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (state.unlocked.library) opts.push('Mentor');
     if (state.unlocked.workshop) opts.push('CraftTools');
     if (state.unlocked.construction && state.unlocked.workshop) opts.push('BuildWorkshop');
@@ -4396,6 +4469,7 @@
   function setPolicy(mult, note){
     // Migration-safe: always keep all keys so older saves don't explode.
     state.policyMult = {
+      Socialize: mult.Socialize ?? 1,
       Forage: mult.Forage ?? 1,
       Farm: mult.Farm ?? 1,
       PreserveFood: mult.PreserveFood ?? 1,
@@ -4574,9 +4648,9 @@
       if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
       s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;
 
-      s.policyMult = s.policyMult ?? { Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
+      s.policyMult = s.policyMult ?? { Socialize:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
       // Add any missing keys for forward-compatible saves
-      for (const [k, v] of Object.entries({ Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 })) {
+      for (const [k, v] of Object.entries({ Socialize:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 })) {
         if (!(k in s.policyMult)) s.policyMult[k] = v;
       }
 
