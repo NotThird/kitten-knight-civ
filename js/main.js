@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.64';
+  const GAME_VERSION = '0.9.65';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -430,6 +430,10 @@
       _fallbackTo: null,
       _mentor: null,
 
+      // Transient: last time a sink action was blocked (by reserves/inputs) and we executed a fallback.
+      // Used for explainability in the Decision Inspector.
+      _lastBlocked: null,
+
       // Anti-thrash: short per-action cooldown if we just discovered an action is blocked.
       // Prevents kittens from repeatedly "trying" the same no-op sink every 1s.
       blockedCooldown: {},
@@ -570,6 +574,9 @@
     const blocked = k.task;
     k._blockedAction = blocked;
     k._blockedMsg = msg;
+
+    // Persist a short-lived blocked snapshot for inspector/debug (k._blockedMsg is cleared after decision).
+    k._lastBlocked = { at: Number(s?.t ?? 0), action: String(blocked), to: String(altTask), msg: String(msg ?? '') };
 
     // Explainability: accumulate a per-second "blocked sinks" summary so Plan debug can tell you
     // why desired != assigned (or why builders/researchers seem to "refuse" a sink).
@@ -3605,6 +3612,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.65',
+      notes: [
+        'Explainability: Decision Inspector now shows a short-lived "Execution" line when a sink action was blocked by reserves/inputs and the kitten immediately fell back to a different task.',
+        'Task tooltip also includes the short block reason for a few seconds (helps diagnose "why won\'t they build/craft" without digging through plan debug).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.64',
       notes: [
         'Explainability: Social inspector now shows colony average Values vs your current focus (Mode + priorities), plus the biggest mismatch axis.',
@@ -4032,6 +4047,18 @@
         if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`);
       }
       lines.push('');
+    }
+
+    // Execution explainability: show the last blocked sink → fallback (if it happened very recently).
+    const lb = k._lastBlocked;
+    if (lb && typeof lb === 'object') {
+      const age = (typeof lb.at === 'number') ? (state.t - lb.at) : null;
+      if (age !== null && Number.isFinite(age) && age <= 6) {
+        const msg = String(lb.msg ?? '').replace(/\s+/g,' ').trim();
+        lines.push(`Execution: ${String(lb.action ?? '')} blocked → ${String(lb.to ?? '')} (age ${fmt(age)}s)`);
+        if (msg) lines.push(`  - ${msg}`);
+        lines.push('');
+      }
     }
 
     for (let i=0;i<Math.min(10, rows.length);i++) {
@@ -5537,6 +5564,12 @@
       const taskTitleParts = [];
       if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
       if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
+      // If we have a recent blocked snapshot, include the short reason in tooltip.
+      const lb = k._lastBlocked;
+      if (lb && typeof lb === 'object' && (state.t - Number(lb.at ?? -9999)) <= 6) {
+        const msg = String(lb.msg ?? '').replace(/\s+/g,' ').slice(0, 80);
+        if (msg) taskTitleParts.push(`blocked: ${msg}`);
+      }
       if (d?.best && d.best !== k.task) taskTitleParts.push(`top score was ${d.best} (autonomy sampled)`);
       const taskTitle = taskTitleParts.join(' | ');
 
@@ -6622,6 +6655,7 @@
         delete k._autonomyPickNote;
         delete k._autonomyPickAt;
         delete k._lastDecision;
+        delete k._lastBlocked;
       }
     }
 

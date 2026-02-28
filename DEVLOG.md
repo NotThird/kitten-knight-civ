@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 06:26 CST - v0.9.65 Inspector: show blocked sink → fallback execution
+
+Summary
+- NEW: Decision Inspector now shows an **Execution** line when a sink task was blocked by reserves/inputs and immediately fell back (includes the block reason).
+- Task tooltip now includes a short **blocked reason** for a few seconds after it happens.
+- Improves explainability for the common "why won’t they build/craft?" moment without changing AI behavior.
+- Patch notes updated for v0.9.65.
+- Save-safe: new `_lastBlocked` field is transient and stripped on save.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set **wood reserve** high, enable **BUILD PUSH**, then open a kitten’s **Decision Inspector** and watch it report the blocked build → fallback.
+
+---
+
 ## 2026-02-28 06:11 CST - v0.9.64 Social inspector: Values vs Focus readout
 
 Summary
