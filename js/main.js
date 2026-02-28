@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.77';
+  const GAME_VERSION = '0.9.78';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3887,6 +3887,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.78',
+      notes: [
+        'UI/Explainability: Colony table now has a dedicated Buddy column that shows buddy id + buddy-need % (relationship pressure).',
+        'High buddy-need highlights in yellow/red, giving an early warning for upcoming mood/grievance/dissent drift.',
+        'No behavior changes; purely visibility (save-safe).'
+      ]
+    },
+    {
       v: '0.9.77',
       notes: [
         'NEW: Auto Drills (Director checkbox). When enabled, the Director automatically runs Defense Drills when threat is getting high and basics are stable.',
@@ -6132,14 +6140,21 @@
       const likes = Array.isArray(p.likes) ? p.likes : [];
       const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
 
-      // Traits: a steady identity tag (kept short in-table; details in tooltip).
+      // Traits: steady identity tags (kept short in-table; details in tooltip).
       const traits = Array.isArray(k.traits) ? k.traits : [];
-      const buddy = buddyOf(state, k);
-      const buddyShort = buddy ? `b#${buddy.id}` : '';
-      const traitsShortBase = traits.length ? traits.join(',') : '-';
-      const traitsShort = buddyShort ? `${traitsShortBase} · ${buddyShort}` : traitsShortBase;
+      const traitsShort = traits.length ? traits.join(',') : '-';
       const traitLines = traitInfoList(k);
-      const buddyLine = buddyShort ? `\nBuddy: #${buddy.id}` : '';
+
+      // Buddy: show relationship + current pressure as a first-class, readable civ-sim signal.
+      const buddy = buddyOf(state, k);
+      const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
+      const buddyCell = buddy ? `#${buddy.id} (${buddyNeedPct}%)` : '-';
+      const buddyAge = buddy && Number(k.lastBuddyAt ?? 0) > 0 ? Math.max(0, state.t - Number(k.lastBuddyAt ?? 0)) : null;
+      const buddyTitle = buddy
+        ? `Buddy: #${buddy.id} | need ${buddyNeedPct}%${buddyAge !== null ? ` | last together ~${fmt(buddyAge)}s ago` : ''}`
+        : 'No buddy';
+
+      const buddyLine = buddy ? `\nBuddy: #${buddy.id} (need ${buddyNeedPct}%)` : '';
       const traitsTitle = traitLines.length
         ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}\nValues: ${valuesShort(k)}`
         : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}\nValues: ${valuesShort(k)}`;
@@ -6174,6 +6189,14 @@
       if (d?.best && d.best !== k.task) taskTitleParts.push(`top score was ${d.best} (autonomy sampled)`);
       const taskTitle = taskTitleParts.join(' | ');
 
+      // Buddy UI highlight: high buddy-need is a leading indicator for mood/grievance pressure.
+      const buddyColor = buddy
+        ? (buddyNeedPct >= 85 ? 'var(--bad)' : buddyNeedPct >= 70 ? 'var(--warn)' : 'var(--muted)')
+        : '';
+      const buddyHtml = buddy
+        ? `<span style="color:${buddyColor}">${escapeHtml(buddyCell)}</span>`
+        : '-';
+
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
@@ -6187,6 +6210,7 @@
         <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
+        <td title="${escapeHtml(buddyTitle)}">${buddyHtml}</td>
         <td title="Preference + policy fit. Values: ${escapeHtml(vals)} | focus-fit ${Math.round(align*100)}% | (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
       `;

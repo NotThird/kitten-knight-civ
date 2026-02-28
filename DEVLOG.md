@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 09:41 CST - v0.9.78 Buddy-need visibility in colony table
+
+Summary
+- UI/Explainability: added a dedicated **Buddy** column in the Colony table.
+- Buddy column shows buddy id plus **buddy-need %** (relationship pressure) so social stress is visible without opening the inspector.
+- High buddy-need highlights in **yellow/red** as an early warning for upcoming mood/grievance pressure.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Let Autonomy be low + Discipline high for a bit, then watch which kittens’ **buddy-need** climbs first and how it correlates with Mood/Griev.
+
+---
+
 ## 2026-02-28 09:26 CST - v0.9.77 Auto Drills automation
 
 Summary
