@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 01:55 CST - v0.9.47 Firekeeping now levels (Cooking)
+
+Summary
+- FIX/NEW: **StokeFire** is now tied to the **Cooking** skill (so aptitude bias + value fit can naturally create a “Firekeeper” specialist).
+- NEW: Kittens gain **Cooking XP** while stoking the fire, so repeated winter hearth duty becomes an incremental advantage instead of a perpetual generalist task.
+- Explainability: the Decision Inspector/score breakdown can now surface Cooking skill bonuses for StokeFire (since it’s a real skill action).
+- Save-safe: no schema changes; existing kittens simply start accruing Cooking XP when doing StokeFire.
+
+Files touched
+- `prototype/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Winter (or with low warmth), set a **Firekeeper** role quota to 1 and watch that kitten’s **Cooking** skill start climbing as they keep the hearth going.
+
+---
+
 ## 2026-02-28 01:40 CST - v0.9.46 Council: values-driven policy nudges + bugfix
 
 Summary

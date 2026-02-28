@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.46';
+  const GAME_VERSION = '0.9.47';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -68,7 +68,7 @@
     BuildGranary: 'Building',
     BuildWorkshop: 'Building',
     BuildLibrary: 'Building',
-    StokeFire: null,
+    StokeFire: 'Cooking',
     Socialize: null,
     Care: null,
     Eat: null,
@@ -875,6 +875,8 @@
         s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom);
         k.energy = clamp01(k.energy - dt * 0.02 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
+        // Firekeeping is a real skill: as you keep the hearth going, you get better at it.
+        gainXP(k,'Cooking', dt * 0.70 * efficiency(s,k));
       }
     },
     Guard: {
@@ -3478,6 +3480,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.47',
+      notes: [
+        'FIX/NEW: StokeFire is now a real skill path (Cooking). Firekeepers gain Cooking XP while stoking the fire, and aptitude/traits can now bias toward hearth work.',
+        'This makes winter warmth management feel more incremental: repeated firekeeping creates a specialist instead of a perpetual generalist.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.46',
       notes: [
