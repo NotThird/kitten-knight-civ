@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.75';
+  const GAME_VERSION = '0.9.76';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -984,14 +984,17 @@
       enabled: (s) => true,
       tick: (s,k,dt) => {
         const mult = 1 + 0.10*(k.skills.Combat-1);
-        const base = s.unlocked.security ? 2.6 : 2.1;
+        let base = s.unlocked.security ? 2.6 : 2.1;
+        const drill = drillActive(s) ? 1 : 0;
+        if (drill) base += 0.55; // training + patrols
+
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
         s.res.threat = Math.max(0, s.res.threat - base * mult * dt * eff * mom * wp);
         k.energy = clamp01(k.energy - dt * 0.03 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        gainXP(k,'Combat', dt * 1.0 * efficiency(s,k));
+        gainXP(k,'Combat', dt * (1.0 + 0.35*drill) * efficiency(s,k));
       }
     },
     BuildHut: {
@@ -1737,6 +1740,52 @@
     }
 
     return { ok:true, msg:`Council held (-${c.food} food, -${c.science} science). Dissent falls for ~45s.` };
+  }
+
+  // Drills: defense training lever (spend resources for a short window of better security)
+  function drillActive(s){
+    return Number(s.effects?.drillUntil ?? 0) > Number(s.t ?? 0);
+  }
+
+  function drillSecondsLeft(s){
+    return Math.max(0, Number(s.effects?.drillUntil ?? 0) - Number(s.t ?? 0));
+  }
+
+  function drillCost(s){
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    // Scales with pop so it stays relevant, but is cheaper than a festival.
+    return { food: 28 + 7*n, wood: 14 + 4*n };
+  }
+
+  function canRunDrills(s){
+    const c = drillCost(s);
+    return availableAboveReserve(s,'food') >= c.food && availableAboveReserve(s,'wood') >= c.wood;
+  }
+
+  function runDrills(s){
+    s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
+    if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
+    if (!('councilUntil' in s.effects)) s.effects.councilUntil = 0;
+    if (!('drillUntil' in s.effects)) s.effects.drillUntil = 0;
+
+    const c = drillCost(s);
+    if (!canRunDrills(s)) return { ok:false, msg:`Need ${c.food} food + ${c.wood} wood above reserves.` };
+
+    const gotFood = spendUpToReserve(s,'food',c.food);
+    const gotWood = spendUpToReserve(s,'wood',c.wood);
+    if (gotFood < c.food || gotWood < c.wood) {
+      s.res.food = Number(s.res.food ?? 0) + gotFood;
+      s.res.wood = Number(s.res.wood ?? 0) + gotWood;
+      return { ok:false, msg:`Drills blocked by reserves/inputs (try lowering reserves).` };
+    }
+
+    const base = Math.max(Number(s.effects.drillUntil ?? 0), Number(s.t ?? 0));
+    s.effects.drillUntil = base + 40; // seconds
+
+    // Tiny immediate effect: feels like "we're getting organized".
+    s.res.threat = Math.max(0, Number(s.res.threat ?? 0) - 3);
+
+    return { ok:true, msg:`Defense drills run (-${c.food} food, -${c.wood} wood). Threat grows slower and Guard training improves for ~40s.` };
   }
 
   function updateMoodPerSecond(s, k, task){
@@ -3349,7 +3398,8 @@
     const baseGrowth = state.unlocked.security ? 0.34 : 0.44;
     const palReduce = Math.min(0.28, state.res.palisade * 0.02);
     const curfewMul = state.director?.curfew ? 0.75 : 1.00;
-    state.res.threat = Math.min(120, state.res.threat + (baseGrowth * (1 - palReduce) * curfewMul) * dt);
+    const drillMul = drillActive(state) ? 0.86 : 1.00;
+    state.res.threat = Math.min(120, state.res.threat + (baseGrowth * (1 - palReduce) * curfewMul * drillMul) * dt);
 
     // Tools wear (adds a maintenance loop once Workshop exists)
     // Tools represent shared implements; they get dull/break over time.
@@ -3797,6 +3847,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.76',
+      notes: [
+        'NEW: Defense Drills (Director button). Spend food+wood for ~40s of improved security.',
+        'Effect: threat grows slower while drills are running, and Guard training is more effective (faster threat reduction + more Combat XP).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.75',
       notes: [
@@ -5373,9 +5431,10 @@
     if (autoCrisis) autoCrisis.checked = !!state.director.autoCrisis;
 
     // Timed effects (for old saves)
-    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
     if (!('festivalUntil' in state.effects)) state.effects.festivalUntil = 0;
     if (!('councilUntil' in state.effects)) state.effects.councilUntil = 0;
+    if (!('drillUntil' in state.effects)) state.effects.drillUntil = 0;
 
     // Festival (morale lever)
     const festBtn = el('btnFestival');
@@ -5399,6 +5458,18 @@
       councilBtn.textContent = (left > 0)
         ? `Council: ${Math.ceil(left)}s`
         : `Hold Council (${c.food}f, ${c.science}sci)`;
+    }
+
+    // Drills (defense training lever)
+    const drillBtn = el('btnDrill');
+    if (drillBtn) {
+      const left = drillSecondsLeft(state);
+      const c = drillCost(state);
+      drillBtn.classList.toggle('active', left > 0);
+      drillBtn.disabled = (left <= 0) && !canRunDrills(state);
+      drillBtn.textContent = (left > 0)
+        ? `Drills: ${Math.ceil(left)}s`
+        : `Run Drills (${c.food}f, ${c.wood}w)`;
     }
 
     // Project focus (build order nudge)
@@ -6608,8 +6679,17 @@
 
   const councilEl = document.getElementById('btnCouncil');
   if (councilEl) councilEl.addEventListener('click', () => {
-    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
     const res = holdCouncil(state);
+    log(res.msg);
+    save();
+    render();
+  });
+
+  const drillEl = document.getElementById('btnDrill');
+  if (drillEl) drillEl.addEventListener('click', () => {
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
+    const res = runDrills(state);
     log(res.msg);
     save();
     render();

@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 09:11 CST - v0.9.76 Defense Drills timed effect
+
+Summary
+- NEW: **Defense Drills** button (Director): spend food+wood for a short security window.
+- While active (~40s): **threat growth slows** and **Guard** is more effective (stronger threat reduction + extra Combat XP).
+- UI: button shows remaining seconds while the effect is running.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let threat climb, then hit **Run Drills** and compare the Threat +/s and Guard impact during the 40s window.
+
+---
+
 ## 2026-02-28 08:56 CST - v0.9.75 Starvation forecast uses edible stores (food + jerky)
 
 Summary
