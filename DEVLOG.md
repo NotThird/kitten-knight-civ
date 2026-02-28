@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 19:38 CST - v0.9.22 Auto Crisis (Director)
+
+Summary
+- Added **Auto Crisis** toggle: the Director can automatically enable **Crisis Protocol** when the colony is clearly spiraling (food/kitten, warmth, or threat).
+- Auto Crisis is intentionally non-invasive: it will only auto-disable Crisis if **Auto Crisis turned it on** (manual Crisis stays manual).
+- Added an explainability line in the **Season** panel showing Auto crisis status + the last trigger reason.
+- Migration-safe: missing `director.autoCrisis*` fields default in cleanly.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Turn **Auto Crisis ON**, then deliberately tank food/kitten or warmth in Winter; confirm Crisis toggles ON, and toggles OFF once you stabilize.
+
+---
+
 ## 2026-02-27 19:23 CST - v0.9.21 Socialize action (labor → cohesion lever)
 
 Summary

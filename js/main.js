@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.21';
+  const GAME_VERSION = '0.9.22';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -246,7 +246,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2355,7 +2355,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2368,6 +2368,10 @@
     if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
     if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
+    if (!('autoCrisis' in state.director)) state.director.autoCrisis = false;
+    if (!('autoCrisisTriggered' in state.director)) state.director.autoCrisisTriggered = false;
+    if (!('autoCrisisNextChangeAt' in state.director)) state.director.autoCrisisNextChangeAt = 0;
+    if (!('autoCrisisWhy' in state.director)) state.director.autoCrisisWhy = '';
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
@@ -2469,6 +2473,55 @@
       if (state.signals.FOOD && foodPerKitten > offAt) {
         state.signals.FOOD = false;
         log(`Auto Food Crisis: OFF (food/kitten ${foodPerKitten.toFixed(1)} > ${offAt.toFixed(1)})`);
+      }
+    }
+
+    // Director automation: optional auto CRISIS.
+    // Goal: in real spirals, hit the big red button for you, then let you recover back to your prior policy stack.
+    // Important: auto-crisis will only auto-disable if *it* enabled crisis (so manual crisis doesn't get turned off behind your back).
+    if (state.director.autoCrisis) {
+      state._autoCrisisTimer = (state._autoCrisisTimer ?? 0) + dt;
+      if (state._autoCrisisTimer >= 1) {
+        state._autoCrisisTimer = 0;
+
+        state.director.autoCrisisNextChangeAt = Number(state.director.autoCrisisNextChangeAt ?? 0) || 0;
+        if (state.t >= state.director.autoCrisisNextChangeAt) {
+          const targets = seasonTargets(state);
+          const n = Math.max(1, state.kittens.length);
+          const foodPerKitten = state.res.food / n;
+          const warmth = Number(state.res.warmth ?? 0);
+          const threat = Number(state.res.threat ?? 0);
+          const season = seasonAt(state.t);
+
+          // Clear, explainable triggers (avoid hair-trigger flips).
+          const starving = foodPerKitten < targets.foodPerKitten * 0.70;
+          const coldSpiral = (season.name === 'Winter') ? (warmth < targets.warmth - 14) : (warmth < targets.warmth - 22);
+          const raidSpiral = threat > targets.maxThreat * 1.35;
+
+          const bad = starving || coldSpiral || raidSpiral;
+          const why = starving ? `food/kitten ${foodPerKitten.toFixed(1)} < ${(targets.foodPerKitten * 0.70).toFixed(0)}`
+            : coldSpiral ? `warmth ${fmt(warmth)} < ${(targets.warmth - (season.name === 'Winter' ? 14 : 22)).toFixed(0)}`
+            : raidSpiral ? `threat ${fmt(threat)} > ${(targets.maxThreat * 1.35).toFixed(0)}`
+            : '';
+
+          const good = (foodPerKitten >= targets.foodPerKitten * 0.98) && (warmth >= targets.warmth - 2) && (threat <= targets.maxThreat * 0.92);
+
+          if (!state.director.crisis && bad) {
+            state.director.autoCrisisWhy = why;
+            log(`Auto Crisis: ON (${why})`);
+            setCrisisProtocol(true);
+            state.director.autoCrisisTriggered = true;
+            state.director.autoCrisisNextChangeAt = state.t + 22;
+          }
+
+          if (state.director.crisis && state.director.autoCrisisTriggered && good) {
+            log('Auto Crisis: OFF (stabilized).');
+            setCrisisProtocol(false);
+            state.director.autoCrisisTriggered = false;
+            state.director.autoCrisisWhy = '';
+            state.director.autoCrisisNextChangeAt = state.t + 22;
+          }
+        }
       }
     }
 
@@ -2926,10 +2979,10 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Socialize action — a cohesion lever that reduces dissent (boosts compliance) and gently lifts mood.',
-    'The AI will plan 1 kitten to Socialize when dissent gets high *and* basics are stable (food/warmth/threat).',
-    'Policy sliders now include Socialize (so you can nudge stability vs throughput).',
-    'No save-breaking changes: Socialize defaults to multiplier 1 and missing keys migrate safely.'
+    'NEW: Auto Crisis toggle — the Director can automatically enable Crisis Protocol when the colony is clearly spiraling (food/warmth/threat).',
+    'Auto Crisis will only auto-disable Crisis Protocol if *it* enabled it (manual Crisis stays manual).',
+    'Season panel now shows Auto crisis status and the last trigger reason (explainability).',
+    'No save-breaking changes: missing auto-crisis fields migrate safely.'
   ];
 
   function closePatchNotes(){
@@ -3253,7 +3306,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -3266,6 +3319,10 @@
     if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
     if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
+    if (!('autoCrisis' in state.director)) state.director.autoCrisis = false;
+    if (!('autoCrisisTriggered' in state.director)) state.director.autoCrisisTriggered = false;
+    if (!('autoCrisisNextChangeAt' in state.director)) state.director.autoCrisisNextChangeAt = 0;
+    if (!('autoCrisisWhy' in state.director)) state.director.autoCrisisWhy = '';
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
@@ -3301,6 +3358,8 @@
     if (autoDoc) autoDoc.checked = !!state.director.autoDoctrine;
     const autoRec = el('autoRecruit');
     if (autoRec) autoRec.checked = !!state.director.autoRecruit;
+    const autoCrisis = el('autoCrisis');
+    if (autoCrisis) autoCrisis.checked = !!state.director.autoCrisis;
 
     // Timed effects (for old saves)
     state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
@@ -3533,6 +3592,10 @@
     const curYear = yearAt(state.t);
     const arLine = arOn ? `Auto recruit: ON (Spring; ${arYear === curYear ? 'already recruited this year' : 'eligible'})\n` : '';
 
+    const acOn = !!state.director?.autoCrisis;
+    const acWhy = String(state.director?.autoCrisisWhy ?? '').trim();
+    const acLine = acOn ? `Auto crisis: ON${acWhy ? ` — last trigger: ${acWhy}` : ''}\n` : '';
+
     const aut = autonomy01(state);
     const disPol = discipline01(state);
     const dis = dissent01(state);
@@ -3557,6 +3620,7 @@
       amLine +
       adLine +
       arLine +
+      acLine +
       festLine +
       councilLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
@@ -4252,6 +4316,20 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     state.director.autoRecruit = !!e.target.checked;
     log(`Auto Recruit → ${state.director.autoRecruit ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoCrisisEl = document.getElementById('autoCrisis');
+  if (autoCrisisEl) autoCrisisEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director.autoCrisis = !!e.target.checked;
+    // Reset trigger state so toggling on doesn't unexpectedly auto-disable a manual crisis.
+    if (!state.director.autoCrisis) {
+      state.director.autoCrisisTriggered = false;
+      state.director.autoCrisisWhy = '';
+    }
+    log(`Auto Crisis → ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
     save();
     render();
   });
