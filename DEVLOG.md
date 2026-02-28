@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 09:26 CST - v0.9.77 Auto Drills automation
+
+Summary
+- NEW: **Auto Drills** checkbox (Director): automatically runs Defense Drills when threat is getting high.
+- Guardrails: only triggers when basics are stable (food/kitten + warmth) and you can afford the cost **above reserves**.
+- Explainability: Season panel shows the last auto-drill trigger (or why it’s waiting).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Drills**, let threat climb near your target, and watch it auto-fire (then compare Threat +/s while drills are active).
+
+---
+
 ## 2026-02-28 09:11 CST - v0.9.76 Defense Drills timed effect
 
 Summary

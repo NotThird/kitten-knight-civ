@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.76';
+  const GAME_VERSION = '0.9.77';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2994,7 +2994,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -3318,6 +3318,45 @@
         if (!should && state.signals.BUILD) {
           state.signals.BUILD = false;
           log('Auto Build Push: OFF (housing available).');
+        }
+      }
+    }
+
+    // Director automation: optional auto DRILLS.
+    // Goal: reduce micro by running Defense Drills when threat is trending toward dangerous levels,
+    // but only if the colony is otherwise stable and you can afford the spend above reserves.
+    // Drills are timed, so auto-drills simply fires them when appropriate (no toggle-off needed).
+    if (state.director.autoDrills) {
+      state._autoDrillsTimer = (state._autoDrillsTimer ?? 0) + dt;
+      if (state._autoDrillsTimer >= 1) {
+        state._autoDrillsTimer = 0;
+
+        state.director.autoDrillsNextAt = Number(state.director.autoDrillsNextAt ?? 0) || 0;
+        if (!drillActive(state) && state.t >= state.director.autoDrillsNextAt) {
+          const targets = seasonTargets(state);
+          const season = seasonAt(state.t);
+          const foodPerKitten = ediblePerKitten(state);
+          const warmth = Number(state.res.warmth ?? 0);
+          const threat = Number(state.res.threat ?? 0);
+
+          const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.92) && (warmth >= targets.warmth - (season.name === 'Winter' ? 6 : 10));
+          const threatRising = (threat >= targets.maxThreat * 0.88) || (state.signals?.ALARM) || (threat >= 85);
+
+          // Only drill when it's a *good idea* and not in the middle of a collapse.
+          if (basicsOk && threatRising && canRunDrills(state)) {
+            const res = runDrills(state);
+            if (res?.ok) {
+              state.director.autoDrillsWhy = `trigger: threat ${fmt(threat)} / max ${targets.maxThreat}`;
+              log(`Auto Drills: ON (${state.director.autoDrillsWhy})`);
+            }
+            // Cooldown either way; don't spam attempts every second.
+            state.director.autoDrillsNextAt = state.t + 55;
+          } else {
+            // Keep a readable why for the Season panel.
+            if (!basicsOk) state.director.autoDrillsWhy = 'waiting: basics not stable (food/warmth)';
+            else if (!threatRising) state.director.autoDrillsWhy = 'waiting: threat not high';
+            else if (!canRunDrills(state)) state.director.autoDrillsWhy = 'waiting: not enough food+wood above reserves';
+          }
         }
       }
     }
@@ -3847,6 +3886,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.77',
+      notes: [
+        'NEW: Auto Drills (Director checkbox). When enabled, the Director automatically runs Defense Drills when threat is getting high and basics are stable.',
+        'Safety: won\'t spend below your reserves; uses a cooldown to avoid spammy re-firing.',
+        'Explainability: Season panel shows the last auto-drill trigger (or why it\'s waiting).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.76',
       notes: [
@@ -5352,7 +5400,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -5429,6 +5477,8 @@
     if (autoRec) autoRec.checked = !!state.director.autoRecruit;
     const autoCrisis = el('autoCrisis');
     if (autoCrisis) autoCrisis.checked = !!state.director.autoCrisis;
+    const autoDrills = el('autoDrills');
+    if (autoDrills) autoDrills.checked = !!state.director.autoDrills;
 
     // Timed effects (for old saves)
     state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
@@ -5762,6 +5812,9 @@
     const councilLeft = councilSecondsLeft(state);
     const councilLine = (councilLeft > 0) ? `Council: active (${Math.ceil(councilLeft)}s) - dissent decays faster\n` : '';
 
+    const drillLeft = drillSecondsLeft(state);
+    const drillLine = (drillLeft > 0) ? `Drills: active (${Math.ceil(drillLeft)}s) - threat growth slowed; Guard trains faster\n` : '';
+
     const amOn = !!state.director?.autoMode;
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` - ${amWhy}` : ''}\n` : '';
@@ -5785,6 +5838,10 @@
     const acOn = !!state.director?.autoCrisis;
     const acWhy = String(state.director?.autoCrisisWhy ?? '').trim();
     const acLine = acOn ? `Auto crisis: ON${acWhy ? ` - last trigger: ${acWhy}` : ''}\n` : '';
+
+    const aDrillOn = !!state.director?.autoDrills;
+    const aDrillWhy = String(state.director?.autoDrillsWhy ?? '').trim();
+    const aDrillLine = aDrillOn ? `Auto drills: ON${aDrillWhy ? ` - ${aDrillWhy}` : ''}\n` : '';
 
     const aut = autonomy01(state);
     const disPol = discipline01(state);
@@ -5813,8 +5870,10 @@
       aRatLine +
       arLine +
       acLine +
+      aDrillLine +
       festLine +
       councilLine +
+      drillLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       forecastLine +
@@ -6784,6 +6843,17 @@
       state.director.autoCrisisWhy = '';
     }
     log(`Auto Crisis → ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoDrillsEl = document.getElementById('autoDrills');
+  if (autoDrillsEl) autoDrillsEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director.autoDrills = !!e.target.checked;
+    if (state.director.autoDrills) state.director.autoDrillsNextAt = 0;
+    state.director.autoDrillsWhy = '';
+    log(`Auto Drills → ${state.director.autoDrills ? 'ON' : 'OFF'}`);
     save();
     render();
   });
