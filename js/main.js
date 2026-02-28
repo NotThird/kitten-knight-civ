@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.49';
+  const GAME_VERSION = '0.9.50';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3536,6 +3536,15 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.50',
+      notes: [
+        'QoL: keyboard shortcuts (when not typing): Space = Pause/Resume, 1–4 = Modes (Survive/Expand/Defend/Advance).',
+        'QoL: W toggles Winter Prep, C toggles Crisis Protocol.',
+        'QoL: F = Hold Festival, V = Hold Council (only when not already active).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.49',
       notes: [
         'NEW: Mentoring is now need-aware: mentors will preferentially teach skills that fill role quota shortfalls or current plan deficits (instead of always teaching their own specialty).',
@@ -3928,11 +3937,66 @@
     if (e.target === socialModalEl) closeSocial();
   });
 
+  function uiIsTypingTarget(t){
+    const tag = String(t?.tagName ?? '').toUpperCase();
+    return !!(t?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+  }
+
+  function togglePause(){
+    state.paused = !state.paused;
+    const btn = el('btnPause');
+    if (btn) btn.textContent = state.paused ? 'Resume' : 'Pause';
+    save();
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeInspect();
       closePatchNotes();
       closeSocial();
+      return;
+    }
+
+    // Keyboard shortcuts (QoL). Ignore when typing in inputs.
+    if (uiIsTypingTarget(e.target)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const key = String(e.key || '');
+
+    if (key === ' ') {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+
+    if (key === '1') { setMode('Survive'); return; }
+    if (key === '2') { setMode('Expand'); return; }
+    if (key === '3') { setMode('Defend'); return; }
+    if (key === '4') { setMode('Advance'); return; }
+
+    if (key === 'w' || key === 'W') { setWinterPrep(!state.director?.winterPrep); return; }
+    if (key === 'c' || key === 'C') { setCrisisProtocol(!state.director?.crisis); return; }
+
+    if (key === 'f' || key === 'F') {
+      state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
+      if (!festivalActive(state)) {
+        const res = holdFestival(state);
+        log(res.msg);
+        save();
+        render();
+      }
+      return;
+    }
+
+    if (key === 'v' || key === 'V') {
+      state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
+      if (!councilActive(state)) {
+        const res = holdCouncil(state);
+        log(res.msg);
+        save();
+        render();
+      }
+      return;
     }
   });
 

@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 02:40 CST - v0.9.50 Keyboard shortcuts (policy micro-QoL)
+
+Summary
+- NEW: Keyboard shortcuts (ignored while typing in inputs): **Space** toggles Pause/Resume.
+- NEW: **1–4** switch Modes quickly (Survive / Expand / Defend / Advance).
+- NEW: **W** toggles Winter Prep; **C** toggles Crisis Protocol.
+- NEW: **F** triggers Hold Festival; **V** triggers Hold Council (only when not already active).
+- UI: added button tooltips for Pause + Mode buttons to make shortcuts discoverable.
+- Save-safe: no schema changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- During a tense Winter, use **W** to flip Winter Prep while watching the Plan/Projects panels, and hit **Space** to pause when you want to inspect kitten scoring.
+
+---
+
 ## 2026-02-28 02:25 CST - v0.9.49 Need-aware mentoring (quota/plan driven)
 
 Summary
