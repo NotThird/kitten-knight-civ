@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 23:54 CST - v0.9.39 Kitten Council: bottom-up policy suggestions
+
+Summary
+- Added **Kitten Council** panel: occasional bottom-up policy suggestions generated from a specific kitten.
+- Suggestions combine **colony status** (food/warmth/threat) with **kitten likes/dislikes** to create emergent, legible nudges.
+- Accepting a suggestion applies a **small policy multiplier nudge** (+/-) and then starts a short cooldown to prevent spam.
+- Explainability: council panel shows the **spokeskitten** with mood/dissent/traits.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Raise **Autonomy**, then wait for a council suggestion and accept it; watch how the colony plan shifts and check Decision Inspector reasons for the nudged task.
+
+---
+
 ## 2026-02-27 23:39 CST - v0.9.38 Director: Priorities sliders (policy weights)
 
 Summary

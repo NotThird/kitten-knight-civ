@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.38';
+  const GAME_VERSION = '0.9.39';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3193,6 +3193,7 @@
   const logEl = el('log');
   const goalsEl = el('goals');
   const advisorEl = el('advisor');
+  const councilPanelEl = el('council');
   const unlocksEl = el('unlocks');
   const seasonEl = el('season');
   const policyEl = el('policy');
@@ -3220,6 +3221,24 @@
     if (!rec || typeof rec.apply !== 'function') return;
     rec.apply(state);
     log(`Advisor applied: ${rec.label}`);
+    save();
+    render();
+  });
+
+  // Kitten Council: bottom-up policy suggestions
+  let councilRecs = [];
+  if (councilPanelEl) councilPanelEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('button[data-council]');
+    if (!btn) return;
+    const id = String(btn.dataset.council || '');
+    const rec = councilRecs.find(r => r.id === id);
+    if (!rec || typeof rec.apply !== 'function') return;
+    rec.apply(state);
+    log(`Council accepted: ${rec.label}`);
+    // Put a small cooldown so it doesn't immediately re-spam new advice.
+    state.director = state.director ?? {};
+    state.director.council = state.director.council ?? {};
+    state.director.council.nextAt = Math.max(Number(state.director.council.nextAt ?? 0) || 0, state.t + 60);
     save();
     render();
   });
@@ -3314,6 +3333,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.39',
+      notes: [
+        'NEW: Kitten Council — occasional bottom-up policy suggestions from individual kittens (based on likes/traits + colony status).',
+        'Accepting a council suggestion applies a small policy multiplier nudge (no hard locks).',
+        'Explainability: the council panel shows who is speaking and why (mood/dissent/traits).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.38',
       notes: [
@@ -3926,6 +3954,135 @@
       `<div class=\"why\">${escapeHtml(String(a.text ?? ''))}</div>`;
   }
 
+  function pickCouncilKitten(s){
+    const ks = Array.isArray(s.kittens) ? s.kittens : [];
+    if (!ks.length) return null;
+
+    // Bias toward kittens who are unhappy / low mood (they're more likely to complain) but keep some randomness.
+    let best = null;
+    for (const k of ks) {
+      const mood = clamp01(Number(k.mood ?? 0.55));
+      const dis = clamp01(Number(k.dissent ?? 0));
+      const w = 0.55 + (0.55 - mood) * 0.9 + dis * 0.6 + Math.random() * 0.35;
+      if (!best || w > best.w) best = { k, w };
+    }
+    return best?.k ?? ks[Math.floor(Math.random() * ks.length)];
+  }
+
+  function buildCouncil(s, targets){
+    s.director = s.director ?? {};
+    s.director.council = s.director.council ?? { nextAt: 0, lastKey: '' };
+    if (!('nextAt' in s.director.council)) s.director.council.nextAt = 0;
+    if (!('lastKey' in s.director.council)) s.director.council.lastKey = '';
+
+    const cool = Number(s.director.council.nextAt ?? 0) || 0;
+    if (s.t < cool) return { text: `Next council in ~${Math.ceil(cool - s.t)}s.`, recs: [] };
+
+    const k = pickCouncilKitten(s);
+    if (!k) return { text: 'No kittens yet.', recs: [] };
+
+    const season = seasonAt(s.t);
+    const foodPerKitten = (s.res.food || 0) / Math.max(1, s.kittens.length);
+    const warmth = Number(s.res.warmth ?? 0);
+    const threat = Number(s.res.threat ?? 0);
+
+    const m = s.policyMult ?? {};
+    const likes = Array.isArray(k.prefs?.likes) ? k.prefs.likes : [];
+    const hates = Array.isArray(k.prefs?.dislikes) ? k.prefs.dislikes : [];
+
+    const recs = [];
+
+    // 1) Situation-driven (stability)
+    if (foodPerKitten < targets.foodPerKitten * 0.92) {
+      recs.push({
+        id: `food-${k.id}`,
+        label: `+Food work` ,
+        tip: `Food/kitten is low (${fmt(foodPerKitten)}/${targets.foodPerKitten}).`,
+        apply: (st) => { nudgePolicyMult(st, 'Forage', 0.25); nudgePolicyMult(st, 'Farm', 0.25); nudgePolicyMult(st, 'PreserveFood', 0.10); }
+      });
+    } else if (season.name === 'Winter' && warmth < targets.warmth - 6) {
+      recs.push({
+        id: `warm-${k.id}`,
+        label: `+Warmth` ,
+        tip: `Winter + cold (warmth ${fmt(warmth)}/${targets.warmth}).`,
+        apply: (st) => { nudgePolicyMult(st, 'StokeFire', 0.30); nudgePolicyMult(st, 'ChopWood', 0.15); }
+      });
+    } else if (threat > targets.maxThreat * 0.95 || s.signals?.ALARM) {
+      recs.push({
+        id: `threat-${k.id}`,
+        label: `+Security`,
+        tip: `Threat is rising (now ${fmt(threat)} / target ≤${targets.maxThreat}).`,
+        apply: (st) => { nudgePolicyMult(st, 'Guard', 0.30); nudgePolicyMult(st, 'BuildPalisade', 0.20); }
+      });
+    }
+
+    // 2) Preference-driven (emergent)
+    // If the kitten likes something the Director is under-weighting, they may push for it.
+    const like = likes.find(a => Number(m[a] ?? 1) <= 0.95);
+    if (like) {
+      recs.push({
+        id: `like-${k.id}-${like}`,
+        label: `Let me do more ${like}`,
+        tip: `Kitten #${k.id} likes ${like}; policy is x${Number(m[like] ?? 1).toFixed(2)}.`,
+        apply: (st) => { nudgePolicyMult(st, like, 0.25); }
+      });
+    }
+
+    // If the kitten hates something that is strongly demanded, they push back (small softening).
+    const hate = hates.find(a => Number(m[a] ?? 1) >= 1.25);
+    if (hate) {
+      recs.push({
+        id: `hate-${k.id}-${hate}`,
+        label: `Ease off ${hate}`,
+        tip: `Kitten #${k.id} dislikes ${hate}; policy is x${Number(m[hate] ?? 1).toFixed(2)}.`,
+        apply: (st) => { nudgePolicyMult(st, hate, -0.20); }
+      });
+    }
+
+    // Keep it tight.
+    const out = recs.slice(0, 3);
+
+    if (!out.length) {
+      // No strong opinions/situations → small cooldown anyway.
+      s.director.council.nextAt = s.t + 45;
+      return { text: 'Council is quiet (no urgent pushes).', recs: [] };
+    }
+
+    // Avoid identical spam.
+    const key = out.map(r => r.id).join('|');
+    if (key && key === String(s.director.council.lastKey || '')) {
+      s.director.council.nextAt = s.t + 45;
+      return { text: 'Council has nothing new right now.', recs: [] };
+    }
+    s.director.council.lastKey = key;
+
+    const traits = (k.traits ?? []).join(', ') || '-';
+    const mood = Math.round(clamp01(Number(k.mood ?? 0.55)) * 100);
+    const dis = Math.round(clamp01(Number(k.dissent ?? 0)) * 100);
+
+    const header = `Spokeskitten: #${k.id} (mood ${mood}%, dissent ${dis}%) | traits: ${traits}`;
+    return { text: header, recs: out };
+  }
+
+  function renderCouncil(s, targets){
+    if (!councilPanelEl) return;
+    const c = buildCouncil(s, targets);
+    councilRecs = Array.isArray(c.recs) ? c.recs : [];
+
+    if (!councilRecs.length) {
+      councilPanelEl.textContent = String(c.text ?? '');
+      return;
+    }
+
+    const btns = councilRecs
+      .slice(0, 3)
+      .map(r => `<button class=\"btn\" data-council=\"${escapeHtml(r.id)}\" title=\"${escapeHtml(r.tip || '')}\">${escapeHtml(r.label || r.id)}</button>`)
+      .join(' ');
+
+    councilPanelEl.innerHTML = `<div class=\"row\" style=\"gap:6px; margin-bottom:6px\">${btns}</div>` +
+      `<div class=\"why\">${escapeHtml(String(c.text ?? ''))}</div>`;
+  }
+
   function render(){
     const season = seasonAt(state.t);
     const targets = seasonTargets(state);
@@ -4342,6 +4499,7 @@
     goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
 
     renderAdvisor(state, targets);
+    renderCouncil(state, targets);
 
     unlocksEl.textContent = unlockDefs.map(u => `${state.seenUnlocks[u.id]?'[x]':'[ ]'} ${u.name} @ ${u.at} - ${u.desc}`).join('\n');
 
