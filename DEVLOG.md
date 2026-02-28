@@ -1958,3 +1958,19 @@ Files touched
 
 What to try
 - When threat starts climbing (or you hit **ALARM**), press **D** and watch the **Season** panel show an active Drills timer + slower threat growth.
+
+## 2026-02-28 13:57 CST - v0.9.95 Advisor surfaces Faction Demands
+
+Summary
+- Advisor: now calls out when a **Faction Demand** is active (axis + time remaining).
+- Advisor: provides a one-click **Accept** (when basics are stable) or **Ignore** (when collapsing) recommendation.
+- Explainability: the recommendation is explicitly keyed off food/kitten, warmth, and threat stability.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/js/main.js
+
+What to try
+- Let Dissent rise until a Demand appears on a season change; see the Advisor button and resolve it without opening the Factions panel.

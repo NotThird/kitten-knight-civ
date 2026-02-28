@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.94';
+  const GAME_VERSION = '0.9.95';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4109,6 +4109,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.95',
+      notes: [
+        'Advisor: now surfaces active Faction Demands (with a one-click Accept/Ignore suggestion) so politics doesn\'t get missed while you\'re fighting fires.',
+        'Explainability: the Advisor recommendation explicitly keys off “basics stable?” (food/warmth/threat) and time remaining.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.94',
       notes: [
         'QoL: added keyboard shortcut D to run Defense Drills (same behavior as the button; only triggers if drills are not already active).',
@@ -5256,6 +5264,33 @@
 
     const lines = [];
     const recs = [];
+
+    // 0) Politics: active faction demand
+    const demand = activeFactionDemand(s);
+    if (demand) {
+      const left = Math.max(0, Math.ceil((Number(demand.expiresAt ?? 0) - Number(s.t ?? 0))));
+      lines.push(`• FACTION DEMAND: ${demand.axis} bloc (expires ~${left}s)`);
+
+      // Recommendation: accept only if the colony is not actively collapsing.
+      const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.92) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10);
+      if (basicsOk) {
+        lines.push(`  - Nudge: Accept to buy cohesion (reduces dissent); ignoring will spike dissent + grievance`);
+        recs.push({
+          id: 'demand-accept',
+          label: 'Accept demand',
+          tip: `Accept the ${demand.axis} demand (best when basics are stable).`,
+          apply: (st) => { resolveFactionDemand(st, true); }
+        });
+      } else {
+        lines.push(`  - Nudge: Ignore for now (you\'re not stable; concessions can be dangerous)`);
+        recs.push({
+          id: 'demand-ignore',
+          label: 'Ignore demand',
+          tip: `Ignore the ${demand.axis} demand (safer when you\'re collapsing).`,
+          apply: (st) => { resolveFactionDemand(st, false); }
+        });
+      }
+    }
 
     // 0) Storage cap / spoilage pressure (new player-visible midgame problem)
     const overcap = s._lastFoodOvercap ?? { cap: foodStorageCap(s), food: Number(s.res.food ?? 0), mult: 1 };
