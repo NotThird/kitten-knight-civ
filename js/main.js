@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.78';
+  const GAME_VERSION = '0.9.79';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2994,13 +2994,16 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoPolicy' in state.director)) state.director.autoPolicy = false;
+    if (!('autoPolicyNextAt' in state.director)) state.director.autoPolicyNextAt = 0;
+    if (!('autoPolicyWhy' in state.director)) state.director.autoPolicyWhy = '';
     if (!('autoBuildPush' in state.director)) state.director.autoBuildPush = false;
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
@@ -3297,6 +3300,34 @@
         const changed = (Math.abs(prev.food - recFood) >= 10) || (Math.abs(prev.wood - recWood) >= 2) || (Math.abs(prev.science - recSci) >= 5) || (Math.abs(prev.tools - recTools) >= 5);
         if (changed) {
           log(`Auto Reserves: food≥${recFood}, wood≥${recWood}, science≥${recSci}, tools≥${recTools}`);
+        }
+      }
+    }
+
+    // Director automation: optional auto Policy tuning (targets → policy multipliers).
+    // Goal: create a more "civ governor" feel: you set Targets; the Director nudges policy quotas a little to hit them.
+    // It makes small reversible changes, with a cooldown, and it pauses during Crisis Protocol.
+    if (state.director.autoPolicy && !state.director.crisis) {
+      state._autoPolicyTimer = (state._autoPolicyTimer ?? 0) + dt;
+      if (state._autoPolicyTimer >= 1) {
+        state._autoPolicyTimer = 0;
+
+        state.director.autoPolicyNextAt = Number(state.director.autoPolicyNextAt ?? 0) || 0;
+        if (state.t >= state.director.autoPolicyNextAt) {
+          const res = autoTunePolicyTowardTargets(state);
+          if (res.changed) {
+            state.director.autoPolicyWhy = res.why;
+            // Keep logs sparse; this is meant to be background governance.
+            if ((state._autoPolicyLogAt ?? -9999) + 14 <= state.t) {
+              state._autoPolicyLogAt = state.t;
+              log(`Auto Policy: ${res.why}`);
+            }
+            state.director.autoPolicyNextAt = state.t + 6;
+          } else {
+            // If no change, back off a bit.
+            state.director.autoPolicyNextAt = state.t + 10;
+            state.director.autoPolicyWhy = res.why || state.director.autoPolicyWhy || '';
+          }
         }
       }
     }
@@ -3886,6 +3917,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.79',
+      notes: [
+        'NEW: Auto Policy (Director checkbox). The Director gently nudges policy multipliers toward your Targets (food/kitten, warmth, threat).',
+        'It makes small reversible changes with a cooldown, and it pauses during Crisis Protocol.',
+        'Explainability: Season panel shows the last Auto Policy reason (what it was responding to).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.78',
       notes: [
@@ -4665,6 +4705,123 @@
     s.policyMult[key] = clampPolicyMult(cur + delta);
   }
 
+  // Auto Policy: a tiny "governor" that nudges policy multipliers toward the player's Targets.
+  // Design: small reversible adjustments (±0.05), bounded, and explainable.
+  function autoTunePolicyTowardTargets(s){
+    s.policyMult = s.policyMult ?? { Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
+
+    const targets = seasonTargets(s);
+    const season = seasonAt(s.t);
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    const foodPerKitten = ediblePerKitten(s);
+    const warmth = Number(s.res?.warmth ?? 0);
+    const threat = Number(s.res?.threat ?? 0);
+
+    const step = 0.05;
+    const changed = { any:false };
+
+    const unlocked = (a) => {
+      if (a === 'Farm') return !!s.unlocked?.farm;
+      if (a === 'BuildGranary') return !!(s.unlocked?.construction && s.unlocked?.granary);
+      if (a === 'BuildWorkshop') return !!(s.unlocked?.construction && s.unlocked?.workshop);
+      if (a === 'BuildLibrary') return !!(s.unlocked?.construction && s.unlocked?.library);
+      if (a === 'BuildHut' || a === 'BuildPalisade' || a === 'PreserveFood') return !!s.unlocked?.construction;
+      if (a === 'CraftTools') return !!s.unlocked?.workshop;
+      if (a === 'Mentor') return !!s.unlocked?.library;
+      return true;
+    };
+
+    const nudgeTo = (a, want, maxDelta = step) => {
+      if (!unlocked(a)) return;
+      const cur = clampPolicyMult(Number(s.policyMult?.[a] ?? 1));
+      const w = clampPolicyMult(want);
+      const d = Math.max(-maxDelta, Math.min(maxDelta, w - cur));
+      if (Math.abs(d) >= 0.0001) {
+        s.policyMult[a] = clampPolicyMult(cur + d);
+        changed.any = true;
+      }
+    };
+
+    // 1) Basics pressure → push the relevant levers.
+    const foodBad = foodPerKitten < targets.foodPerKitten * 0.95;
+    const foodGreat = foodPerKitten >= targets.foodPerKitten * 1.10;
+
+    const winter = season.name === 'Winter';
+    const warmTarget = targets.warmth + (winter ? 10 : 0);
+    const warmBad = warmth < (warmTarget - (winter ? 6 : 10));
+    const warmGreat = warmth >= (warmTarget + 10);
+
+    const threatBad = threat > targets.maxThreat * 1.07 || (s.signals?.ALARM);
+    const threatGreat = threat <= targets.maxThreat * 0.92 && !s.signals?.ALARM;
+
+    // 2) Convert pressure into small target multipliers.
+    // We bias toward 1.30 when struggling, toward 0.90 when very safe, otherwise drift to 1.00.
+    const want = {
+      Forage: 1.00,
+      Farm: 1.00,
+      PreserveFood: 1.00,
+      ChopWood: 1.00,
+      StokeFire: 1.00,
+      Guard: 1.00,
+      BuildPalisade: 1.00,
+      Research: 1.00,
+      CraftTools: 1.00,
+      BuildWorkshop: 1.00,
+      BuildLibrary: 1.00,
+      BuildHut: 1.00,
+      Socialize: 1.00,
+      Care: 1.00,
+    };
+
+    if (foodBad) {
+      want.Forage = 1.30; want.Farm = 1.25; want.PreserveFood = 1.15;
+      // When hungry, de-emphasize progress sinks a bit.
+      want.Research = 0.92; want.CraftTools = 0.92; want.BuildWorkshop = 0.92; want.BuildLibrary = 0.92;
+    } else if (foodGreat) {
+      want.Forage = 0.95; want.Farm = 0.95; want.PreserveFood = 0.95;
+    }
+
+    if (warmBad) {
+      want.StokeFire = 1.30; want.ChopWood = 1.15;
+      want.Research = Math.min(want.Research, 0.94);
+    } else if (warmGreat) {
+      want.StokeFire = 0.92;
+    }
+
+    if (threatBad) {
+      want.Guard = 1.35;
+      want.BuildPalisade = 1.20;
+      want.Research = Math.min(want.Research, 0.92);
+    } else if (threatGreat) {
+      want.Guard = 0.92;
+    }
+
+    // Housing: if capped, give builders a gentle nudge.
+    if (s.unlocked?.construction) {
+      const cap = housingCap(s);
+      if (n >= cap) want.BuildHut = 1.20;
+    }
+
+    // 3) Apply small step toward our wants.
+    for (const [a, w] of Object.entries(want)) {
+      nudgeTo(a, w, step);
+    }
+
+    // 4) Explainability string.
+    const parts = [];
+    if (foodBad) parts.push(`food/kitten ${foodPerKitten.toFixed(1)}<${(targets.foodPerKitten*0.95).toFixed(0)} → +food`);
+    else if (foodGreat) parts.push(`food surplus → ease food labor`);
+
+    if (warmBad) parts.push(`warmth ${fmt(warmth)}<${fmt(warmTarget)} → +fire/wood`);
+    else if (warmGreat) parts.push(`warmth surplus → ease stoke`);
+
+    if (threatBad) parts.push(`threat ${fmt(threat)}>${fmt(targets.maxThreat)} → +guard/defense`);
+    else if (threatGreat) parts.push(`threat low → ease guard`);
+
+    const why = parts.length ? parts.join(' | ') : 'stable: drifting policy toward neutral';
+    return { changed: !!changed.any, why };
+  }
+
   // Director priorities are 0.50..1.50 multipliers (1.00 = neutral). Council can nudge these too.
   function clampPrio(v){
     const n = Number(v);
@@ -5408,13 +5565,16 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoPolicy' in state.director)) state.director.autoPolicy = false;
+    if (!('autoPolicyNextAt' in state.director)) state.director.autoPolicyNextAt = 0;
+    if (!('autoPolicyWhy' in state.director)) state.director.autoPolicyWhy = '';
     if (!('autoBuildPush' in state.director)) state.director.autoBuildPush = false;
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
@@ -5473,6 +5633,8 @@
     if (autoFood) autoFood.checked = !!state.director.autoFoodCrisis;
     const autoRes = el('autoReserves');
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
+    const autoPol = el('autoPolicy');
+    if (autoPol) autoPol.checked = !!state.director.autoPolicy;
     const autoBuild = el('autoBuildPush');
     if (autoBuild) autoBuild.checked = !!state.director.autoBuildPush;
     const autoMode = el('autoMode');
@@ -5830,6 +5992,10 @@
     const abOn = !!state.director?.autoBuildPush;
     const abLine = abOn ? `Auto build push: ON (manages BUILD PUSH when housing-capped)\n` : '';
 
+    const apOn = !!state.director?.autoPolicy;
+    const apWhy = String(state.director?.autoPolicyWhy ?? '').trim();
+    const apLine = apOn ? `Auto policy: ON${apWhy ? ` - ${apWhy}` : ''}\n` : '';
+
     const adOn = !!state.director?.autoDoctrine;
     const adWhy = String(state.director?.autoDoctrineWhy ?? '').trim();
     const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` - ${adWhy}` : ''}\n` : '';
@@ -5874,6 +6040,7 @@
       autLine +
       amLine +
       abLine +
+      apLine +
       adLine +
       aRatLine +
       arLine +
@@ -6798,9 +6965,20 @@
 
   const autoResEl = document.getElementById('autoReserves');
   if (autoResEl) autoResEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoReserves = !!e.target.checked;
     log(`Auto Reserves → ${state.director.autoReserves ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoPolicyEl = document.getElementById('autoPolicy');
+  if (autoPolicyEl) autoPolicyEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director.autoPolicy = !!e.target.checked;
+    if (state.director.autoPolicy) state.director.autoPolicyNextAt = 0;
+    state.director.autoPolicyWhy = '';
+    log(`Auto Policy → ${state.director.autoPolicy ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -7402,6 +7580,9 @@
       if (!('autoWinterPrep' in s.director)) s.director.autoWinterPrep = false;
       if (!('autoFoodCrisis' in s.director)) s.director.autoFoodCrisis = false;
       if (!('autoReserves' in s.director)) s.director.autoReserves = false;
+      if (!('autoPolicy' in s.director)) s.director.autoPolicy = false;
+      if (!('autoPolicyNextAt' in s.director)) s.director.autoPolicyNextAt = 0;
+      if (!('autoPolicyWhy' in s.director)) s.director.autoPolicyWhy = '';
       if (!('autoMode' in s.director)) s.director.autoMode = false;
       if (!('autoModeNextChangeAt' in s.director)) s.director.autoModeNextChangeAt = 0;
       if (!('autoModeWhy' in s.director)) s.director.autoModeWhy = '';

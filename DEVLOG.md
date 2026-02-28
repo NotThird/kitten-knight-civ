@@ -1648,3 +1648,24 @@ Files touched
 
 What to try
 - Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesnï¿½t creep as fast.
+
+## 2026-02-28 10:02 CST - v0.9.79 Auto Policy (targets ? policy nudges)
+
+Summary
+- NEW: **Auto Policy** checkbox (Director): a small “governor” that nudges policy multipliers toward your Targets (food/kitten, warmth, threat).
+- Makes tiny, reversible changes (±0.05 steps) with cooldowns; logs sparingly to avoid spam.
+- Pauses automatically during **Crisis Protocol** so emergency overlays remain authoritative.
+- Explainability: Season panel shows the last Auto Policy reason (what deficit it reacted to).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Turn on **Auto Policy**, set food target a bit high (e.g., 140), then intentionally overbuild: watch it shift policy away from Research/Build and back once basics stabilize.
+
+---
