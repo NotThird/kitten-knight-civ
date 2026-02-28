@@ -1478,3 +1478,24 @@ Files touched
 
 What to try
 - Enable **Auto Build Push**, recruit up to the cap, and watch BUILD PUSH toggle itself ON until a hut completes.
+
+---
+
+## 2026-02-28 07:41 CST - v0.9.70 Factions (values blocs) + negotiate button
+
+Summary
+- Added **Factions (values blocs)** panel: kittens are grouped by their dominant Values axis (Food/Safety/Progress/Social).
+- Each bloc shows size + avg mood + avg grievance + avg focus-fit, so "politics" is readable.
+- NEW action: **Negotiate** with a bloc to apply a small, bounded policy concession (priorities or social levers) and ease dissent slightly.
+- This creates a new governance loop: you can stabilize cohesion by drifting policy toward what the population wants (tradeoff, not free).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Let dissent drift into **Murmur**, then click **Negotiate** on the biggest bloc and watch dissent/compliance stabilize (and notice how your priorities/policy shift).
