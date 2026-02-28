@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.65';
+  const GAME_VERSION = '0.9.66';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -512,6 +512,20 @@
     const r = s.reserve ?? {};
     const v = Number(r[key] ?? 0);
     return Number.isFinite(v) ? Math.max(0, v) : 0;
+  }
+
+  // Edible food includes preserved rations (jerky).
+  // Many stability heuristics should consider total edible stores, not just fresh food.
+  function edibleFood(s){
+    const f = Number(s?.res?.food ?? 0);
+    const j = Number(s?.res?.jerky ?? 0);
+    const total = (Number.isFinite(f) ? f : 0) + (Number.isFinite(j) ? j : 0);
+    return Math.max(0, total);
+  }
+
+  function ediblePerKitten(s){
+    const n = Math.max(1, Number(s?.kittens?.length ?? 1) || 1);
+    return edibleFood(s) / n;
   }
 
   // Recommended reserves (season/pop aware). Used for Auto Reserves + UI hint.
@@ -1313,7 +1327,7 @@
 
   // --- Conditions
   function evalCond(cond, s, k){
-    const foodPerKitten = s.res.food / Math.max(1, s.kittens.length);
+    const foodPerKitten = ediblePerKitten(s);
     switch(cond.type){
       case 'always': return true;
       case 'hungry_gt': return k.hunger > cond.v;
@@ -1807,7 +1821,7 @@
     }
 
     // emergency
-    if (k.hunger > 0.92 && s.res.food > 0) {
+    if (k.hunger > 0.92 && edibleFood(s) > 0) {
       k._lastDecision = { kind:'emergency', at:s.t, task:'Eat', note:'starving' };
       return { task:'Eat', why:'emergency: starving' };
     }
@@ -1878,7 +1892,7 @@
   function scoreActions(s, k, ctx){
     const season = seasonAt(s.t);
     const targets = seasonTargets(s);
-    const foodPerKitten = s.res.food / Math.max(1, s.kittens.length);
+    const foodPerKitten = ediblePerKitten(s);
     const foodRes = getReserve(s,'food');
     const tired = (1 - k.energy);
     const mood = clamp01(Number(k.mood ?? 0.55));
@@ -2391,7 +2405,7 @@
       if (a === 'Eat') {
         score += k.hunger * 90;
         reasons.push(`hunger ${k.hunger.toFixed(2)} → +${(k.hunger*90).toFixed(1)}`);
-        if (s.res.food <= 0) { score -= 60; reasons.push('no food → -60'); }
+        if (edibleFood(s) <= 0) { score -= 60; reasons.push('no edible food → -60'); }
       }
 
       if (a === 'Rest') {
@@ -2481,7 +2495,7 @@
     const n = s.kittens.length;
     const season = seasonAt(s.t);
     const targets = seasonTargets(s);
-    const foodPerKitten = s.res.food / Math.max(1, n);
+    const foodPerKitten = ediblePerKitten(s);
 
     // Director: project focus (a transparent build order nudge)
     const pfInfo = getEffectiveProjectFocus(s);
@@ -2949,7 +2963,7 @@
     // It toggles OFF once the colony is clearly stabilized.
     if (state.director.autoFoodCrisis) {
       const targets = seasonTargets(state);
-      const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
+      const foodPerKitten = ediblePerKitten(state);
       const onAt = targets.foodPerKitten * 0.75;
       const offAt = targets.foodPerKitten * 0.95;
       if (!state.signals.FOOD && foodPerKitten < onAt) {
@@ -2999,7 +3013,7 @@
         if (state.t >= state.director.autoCrisisNextChangeAt) {
           const targets = seasonTargets(state);
           const n = Math.max(1, state.kittens.length);
-          const foodPerKitten = state.res.food / n;
+          const foodPerKitten = ediblePerKitten(state);
           const warmth = Number(state.res.warmth ?? 0);
           const threat = Number(state.res.threat ?? 0);
           const season = seasonAt(state.t);
@@ -3047,7 +3061,7 @@
         const cap = housingCap(state);
         const hasHousing = state.kittens.length < cap;
         const targets = seasonTargets(state);
-        const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
+        const foodPerKitten = ediblePerKitten(state);
         const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
 
         // Conditions are intentionally strict to avoid "win-more" runaway:
@@ -3353,14 +3367,15 @@
       if (k.hunger > 0.82) k.energy = clamp01(k.energy - dt * 0.01);
 
       // Starvation/sickness spiral: extreme hunger slowly damages health (even before death).
-      if (k.hunger > 0.92 && state.res.food <= 0) {
+      // Jerky counts as edible food; only apply the harsh spiral when *nothing edible* remains.
+      if (k.hunger > 0.92 && edibleFood(state) <= 0) {
         k.health = clamp01((k.health ?? 1) - dt * 0.020);
       } else if (k.hunger > 0.92) {
         k.health = clamp01((k.health ?? 1) - dt * 0.006);
       }
 
-      // hard fail: starvation
-      if (state.res.food <= 0 && k.hunger >= 0.98) {
+      // hard fail: starvation (only if *no edible food remains*)
+      if (edibleFood(state) <= 0 && k.hunger >= 0.98) {
         // lose a kitten (rare, but makes it a civ sim)
         state.kittens = state.kittens.filter(x => x.id !== k.id);
         log(`A kitten starved. Population: ${state.kittens.length}`);
@@ -3611,6 +3626,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.66',
+      notes: [
+        'FIX: Food stability/pressure now treats Jerky as edible food (food/kitten heuristics, auto-crisis, auto-recruit, advisor warnings, etc).',
+        'FIX: Starvation now only triggers when *no edible food remains* (food + jerky).',
+        'UI: added Edible/Kitten + Fresh/Kitten stats so preservation is visible and not confusing.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.65',
       notes: [
@@ -4306,7 +4330,7 @@
 
     const season = seasonAt(s.t);
     const pop = Math.max(1, s.kittens?.length ?? 1);
-    const foodPerKitten = Number(s.res.food ?? 0) / pop;
+    const foodPerKitten = ediblePerKitten(s);
     const avgMood = (s.kittens && s.kittens.length)
       ? (s.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)), 0) / pop)
       : 0.55;
@@ -4610,7 +4634,7 @@
     if (!k) return { text: 'No kittens yet.', recs: [] };
 
     const season = seasonAt(s.t);
-    const foodPerKitten = (s.res.food || 0) / Math.max(1, s.kittens.length);
+    const foodPerKitten = ediblePerKitten(s);
     const warmth = Number(s.res.warmth ?? 0);
     const threat = Number(s.res.threat ?? 0);
 
@@ -4997,7 +5021,8 @@
       if (profilesHintEl) profilesHintEl.textContent = 'Tip: save a Winter Prep setup in A, an Expand setup in B, and an Advance setup in C.';
     }
 
-    const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
+    const freshPerKitten = (Number(state.res.food ?? 0) / Math.max(1, state.kittens.length));
+    const foodPerKitten = ediblePerKitten(state);
     const foodCapNow = foodStorageCap(state);
     const addCost = kittenCost();
     el('kittenCost').textContent = String(addCost);
@@ -5091,7 +5116,8 @@
       ['Research x', fmt(libraryBonus(state)) + 'x'],
       ['Food Cap', fmt(foodStorageCap(state))],
       ['Spoilage', `x${spoilMult.toFixed(2)}`],
-      ['Food/Kitten', fmt(foodPerKitten)],
+      ['Edible/Kitten', fmt(foodPerKitten)],
+      ['Fresh/Kitten', fmt(freshPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
       ['Autonomy', `${Math.round(autonomy01(state)*100)}%`],
@@ -6235,7 +6261,7 @@
     const season = seasonAt(s.t);
     const targets = seasonTargets(s);
     const n = Math.max(1, s.kittens?.length ?? 1);
-    const foodPerKitten = Number(s.res?.food ?? 0) / n;
+    const foodPerKitten = ediblePerKitten(s);
     const warmth = Number(s.res?.warmth ?? 0);
     const threat = Number(s.res?.threat ?? 0);
     const cap = housingCap(s);
@@ -6278,7 +6304,7 @@
   function chooseAutoRations(s){
     const targets = seasonTargets(s);
     const n = Math.max(1, s.kittens?.length ?? 1);
-    const foodPerKitten = Number(s.res?.food ?? 0) / n;
+    const foodPerKitten = ediblePerKitten(s);
     const dis = dissent01(s);
 
     // Tight: when food is genuinely scary.

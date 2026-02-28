@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 06:41 CST - v0.9.66 Jerky counts as edible food (fix starvation + heuristics)
+
+Summary
+- FIX: all **food/kitten** stability heuristics now treat **Jerky as edible food** (advisor warnings, auto-food-crisis, auto-crisis, auto-recruit, auto-mode/rations decisions).
+- FIX: starvation + the harsh hunger→health spiral now only apply when **no edible food remains** (food + jerky).
+- UI: stats now show **Edible/Kitten** (food+jerky) plus **Fresh/Kitten** (food only) so preservation is legible.
+- Patch notes updated for v0.9.66.
+- Save-safe: no schema changes (just smarter reads).
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Stockpile **Jerky**, let **Food** hit 0, and confirm the colony stabilizes (no starvation) while **Edible/Kitten** remains > 0.
+
+---
+
 ## 2026-02-28 06:26 CST - v0.9.65 Inspector: show blocked sink → fallback execution
 
 Summary
