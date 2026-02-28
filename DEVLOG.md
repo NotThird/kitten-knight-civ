@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 03:40 CST - v0.9.54 Plan debug shows blocked sinks (reserves/inputs)
+
+Summary
+- Explainability: Plan debug now reports which sink actions were actually *blocked* by reserves/inputs in the last second (and why), so desired/assigned mismatches are actionable.
+- Captures execution-layer stalls (the same ones that trigger fallback work) without spamming the event log.
+- Helps diagnose “why won’t they build/research?” moments: usually protected reserves or missing inputs.
+- Save-safe: no schema changes (blocked counters are ephemeral).
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Crank Food/Wood/Science reserves high, set a build focus (e.g., Industry), and watch Plan debug surface “Blocked sinks” when builders fall back due to reserves.
+
+---
+
 ## 2026-02-28 03:25 CST - v0.9.53 Threat ETA now includes target warning
 
 Summary

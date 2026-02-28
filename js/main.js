@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.53';
+  const GAME_VERSION = '0.9.54';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -534,6 +534,14 @@
     const blocked = k.task;
     k._blockedAction = blocked;
     k._blockedMsg = msg;
+
+    // Explainability: accumulate a per-second "blocked sinks" summary so Plan debug can tell you
+    // why desired != assigned (or why builders/researchers seem to "refuse" a sink).
+    // NOTE: this is not saved; it's purely last-tick explainability.
+    s._blockedThisSecond = s._blockedThisSecond ?? Object.create(null);
+    s._blockedMsgThisSecond = s._blockedMsgThisSecond ?? Object.create(null);
+    s._blockedThisSecond[blocked] = (s._blockedThisSecond[blocked] ?? 0) + 1;
+    if (!s._blockedMsgThisSecond[blocked]) s._blockedMsgThisSecond[blocked] = msg;
 
     // Explainability: show what we actually did this tick (since the "task" column will still
     // display the intended action selected at 1s decision time).
@@ -3217,6 +3225,11 @@
     if (state._decTimer >= 1) {
       state._decTimer -= 1;
       ensureBuddies(state);
+
+      // Explainability: reset per-second blocked-action counters (populated by doFallback during execution).
+      state._blockedThisSecond = Object.create(null);
+      state._blockedMsgThisSecond = Object.create(null);
+
       const plan = desiredWorkerPlan(state);
       updateRoles(state, plan);
 
@@ -3258,6 +3271,9 @@
         // Reserve estimated scarce inputs for this task so later kittens see reduced availability.
         reserveForTask(shadowAvail, d.task);
       }
+      // Attach last-second execution blockers so Plan debug can surface reserve/input stalls.
+      plan.blocked = { ...(state._blockedThisSecond ?? {}) };
+      plan.blockedMsg = { ...(state._blockedMsgThisSecond ?? {}) };
       state._lastPlan = plan;
     }
 
@@ -3535,6 +3551,13 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.54',
+      notes: [
+        'Explainability: Plan debug now shows when sink actions were blocked by reserves/inputs ("Blocked sinks"), so "desired vs assigned" mismatches are actionable.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.53',
       notes: [
@@ -5160,6 +5183,26 @@
           const mark = have < want ? '!' : (have > want ? '~' : ' ');
           lines.push(`${mark} ${a.padEnd(12)} ${String(have).padStart(2)}/${String(want).padStart(2)}`);
         }
+
+        // If sinks were blocked by reserves/inputs, surface a compact summary.
+        const blocked = p.blocked ?? null;
+        const blockedMsg = p.blockedMsg ?? null;
+        const bKeys = blocked ? Object.keys(blocked).filter(k => (blocked[k] ?? 0) > 0) : [];
+        if (bKeys.length) {
+          lines.push('');
+          lines.push('Blocked sinks (last second):');
+          // Prefer showing blockers that the plan actually wanted, so the mismatch reads clearly.
+          bKeys.sort((a,b)=> (p.desired?.[b] ?? 0) - (p.desired?.[a] ?? 0));
+          const top = bKeys.slice(0, 6);
+          for (const a of top) {
+            const ct = blocked[a] ?? 0;
+            const msg = String(blockedMsg?.[a] ?? '').trim();
+            const short = msg ? msg.replace(/\s+/g,' ').slice(0, 64) : '';
+            lines.push(`- ${a} x${ct}${short ? ` — ${short}` : ''}`);
+          }
+          if (bKeys.length > top.length) lines.push(`- (+${bKeys.length - top.length} more)`);
+        }
+
         planDebugEl.textContent = lines.length ? lines.join('\n') : '-';
       }
     }
