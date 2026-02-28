@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.100';
+  const GAME_VERSION = '0.9.101';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4278,6 +4278,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.101',
+      notes: [
+        'QoL: Project pinning is now surfaced next to Project focus (shows what is pinned + a one-click Clear pin button).',
+        'Explainability: Season panel also shows the active pinned project so you remember why focus is being forced.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.98',
       notes: [
         'NEW: Auto Council checkbox. When enabled, the Director will automatically hold Council when dissent is high and you can afford it (food+science above reserves).',
@@ -6583,6 +6591,18 @@
       }
     }
 
+    // Pinned project hint (discoverability)
+    const pinHint = el('pinHint');
+    const clearPinBtn = el('btnClearPin');
+    const pin = pinnedProjectInfo(state);
+    if (pin && !pin.completed) {
+      if (pinHint) pinHint.textContent = `Pinned: ${pin.type} (finish 1)`;
+      if (clearPinBtn) clearPinBtn.style.display = '';
+    } else {
+      if (pinHint) pinHint.textContent = '';
+      if (clearPinBtn) clearPinBtn.style.display = 'none';
+    }
+
     // Director profiles UI
     if (profilesEl) {
       ensureProfiles(state);
@@ -6859,6 +6879,10 @@
       ? `Project focus (auto): ${pfEff.focus}${pfEff.focus === 'Auto' ? '' : ` - ${pfEff.why}`}\n`
       : `Project focus (manual): ${pfSet}\n`;
 
+    const pinLine = (pinnedNow && !pinnedNow.completed)
+      ? `Pinned project: ${String(pinnedNow.type ?? '')} (finish 1)\n`
+      : '';
+
     const festLeft = festivalSecondsLeft(state);
     const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) - morale drifting up\n` : '';
 
@@ -6928,6 +6952,7 @@
     seasonEl.textContent = `${season.name} - ${(season.phase*100).toFixed(0)}% (next season in ${nextSeasonEta}; winter in ${winterEta})\n` +
       seasonalNote +
       pfLine +
+      pinLine +
       autLine +
       amLine +
       abLine +
@@ -8042,6 +8067,13 @@
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.projectFocus = String(e.target.value || 'Auto');
     log(`Project focus → ${state.director.projectFocus}`);
+    save();
+    render();
+  });
+
+  const clearPinEl = document.getElementById('btnClearPin');
+  if (clearPinEl) clearPinEl.addEventListener('click', () => {
+    clearPinnedProject(state, 'Pinned project cleared.');
     save();
     render();
   });

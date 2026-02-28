@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 15:42 CST - v0.9.101 Pinned project discoverability
+
+Summary
+- QoL: Director panel now shows the currently **Pinned project** (if any) right next to Project focus.
+- Added a one-click **Clear pin** button (so you can stop forcing focus without hunting in Projects).
+- Explainability: Season panel now also echoes the active pinned project so you remember why focus is being overridden.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Pin a Hut/Granary from Projects, then confirm the Director + Season panels clearly show the pin and that **Clear pin** stops the forced focus.
+
+---
+
 ## 2026-02-28 14:42 CST - v0.9.98 Auto Council + Director automation scoping fix
 
 Summary
@@ -2035,7 +2056,7 @@ What to try
 ## 2026-02-28 15:12 CST - v0.9.99 Offline progress (capped) + clean summary log
 
 Summary
-- NEW: **Offline progress** — on load, the sim now advances up to **5 minutes** since your last save.
+- NEW: **Offline progress** ï¿½ on load, the sim now advances up to **5 minutes** since your last save.
 - Explainability: adds a single compact log line showing offline deltas (food/jerky/wood/warmth/threat/science/tools).
 - Safety: offline sim suppresses spammy logs (season warnings, etc.) and reports how many were suppressed.
 - Save-safe: uses existing meta.lastTs stamping; no schema changes required.
@@ -2048,7 +2069,7 @@ Files touched
 - DEVLOG.md
 
 What to try
-- Close the tab for ~60–180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
+- Close the tab for ~60ï¿½180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
 
 
 ## 2026-02-28 15:27 CST - v0.9.100 Policy locks (Auto Policy guardrails)
