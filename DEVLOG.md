@@ -1990,3 +1990,4 @@ What to try
 - Let buddy-need climb (avoid Socialize), then watch the Buddy column color + need% spike to flag brewing social stress.
 
 ---
+## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesn’t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n
