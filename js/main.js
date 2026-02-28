@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.32';
+  const GAME_VERSION = '0.9.33';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3197,6 +3197,13 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.33',
+      notes: [
+        'Explainability: kitten Task cells now show an override badge when a RULE / EMERG / COMMIT decision forced the action (so you can instantly see why the plan wasn\'t followed).',
+        'Task tooltip also mentions if autonomy sampled a non-#1 action ("top score was X").'
+      ]
+    },
+    {
       v: '0.9.32',
       notes: [
         'Projects panel: new Unblock button appears when an in-progress project is stalled by reserve-protected inputs (wood/science/tools).',
@@ -4262,10 +4269,21 @@
       if (autoFresh) prefParts.push('Autonomy');
       const pref = prefParts.length ? prefParts.join(' / ') : '-';
 
+      const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
+      const kind = String(d?.kind ?? 'score');
+      const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
+      const decHtml = decLabel ? `<span class="tag" title="Decision override (${decLabel})">${decLabel}</span> ` : '';
+
+      const taskTitleParts = [];
+      if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
+      if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
+      if (d?.best && d.best !== k.task) taskTitleParts.push(`top score was ${d.best} (autonomy sampled)`);
+      const taskTitle = taskTitleParts.join(' | ');
+
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td title="${k._fallbackTo ? escapeHtml('fallback → ' + k._fallbackTo) : ''}">${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td title="${escapeHtml(taskTitle)}">${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>

@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 22:24 CST - v0.9.33 Explainability: decision override badges in Task
+
+Summary
+- Kittens now show a small badge in the **Task** cell when their action was forced by a **RULE / EMERG / COMMIT** decision (so you can instantly tell why the plan wasn’t followed).
+- Task tooltip now includes extra context when autonomy sampled a non-#1 choice ("top score was X").
+- No sim/balance changes; pure UI explainability.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Create a Safety Rule (e.g. warmth < 35 → StokeFire) and watch the Task badge flip to **RULE** when it triggers.
+
+---
+
 ## 2026-02-27 22:09 CST - v0.9.32 Projects panel: Unblock stalled builds
 
 Summary
