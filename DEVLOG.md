@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 20:54 CST - v0.9.27 Cumulative patch notes (since last seen version)
+
+Summary
+- NEW: Patch notes are now **cumulative** — when you update, the modal shows everything since your last seen version.
+- Explainability: patch notes now include version headers (e.g., `v0.9.27`, `v0.9.26`) so changes are easier to scan.
+- QoL: patch notes modal still auto-opens once per version, but now remembers the “from version” for the session.
+- Updated the on-screen patch note text for v0.9.27 (previous text was stale).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Import an older save (or clear localStorage), reload, and confirm Patch Notes shows the correct “Changes since vX.Y.Z” list.
+
+---
+
 ## 2026-02-27 20:24 CST - v0.9.25 Social Inspector (dissent driver breakdown)
 
 Summary
@@ -669,7 +688,7 @@ What to try
 
 Summary
 - QoL: **+Kitten** button now shows **pop/cap** inline so the housing constraint is always visible.
-- UX: **+Kitten** auto-disables when you�re **housing-capped** or **can�t afford** the current food cost.
+- UX: **+Kitten** auto-disables when you�re **housing-capped** or **can�t afford** the current food cost.
 - Explainability: hover the button to see the exact block reason ("need food" vs "build huts").
 - Patch notes updated to reflect the change.
 

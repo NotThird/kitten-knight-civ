@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.26';
+  const GAME_VERSION = '0.9.27';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3113,12 +3113,37 @@
   const patchBodyEl = el('patchBody');
   const btnPatchNotesEl = el('btnPatchNotes');
   const btnPatchCloseEl = el('btnPatchClose');
-  const uiPatch = { open:false };
+  const uiPatch = { open:false, fromVersion:'' };
 
-  const PATCH_NOTES = [
-    'QoL: the +Kitten button now shows pop/cap and disables itself when you are housing-capped or can\'t afford the food cost.',
-    'Explainability: hover the button to see the exact reason (need food vs build huts).',
-    'No save-breaking changes.'
+  function verCmp(a,b){
+    const pa = String(a||'').split('.').map(x=>parseInt(x,10)).filter(n=>Number.isFinite(n));
+    const pb = String(b||'').split('.').map(x=>parseInt(x,10)).filter(n=>Number.isFinite(n));
+    for (let i=0;i<Math.max(pa.length,pb.length);i++) {
+      const da = pa[i] ?? 0;
+      const db = pb[i] ?? 0;
+      if (da !== db) return da < db ? -1 : 1;
+    }
+    return 0;
+  }
+
+  // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
+  // Keep this list small + player-facing.
+  const PATCH_HISTORY = [
+    {
+      v: '0.9.27',
+      notes: [
+        'Patch notes: now cumulative (shows everything since your last seen version).',
+        'Explainability: Projects panel now states which reserves are blocking a build (wood/science/tools).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
+      v: '0.9.26',
+      notes: [
+        'QoL: +Kitten button shows pop/cap and disables itself when you are housing-capped or can\'t afford the food cost.',
+        'Explainability: hover the button to see the exact reason (need food vs build huts).'
+      ]
+    }
   ];
 
   function closePatchNotes(){
@@ -3135,9 +3160,26 @@
   function renderPatchNotes(){
     if (!patchModalEl || !patchTitleEl || !patchSubEl || !patchBodyEl) return;
     if (!uiPatch.open) return;
+
+    const from = String(uiPatch.fromVersion || '');
+    const items = PATCH_HISTORY
+      .slice()
+      .sort((a,b) => verCmp(a.v, b.v))
+      .filter(e => (from ? (verCmp(e.v, from) > 0) : (e.v === GAME_VERSION)) && verCmp(e.v, GAME_VERSION) <= 0);
+
     patchTitleEl.textContent = `v${GAME_VERSION} - Patch notes`;
-    patchSubEl.textContent = 'These are the player-facing changes since your last version.';
-    patchBodyEl.textContent = PATCH_NOTES.map(x => `• ${x}`).join('\n');
+    patchSubEl.textContent = from
+      ? `Changes since v${from} (you can always reopen this from the header).`
+      : 'Changes in this version.';
+
+    const lines = [];
+    for (const entry of items.length ? items : PATCH_HISTORY.filter(e => e.v === GAME_VERSION)) {
+      lines.push(`v${entry.v}`);
+      for (const n of (entry.notes ?? [])) lines.push(`• ${n}`);
+      lines.push('');
+    }
+
+    patchBodyEl.textContent = lines.join('\n').trim();
   }
 
   if (btnPatchNotesEl) btnPatchNotesEl.addEventListener('click', openPatchNotes);
@@ -5037,6 +5079,9 @@
     state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0 };
     const seen = String(state.meta.seenVersion ?? '');
     if (seen === GAME_VERSION) return;
+
+    // Capture "from" version so patch notes can be cumulative.
+    uiPatch.fromVersion = seen;
 
     // Mark seen FIRST so a refresh won't loop-pop the modal.
     state.meta.seenVersion = GAME_VERSION;
