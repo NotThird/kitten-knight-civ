@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 00:09 CST - v0.9.40 Council: show exact policy nudges (explainability)
+
+Summary
+- Council buttons now show a **plain-English effects preview** (e.g. `Guard +0.30, BuildPalisade +0.20`) so you can accept/decline with intent.
+- Accepting a council suggestion now logs the **exact before → after** multiplier changes (e.g. `Forage x1.00→x1.25`).
+- Council panel briefly shows the **last accepted** policy diff (~2 minutes) to reinforce cause → effect without opening any inspectors.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Wait for a council suggestion, accept it, then immediately open a kitten’s **Decision Inspector** and confirm the nudged action’s score line matches the new multiplier.
+
+---
+
 ## 2026-02-27 23:54 CST - v0.9.39 Kitten Council: bottom-up policy suggestions
 
 Summary

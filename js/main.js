@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.39';
+  const GAME_VERSION = '0.9.40';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3227,17 +3227,46 @@
 
   // Kitten Council: bottom-up policy suggestions
   let councilRecs = [];
+  function policyDiff(before, after){
+    const out = [];
+    const keys = new Set([...
+      Object.keys(before || {}),
+      Object.keys(after || {})
+    ]);
+    for (const k of keys) {
+      const a = Number(before?.[k] ?? 1);
+      const b = Number(after?.[k] ?? 1);
+      if (Math.abs(b - a) > 0.0005) out.push({ key:k, from:a, to:b, d:(b-a) });
+    }
+    out.sort((x,y) => Math.abs(y.d) - Math.abs(x.d));
+    return out;
+  }
+  function fmtPolicyChange(ch){
+    const sign = ch.d >= 0 ? '+' : '';
+    return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
+  }
   if (councilPanelEl) councilPanelEl.addEventListener('click', (e) => {
     const btn = e.target?.closest?.('button[data-council]');
     if (!btn) return;
     const id = String(btn.dataset.council || '');
     const rec = councilRecs.find(r => r.id === id);
     if (!rec || typeof rec.apply !== 'function') return;
+
+    const before = { ...(state.policyMult ?? {}) };
     rec.apply(state);
-    log(`Council accepted: ${rec.label}`);
-    // Put a small cooldown so it doesn't immediately re-spam new advice.
+    const after = { ...(state.policyMult ?? {}) };
+    const diff = policyDiff(before, after);
+    const diffMsg = diff.length ? diff.slice(0, 6).map(fmtPolicyChange).join('; ') : 'No policy changes.';
+
+    log(`Council accepted: ${rec.label} — ${diffMsg}`);
+
+    // Remember last applied message for panel explainability.
     state.director = state.director ?? {};
     state.director.council = state.director.council ?? {};
+    state.director.council.lastAppliedAt = state.t;
+    state.director.council.lastAppliedMsg = diffMsg;
+
+    // Put a small cooldown so it doesn't immediately re-spam new advice.
     state.director.council.nextAt = Math.max(Number(state.director.council.nextAt ?? 0) || 0, state.t + 60);
     save();
     render();
@@ -3997,6 +4026,7 @@
       recs.push({
         id: `food-${k.id}`,
         label: `+Food work` ,
+        effects: `Forage +0.25, Farm +0.25, PreserveFood +0.10`,
         tip: `Food/kitten is low (${fmt(foodPerKitten)}/${targets.foodPerKitten}).`,
         apply: (st) => { nudgePolicyMult(st, 'Forage', 0.25); nudgePolicyMult(st, 'Farm', 0.25); nudgePolicyMult(st, 'PreserveFood', 0.10); }
       });
@@ -4004,6 +4034,7 @@
       recs.push({
         id: `warm-${k.id}`,
         label: `+Warmth` ,
+        effects: `StokeFire +0.30, ChopWood +0.15`,
         tip: `Winter + cold (warmth ${fmt(warmth)}/${targets.warmth}).`,
         apply: (st) => { nudgePolicyMult(st, 'StokeFire', 0.30); nudgePolicyMult(st, 'ChopWood', 0.15); }
       });
@@ -4011,6 +4042,7 @@
       recs.push({
         id: `threat-${k.id}`,
         label: `+Security`,
+        effects: `Guard +0.30, BuildPalisade +0.20`,
         tip: `Threat is rising (now ${fmt(threat)} / target ≤${targets.maxThreat}).`,
         apply: (st) => { nudgePolicyMult(st, 'Guard', 0.30); nudgePolicyMult(st, 'BuildPalisade', 0.20); }
       });
@@ -4023,6 +4055,7 @@
       recs.push({
         id: `like-${k.id}-${like}`,
         label: `Let me do more ${like}`,
+        effects: `${like} +0.25`,
         tip: `Kitten #${k.id} likes ${like}; policy is x${Number(m[like] ?? 1).toFixed(2)}.`,
         apply: (st) => { nudgePolicyMult(st, like, 0.25); }
       });
@@ -4034,6 +4067,7 @@
       recs.push({
         id: `hate-${k.id}-${hate}`,
         label: `Ease off ${hate}`,
+        effects: `${hate} -0.20`,
         tip: `Kitten #${k.id} dislikes ${hate}; policy is x${Number(m[hate] ?? 1).toFixed(2)}.`,
         apply: (st) => { nudgePolicyMult(st, hate, -0.20); }
       });
@@ -4074,13 +4108,25 @@
       return;
     }
 
-    const btns = councilRecs
+    const items = councilRecs
       .slice(0, 3)
-      .map(r => `<button class=\"btn\" data-council=\"${escapeHtml(r.id)}\" title=\"${escapeHtml(r.tip || '')}\">${escapeHtml(r.label || r.id)}</button>`)
-      .join(' ');
+      .map(r => {
+        const tip = [r.tip, r.effects].filter(Boolean).join(' ');
+        const eff = r.effects ? `<span class=\"small\" style=\"opacity:.85\">${escapeHtml(String(r.effects))}</span>` : '';
+        return `<div class=\"row\" style=\"gap:8px; margin-bottom:6px; align-items:baseline\">` +
+          `<button class=\"btn\" data-council=\"${escapeHtml(r.id)}\" title=\"${escapeHtml(tip)}\">${escapeHtml(r.label || r.id)}</button>` +
+          eff +
+        `</div>`;
+      })
+      .join('');
 
-    councilPanelEl.innerHTML = `<div class=\"row\" style=\"gap:6px; margin-bottom:6px\">${btns}</div>` +
-      `<div class=\"why\">${escapeHtml(String(c.text ?? ''))}</div>`;
+    const lastAt = Number(s.director?.council?.lastAppliedAt ?? -9999);
+    const lastMsg = String(s.director?.council?.lastAppliedMsg ?? '');
+    const showLast = lastMsg && (s.t - lastAt) <= 120;
+
+    councilPanelEl.innerHTML = `${items}` +
+      `<div class=\"why\">${escapeHtml(String(c.text ?? ''))}</div>` +
+      (showLast ? `<div class=\"small\" style=\"margin-top:6px; opacity:.85\">Last accepted: ${escapeHtml(lastMsg)}</div>` : '');
   }
 
   function render(){
