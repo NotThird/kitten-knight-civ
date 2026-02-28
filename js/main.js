@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.42';
+  const GAME_VERSION = '0.9.43';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3363,6 +3363,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.43',
+      notes: [
+        'Kitten Council: council suggestion tooltips now include a preview of the exact policy multiplier changes (diff) before you accept.',
+        'This makes bottom-up policy nudges more legible and safer to click.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.42',
       notes: [
         'Advisor: new quick action to toggle Winter Prep when Winter is near (late Fall).',
@@ -4148,11 +4156,22 @@
     const items = councilRecs
       .slice(0, 3)
       .map(r => {
-        const tip = [r.tip, r.effects].filter(Boolean).join(' ');
+        // Preview the exact multiplier diff in the tooltip (explainability).
+        const before = { ...(s.policyMult ?? {}) };
+        const tmp = { policyMult: { ...before } };
+        try { if (typeof r.apply === 'function') r.apply(tmp); } catch(e) {}
+        const diff = policyDiff(before, tmp.policyMult);
+        const diffShort = diff.length ? diff.slice(0, 2).map(fmtPolicyChange).join('; ') : '';
+        const diffTip = diff.length ? diff.slice(0, 6).map(fmtPolicyChange).join('; ') : 'No policy change.';
+
+        const tip = [r.tip, r.effects, diffTip].filter(Boolean).join(' ');
         const eff = r.effects ? `<span class=\"small\" style=\"opacity:.85\">${escapeHtml(String(r.effects))}</span>` : '';
-        return `<div class=\"row\" style=\"gap:8px; margin-bottom:6px; align-items:baseline\">` +
+        const prev = diffShort ? `<span class=\"small\" style=\"opacity:.75\">preview: ${escapeHtml(diffShort)}</span>` : '';
+
+        return `<div class=\"row\" style=\"gap:8px; margin-bottom:6px; align-items:baseline; flex-wrap:wrap\">` +
           `<button class=\"btn\" data-council=\"${escapeHtml(r.id)}\" title=\"${escapeHtml(tip)}\">${escapeHtml(r.label || r.id)}</button>` +
           eff +
+          (prev ? ` ${prev}` : '') +
         `</div>`;
       })
       .join('');

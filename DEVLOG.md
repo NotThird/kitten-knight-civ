@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 00:55 CST - v0.9.43 Council: preview exact multiplier diffs (safer clicks)
+
+Summary
+- Kitten Council suggestion tooltips now include a **preview diff** of the exact policy multiplier changes that will be applied.
+- Council rows also show a short inline preview (first 1–2 changes) so you can scan without hovering.
+- Improves explainability + reduces “mystery nudges” while keeping council influence soft (small multiplier steps).
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Hover a council suggestion and confirm the tooltip shows the full `xA→xB` preview before you accept.
+
+---
+
 ## 2026-02-28 00:24 CST - v0.9.41 Director Priorities: quick presets
 
 Summary
@@ -953,7 +970,7 @@ What to try
 
 Summary
 - Advisor now explicitly warns when **Winter is near** (late Fall / =45s to Winter) and offers a 1-click **Winter Prep** action.
-- Winter Prep remains a manual, reversible overlay (no hidden auto-enable) � this just makes the tool discoverable.
+- Winter Prep remains a manual, reversible overlay (no hidden auto-enable) � this just makes the tool discoverable.
 - Keeps the loop incremental: you feel the seasonal pressure, then choose whether to spend policy authority to stockpile.
 - Patch notes updated.
 
