@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 19:53 CST - v0.9.23 Care action (paid stability lever)
+
+Summary
+- Added a new action: **Care** — spend **food + wood** (above reserves) to reduce **Dissent** faster and raise **Mood** (direct “welfare” policy lever).
+- Care is **resource-gated + reserve-safe**: if buffers are tight, it automatically falls back to **Socialize** instead of burning critical supplies.
+- Director **Policy multipliers** now expose **Socialize** + **Care**, so you can explicitly trade output for cohesion/stability.
+- Planner will sometimes allocate 1 kitten to Care during high dissent *when surplus exists* (keeps strikes from becoming a slow death spiral).
+- Personality pool updated so some kittens can naturally like/dislike Care (more emergent texture).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let Dissent rise into **murmurs**, then set **Care** multiplier to **2.0** and watch Dissent fall faster while food/wood drain (confirm it falls back to Socialize if reserves get tight).
+
+---
+
 ## 2026-02-27 19:38 CST - v0.9.22 Auto Crisis (Director)
 
 Summary
