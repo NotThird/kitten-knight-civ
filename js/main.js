@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.66';
+  const GAME_VERSION = '0.9.67';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -515,7 +515,8 @@
   }
 
   // Edible food includes preserved rations (jerky).
-  // Many stability heuristics should consider total edible stores, not just fresh food.
+  // Important: many stability heuristics should consider TOTAL edible stores,
+  // otherwise the colony can "think" it's starving while sitting on jerky.
   function edibleFood(s){
     const f = Number(s?.res?.food ?? 0);
     const j = Number(s?.res?.jerky ?? 0);
@@ -1694,8 +1695,11 @@
     // Immediate cohesion boost: reduce dissent quickly (policy is "heard").
     s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.70);
 
-    // Tiny immediate morale bump.
-    for (const k of (s.kittens ?? [])) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.03);
+    // Tiny immediate morale bump + grievance relief.
+    for (const k of (s.kittens ?? [])) {
+      k.mood = clamp01(Number(k.mood ?? 0.55) + 0.03);
+      k.grievance = clamp01(Number(k.grievance ?? 0) * 0.75);
+    }
 
     return { ok:true, msg:`Council held (-${c.food} food, -${c.science} science). Dissent falls for ~45s.` };
   }
@@ -1760,6 +1764,48 @@
     m -= stress * 0.0035; // max-ish ~ -0.0035/sec in extreme mismatch/low autonomy
 
     k.mood = clamp01(m);
+  }
+
+  function updateGrievancePerSecond(s, k, task){
+    // Grievance is a slow-burn "resentment" meter (0..1).
+    // It rises when kittens are repeatedly pushed into disliked / misaligned work under strong central planning,
+    // and falls when they feel heard (liked work, rest, social/care) or when you hold Council.
+    let g = clamp01(Number(k.grievance ?? 0));
+    const p = k.personality ?? genPersonality(k.id ?? 0);
+    const likes = Array.isArray(p.likes) ? p.likes : [];
+    const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
+
+    const effA = effectiveAutonomy01(s);
+    const planPressure = (1 - effA); // high when central planning is strong
+    const disPol = discipline01(s);
+
+    // Baseline natural decay (grievances fade if conditions improve).
+    g = Math.max(0, g - 0.004);
+
+    let delta = 0;
+
+    // Doing disliked work while under strong planning increases resentment.
+    if (dislikes.includes(task) && planPressure > 0.25) {
+      delta += (0.010 + 0.020 * planPressure) * (1 + 0.50 * disPol);
+    }
+
+    // Values mismatch is a broader "I don't like where this society is headed" pressure.
+    const align = valuesAlignment01(s, k);
+    const mismatch = (1 - align) * planPressure;
+    delta += mismatch * (0.006 + 0.004 * disPol);
+
+    // Feeling heard reduces grievance.
+    if (likes.includes(task)) delta -= (0.006 + 0.010 * effA);
+
+    // Comfort + relationship actions cool things down.
+    if (task === 'Eat' || task === 'Rest' || task === 'Loaf' || task === 'Socialize' || task === 'Care') delta -= 0.010;
+
+    // Timed colony-wide relief.
+    if (festivalActive(s)) delta *= 0.70;
+    if (councilActive(s)) delta *= 0.80;
+
+    g = clamp01(g + delta);
+    k.grievance = g;
   }
 
   // --- AI
@@ -2876,6 +2922,7 @@
       const wp = workPaceMul(state);
       const rat = getRations(state);
       const hungerStress = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.hunger ?? 0)),0) / n) : 0;
+      const avgGriev = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.grievance ?? 0)),0) / n) : 0;
       const alarmStress = state.signals?.ALARM ? 1 : 0;
 
       // Desired dissent is intentionally coarse: it responds to "this feels bad" signals.
@@ -2886,6 +2933,7 @@
       const workPressure = Math.max(0, (wp - 1)) * 0.9;            // overwork
       const rationPressure = (rat.foodUse < 0.95 ? 0.08 : rat.foodUse > 1.05 ? -0.06 : 0);
       const hungerPressure = Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
+      const grievancePressure = Math.max(0, avgGriev - 0.20) * 0.65; // resentment spills into politics
       const alarmPressure = alarmStress * 0.06;
 
       let desire = 0;
@@ -2893,6 +2941,7 @@
       desire += workPressure;
       desire += rationPressure;
       desire += hungerPressure;
+      desire += grievancePressure;
       desire += alarmPressure;
 
       const rawDesire = desire;
@@ -2916,11 +2965,11 @@
       // Snapshot for Social Inspector (transient, not saved).
       state._dissentDrivers = {
         at: state.t,
-        avgMood, hungerStress,
+        avgMood, hungerStress, avgGriev,
         workPace: wp,
         rationsLabel: String(rat.label ?? state.rations ?? 'Normal'),
         alarmStress,
-        moodPressure, workPressure, rationPressure, hungerPressure, alarmPressure,
+        moodPressure, workPressure, rationPressure, hungerPressure, grievancePressure, alarmPressure,
         rawDesire,
         desireAfterPolicy,
         cur, next,
@@ -3311,6 +3360,9 @@
         // Mood update (1s cadence) so the colony feels a bit more "alive".
         updateMoodPerSecond(state, k, d.task);
 
+        // Grievance update (1s cadence): slow-burn resentment that can translate into dissent.
+        updateGrievancePerSecond(state, k, d.task);
+
         // Memory: track how long we've been doing the same job (1s resolution)
         k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
 
@@ -3374,7 +3426,7 @@
         k.health = clamp01((k.health ?? 1) - dt * 0.006);
       }
 
-      // hard fail: starvation (only if *no edible food remains*)
+      // hard fail: starvation (only if *no edible food* remains)
       if (edibleFood(state) <= 0 && k.hunger >= 0.98) {
         // lose a kitten (rare, but makes it a civ sim)
         state.kittens = state.kittens.filter(x => x.id !== k.id);
@@ -3626,6 +3678,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.67',
+      notes: [
+        'NEW: Grievance (per-kitten + colony avg) — a slow-burn resentment meter that rises when kittens are pushed into disliked/misaligned work under strong central planning.',
+        'Dissent pressure now also includes Grievance (visible in Social inspector).',
+        'Hold Council now also reduces Grievance (represents being heard).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.66',
       notes: [
@@ -4127,7 +4188,7 @@
 
     const lines = [];
     lines.push('How dissent works (1s cadence):');
-    lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, alarm).');
+    lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, grievance, alarm).');
     lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
     lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
     lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
@@ -4139,6 +4200,7 @@
       lines.push(`• work pace: ${(drivers.workPace*100).toFixed(0)}%  (overwork pressure: +${drivers.workPressure.toFixed(3)})`);
       lines.push(`• rations: ${drivers.rationsLabel}  (ration pressure: ${drivers.rationPressure>=0?'+':''}${drivers.rationPressure.toFixed(3)})`);
       lines.push(`• avg hunger: ${(drivers.hungerStress*100).toFixed(0)}%  (hunger pressure: +${drivers.hungerPressure.toFixed(3)})`);
+      if (typeof drivers.avgGriev === 'number') lines.push(`• avg grievance: ${(drivers.avgGriev*100).toFixed(0)}%  (grievance pressure: +${Number(drivers.grievancePressure ?? 0).toFixed(3)})`);
       lines.push(`• alarm: ${drivers.alarmStress ? 'ON' : 'OFF'}  (alarm pressure: +${drivers.alarmPressure.toFixed(3)})`);
       lines.push('');
       lines.push(`Raw desire (pre-discipline/doctrine): ${drivers.rawDesire.toFixed(3)}`);
@@ -4868,6 +4930,8 @@
     const minAlign = _aligns.length ? Math.min(..._aligns) : 0.75;
     const lowAlignCt = _aligns.filter(a => a < 0.55).length;
 
+    const avgGriev = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.grievance ?? 0)),0) / state.kittens.length) : 0;
+
     el('modeSurvive').classList.toggle('active', state.mode==='Survive');
     el('modeExpand').classList.toggle('active', state.mode==='Expand');
     el('modeDefend').classList.toggle('active', state.mode==='Defend');
@@ -5120,6 +5184,7 @@
       ['Fresh/Kitten', fmt(freshPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
+      ['Grievance', `${Math.round(avgGriev*100)}%`],
       ['Autonomy', `${Math.round(autonomy01(state)*100)}%`],
       ['Eff Auto', `${Math.round(effectiveAutonomy01(state)*100)}%`],
       ['Discipline', `${Math.round(discipline01(state)*100)}%`],
@@ -5139,6 +5204,9 @@
         d.dataset.stat = 'compliance';
         d.title = 'Click to inspect what is driving dissent/compliance (compliance scales how strongly the colony follows the plan)';
         d.style.cursor = 'pointer';
+      }
+      if (k === 'Grievance') {
+        d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure.';
       }
       if (k === 'Autonomy') {
         d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
@@ -5553,6 +5621,7 @@
       const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([s,l])=>`${s}:${l}`).join(' ');
       const eff = efficiency(state, k);
       const mood = clamp01(Number(k.mood ?? 0.55));
+      const griev = clamp01(Number(k.grievance ?? 0));
       const p = k.personality ?? genPersonality(k.id ?? 0);
       const likes = Array.isArray(p.likes) ? p.likes : [];
       const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
@@ -5607,6 +5676,7 @@
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
         <td title="Mood (personality alignment + stress + aptitude fit; small effect on efficiency)">${fmt(mood*100)}%</td>
+        <td title="Grievance (slow-burn resentment; contributes to dissent pressure)">${fmt(griev*100)}%</td>
         <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
         <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
@@ -6796,6 +6866,7 @@
         for (const [sk,xp] of Object.entries({ Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 })) if (!(sk in k.xp)) k.xp[sk] = xp;
         k.health = clamp01(Number(k.health ?? 1));
         k.mood = clamp01(Number(k.mood ?? 0.55));
+        k.grievance = clamp01(Number(k.grievance ?? 0));
         k.taskStreak = k.taskStreak ?? 0;
         k.taskLock = k.taskLock ?? 0;
         k._blockedAction = k._blockedAction ?? null;

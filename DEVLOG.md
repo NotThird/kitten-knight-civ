@@ -1422,3 +1422,22 @@ Files touched
 What to try
 - Accept a council suggestion, then immediately click **Undo last** and confirm the multipliers snap back.
 
+
+---
+
+## 2026-02-28 06:56 CST - v0.9.67 Grievance: slow-burn resentment ? dissent pressure
+
+Summary
+- Added per-kitten **Grievance** (0–100%) that rises when kittens are pushed into disliked/misaligned work under strong central planning, and cools down with comfort work.
+- Colony-level **Grievance** average is now visible as a stat card.
+- **Dissent desire** now includes a grievance pressure term (visible in Social inspector driver breakdown).
+- **Hold Council** now also reduces grievance (represents being heard), helping you recover from rigid policy pushes.
+- Added a Colony table column (Griev) for quick diagnosis.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Set low Autonomy + high Discipline, crank a quota for a disliked job (watch Pref column), then see Grievance climb and Dissent follow; recover by raising Autonomy or holding Council.
