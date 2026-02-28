@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.47';
+  const GAME_VERSION = '0.9.48';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2603,8 +2603,9 @@
     if (!s.unlocked.granary) desired.BuildGranary = 0;
     if (!s.unlocked.construction) { desired.PreserveFood = 0; desired.BuildHut = 0; desired.BuildPalisade = 0; desired.BuildGranary = 0; desired.BuildWorkshop = 0; desired.BuildLibrary = 0; }
 
+    const desiredBase = { ...desired }; // before policy multipliers
     applyPolicyToDesired(s, desired);
-    return { desired, assigned: Object.create(null) };
+    return { desired, desiredBase, assigned: Object.create(null) };
   }
 
   function applyPlanPressure(scored, plan){
@@ -3480,6 +3481,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.48',
+      notes: [
+        'Explainability: Policy panel now includes a Plan preview (desired worker counts) shown both WITH and WITHOUT your policy multipliers.',
+        'This makes it easier to see what your quota sliders are doing to the colony plan before Autonomy/traits/needs add variance.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.47',
       notes: [
@@ -5157,7 +5166,19 @@
         </div>`;
     };
 
-    policyEl.innerHTML = rows.map(([label,a]) => line(label,a)).join('');
+    const plan = state._lastPlan ?? null;
+    const desiredNow = plan?.desired ? summarizePlan(plan.desired) : '';
+    const desiredBase = plan?.desiredBase ? summarizePlan(plan.desiredBase) : '';
+
+    const head = (desiredNow || desiredBase) ? `
+      <div class="small" style="margin-bottom:8px; opacity:.9">
+        <b>Plan preview</b>
+        <div class="why" style="margin-top:6px">${escapeHtml(desiredNow ? ('with policy: ' + desiredNow) : 'with policy: -')}${desiredBase ? ('\nwithout policy: ' + desiredBase) : ''}</div>
+        <div class="small" style="opacity:.8; margin-top:6px">Tip: policy multipliers bias the colony plan; individual kittens may still diverge due to Autonomy, traits, and needs.</div>
+      </div>
+    ` : '';
+
+    policyEl.innerHTML = head + rows.map(([label,a]) => line(label,a)).join('');
   }
 
   function renderRoleQuotas(){

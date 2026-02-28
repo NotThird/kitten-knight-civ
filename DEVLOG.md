@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 02:10 CST - v0.9.48 Policy panel plan preview
+
+Summary
+- NEW (explainability): Policy panel now shows a **Plan preview** of the colony’s desired worker counts.
+- Shows both **with policy multipliers** (your current quotas) and **without policy multipliers** (baseline), so you can see what your nudges are actually doing.
+- Clarifies the "policy → plan → kitten scoring" pipeline: plan is advisory; Autonomy/traits/needs can still diverge.
+- Save-safe: preview uses transient `_lastPlan` data only.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Mode=Advance, bump **CraftTools** and **Research** multipliers, then check the Policy panel’s plan preview to confirm the desired worker counts changed before watching the kittens execute.
+
+---
+
 ## 2026-02-28 01:55 CST - v0.9.47 Firekeeping now levels (Cooking)
 
 Summary
