@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 23:24 CST - v0.9.37 QoL: Auto-pause on hidden tab
+
+Summary
+- NEW: the sim **auto-pauses when the browser tab is hidden** and **auto-resumes** when you return.
+- Safety: it **does not override manual Pause** (only resumes if the auto-pause triggered it).
+- Prevents background CPU burn and reduces "oops I left it running" spirals.
+- Adds clear log events: "Auto-paused" and "Resumed".
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let the sim run, switch to another tab/window for ~10s, then come back and confirm it auto-resumed (and didn\'t fast-forward).
+
+---
+
 ## 2026-02-27 23:09 CST - v0.9.36 Social: Buddy bonds (Socialize synergy)
 
 Summary

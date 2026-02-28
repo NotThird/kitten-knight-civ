@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.36';
+  const GAME_VERSION = '0.9.37';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3271,9 +3271,16 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.37',
+      notes: [
+        'QoL: Auto-pause when the tab is hidden; automatically resumes when you come back (does not override manual Pause).',
+        'This reduces background CPU usage and avoids "oops I left it running" resource spirals.'
+      ]
+    },
+    {
       v: '0.9.36',
       notes: [
-        'NEW: Buddy bonds — each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
+        'NEW: Buddy bonds - each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
         'When a kitten and their buddy Socialize at the same time, dissent drops a bit faster and their mood recovers slightly faster.',
         'Explainability: Buddy is shown in the Decision Inspector header.'
       ]
@@ -3281,14 +3288,14 @@
     {
       v: '0.9.35',
       notes: [
-        'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
+        'Advisor: new quick actions for social stability - it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
         'Explainability: makes the "colony is grumbling" fix path more discoverable without adding hidden automation.'
       ]
     },
     {
       v: '0.9.34',
       notes: [
-        'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
+        'NEW: Auto Rations toggle - the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
         'Explainability: Season panel shows Auto rations status + the last reason.'
       ]
     },
@@ -3512,7 +3519,7 @@
     const comp = compliance01(state);
     const drivers = state._dissentDrivers ?? null;
 
-    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) — Compliance x${comp.toFixed(2)}`;
+    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) - Compliance x${comp.toFixed(2)}`;
 
     const season = seasonAt(state.t);
     const rat = getRations(state);
@@ -3527,7 +3534,7 @@
     lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, alarm).');
     lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
     lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
-    lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
+    lines.push('• Dissent is then smoothed toward that desire (~20-25s to swing hard).');
     lines.push('');
 
     if (drivers && typeof drivers === 'object') {
@@ -3758,7 +3765,7 @@
     // If dissent is high and you can afford it, Council is the cleanest "push the colony back into compliance" lever.
     const disNow = dissent01(s);
     if (disNow > 0.55 && !councilActive(s) && canHoldCouncil(s)) {
-      lines.push(`• high dissent (${Math.round(disNow*100)}%) — Council can reduce grumbling quickly`);
+      lines.push(`• high dissent (${Math.round(disNow*100)}%) - Council can reduce grumbling quickly`);
       recs.push({
         id: 'council',
         label: 'Hold Council',
@@ -3772,7 +3779,7 @@
 
     // If mood is low and you can afford it, Festival is the fastest morale lever.
     if (avgMood < 0.48 && !festivalActive(s) && canHoldFestival(s)) {
-      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) — Festival can boost morale + output`);
+      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) - Festival can boost morale + output`);
       recs.push({
         id: 'festival',
         label: 'Hold Festival',
@@ -5460,6 +5467,30 @@
   }
 
   // --- Loop
+  // QoL: auto-pause when the tab is hidden. This prevents background CPU burn and
+  // avoids players accidentally running the sim for a long time while away.
+  // It will NOT override a manual Pause (only resumes if *it* paused).
+  const autoPause = { active:false };
+  document.addEventListener('visibilitychange', () => {
+    const hidden = document.hidden;
+    if (hidden) {
+      if (!state.paused) {
+        autoPause.active = true;
+        state.paused = true;
+        log('Auto-paused (tab hidden).');
+        save();
+      }
+    } else {
+      if (autoPause.active) {
+        autoPause.active = false;
+        state.paused = false;
+        last = now(); // prevent a huge dt burst
+        log('Resumed (tab visible).');
+        save();
+      }
+    }
+  });
+
   let last = now();
   function frame(){
     const t = now();
