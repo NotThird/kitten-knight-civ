@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 21:39 CST - v0.9.30 Kitten traits (steady scoring bias)
+
+Summary
+- NEW: Each kitten now rolls a simple **Trait** (Brave / Studious / Builder / Caretaker / Forager).
+- Traits apply a steady, explainable scoring bias (separate from Autonomy-driven likes/dislikes), pushing more distinct specialization patterns.
+- Explainability: trait bonuses show directly in the Decision Inspector reason list (e.g. `trait Builder → +8`).
+- UI: Traits column now shows trait tags; tooltip includes trait descriptions + the kitten’s prefs.
+- Save-safe: old saves auto-generate traits for existing kittens.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Open the Decision Inspector on a kitten and confirm you see `trait X → +Y` in the scoring breakdown; then toggle Autonomy to compare trait-vs-preference behavior.
+
+---
+
 ## 2026-02-27 21:24 CST - v0.9.29 Safety Rules: Care action selectable
 
 Summary

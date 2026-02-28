@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.29';
+  const GAME_VERSION = '0.9.30';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -288,6 +288,33 @@
     return { likes, dislikes };
   }
 
+  // --- Traits (civ-sim identity layer)
+  // One small "trait" per kitten. Unlike likes/dislikes (which depend on Autonomy), traits are a steady bias.
+  // Goal: make colonies feel different across runs and make specialization feel more "character-driven".
+  const TRAIT_DEFS = [
+    { id:'Brave',     desc:'Leans into danger. Prefers Guard; ALARM stresses them less.', bias: { Guard: 12 } },
+    { id:'Studious',  desc:'Bookish. Prefers Research (and Mentor once unlocked).', bias: { Research: 10, Mentor: 8 } },
+    { id:'Builder',   desc:'Hands-on. Prefers construction + tool work.', bias: { BuildHut: 9, BuildPalisade: 8, BuildGranary: 8, BuildWorkshop: 8, BuildLibrary: 8, CraftTools: 8 } },
+    { id:'Caretaker', desc:'Keeps spirits up. Prefers Socialize/Care.', bias: { Socialize: 10, Care: 10 } },
+    { id:'Forager',   desc:'Wilderness savvy. Prefers Forage/Farm/ChopWood.', bias: { Forage: 9, Farm: 7, ChopWood: 7 } },
+  ];
+
+  function genTraits(id){
+    const rng = seededRng((id * 1103515245 + 12345) | 0);
+    const pick = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Forager';
+    return [pick];
+  }
+
+  function traitInfoList(k){
+    const arr = Array.isArray(k?.traits) ? k.traits : [];
+    const out = [];
+    for (const id of arr) {
+      const def = TRAIT_DEFS.find(t => t.id === id);
+      out.push(def ? `${def.id}: ${def.desc}` : String(id));
+    }
+    return out;
+  }
+
   function makeKitten(id){
     return {
       id,
@@ -305,6 +332,8 @@
       xp: { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 },
       // Personality: soft preferences that bias scoring (adds emergent specialization)
       personality: genPersonality(id),
+      // Traits: steady "identity" bias (civ-sim flavor)
+      traits: genTraits(id),
       // Memory: how long they've been stuck doing the same thing (adds natural rotation)
       taskStreak: 0,
       // Commitment: reduces 1s task-flapping; will only break for safety rules/emergencies.
@@ -1304,6 +1333,23 @@
     }
   }
 
+  function applyTraitPressure(scored, k){
+    // Traits are a steady bias (unlike likes/dislikes which scale with Autonomy).
+    const traits = Array.isArray(k?.traits) ? k.traits : [];
+    if (!traits.length) return;
+
+    for (const id of traits) {
+      const def = TRAIT_DEFS.find(t => t.id === id);
+      if (!def?.bias) continue;
+      for (const row of scored) {
+        const add = Number(def.bias[row.action] ?? 0);
+        if (!add) continue;
+        row.score += add;
+        row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
+      }
+    }
+  }
+
   // --- Colony-wide effects (simple timers)
   function festivalActive(s){
     return Number(s.effects?.festivalUntil ?? 0) > Number(s.t ?? 0);
@@ -1435,7 +1481,8 @@
     if ((k.hunger ?? 0) > 0.85) m -= 0.010;
     const season = seasonAt(s.t);
     if (season.name === 'Winter' && (s.res?.warmth ?? 0) < 35) m -= 0.008;
-    if (s.signals?.ALARM) m -= 0.005;
+    const brave = Array.isArray(k.traits) && k.traits.includes('Brave');
+    if (s.signals?.ALARM) m -= brave ? 0.002 : 0.005;
 
     // Work pace policy: pushing hard makes the colony a bit grumpier over time; relaxed pace is a small morale relief.
     const wp = workPaceMul(s);
@@ -1533,6 +1580,7 @@
     applyPlanPressure(scored, plan);
     applyRolePressure(scored, k);
     applyPersonalityPressure(scored, k);
+    applyTraitPressure(scored, k);
     scored.sort((a,b)=>b.score-a.score);
 
     const pick = pickWithAutonomy(scored, effectiveAutonomy01(s));
@@ -3130,6 +3178,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.30',
+      notes: [
+        'New: kitten Traits (Brave/Studious/Builder/Caretaker/Forager). Traits add a steady bias to scoring (separate from Autonomy likes/dislikes).',
+        'Explainability: trait bonuses show directly in the Decision Inspector scoring reasons.',
+        'UI: Traits column now shows trait tags; tooltip includes trait descriptions + prefs.'
+      ]
+    },
+    {
       v: '0.9.29',
       notes: [
         'FIX: Safety Rules can now choose the Care action (previously missing from the rule action dropdown).',
@@ -3248,7 +3304,8 @@
     const hates = (p.dislikes ?? []).join(', ') || '-';
     const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
     const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
-    inspectSubEl.textContent = `likes: ${likes} | hates: ${hates}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
+    inspectSubEl.textContent = `traits: ${traits} | likes: ${likes} | hates: ${hates}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -4097,9 +4154,13 @@
       const likes = Array.isArray(p.likes) ? p.likes : [];
       const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
 
-      // Traits: keep the table readable; put the full list in a tooltip.
-      const traitsShort = `likes:${likes.length}${dislikes.length ? ` hates:${dislikes.length}` : ''}`;
-      const traitsTitle = `${likes.join(',')}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`;
+      // Traits: a steady identity tag (kept short in-table; details in tooltip).
+      const traits = Array.isArray(k.traits) ? k.traits : [];
+      const traitsShort = traits.length ? traits.join(',') : '-';
+      const traitLines = traitInfoList(k);
+      const traitsTitle = traitLines.length
+        ? `${traitLines.join(' | ')}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`
+        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`;
 
       // Pref: show whether the current task aligns with the kitten's likes/dislikes.
       // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.
@@ -5089,6 +5150,7 @@
         k.role = k.role ?? 'Generalist';
         k.roleWhy = k.roleWhy ?? '';
         k.personality = k.personality ?? genPersonality(k.id ?? 0);
+        k.traits = Array.isArray(k.traits) ? k.traits : genTraits(k.id ?? 0);
         k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 };
         k.xp = k.xp ?? { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 };
         for (const [sk,lv] of Object.entries({ Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 })) if (!(sk in k.skills)) k.skills[sk] = lv;
