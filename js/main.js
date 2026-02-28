@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.17';
+  const GAME_VERSION = '0.9.18';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -245,7 +245,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -1087,6 +1087,15 @@
     return clamp01(d);
   }
 
+  // Labor doctrine: a simple policy that changes how "central planning" expresses itself.
+  // - Balanced: default
+  // - Specialize: stronger role pressure, weaker boredom rotation (specialists stick)
+  // - Rotate: weaker role pressure, stronger boredom rotation, slightly reduces dissent buildup
+  function doctrineKey(s){
+    const d = String(s?.director?.doctrine ?? 'Balanced');
+    return (d === 'Specialize' || d === 'Rotate' || d === 'Balanced') ? d : 'Balanced';
+  }
+
   function dissent01(s){
     const x = Number(s?.social?.dissent ?? 0);
     return clamp01(x);
@@ -1152,7 +1161,9 @@
     // (They still specialize via skills + the plan; this just dampens the role push.)
     const a = effectiveAutonomy01(state);
     const comp = compliance01(state);
-    const roleMul = 1.10 - 0.35 * a; // 1.10 @ 0% autonomy → 0.75 @ 100%
+    const doc = doctrineKey(state);
+    const docMul = (doc === 'Specialize') ? 1.18 : (doc === 'Rotate') ? 0.78 : 1.00;
+    const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy → 0.75 @ 100% (then doctrine scales it)
 
     for (const row of scored) {
       if (!def.actions.includes(row.action)) continue;
@@ -1172,7 +1183,9 @@
 
     const likeBonus = 6 + 10 * a;      // 6..16
     const dislikePenalty = 4 + 8 * a;  // 4..12
-    const boreMul = 0.6 + 0.8 * a;     // 0.6..1.4
+    const doc = doctrineKey(state);
+    const boreDoc = (doc === 'Rotate') ? 1.35 : (doc === 'Specialize') ? 0.75 : 1.00;
+    const boreMul = (0.6 + 0.8 * a) * boreDoc;     // 0.6..1.4 (then doctrine scales it)
 
     for (const row of scored) {
       if (p.likes?.includes(row.action)) {
@@ -2268,6 +2281,7 @@
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
     if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
+    if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
@@ -2305,6 +2319,11 @@
       // Discipline reduces how quickly dissent forms (but never to zero).
       const disPol = discipline01(state);
       desire *= (1 - 0.45 * disPol);
+
+      // Doctrine: specialization can feel "rigid" (a bit more grumbling); rotation tends to relieve pressure.
+      const doc = doctrineKey(state);
+      if (doc === 'Specialize') desire += 0.03;
+      if (doc === 'Rotate') desire -= 0.05;
 
       const target = clamp01(desire);
       const cur = clamp01(Number(state.social.dissent ?? 0));
@@ -2793,9 +2812,10 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Hold Council — spend food+science to reduce dissent and temporarily boost compliance.',
-    'Council effect is transparent: it shows in the Season panel and shifts compliance math.',
-    'No save-breaking changes: old saves load cleanly (councilUntil defaults to 0).'
+    'NEW: Labor doctrine (Balanced / Specialize / Rotate) — a policy lever for specialization vs rotation.',
+    'Specialize: stronger role pressure + less boredom rotation (roles stick).',
+    'Rotate: weaker role pressure + more boredom rotation, and slightly reduces dissent buildup.',
+    'No save-breaking changes: old saves load cleanly (doctrine defaults to Balanced).'
   ];
 
   function closePatchNotes(){
@@ -3106,6 +3126,7 @@
     if (!('autonomy' in state.director)) state.director.autonomy = 0.60;
     if (!('discipline' in state.director)) state.director.discipline = 0.40;
     if (!('workPace' in state.director)) state.director.workPace = 1.00;
+    if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
@@ -3442,8 +3463,10 @@
     if (ah) {
       const likeBonus = 6 + 10 * effA;
       const dislikePenalty = 4 + 8 * effA;
-      const roleMul = 1.10 - 0.35 * effA;
-      ah.textContent = `${aPct}% (effective ${Math.round(effA*100)}%) | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)} | dissent ${Math.round(disNow*100)}% (comp x${compNow.toFixed(2)})`;
+      const doc = doctrineKey(state);
+      const docMul = (doc === 'Specialize') ? 1.18 : (doc === 'Rotate') ? 0.78 : 1.00;
+      const roleMul = (1.10 - 0.35 * effA) * docMul;
+      ah.textContent = `${aPct}% (effective ${Math.round(effA*100)}%) | likes +${likeBonus.toFixed(0)} / dislikes -${dislikePenalty.toFixed(0)} | role pressure x${roleMul.toFixed(2)} (${doc}) | dissent ${Math.round(disNow*100)}% (comp x${compNow.toFixed(2)})`;
     }
 
     // Discipline (cohesion / compliance)
@@ -3467,6 +3490,16 @@
     if (wph) {
       const moodDrift = wpMul > 1.02 ? `mood drift ↓` : (wpMul < 0.98 ? `mood drift ↑` : `mood steady`);
       wph.textContent = `${wpPct}% | output x${wpMul.toFixed(2)} | fatigue x${wpMul.toFixed(2)} | ${moodDrift}`;
+    }
+
+    // Labor doctrine (specialization vs rotation)
+    const doc = doctrineKey(state);
+    const docSel = el('doctrine');
+    if (docSel) docSel.value = doc;
+    const docHint = el('doctrineHint');
+    if (docHint) {
+      const roleMul = (doc === 'Specialize') ? '↑ role pressure, ↓ boredom' : (doc === 'Rotate') ? '↓ role pressure, ↑ boredom, ↓ dissent' : 'baseline';
+      docHint.textContent = roleMul;
     }
 
     el('sigBuild').checked = !!state.signals.BUILD;
@@ -3861,6 +3894,7 @@
         autonomy: clamp01(Number(state.director.autonomy ?? 0.60)),
         discipline: clamp01(Number(state.director.discipline ?? 0.40)),
         workPace: Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00)),
+        doctrine: doctrineKey(state),
       },
     };
   }
@@ -3882,6 +3916,10 @@
       if ('autonomy' in snap.director) state.director.autonomy = clamp01(Number(snap.director.autonomy ?? 0.60));
       if ('discipline' in snap.director) state.director.discipline = clamp01(Number(snap.director.discipline ?? 0.40));
       if ('workPace' in snap.director) state.director.workPace = Math.max(0.8, Math.min(1.2, Number(snap.director.workPace ?? 1.00) || 1.00));
+      if ('doctrine' in snap.director) {
+        const v = String(snap.director.doctrine ?? 'Balanced');
+        state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
+      }
     }
 
     // Safety: ALARM is gated by Security unlock.
@@ -4185,11 +4223,22 @@
 
   const wpEl = document.getElementById('workPace');
   if (wpEl) wpEl.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
     if (!('discipline' in state.director)) state.director.discipline = 0.40;
+    if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
     log(`Work pace → ${Math.round(state.director.workPace * 100)}%`);
+    save();
+    render();
+  });
+
+  const docEl = document.getElementById('doctrine');
+  if (docEl) docEl.addEventListener('change', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
+    const v = String(e.target.value || 'Balanced');
+    state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
+    log(`Labor doctrine → ${state.director.doctrine}`);
     save();
     render();
   });

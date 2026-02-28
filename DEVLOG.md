@@ -508,3 +508,23 @@ Files touched
 
 What to try
 - Crank **Work pace** up and/or set **Tight** rations until dissent rises, then watch **Compliance** drop and task variance/loafing increase.
+
+---
+
+## 2026-02-27 18:38 CST - v0.9.18 Policy lever: Labor doctrine (Balanced / Specialize / Rotate)
+
+Summary
+- Added **Labor doctrine** selector: **Balanced**, **Specialize**, **Rotate**.
+- Doctrine tunes emergent behavior: **Specialize** increases role pressure + reduces boredom rotation; **Rotate** reduces role pressure + increases boredom rotation.
+- Doctrine also slightly affects **Dissent** buildup (Rotate reduces it a bit; Specialize increases it a bit) to reinforce the civ-sim “social texture”.
+- Updated autonomy hint to show doctrine-aware **role pressure**.
+- Patch notes updated; migration-safe (missing doctrine defaults to Balanced).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Flip doctrine to **Specialize** (Autonomy ~20%) vs **Rotate** (Autonomy ~80%) and watch role stability + Loafing/Dissent trends diverge over a full season.
