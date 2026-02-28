@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.35';
+  const GAME_VERSION = '0.9.36';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -334,6 +334,12 @@
       personality: genPersonality(id),
       // Traits: steady "identity" bias (civ-sim flavor)
       traits: genTraits(id),
+
+      // Social bond: each kitten has a "buddy" they vibe with.
+      // When both buddies Socialize at the same time, dissent drops faster and both feel better.
+      // This is tiny on purpose: it's a civ-sim texture layer, not a hard mechanic.
+      buddyId: null,
+
       // Memory: how long they've been stuck doing the same thing (adds natural rotation)
       taskStreak: 0,
       // Commitment: reduces 1s task-flapping; will only break for safety rules/emergencies.
@@ -351,7 +357,38 @@
     };
   }
 
+  // --- Social bonds (buddy system)
+  // Deterministic + save-safe: if a save doesn't have buddyIds yet, we assign them on the fly.
+  // Buddy assignment is stable given the current population (id-sorted ring).
+  function ensureBuddies(s){
+    const ids = (s.kittens ?? []).map(k => Number(k?.id ?? 0)).filter(n => Number.isFinite(n) && n > 0).sort((a,b)=>a-b);
+    const set = new Set(ids);
+    if (ids.length < 2) {
+      for (const k of (s.kittens ?? [])) k.buddyId = null;
+      return;
+    }
+
+    for (const k of (s.kittens ?? [])) {
+      const id = Number(k?.id ?? 0);
+      if (!Number.isFinite(id) || id <= 0) { k.buddyId = null; continue; }
+
+      const cur = Number(k.buddyId ?? 0);
+      if (cur && cur !== id && set.has(cur)) continue;
+
+      const idx = ids.indexOf(id);
+      const buddy = ids[(idx + 1) % ids.length];
+      k.buddyId = (buddy && buddy !== id) ? buddy : null;
+    }
+  }
+
+  function buddyOf(s, k){
+    const bid = Number(k?.buddyId ?? 0);
+    if (!bid) return null;
+    return (s.kittens ?? []).find(x => Number(x?.id ?? 0) === bid) ?? null;
+  }
+
   function defaultRules(){
+
     return [
       rule('If hungry > 0.75 → Eat', {type:'hungry_gt', v:0.75}, {type:'Eat'}),
       rule('If tired > 0.88 → Rest', {type:'tired_gt', v:0.88}, {type:'Rest'}),
@@ -571,7 +608,15 @@
         // Colony cohesion: bring dissent down.
         // Discipline makes this more effective (you have "institutions" to channel the organizing).
         const d = discipline01(s);
-        const reduce = dt * (0.010 + 0.010 * d) * eff * mom;
+        let reduce = dt * (0.010 + 0.010 * d) * eff * mom;
+
+        // Buddy synergy: if your buddy is ALSO socializing, it works better.
+        const b = buddyOf(s, k);
+        if (b && String(b.task ?? '') === 'Socialize') {
+          reduce *= 1.22;
+          k.mood = clamp01(Number(k.mood ?? 0.55) + dt * 0.004);
+        }
+
         s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce);
 
         // Small spillover: boost one other kitten's mood a tiny amount.
@@ -2979,6 +3024,7 @@
     state._decTimer = (state._decTimer ?? 0) + dt;
     if (state._decTimer >= 1) {
       state._decTimer -= 1;
+      ensureBuddies(state);
       const plan = desiredWorkerPlan(state);
       updateRoles(state, plan);
 
@@ -3225,6 +3271,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.36',
+      notes: [
+        'NEW: Buddy bonds — each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
+        'When a kitten and their buddy Socialize at the same time, dissent drops a bit faster and their mood recovers slightly faster.',
+        'Explainability: Buddy is shown in the Decision Inspector header.'
+      ]
+    },
+    {
       v: '0.9.35',
       notes: [
         'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
@@ -3389,7 +3443,9 @@
     const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
     const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
     const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
-    inspectSubEl.textContent = `traits: ${traits} | likes: ${likes} | hates: ${hates}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    const buddy = buddyOf(state, k);
+    const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
+    inspectSubEl.textContent = `traits: ${traits} | likes: ${likes} | hates: ${hates}${buddyNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -4339,11 +4395,15 @@
 
       // Traits: a steady identity tag (kept short in-table; details in tooltip).
       const traits = Array.isArray(k.traits) ? k.traits : [];
-      const traitsShort = traits.length ? traits.join(',') : '-';
+      const buddy = buddyOf(state, k);
+      const buddyShort = buddy ? `b#${buddy.id}` : '';
+      const traitsShortBase = traits.length ? traits.join(',') : '-';
+      const traitsShort = buddyShort ? `${traitsShortBase} · ${buddyShort}` : traitsShortBase;
       const traitLines = traitInfoList(k);
+      const buddyLine = buddyShort ? `\nBuddy: #${buddy.id}` : '';
       const traitsTitle = traitLines.length
-        ? `${traitLines.join(' | ')}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`
-        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`;
+        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`
+        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}`;
 
       // Pref: show whether the current task aligns with the kitten's likes/dislikes.
       // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.

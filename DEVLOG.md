@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 23:09 CST - v0.9.36 Social: Buddy bonds (Socialize synergy)
+
+Summary
+- NEW: each kitten now has a deterministic **Buddy** bond (save-safe; assigned automatically).
+- Buddy is surfaced in explainability: shown in the Decision Inspector header and in the Traits tooltip as `b#<id>`.
+- When buddies **Socialize** at the same time, **dissent drops a bit faster** and their mood recovers slightly faster.
+- Goal: small civ-sim emergence layer that rewards "pairing" behavior without hard-locking roles.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Set policy to encourage **Socialize**, then watch for buddy pairs syncing up and stabilizing dissent faster than solo socializing.
+
+---
+
 ## 2026-02-27 22:54 CST - v0.9.35 Advisor: one-click Council/Festival
 
 Summary
