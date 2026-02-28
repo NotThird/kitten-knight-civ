@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 05:10 CST - v0.9.60 Explainability: recent Activity breakdown in Plan debug
+
+Summary
+- Explainability: Plan debug now includes an **Activity (last ~30s)** section showing actual task shares.
+- Helps diagnose when autonomy/needs/dissent pull kittens off-plan without clicking each kitten.
+- Keeps history transient (not saved) to avoid save bloat.
+- Patch notes updated for v0.9.60.
+- Save-safe: UI-only explainability.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let the colony run 20–30s, then open **Plan debug** and compare desired/assigned vs the new **Activity** block (try toggling Autonomy to see divergence).
+
+---
+
 ## 2026-02-28 04:55 CST - v0.9.59 QoL: Compliance card opens Social inspector
 
 Summary

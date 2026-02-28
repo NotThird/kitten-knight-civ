@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.59';
+  const GAME_VERSION = '0.9.60';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3287,6 +3287,13 @@
       // Attach last-second execution blockers so Plan debug can surface reserve/input stalls.
       plan.blocked = { ...(state._blockedThisSecond ?? {}) };
       plan.blockedMsg = { ...(state._blockedMsgThisSecond ?? {}) };
+
+      // Activity history (explainability): keep a rolling window of what actually happened.
+      // This helps answer: "why does the colony *feel* off-plan?" (autonomy, needs, dissent).
+      state._actHist = state._actHist ?? [];
+      state._actHist.push({ t: state.t, assigned: { ...(plan.assigned ?? {}) } });
+      if (state._actHist.length > 30) state._actHist.splice(0, state._actHist.length - 30);
+
       state._lastPlan = plan;
     }
 
@@ -3564,6 +3571,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.60',
+      notes: [
+        'Explainability: Plan debug now includes an "Activity" section (rolling last ~30s task shares).',
+        'This makes it easier to see when autonomy/needs/dissent are pulling behavior off-plan, without clicking through every kitten.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.59',
       notes: [
@@ -5309,6 +5324,39 @@
           if (bKeys.length > top.length) lines.push(`- (+${bKeys.length - top.length} more)`);
         }
 
+        // Activity history: what actually happened recently (not what the plan wanted).
+        // Rolling window of the last ~30 decision ticks.
+        const hist = Array.isArray(state._actHist) ? state._actHist : [];
+        if (hist.length >= 3) {
+          const totals = Object.create(null);
+          let totalKs = 0;
+          for (const row of hist) {
+            const asg = row?.assigned ?? {};
+            for (const [a,ctRaw] of Object.entries(asg)) {
+              const ct = Number(ctRaw ?? 0) || 0;
+              if (ct <= 0) continue;
+              totals[a] = (totals[a] ?? 0) + ct;
+              totalKs += ct;
+            }
+          }
+
+          const items = Object.entries(totals)
+            .map(([a,ct]) => ({ a, ct, share: totalKs > 0 ? (ct / totalKs) : 0 }))
+            .filter(x => x.ct > 0)
+            .sort((x,y) => y.ct - x.ct);
+
+          if (items.length) {
+            lines.push('');
+            lines.push(`Activity (last ${hist.length}s):`);
+            const top = items.slice(0, 7);
+            for (const it of top) {
+              const pct = Math.round(it.share * 100);
+              lines.push(`- ${it.a.padEnd(12)} ${pct.toString().padStart(3)}% (${it.ct})`);
+            }
+            if (items.length > top.length) lines.push(`- (+${items.length - top.length} more)`);
+          }
+        }
+
         planDebugEl.textContent = lines.length ? lines.join('\n') : '-';
       }
     }
@@ -6397,6 +6445,7 @@
     delete s._decTimer; delete s._saveTimer; delete s._lastPlan;
     delete s._rate; delete s._prevRes;
     delete s._lastFoodOvercap;
+    delete s._actHist;
 
     // Strip transient UI/debug keys (avoid save bloat)
     if (Array.isArray(s.kittens)) {
