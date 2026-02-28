@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 10:42 CST - v0.9.82 Spoilage warning ping (food storage cap visibility)
+
+Summary
+- NEW: Event log now pings once when **Food** exceeds the storage soft cap by a meaningful margin (helps catch silent spoilage loss).
+- Explainability: the ping includes **cap, current food, and spoilage multiplier**, plus a direct suggestion (Granary / PreserveFood jerky).
+- Save-safe: `_spoilWarned` is transient and stripped on save.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Intentionally overstock food above the **Food Cap** and watch for the one-time **spoilage warning** (then build Granaries or run PreserveFood to stabilize).
+
+---
+
 ## 2026-02-28 10:27 CST - v0.9.81 Faction Demands (seasonal politics)
 
 Summary

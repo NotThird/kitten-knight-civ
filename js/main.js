@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.81';
+  const GAME_VERSION = '0.9.82';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3462,6 +3462,19 @@
       state._lastFoodOvercap = { cap: foodCap, food, mult: 1 };
     }
 
+    // Spoilage warning (explainability): if you're way over storage cap, ping the log once.
+    // This is easy to miss otherwise (it shows as a small multiplier in stats).
+    // Reset once you drop back near/below cap.
+    state._spoilWarned = state._spoilWarned ?? false;
+    if (!state._spoilWarned && foodCap > 0 && food > foodCap * 1.15) {
+      const mult = Number(state._lastFoodOvercap?.mult ?? 1);
+      log(`Food stores exceed storage cap (${fmt(food)}/${fmt(foodCap)}). Spoilage is now x${(Number.isFinite(mult)?mult:1).toFixed(2)}. Consider building Granaries or running PreserveFood (jerky).`);
+      state._spoilWarned = true;
+    }
+    if (state._spoilWarned && foodCap > 0 && food < foodCap * 1.05) {
+      state._spoilWarned = false;
+    }
+
     state.res.food = Math.max(0, food - food * spoil * dt);
 
     // Warmth decay; faster in winter
@@ -3934,6 +3947,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.82',
+      notes: [
+        'NEW: Spoilage warning in the event log when food exceeds your storage cap by a meaningful margin.',
+        'Explainability: the warning includes your current cap and spoilage multiplier, and suggests Granary / PreserveFood (jerky).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.81',
       notes: [
@@ -7697,6 +7718,7 @@
     delete s._seasonWarn;
     delete s._lastSeasonName;
     delete s._threatWarned;
+    delete s._spoilWarned;
     delete s._blockedThisSecond;
     delete s._blockedMsgThisSecond;
 
