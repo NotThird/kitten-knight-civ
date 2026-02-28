@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 11:57 CST - v0.9.87 Faction negotiation Undo snapshot
+
+Summary
+- Factions: **Negotiate** now stores a short-lived **Undo snapshot** (2 minutes) so you can experiment without permanent policy drift.
+- Undo restores: Director priorities (Food/Safety/Progress), Work pace, Discipline, and all Policy multipliers.
+- UI: Factions panel shows an **Undo** card with an expiry timer.
+- Explainability: negotiation snapshots are explicitly described as a prototype affordance (so players understand why it exists).
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Negotiate with any bloc, watch policy drift, then hit **Undo** within ~2 minutes to revert.
+
+---
+
 ## 2026-02-28 11:42 CST - v0.9.86 Faction demands expire with consequences
 
 Summary

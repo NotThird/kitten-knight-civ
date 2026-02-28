@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.86';
+  const GAME_VERSION = '0.9.87';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3852,6 +3852,16 @@
       return;
     }
 
+    // Undo last negotiation (short window)
+    const undoBtn = e.target?.closest?.('button[data-faction-undo]');
+    if (undoBtn) {
+      const res = undoFactionNegotiation(state);
+      if (res?.msg) log(res.msg);
+      save();
+      render();
+      return;
+    }
+
     // Normal negotiation
     const btn = e.target?.closest?.('button[data-faction]');
     if (!btn) return;
@@ -3952,6 +3962,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.87',
+      notes: [
+        'UI/Explainability: Faction negotiations now create an Undo snapshot (2 minute window) so you can experiment without permanent policy drift.',
+        'Negotiation undo restores Director priorities (Food/Safety/Progress), Work pace, Discipline, and Policy multipliers.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.86',
       notes: [
@@ -5568,6 +5586,21 @@
       dissent: clamp01(Number(s.social.dissent ?? 0)),
     };
 
+    // Save an undo snapshot (short window) so politics feels reversible and teachable.
+    // Save-safe: stored under director.factionsUndo; if missing, nothing breaks.
+    s.director.factionsUndo = {
+      at: Number(s.t ?? 0) || 0,
+      director: {
+        prioFood: before.prioFood,
+        prioSafety: before.prioSafety,
+        prioProgress: before.prioProgress,
+        workPace: before.workPace,
+        discipline: before.discipline,
+      },
+      policyMult: { ...(before.policyMult ?? {}) },
+      reason: `Negotiation with ${ax}`,
+    };
+
     // Small, bounded policy nudges. These are meant to be *minor course corrections*, not one-click wins.
     if (ax === 'Food') {
       s.director.prioFood = Math.min(1.5, before.prioFood + 0.10);
@@ -5638,6 +5671,33 @@
     const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
 
     return { ok:true, msg:`Negotiated with the ${ax} bloc: ${changeMsg}. Dissent ${dissMsg}. (cooldown ~45s)` };
+  }
+
+  function factionsUndoInfo(s){
+    const u = s?.director?.factionsUndo;
+    if (!u || typeof u !== 'object') return { ok:false, left:0, undo:null };
+    const at = Number(u.at ?? 0) || 0;
+    const left = Math.max(0, 120 - (Number(s?.t ?? 0) - at));
+    if (left <= 0) return { ok:false, left:0, undo:null };
+    return { ok:true, left, undo: u };
+  }
+
+  function undoFactionNegotiation(s){
+    s.director = s.director ?? {};
+    const info = factionsUndoInfo(s);
+    if (!info.ok || !info.undo) return { ok:false, msg:'Faction undo expired (or nothing to undo).' };
+
+    const u = info.undo;
+    const d = u.director ?? {};
+    s.director.prioFood = Math.max(0.50, Math.min(1.50, Number(d.prioFood ?? 1) || 1));
+    s.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(d.prioSafety ?? 1) || 1));
+    s.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(d.prioProgress ?? 1) || 1));
+    s.director.workPace = Math.max(0.8, Math.min(1.2, Number(d.workPace ?? 1) || 1));
+    s.director.discipline = clamp01(Number(d.discipline ?? 0.4) || 0.4);
+    if (u.policyMult && typeof u.policyMult === 'object') s.policyMult = { ...(u.policyMult ?? {}) };
+
+    s.director.factionsUndo = null;
+    return { ok:true, msg:'Faction undo: restored the previous policy snapshot.' };
   }
 
   // --- Faction Demands (civ-sim pressure)
@@ -5870,7 +5930,29 @@
         })()
       : '';
 
-    factionsEl.innerHTML = demandHtml + lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Now with a short cooldown so you don’t accidentally drift too far.</div>`;
+    const undo = factionsUndoInfo(s);
+    const undoHtml = undo.ok
+      ? (() => {
+          const title = `Undo the last faction negotiation (restores Director priorities + policy multipliers). Expires in ~${Math.ceil(undo.left)}s.`;
+          return `<div class="rule" style="border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.05)">` +
+            `<div class="top">` +
+              `<div>` +
+                `<div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">` +
+                  `<span class="tag">Undo</span>` +
+                  `<span class="small" style="opacity:.9">Last negotiation snapshot</span>` +
+                  `<span class="small" style="opacity:.75">(expires ~${Math.ceil(undo.left)}s)</span>` +
+                `</div>` +
+                `<div class="small" style="margin-top:4px; opacity:.85">Politics drift is real — but this is a prototype, so you get one quick undo.</div>` +
+              `</div>` +
+              `<div class="row" style="gap:8px">` +
+                `<button class="btn" data-faction-undo="1" title="${title}">Undo</button>` +
+              `</div>` +
+            `</div>` +
+          `</div>`;
+        })()
+      : '';
+
+    factionsEl.innerHTML = demandHtml + undoHtml + lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Cooldown prevents rapid drift; Undo lets you back out once if you over-correct.</div>`;
   }
 
   function render(){
