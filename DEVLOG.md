@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 05:41 CST - v0.9.62 Director: Consensus priority preset (values-driven)
+
+Summary
+- NEW: added a **Consensus** priority preset that sets Food/Safety/Progress priorities based on the colony’s average kitten Values (bottom-up governance).
+- Clicking Consensus lightly reduces **Dissent** immediately (represents the Director listening), helping stabilize compliance without hiding mechanics.
+- Keeps the effect conservative (a steer, not a hard lock): values are mapped into the existing 50–150% priority range.
+- Patch notes updated for v0.9.62.
+- Save-safe: uses existing saved fields; older saves generate values deterministically as before.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let Dissent rise (murmurs), then hit **Consensus** and watch compliance recover + kitten task choices shift toward what the population actually values.
+
+---
+
 ## 2026-02-28 05:25 CST - v0.9.61 Explainability: Decision mix history in Plan debug
 
 Summary

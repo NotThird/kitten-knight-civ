@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.61';
+  const GAME_VERSION = '0.9.62';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3587,6 +3587,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.62',
+      notes: [
+        'NEW: Director priority preset "Consensus" sets Food/Safety/Progress priorities based on the colony\'s average kitten Values (bottom-up governance).',
+        'This reduces value mismatch (often a precursor to mood/dissent issues) and lightly lowers dissent immediately to represent being listened to.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.61',
       notes: [
         'Explainability: Plan debug now includes a "Decision mix" section (rules vs emergencies vs commitment vs normal scoring).',
@@ -6321,6 +6329,45 @@
 
   const prProgBtn = document.getElementById('btnPrioProgress');
   if (prProgBtn) prProgBtn.addEventListener('click', ()=> setPriorities(0.95, 0.90, 1.25, 'Progress'));
+
+  function consensusPrioritiesFromValues(s){
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    const n = Math.max(1, ks.length);
+
+    let f = 0, sa = 0, pr = 0, so = 0;
+    for (const k of ks) {
+      ensureValues(k);
+      const v = k?.values ?? {};
+      f += Number(v.Food ?? 0.25);
+      sa += Number(v.Safety ?? 0.25);
+      pr += Number(v.Progress ?? 0.25);
+      so += Number(v.Social ?? 0.25);
+    }
+    f /= n; sa /= n; pr /= n; so /= n;
+
+    // Map value share (~0.25 neutral) into a priority multiplier.
+    // Keep it in a conservative range so this is a "steer" button, not a hard build order.
+    const map = (v) => Math.max(0.50, Math.min(1.50, 1 + (v - 0.25) * 1.8)); // ~0.80..1.20 typical
+
+    return {
+      pFood: map(f),
+      pSafety: map(sa),
+      pProg: map(pr),
+      avg: { Food:f, Safety:sa, Progress:pr, Social:so }
+    };
+  }
+
+  const prConBtn = document.getElementById('btnPrioConsensus');
+  if (prConBtn) prConBtn.addEventListener('click', ()=>{
+    const c = consensusPrioritiesFromValues(state);
+    setPriorities(c.pFood, c.pSafety, c.pProg, 'Consensus');
+    // Listening moment: a tiny, immediate dissent reduction.
+    state.social = state.social ?? { dissent: 0 };
+    state.social.dissent = clamp01(Number(state.social.dissent ?? 0) * 0.90);
+    log(`Consensus priorities (avg values F${Math.round(c.avg.Food*100)} S${Math.round(c.avg.Safety*100)} P${Math.round(c.avg.Progress*100)} So${Math.round(c.avg.Social*100)}): Food ${(c.pFood*100).toFixed(0)}% | Safety ${(c.pSafety*100).toFixed(0)}% | Progress ${(c.pProg*100).toFixed(0)}%`);
+    save();
+    render();
+  });
 
   const docEl = document.getElementById('doctrine');
   if (docEl) docEl.addEventListener('change', (e)=>{
