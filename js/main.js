@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.23';
+  const GAME_VERSION = '0.9.24';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -299,7 +299,7 @@
       hunger: 0.2,
       // Health: 1.0 = healthy, lower = sick/injured (reduces efficiency). Recovers via Rest/Eat + good warmth.
       health: 1.0,
-      // Mood: 0..1. Softly affects efficiency + preferences (adds “civ sim” texture without hard locks).
+      // Mood: 0..1. Softly affects efficiency + preferences (adds "civ sim" texture without hard locks).
       mood: 0.55,
       skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 },
       xp: { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 },
@@ -522,7 +522,7 @@
     Socialize: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
-        // Socialize: a “civ sim” pressure valve.
+        // Socialize: a "civ sim" pressure valve.
         // Reduces dissent (improves compliance) and gently boosts mood, at the cost of no direct resources.
         // This gives the player a labor lever that trades throughput for stability.
         s.social = s.social ?? { dissent: 0, band: 'calm' };
@@ -540,7 +540,7 @@
         k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.018 + 0.006 * fest));
 
         // Colony cohesion: bring dissent down.
-        // Discipline makes this more effective (you have “institutions” to channel the organizing).
+        // Discipline makes this more effective (you have "institutions" to channel the organizing).
         const d = discipline01(s);
         const reduce = dt * (0.010 + 0.010 * d) * eff * mom;
         s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce);
@@ -598,7 +598,7 @@
         const fest = festivalActive(s) ? 1 : 0;
         k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.024 + 0.008 * fest));
 
-        // Dissent reduction: stronger than Socialize, because it’s “real help”, but it costs resources.
+        // Dissent reduction: stronger than Socialize, because it's "real help", but it costs resources.
         const d = discipline01(s);
         const reduce = dt * (0.016 + 0.010 * d) * eff * mom;
         s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce);
@@ -1392,7 +1392,7 @@
     const base = Math.max(Number(s.effects.councilUntil ?? 0), Number(s.t ?? 0));
     s.effects.councilUntil = base + 45; // seconds
 
-    // Immediate cohesion boost: reduce dissent quickly (policy is “heard”).
+    // Immediate cohesion boost: reduce dissent quickly (policy is "heard").
     s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.70);
 
     // Tiny immediate morale bump.
@@ -1402,7 +1402,7 @@
   }
 
   function updateMoodPerSecond(s, k, task){
-    // Mood is “how good this minute feels”: alignment with personality + basic stressors.
+    // Mood is "how good this minute feels": alignment with personality + basic stressors.
     // It intentionally moves slowly and has small effects.
     let m = clamp01(Number(k.mood ?? 0.55));
     const p = k.personality ?? genPersonality(k.id ?? 0);
@@ -1466,7 +1466,7 @@
   // --- Planning-time reservations (coordination)
   // We decide tasks sequentially once per second. Without reservations, multiple kittens can all
   // choose the same wood/science sink (CraftTools/BuildWorkshop/etc), then execution hard-stops
-  // on reserves and they all fallback — looks like "thrash".
+  // on reserves and they all fallback - looks like "thrash".
   // This is a lightweight, explainable fix: during the 1s planning pass, we reserve an estimated
   // amount of scarce inputs so later kittens see reduced "avail" and pick complementary work.
   function makeShadowAvail(s){
@@ -1538,7 +1538,7 @@
     const pick = pickWithAutonomy(scored, effectiveAutonomy01(s));
     const top = pick.row;
 
-    // Surface autonomy sampling in the UI (tiny “emergence” flag).
+    // Surface autonomy sampling in the UI (tiny "emergence" flag).
     k._autonomyPickNote = pick.note || '';
     k._autonomyPickAt = s.t;
 
@@ -2193,7 +2193,7 @@
     }
 
     // Preservation: when we have real surplus, start converting it into jerky (doesn't spoil).
-    // This is mainly a winter-prep lever and creates a nice “bank food now, eat later” loop.
+    // This is mainly a winter-prep lever and creates a nice "bank food now, eat later" loop.
     if (s.unlocked.construction) {
       const prep = (season.name === 'Fall' && season.phase >= 0.55) || (season.name === 'Winter');
       const surplus = s.res.food - targets.foodPerKitten * Math.max(1, n) * 1.25;
@@ -2545,7 +2545,7 @@
         state.social.lastLogBand = band;
         state.social.lastLogAt = now;
         if (band === 'murmur') log('Murmurs of dissent: kittens are less compliant with the plan (consider easing work pace, improving rations, or raising Discipline).');
-        if (band === 'strike') log('Work slowdown: dissent is high — kittens wander/rotate more and central planning weakens until conditions improve.');
+        if (band === 'strike') log('Work slowdown: dissent is high - kittens wander/rotate more and central planning weakens until conditions improve.');
         if (band === 'calm') log('Cohesion restored: dissent falls; the colony follows the plan more reliably again.');
       }
     }
@@ -2902,7 +2902,7 @@
         const prevTask = k.task;
         const d = decideTask(state, k, plan, ctx);
 
-        // Mood update (1s cadence) so the colony feels a bit more “alive”.
+        // Mood update (1s cadence) so the colony feels a bit more "alive".
         updateMoodPerSecond(state, k, d.task);
 
         // Memory: track how long we've been doing the same job (1s resolution)
@@ -3084,10 +3084,9 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Care action — spend a little food+wood to directly reduce dissent and raise mood (paid stability lever).',
-    'Care automatically falls back to Socialize if reserves are tight (so it won\'t silently burn your buffers).',
-    'Director Policy multipliers now include Socialize + Care (so you can bias how much labor goes into cohesion).',
-    'No save-breaking changes: Care defaults migrate safely (missing fields are filled with 1.0).' 
+    'FIX: Care policy multiplier now migrates correctly for older saves (no more NaN/undefined behavior in the policy panel).',
+    'FIX: Council timer field (councilUntil) now migrates for older saves (prevents effect timers from resetting strangely).',
+    'No save-breaking changes: missing fields are filled with safe defaults on load.'
   ];
 
   function closePatchNotes(){
@@ -3104,7 +3103,7 @@
   function renderPatchNotes(){
     if (!patchModalEl || !patchTitleEl || !patchSubEl || !patchBodyEl) return;
     if (!uiPatch.open) return;
-    patchTitleEl.textContent = `v${GAME_VERSION} — Patch notes`;
+    patchTitleEl.textContent = `v${GAME_VERSION} - Patch notes`;
     patchSubEl.textContent = 'These are the player-facing changes since your last version.';
     patchBodyEl.textContent = PATCH_NOTES.map(x => `• ${x}`).join('\n');
   }
@@ -3145,7 +3144,7 @@
 
     const k = state.kittens[ui.inspectKidx];
     const p = k.personality ?? genPersonality(k.id ?? 0);
-    inspectTitleEl.textContent = `Kitten #${k.id} — ${k.role ?? 'Generalist'} (${k.task ?? '-'})`;
+    inspectTitleEl.textContent = `Kitten #${k.id} - ${k.role ?? 'Generalist'} (${k.task ?? '-'})`;
 
     const likes = (p.likes ?? []).join(', ') || '-';
     const hates = (p.dislikes ?? []).join(', ') || '-';
@@ -3278,7 +3277,7 @@
     const warmthBad = (Number(s.res.warmth ?? 0) < (targets.warmth - 6)) || (season.name === 'Winter' && warmthRate < -0.08);
     if (warmthBad) {
       lines.push(`• warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
-      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10–20`);
+      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10-20`);
 
       recs.push({
         id: 'warmth',
@@ -3512,7 +3511,7 @@
         : '';
 
       if (setPf === 'Auto') {
-        pfHint.textContent = (pf === 'Auto') ? `(auto) no focus — ${eff.why}` : `(auto) ${pf}: ${desc(pf)} — ${eff.why}`;
+        pfHint.textContent = (pf === 'Auto') ? `(auto) no focus - ${eff.why}` : `(auto) ${pf}: ${desc(pf)} - ${eff.why}`;
       } else {
         pfHint.textContent = `${desc(setPf)} (manual)`;
       }
@@ -3652,7 +3651,7 @@
       projHtml.push(`
         <div style="margin-bottom:10px">
           <div class="row" style="justify-content:space-between; gap:10px">
-            <div class="small" style="flex:1 1 auto">${pd.name}: owned ${owned} — ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
+            <div class="small" style="flex:1 1 auto">${pd.name}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
             <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
           </div>
           <div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>
@@ -3675,22 +3674,22 @@
     const pfSet = String(state.director?.projectFocus ?? 'Auto');
     const pfEff = getEffectiveProjectFocus(state);
     const pfLine = (pfSet === 'Auto')
-      ? `Project focus (auto): ${pfEff.focus}${pfEff.focus === 'Auto' ? '' : ` — ${pfEff.why}`}\n`
+      ? `Project focus (auto): ${pfEff.focus}${pfEff.focus === 'Auto' ? '' : ` - ${pfEff.why}`}\n`
       : `Project focus (manual): ${pfSet}\n`;
 
     const festLeft = festivalSecondsLeft(state);
-    const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) — morale drifting up\n` : '';
+    const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) - morale drifting up\n` : '';
 
     const councilLeft = councilSecondsLeft(state);
-    const councilLine = (councilLeft > 0) ? `Council: active (${Math.ceil(councilLeft)}s) — dissent decays faster\n` : '';
+    const councilLine = (councilLeft > 0) ? `Council: active (${Math.ceil(councilLeft)}s) - dissent decays faster\n` : '';
 
     const amOn = !!state.director?.autoMode;
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
-    const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
+    const amLine = amOn ? `Auto mode: ON${amWhy ? ` - ${amWhy}` : ''}\n` : '';
 
     const adOn = !!state.director?.autoDoctrine;
     const adWhy = String(state.director?.autoDoctrineWhy ?? '').trim();
-    const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` — ${adWhy}` : ''}\n` : '';
+    const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` - ${adWhy}` : ''}\n` : '';
 
     const arOn = !!state.director?.autoRecruit;
     const arYear = Number(state.director?.recruitYear ?? -1);
@@ -3699,7 +3698,7 @@
 
     const acOn = !!state.director?.autoCrisis;
     const acWhy = String(state.director?.autoCrisisWhy ?? '').trim();
-    const acLine = acOn ? `Auto crisis: ON${acWhy ? ` — last trigger: ${acWhy}` : ''}\n` : '';
+    const acLine = acOn ? `Auto crisis: ON${acWhy ? ` - last trigger: ${acWhy}` : ''}\n` : '';
 
     const aut = autonomy01(state);
     const disPol = discipline01(state);
@@ -3883,7 +3882,7 @@
       const traitsTitle = `${likes.join(',')}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`;
 
       // Pref: show whether the current task aligns with the kitten's likes/dislikes.
-      // Also surface an “Autonomy sampled” tag if they didn’t pick the #1 scored action this tick.
+      // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.
       const prefParts = [];
       if (likes.includes(k.task)) prefParts.push('Like');
       if (dislikes.includes(k.task)) prefParts.push('Dislike');
@@ -3900,7 +3899,7 @@
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
         <td title="Mood (personality alignment + stress + aptitude fit; small effect on efficiency)">${fmt(mood*100)}%</td>
         <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
-        <td title="Aptitude (highest skill level) — kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
+        <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
         <td title="Preference alignment for current task (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
@@ -4271,7 +4270,7 @@
 
       // Policy: prioritize food + warmth + threat control, pause shiny projects.
       // (Players can still override with multipliers or safety rules.)
-      setPolicy({ Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON: raise buffers + shift labor to food/wood/fire (and preserve surplus) so you don’t spiral in Winter.');
+      setPolicy({ Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON: raise buffers + shift labor to food/wood/fire (and preserve surplus) so you do not spiral in Winter.');
 
       // Gentle specialization target: keep at least 1 Firekeeper once pop grows.
       state.roleQuota = state.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
@@ -4526,7 +4525,7 @@
       return { doctrine: 'Specialize', why: `calm (dissent ${Math.round(dis*100)}%, comp x${comp.toFixed(2)})` };
     }
 
-    // Default: balanced (don’t oversteer).
+    // Default: balanced (don't oversteer).
     return { doctrine: 'Balanced', why: `steady (dissent ${Math.round(dis*100)}%, comp x${comp.toFixed(2)})` };
   }
 
@@ -4798,7 +4797,7 @@
       s.res.libraries = s.res.libraries ?? 0;
       s.signals = s.signals ?? { BUILD:false, FOOD:false, ALARM:false };
       s.director = s.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
-      s.effects = s.effects ?? { festivalUntil: 0 };
+      s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 
       // Meta/version (used to show patch notes once per version; safe for old saves)
       s.meta = s.meta ?? { version: '', seenVersion: '', lastTs: 0 };
@@ -4830,13 +4829,15 @@
       for (const k of ['A','B','C']) if (!(k in s.director.profiles)) s.director.profiles[k] = null;
 
       // Effects migration
-      s.effects = s.effects ?? { festivalUntil: 0 };
+      s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
       if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
+      if (!('councilUntil' in s.effects)) s.effects.councilUntil = 0;
       s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;
+      s.effects.councilUntil = Number(s.effects.councilUntil ?? 0) || 0;
 
       s.policyMult = s.policyMult ?? { Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
       // Add any missing keys for forward-compatible saves
-      for (const [k, v] of Object.entries({ Socialize:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 })) {
+      for (const [k, v] of Object.entries({ Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 })) {
         if (!(k in s.policyMult)) s.policyMult[k] = v;
       }
 

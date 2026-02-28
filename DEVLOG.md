@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 20:09 CST - v0.9.24 Save migration fixes (Care + Council) + Winter Prep string fix
+
+Summary
+- FIX: **Care** policy multiplier now properly migrates into older saves (prevents undefined/NaN multipliers and weird planner bias).
+- FIX: `effects.councilUntil` now migrates for older saves, keeping Council timers consistent across refresh/import.
+- FIX: corrected a JavaScript string in Winter Prep preset text that could break parsing ("don\'t" → "do not").
+- Updated patch notes for the new version.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Load an older save (pre-Care), open **Policy**, and confirm **Care** shows a sane multiplier (defaults to 1.00) and Council duration persists after refresh.
+
+---
+
 ## 2026-02-27 19:53 CST - v0.9.23 Care action (paid stability lever)
 
 Summary
