@@ -1557,3 +1557,21 @@ Files touched
 
 What to try
 - Open **Factions**, click **Negotiate** with the largest bloc, then watch the log for the precise deltas and confirm the button cooldown + preview text.
+
+---
+
+## 2026-02-28 08:41 CST - v0.9.74 Save bloat fix (strip transient runtime fields)
+
+Summary
+- FIX/QoL: saves now strip additional transient runtime/debug fields (decision history, dissent driver snapshots, per-second timers).
+- Result: smaller saves and less chance of save bloat over long sessions; simulation behavior unchanged.
+- Patch notes updated for v0.9.74.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesn’t creep as fast.

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.73';
+  const GAME_VERSION = '0.9.74';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3798,6 +3798,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.74',
+      notes: [
+        'FIX/QoL: Save files now strip more transient runtime/debug fields (decision history, dissent driver snapshots, per-second timers).',
+        'Result: smaller saves and less chance of save bloat over long sessions; behavior is unchanged.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.73',
       notes: [
         'Factions: negotiating now has a short cooldown and the UI shows a preview of the policy concession before you click.',
@@ -7129,6 +7137,22 @@
     delete s._rate; delete s._prevRes;
     delete s._lastFoodOvercap;
     delete s._actHist;
+    delete s._decHist;
+    delete s._dissentDrivers;
+    delete s._dissentTimer;
+    delete s._autoRationsTimer;
+    delete s._autoCrisisTimer;
+    delete s._autoRecruitTimer;
+    delete s._autoResTimer;
+    delete s._autoBuildTimer;
+    delete s._autoModeTimer;
+    delete s._autoDocTimer;
+    delete s._raidTimer;
+    delete s._seasonWarn;
+    delete s._lastSeasonName;
+    delete s._threatWarned;
+    delete s._blockedThisSecond;
+    delete s._blockedMsgThisSecond;
 
     // Strip transient UI/debug keys (avoid save bloat)
     if (Array.isArray(s.kittens)) {
