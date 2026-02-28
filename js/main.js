@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.51';
+  const GAME_VERSION = '0.9.52';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3536,10 +3536,18 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.52',
+      notes: [
+        'QoL: Stats cards now show tiny per-second trends + a few key ETAs (starve/freeze/raid/next unlock).',
+        'Explainability: makes it easier to catch spirals early without opening the Advisor/Inspect panels.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.51',
       notes: [
-        'FIX: Advisor now reads food storage over-cap/spoilage from the current state (was accidentally using the global state object).',
-        'FIX: Winter Prep / Crisis Protocol toggles are now preview-safe for Council/Advisor simulations (no accidental global mutations during preview).',
+        'FIX: Advisor now reads food storage over-cap/spoilage from the *current* state (was accidentally using the global state object).',
+        'FIX: Winter Prep / Crisis Protocol toggles are now preview-safe for Council/Advisor simulations (no more accidental global mutations during preview).',
         'No save-breaking changes.'
       ]
     },
@@ -3986,6 +3994,7 @@
     if (key === 'c' || key === 'C') { setCrisisProtocol(!state.director?.crisis); return; }
 
     if (key === 'f' || key === 'F') {
+      // Festival (only when not already active)
       state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
       if (!festivalActive(state)) {
         const res = holdFestival(state);
@@ -3997,6 +4006,7 @@
     }
 
     if (key === 'v' || key === 'V') {
+      // Council (only when not already active)
       state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
       if (!councilActive(state)) {
         const res = holdCouncil(state);
@@ -4777,6 +4787,39 @@
       return Number.isFinite(m) ? Math.max(1, Math.min(4, m)) : 1;
     })();
 
+    // Rates/ETAs shown as a tiny second line under key stats.
+    // This makes "why is this collapsing?" legible without opening the inspector panels.
+    ensureRateState(state);
+    const r = state._rate ?? {};
+    const foodRate = Number(r.food ?? 0);
+    const woodRate = Number(r.wood ?? 0);
+    const warmthRate = Number(r.warmth ?? 0);
+    const threatRate = Number(r.threat ?? 0);
+    const scienceRate = Number(r.science ?? 0);
+    const toolsRate = Number(r.tools ?? 0);
+    const jerkyRate = Number(r.jerky ?? 0);
+
+    const raidEta = fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate));
+    const threatTargetEta = fmtEtaSeconds(etaToTarget(state.res.threat, targets.maxThreat, threatRate));
+    const warmthToTargetEta = fmtEtaSeconds(etaToTarget(state.res.warmth, targets.warmth, warmthRate));
+    const nextUnlock = unlockDefs.find(u => !state.seenUnlocks[u.id]);
+    const nextUnlockEta = nextUnlock ? fmtEtaSeconds(etaToTarget(state.res.science, nextUnlock.at, scienceRate)) : '-';
+
+    // Danger forecasts (explainability): if a trend is negative, show time-to-zero.
+    const starveEta = (foodRate < -0.02) ? fmtEtaSeconds((state.res.food) / (-foodRate)) : '-';
+    const freezeEta = (warmthRate < -0.02) ? fmtEtaSeconds((state.res.warmth) / (-warmthRate)) : '-';
+
+    const statSub = (key) => {
+      if (key === 'Food') return `${fmtRate(foodRate)} | 0 in ${starveEta}`;
+      if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
+      if (key === 'Wood') return `${fmtRate(woodRate)}`;
+      if (key === 'Warmth') return `${fmtRate(warmthRate)} | tgt in ${warmthToTargetEta} | 0 in ${freezeEta}`;
+      if (key === 'Threat') return `${fmtRate(threatRate)} | raid in ${raidEta}`;
+      if (key === 'Science') return `${fmtRate(scienceRate)} | next unlock in ${nextUnlockEta}`;
+      if (key === 'Tools') return `${fmtRate(toolsRate)}`;
+      return '';
+    };
+
     const stats = [
       ['Food', fmt(state.res.food)],
       ['Jerky', fmt(state.res.jerky ?? 0)],
@@ -4799,6 +4842,7 @@
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
     ];
+
     for (const [k,v] of stats) {
       const d = document.createElement('div');
       d.className = 'stat';
@@ -4807,31 +4851,16 @@
         d.title = 'Click to inspect what is driving dissent/compliance';
         d.style.cursor = 'pointer';
       }
-      d.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
+      const sub = statSub(k);
+      const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
+      d.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 
     const plan = state._lastPlan?.desired;
     const planLine = plan ? ('\nAI plan: ' + summarizePlan(plan)) : '';
 
-    ensureRateState(state);
-    const r = state._rate ?? {};
-    const foodRate = Number(r.food ?? 0);
-    const warmthRate = Number(r.warmth ?? 0);
-    const threatRate = Number(r.threat ?? 0);
-    const scienceRate = Number(r.science ?? 0);
-
-    const raidEta = fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate));
-    const threatTargetEta = fmtEtaSeconds(etaToTarget(state.res.threat, targets.maxThreat, threatRate));
-    const warmthToTargetEta = fmtEtaSeconds(etaToTarget(state.res.warmth, targets.warmth, warmthRate));
-
-    // Danger forecasts (explainability): if a trend is negative, show time-to-zero.
-    const starveEta = (foodRate < -0.02) ? fmtEtaSeconds((state.res.food) / (-foodRate)) : '-';
-    const freezeEta = (warmthRate < -0.02) ? fmtEtaSeconds((state.res.warmth) / (-warmthRate)) : '-';
-
-    // Next unlock ETA (explainability: "what should I aim for?")
-    const nextUnlock = unlockDefs.find(u => !state.seenUnlocks[u.id]);
-    const nextUnlockEta = nextUnlock ? fmtEtaSeconds(etaToTarget(state.res.science, nextUnlock.at, scienceRate)) : '-';
+    // (rates/ETAs are computed above for the stat cards)
 
     // Projects (build progress)
     const projDefs = [
@@ -5551,7 +5580,8 @@
     if (!state.unlocked.security) state.signals.ALARM = false;
   }
 
-  // --- "On-state" helpers (preview-safe for cloned states)
+  // --- "On-state" helpers
+  // These let us preview policy toggles on cloned states (used by Council/Advisor) without mutating global state or saving.
   function snapshotDirectorSettingsOn(st){
     const prev = state;
     try { state = st; return snapshotDirectorSettings(); }
@@ -5565,6 +5595,7 @@
   }
 
   function setPolicyOn(st, mult, note){
+    // Same structure as setPolicy(), but does NOT log/save/render (safe for previews).
     st.policyMult = {
       Socialize: mult.Socialize ?? 1,
       Care: mult.Care ?? 1,
@@ -5583,10 +5614,13 @@
       Mentor: mult.Mentor ?? 1,
       Research: mult.Research ?? 1,
     };
+    // Keep note for debugging on cloned states if desired.
     if (note) st._lastPolicyNote = String(note);
   }
 
   function setWinterPrep(on, st = state){
+    // NOTE: this is intentionally "pure-able" so we can preview it on cloned states (Council/Advisor).
+    // When st === global state, we also save + re-render; otherwise we just mutate the passed object.
     const isGlobal = (st === state);
 
     st.director = st.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
@@ -5595,23 +5629,34 @@
       st.director.saved = snapshotDirectorSettingsOn(st);
 
       const n = st.kittens.length;
+      // Mode stays as-is; Winter Prep is intended as an overlay (so you can prep while in Expand/Advance).
+      // But we do gently bias the targets + reserves so the plan/scoring naturally shifts.
       st.targets.foodPerKitten = Math.max(st.targets.foodPerKitten ?? 120, 155);
       st.targets.warmth = Math.max(st.targets.warmth ?? 60, 72);
 
+      // Reserves: don't let builders/crafters drain the winter lifelines.
       st.reserve = st.reserve ?? { food:0, wood:18, science:25, tools:0 };
       st.reserve.food = Math.max(st.reserve.food ?? 0, 70 * n);
       st.reserve.wood = Math.max(st.reserve.wood ?? 0, 28);
       st.reserve.science = Math.max(st.reserve.science ?? 0, 25);
+      // Keep a small tool buffer so library building doesn't nuke productivity during winter.
       st.reserve.tools = Math.max(st.reserve.tools ?? 0, st.unlocked.workshop ? (5 * n) : 0);
 
-      setPolicyOn(st, { Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON');
+      // Policy: prioritize food + warmth + threat control, pause shiny projects.
+      // (Players can still override with multipliers or safety rules.)
+      setPolicyOn(st, { Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON: raise buffers + shift labor to food/wood/fire (and preserve surplus) so you do not spiral in Winter.');
 
+      // Gentle specialization target: keep at least 1 Firekeeper once pop grows.
       st.roleQuota = st.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
       if (n >= 4) st.roleQuota.Firekeeper = Math.max(st.roleQuota.Firekeeper ?? 0, 1);
 
       st.director.winterPrep = true;
-      if (isGlobal) { save(); render(); }
+      if (isGlobal) {
+        save();
+        render();
+      }
     } else if (!on && st.director.winterPrep) {
+      // Revert all director knobs back to snapshot.
       const snap = st.director.saved;
       applyDirectorSettingsOn(st, snap);
       st.director.saved = null;
@@ -5635,29 +5680,37 @@
       st.mode = 'Survive';
       st.rations = 'Tight';
 
+      // Targets: stabilize before anything else.
       st.targets.foodPerKitten = Math.max(st.targets.foodPerKitten ?? 120, 140);
       st.targets.warmth = Math.max(st.targets.warmth ?? 60, 66);
       st.targets.maxThreat = Math.min(st.targets.maxThreat ?? 70, 60);
 
+      // Signals: force food focus; raise ALARM if the tech exists.
       st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
       st.signals.FOOD = true;
       st.signals.BUILD = false;
       st.signals.ALARM = st.unlocked.security ? true : false;
 
+      // Reserves: clamp spending so the colony can't "eat" its own lifelines.
       st.reserve = st.reserve ?? { food:0, wood:18, science:25, tools:0 };
       st.reserve.food = Math.max(getReserve(st,'food'), Math.round((90 * n) / 10) * 10);
       st.reserve.wood = Math.max(getReserve(st,'wood'), 26);
       st.reserve.science = Math.max(getReserve(st,'science'), 25);
       st.reserve.tools = Math.max(getReserve(st,'tools'), 0);
 
-      setPolicyOn(st, { Forage:1.65, Farm:1.55, PreserveFood:0.60, ChopWood:1.15, StokeFire:1.70, Guard:1.45, BuildHut:0.10, BuildPalisade:0.65, BuildGranary:0.10, BuildWorkshop:0.00, BuildLibrary:0.00, CraftTools:0.00, Research:0.10 }, 'Crisis Protocol ON');
+      // Policy: heavy stabilization, almost no shiny sinks.
+      setPolicyOn(st, { Forage:1.65, Farm:1.55, PreserveFood:0.60, ChopWood:1.15, StokeFire:1.70, Guard:1.45, BuildHut:0.10, BuildPalisade:0.65, BuildGranary:0.10, BuildWorkshop:0.00, BuildLibrary:0.00, CraftTools:0.00, Research:0.10 }, 'Crisis Protocol ON: clamp spending + force stabilization (food/warmth/threat). Toggle OFF once stable.');
 
+      // Gentle role steering: keep at least one guard + firekeeper if population supports it.
       st.roleQuota = st.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
       if (n >= 4) st.roleQuota.Firekeeper = Math.max(st.roleQuota.Firekeeper ?? 0, 1);
       if (n >= 5) st.roleQuota.Guard = Math.max(st.roleQuota.Guard ?? 0, 1);
 
       st.director.crisis = true;
-      if (isGlobal) { save(); render(); }
+      if (isGlobal) {
+        save();
+        render();
+      }
     } else if (!on && st.director.crisis) {
       const snap = st.director.crisisSaved;
       applyDirectorSettingsOn(st, snap);

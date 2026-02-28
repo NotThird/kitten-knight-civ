@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 03:10 CST - v0.9.52 Stats trends + ETAs in the top bar
+
+Summary
+- QoL: Stats cards now show small resource trends (per-second deltas) for key resources.
+- Explainability: added a few “danger/goal” ETAs inline (starve/freeze/raid/next unlock) so spirals are visible without opening panels.
+- Uses existing rate smoothing (EMA) so the numbers don’t jitter.
+- Save-safe: no schema changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Let the colony run into Winter with low warmth and watch the Warmth stat show the negative trend + freeze ETA; then recover and see the ETA stabilize.
+
+---
+
 ## 2026-02-28 02:55 CST - v0.9.51 Preview-safe Winter Prep + correct Advisor overcap
 
 Summary
