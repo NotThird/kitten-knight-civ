@@ -1921,3 +1921,21 @@ Files touched
 
 What to try
 - Intentionally go **1 kitten over cap** and watch Dissent/Grievance climb until you prioritize **BuildHut** (or raise Discipline to blunt the dissent).
+---
+
+## 2026-02-28 13:27 CST - v0.9.93 Safety Rules: edible< (Food+Jerky)
+
+Summary
+- Safety Rules: added a new condition type **edible < X** (counts **Food + Jerky**) so overrides can trigger on true edible stores.
+- Rule editor: condition dropdown now includes **edible <** with a sensible default threshold.
+- Explainability: Safety Rules "Available" list now clarifies that "edible" includes jerky.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Create a rule: **If edible < 80 ? Forage** and verify it triggers even if fresh food is low but you still have jerky.

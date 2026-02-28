@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.92';
+  const GAME_VERSION = '0.9.93';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1447,6 +1447,7 @@
       case 'tired_gt': return (1 - k.energy) > cond.v;
       case 'health_lt': return (Number(k.health ?? 1) || 0) < cond.v;
       case 'food_lt': return s.res.food < cond.v;
+      case 'edible_lt': return edibleFood(s) < cond.v;
       case 'wood_lt': return s.res.wood < cond.v;
       case 'warmth_lt': return s.res.warmth < cond.v;
       case 'threat_gt': return s.res.threat > cond.v;
@@ -2118,6 +2119,7 @@
     const c = r.cond.type;
     const v = r.cond.v;
     if (c === 'hungry_gt') return `hungry>${v}`;
+    if (c === 'edible_lt') return `edible<${v}`;
     if (c === 'tired_gt') return `tired>${v}`;
     if (c === 'health_lt') return `health<${v}`;
     if (c === 'signal') return `signal(${v})`;
@@ -4106,6 +4108,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.93',
+      notes: [
+        'Safety Rules: added condition “edible < X” (counts Food + Jerky) so you can trigger overrides based on total edible stores, not just fresh food.',
+        'Explainability: the Safety Rules “Available conditions” list now calls out that edible includes jerky.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.92',
       notes: [
@@ -7230,6 +7240,7 @@
       ['tired_gt','tired >'],
       ['health_lt','health <'],
       ['food_lt','food <'],
+      ['edible_lt','edible <'],
       ['wood_lt','wood <'],
       ['warmth_lt','warmth <'],
       ['threat_gt','threat >'],
@@ -7240,7 +7251,7 @@
     const sel = `<select data-act="condType" data-i="${idx}">${opts.map(([v,l])=>`<option value="${v}" ${v===type?'selected':''}>${l}</option>`).join('')}</select>`;
     let extra = '';
     if (['hungry_gt','tired_gt','health_lt'].includes(type)) extra = `<input type="number" min="0" max="1" step="0.05" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px">`;
-    else if (['food_lt','wood_lt','warmth_lt','threat_gt','foodperkitten_lt'].includes(type)) extra = `<input type="number" min="0" step="1" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px">`;
+    else if (['food_lt','edible_lt','wood_lt','warmth_lt','threat_gt','foodperkitten_lt'].includes(type)) extra = `<input type="number" min="0" step="1" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px">`;
     else if (type === 'signal') extra = `<select data-act="condV" data-i="${idx}">${['BUILD','FOOD','ALARM'].map(s=>`<option value="${s}" ${String(cond.v)===s?'selected':''}>${s}</option>`).join('')}</select>`;
     return sel + extra;
   }
@@ -8151,6 +8162,7 @@
       else if (t.value === 'tired_gt') r.cond.v = 0.88;
       else if (t.value === 'health_lt') r.cond.v = 0.45;
       else if (t.value === 'food_lt') r.cond.v = 40;
+      else if (t.value === 'edible_lt') r.cond.v = 60;
       else if (t.value === 'wood_lt') r.cond.v = 10;
       else if (t.value === 'warmth_lt') r.cond.v = 35;
       else if (t.value === 'threat_gt') r.cond.v = 85;
