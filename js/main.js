@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.63';
+  const GAME_VERSION = '0.9.64';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3605,6 +3605,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.64',
+      notes: [
+        'Explainability: Social inspector now shows colony average Values vs your current focus (Mode + priorities), plus the biggest mismatch axis.',
+        'Helps you diagnose mood/dissent drift as a governance problem ("we want Food, you are pushing Progress") instead of a mystery.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.63',
       notes: [
         'Explainability: season transitions now log a clear one-line reminder of what just changed (Winter penalties, Spring relief, Fall prep window).',
@@ -4089,6 +4097,50 @@
     } else {
       lines.push('No driver snapshot yet (tick once).');
       lines.push('');
+    }
+
+    // Values mismatch: an explicit readout tying governance knobs (Mode + priorities) to population values.
+    // This is intentionally simple: average kitten Values vs current colony focus vector.
+    try {
+      const n = Math.max(1, (state.kittens ?? []).length);
+      const avg = { Food:0, Safety:0, Progress:0, Social:0 };
+      let avgAlign = 0;
+      for (const k of (state.kittens ?? [])) {
+        ensureValues(k);
+        for (const ax of VALUE_AXES) avg[ax] += Number(k?.values?.[ax] ?? 0);
+        avgAlign += valuesAlignment01(state, k);
+      }
+      for (const ax of VALUE_AXES) avg[ax] /= n;
+      const focus = colonyFocusVec(state);
+      avgAlign /= n;
+
+      const pct = (x)=>Math.round(100 * (Number(x) || 0));
+      const vecLine = (v)=>`Food ${pct(v.Food)}% | Safety ${pct(v.Safety)}% | Progress ${pct(v.Progress)}% | Social ${pct(v.Social)}%`;
+
+      // Biggest mismatch axis (signed, in percentage points).
+      let mm = { ax:'Food', d:0 };
+      for (const ax of VALUE_AXES) {
+        const d = (Number(focus?.[ax] ?? 0) - Number(avg?.[ax] ?? 0));
+        if (Math.abs(d) > Math.abs(mm.d)) mm = { ax, d };
+      }
+      const pp = Math.round(mm.d * 100);
+      const dir = pp >= 0 ? 'over' : 'under';
+
+      lines.push('');
+      lines.push('Governance: Values vs Focus (bottom-up vs top-down):');
+      lines.push(`• avg kitten Values:  ${vecLine(avg)}`);
+      lines.push(`• your current Focus: ${vecLine(focus)}   (avg focus-fit: ${Math.round(avgAlign*100)}%)`);
+      lines.push(`• biggest mismatch: ${mm.ax} (${Math.abs(pp)}pp ${dir} colony preference)`);
+
+      if (Math.abs(pp) >= 8) {
+        const hint = (pp > 0)
+          ? `You are pushing ${mm.ax} harder than the colony wants. Expect mood drag (esp. with low autonomy).`
+          : `You are under-investing in ${mm.ax} vs what the colony wants. Expect grumbling if stressors appear.`;
+        lines.push(`• note: ${hint}`);
+      }
+      lines.push('');
+    } catch (e) {
+      // Never break the inspector.
     }
 
     lines.push('What to do (policy knobs):');

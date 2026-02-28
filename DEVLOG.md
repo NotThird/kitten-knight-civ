@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 06:11 CST - v0.9.64 Social inspector: Values vs Focus readout
+
+Summary
+- NEW: Social inspector now shows **avg kitten Values** vs your current **Focus** (Mode + Director priorities), plus an **avg focus-fit** percentage.
+- Highlights the **biggest mismatch axis** (e.g. “Progress 12pp over colony preference”) to make mood/dissent drift feel like a governance tradeoff.
+- Adds a short note when the mismatch is large (expect mood drag under low autonomy / tight planning).
+- Patch notes updated for v0.9.64.
+- Save-safe: uses existing deterministic values generation; no schema changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Click the **Dissent** or **Compliance** stat → compare Values vs Focus, then flip Mode (Survive/Advance) or tweak priorities and watch the mismatch axis change.
+
+---
+
 ## 2026-02-28 05:56 CST - v0.9.63 Explainability: season transition log pings
 
 Summary
