@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.56';
+  const GAME_VERSION = '0.9.57';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -508,6 +508,42 @@
     const r = s.reserve ?? {};
     const v = Number(r[key] ?? 0);
     return Number.isFinite(v) ? Math.max(0, v) : 0;
+  }
+
+  // Recommended reserves (season/pop aware). Used for Auto Reserves + UI hint.
+  // Intentionally simple + rounded so the player can reason about it.
+  function recommendedReserves(s){
+    const season = seasonAt(s.t);
+    const n = Math.max(1, s.kittens.length);
+    const winter = season.name === 'Winter';
+    const lateFall = (season.name === 'Fall' && season.phase >= 0.55);
+
+    // Food reserve: scaled by pop; higher in winter/late-fall so the colony banks stability.
+    let recFood = n * (winter ? 85 : lateFall ? 72 : 55);
+    // If you're explicitly in Advance mode, allow a slightly leaner buffer.
+    if (s.mode === 'Advance') recFood *= 0.88;
+
+    // Wood reserve: enough to keep warmth + a little building online.
+    let recWood = (winter ? 32 : 20);
+    if (s.unlocked.construction && s.signals.BUILD) recWood = Math.max(recWood, 26);
+    if (lateFall) recWood = Math.max(recWood, 28);
+
+    // Science reserve: prevents Tools/Workshops from consuming ALL science.
+    // Keep it low early so you still reach unlock thresholds.
+    let recSci = 25;
+    if (s.unlocked.workshop) recSci = 32;
+
+    // Tools reserve: prevents Library building from consuming all tools (and crashing productivity).
+    let recTools = 0;
+    if (s.unlocked.workshop) recTools = Math.round((n * 6) / 5) * 5; // ~6 per kitten, rounded to 5s
+    if (winter || lateFall) recTools = Math.round((recTools * 1.10) / 5) * 5;
+
+    // Round to readable steps.
+    recFood = Math.round(recFood / 10) * 10;
+    recWood = Math.round(recWood / 2) * 2;
+    recSci = Math.round(recSci / 5) * 5;
+
+    return { food: recFood, wood: recWood, science: recSci, tools: recTools, season };
   }
 
   // Spend helpers (prevents "sink" tasks from dipping below player-defined reserves).
@@ -3023,34 +3059,11 @@
       if (state._autoResTimer >= 1) {
         state._autoResTimer = 0;
 
-        const n = Math.max(1, state.kittens.length);
-        const winter = season.name === 'Winter';
-        const lateFall = (season.name === 'Fall' && season.phase >= 0.55);
-
-        // Food reserve: scaled by pop; higher in winter/late-fall so the colony banks stability.
-        let recFood = n * (winter ? 85 : lateFall ? 72 : 55);
-        // If you're explicitly in Advance mode, allow a slightly leaner buffer.
-        if (state.mode === 'Advance') recFood *= 0.88;
-
-        // Wood reserve: enough to keep warmth + a little building online.
-        let recWood = (winter ? 32 : 20);
-        if (state.unlocked.construction && state.signals.BUILD) recWood = Math.max(recWood, 26);
-        if (lateFall) recWood = Math.max(recWood, 28);
-
-        // Science reserve: prevents Tools/Workshops from consuming ALL science.
-        // Keep it low early so you still reach unlock thresholds.
-        let recSci = 25;
-        if (state.unlocked.workshop) recSci = 32;
-
-        // Tools reserve: prevents Library building from consuming all tools (and crashing productivity).
-        let recTools = 0;
-        if (state.unlocked.workshop) recTools = Math.round((n * 6) / 5) * 5; // ~6 per kitten, rounded to 5s
-        if (winter || lateFall) recTools = Math.round((recTools * 1.10) / 5) * 5;
-
-        // Round to readable steps.
-        recFood = Math.round(recFood / 10) * 10;
-        recWood = Math.round(recWood / 2) * 2;
-        recSci = Math.round(recSci / 5) * 5;
+        const rec = recommendedReserves(state);
+        const recFood = rec.food;
+        const recWood = rec.wood;
+        const recSci = rec.science;
+        const recTools = rec.tools;
 
         state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 };
 
@@ -3551,6 +3564,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.57',
+      notes: [
+        'QoL/Explainability: Reserves panel now shows a live "Recommended" line (season + population aware) so the buffer system is less guessy.',
+        'NEW: "Apply recommended" sets your current reserves to those suggested values without enabling Auto Reserves (manual but guided).',
+        'Auto Reserves uses the same shared recommendation logic (no behavior change, just consistency).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.56',
       notes: [
@@ -5204,6 +5226,14 @@
     el('reserveScience').value = String(getReserve(state,'science'));
     el('reserveTools').value = String(getReserve(state,'tools'));
 
+    // Reserves hint: show current recommended seasonal values (even if Auto Reserves is OFF).
+    const rr = recommendedReserves(state);
+    const rrEl = el('reserveRecHint');
+    if (rrEl) {
+      const sn = String(rr?.season?.name ?? '');
+      rrEl.textContent = `Recommended (${sn}): food≥${rr.food} | wood≥${rr.wood} | science≥${rr.science} | tools≥${rr.tools}`;
+    }
+
     renderPolicy();
     renderRoleQuotas();
 
@@ -6183,6 +6213,19 @@
   document.getElementById('reserveWood').addEventListener('change', (e)=>{ state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 }; state.reserve.wood = Number(e.target.value)||0; save(); render(); });
   document.getElementById('reserveScience').addEventListener('change', (e)=>{ state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 }; state.reserve.science = Number(e.target.value)||0; save(); render(); });
   document.getElementById('reserveTools').addEventListener('change', (e)=>{ state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 }; state.reserve.tools = Number(e.target.value)||0; save(); render(); });
+
+  const applyRec = document.getElementById('btnApplyReserveRec');
+  if (applyRec) applyRec.addEventListener('click', ()=>{
+    const rr = recommendedReserves(state);
+    state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 };
+    state.reserve.food = rr.food;
+    state.reserve.wood = rr.wood;
+    state.reserve.science = rr.science;
+    state.reserve.tools = rr.tools;
+    log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): food≥${rr.food}, wood≥${rr.wood}, science≥${rr.science}, tools≥${rr.tools}`);
+    save();
+    render();
+  });
 
   policyEl.addEventListener('click', (e) => {
     const btn = e.target.closest('button');

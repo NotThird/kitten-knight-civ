@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 04:25 CST - v0.9.57 Reserves: live recommendations + one-click apply
+
+Summary
+- QoL/Explainability: added a live "Recommended" reserves line (season + population aware) directly under the reserve inputs.
+- NEW: "Apply recommended" button sets your current reserves to the suggested values without enabling Auto Reserves.
+- Refactor: Auto Reserves now uses the same shared recommendation helper as the UI hint (keeps behavior consistent).
+- Save-safe: adds UI elements + helper; existing reserve values are unchanged unless you click the button (or have Auto Reserves ON).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Turn Auto Reserves OFF, change seasons (or grow pop), and watch the "Recommended" line update; then click "Apply recommended" and see sinks stop thrashing against reserves.
+
+---
+
 ## 2026-02-28 04:10 CST - v0.9.56 Food stat surfaces storage cap + spoilage (faster spiral diagnosis)
 
 Summary
