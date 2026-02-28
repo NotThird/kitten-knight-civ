@@ -2187,3 +2187,23 @@ Files touched
 
 What to try
 - Enable **Auto Policy**, let it run through a wobble (food/warmth/threat), then check **Governance log** to see exactly what it changed and why.
+
+---
+
+## 2026-02-28 17:12 CST - v0.9.107 Strike recovery: organizers emerge
+
+Summary
+- AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to pick Socialize/Care to actively restore cohesion (instead of everyone defaulting to Loaf).
+- Balance: Loaf gets a small penalty in “strike but stable” states to prevent passive stall loops.
+- Explainability: Decision Inspector scoring now includes explicit “strike recovery” reasons (Socialize/Care) and a matching Loaf reason when it is deprioritized.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- Intentionally let dissent climb into strike, then stabilize food/warmth and watch for one kitten to become an organizer via Socialize/Care (click them to inspect “strike recovery”).

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.106';
+  const GAME_VERSION = '0.9.107';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2282,6 +2282,13 @@
           score += disAdj;
           reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${disAdj.toFixed(1)}`);
         }
+        // If dissent is VERY high but basics are stable, we want some kittens to actively organize
+        // (Socialize/Care) rather than everyone passively loafing.
+        const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.95) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10) && !s.signals?.ALARM;
+        if (dis > 0.65 && basicsOk) {
+          score -= 14;
+          reasons.push('strike + stable basics → -14 (prefer organizing)');
+        }
         // If we're actually starving or freezing, loafing should lose hard.
         if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency → -45'); }
         if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
@@ -2298,6 +2305,15 @@
         } else {
           score -= 8;
           reasons.push('low dissent → -8');
+        }
+
+        // Strike recovery: if dissent is extreme but the colony isn't actively starving/freezing,
+        // strongly encourage an organizer to emerge.
+        const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.95) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10) && !s.signals?.ALARM;
+        if (dis > 0.65 && basicsOk) {
+          const add = 18 + 12 * discipline01(s);
+          score += add;
+          reasons.push(`strike recovery → +${add.toFixed(1)}`);
         }
         if (mood < 0.55) {
           const add = (0.55 - mood) * 40;
@@ -2337,6 +2353,15 @@
         } else {
           score -= 10;
           reasons.push('low dissent → -10');
+        }
+
+        // Strike recovery: if dissent is extreme but basics are stable, "Care" becomes a legitimate
+        // paid stabilization tool (spend a little surplus to restore cohesion faster).
+        const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.98) && (Number(s.res.warmth ?? 0) >= targets.warmth - 4) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.05) && !s.signals?.ALARM;
+        if (dis > 0.65 && basicsOk) {
+          const add = 14 + 10 * discipline01(s);
+          score += add;
+          reasons.push(`strike recovery (paid care) → +${add.toFixed(1)}`);
         }
 
         if (mood < 0.60) {
@@ -4352,6 +4377,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.107',
+      notes: [
+        'AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to actively organize (Socialize/Care) instead of everyone loafing.',
+        'Explainability: Decision Inspector now shows “strike recovery” scoring lines when this kicks in.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.106',
       notes: [
