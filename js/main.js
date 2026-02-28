@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.58';
+  const GAME_VERSION = '0.9.59';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3385,7 +3385,7 @@
     const card = e.target?.closest?.('[data-stat]');
     if (!card) return;
     const key = String(card.dataset.stat || '');
-    if (key === 'dissent') openSocial();
+    if (key === 'dissent' || key === 'compliance') openSocial();
   });
 
   // Advisor: quick actions (wired via render-time recommendations)
@@ -3564,6 +3564,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.59',
+      notes: [
+        'QoL/Explainability: the Compliance stat card is now clickable (like Dissent) to open the Social inspector.',
+        'This makes it faster to answer: "why are kittens ignoring the plan right now?" (compliance is the plan-strength multiplier).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.58',
       notes: [
@@ -4948,6 +4956,11 @@
       if (k === 'Dissent') {
         d.dataset.stat = 'dissent';
         d.title = 'Click to inspect what is driving dissent/compliance';
+        d.style.cursor = 'pointer';
+      }
+      if (k === 'Compliance') {
+        d.dataset.stat = 'compliance';
+        d.title = 'Click to inspect what is driving dissent/compliance (compliance scales how strongly the colony follows the plan)';
         d.style.cursor = 'pointer';
       }
       if (k === 'Autonomy') {

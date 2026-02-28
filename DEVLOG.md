@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 04:55 CST - v0.9.59 QoL: Compliance card opens Social inspector
+
+Summary
+- QoL/Explainability: the **Compliance** stat card is now clickable (same as Dissent) to open the Social inspector modal.
+- Makes it faster to debug “why aren’t they following the plan?” since compliance is the plan-strength multiplier.
+- Patch notes updated for v0.9.59.
+- Save-safe: UI-only change.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Click **Compliance** in the top stats while Dissent is high and verify the Social inspector explains the current drivers.
+
+---
+
 ## 2026-02-28 04:40 CST - v0.9.58 Stats: surface Director policy levers (autonomy/discipline/work pace)
 
 Summary
