@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.102';
+  const GAME_VERSION = '0.9.103';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -5522,6 +5522,34 @@
           nudgePolicyMult(st,'BuildGranary', 0.5);
           nudgePolicyMult(st,'PreserveFood', 0.5);
           raiseReserve(st,'wood', 22);
+        }
+      });
+    }
+
+    // 0.25) Overcrowding / housing cap (classic civ-sim pain point)
+    // When pop exceeds housing cap, mood + cohesion steadily suffer.
+    // Make this *extremely* legible with a direct advisor callout + one-click fix.
+    const houseCap = housingCap(s);
+    const over = Math.max(0, pop - houseCap);
+    if (over > 0) {
+      lines.push(`• overcrowding: pop ${pop}/${houseCap} (+${over} over cap)`);
+      lines.push(`  - Nudge: focus Housing (BuildHut) + keep wood flowing; overcrowding slowly raises dissent + grievance`);
+
+      recs.push({
+        id: 'housing',
+        label: 'Fix housing',
+        tip: 'Set Project focus → Housing, enable BUILD PUSH, and bias policy toward Hut building + wood income.',
+        apply: (st) => {
+          st.director = st.director ?? { projectFocus:'Auto' };
+          st.director.projectFocus = 'Housing';
+          st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+          st.signals.BUILD = true;
+          nudgePolicyMult(st,'BuildHut', 0.5);
+          nudgePolicyMult(st,'ChopWood', 0.25);
+          // Don't let a too-high wood reserve silently stall huts.
+          // (Execution cannot spend below reserves, so we clamp reserve to a sane baseline.)
+          st.reserve = st.reserve ?? { food:0, wood:18, science:25, tools:0 };
+          st.reserve.wood = Math.min(getReserve(st,'wood'), 24);
         }
       });
     }

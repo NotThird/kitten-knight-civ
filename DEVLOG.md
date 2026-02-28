@@ -2106,3 +2106,24 @@ Files touched
 
 What to try
 - Enable **Auto Pause (danger)**, let threat or food/warmth drift into risk, then confirm the Pause button highlights with the reason.
+
+---
+
+
+## 2026-02-28 16:12 CST - v0.9.103 Advisor: overcrowding fix
+
+Summary
+- Advisor: detects when **population exceeds housing cap** and surfaces an explicit overcrowding warning.
+- Advisor: adds a one-click **Fix housing** recommendation (sets Project focus ? Housing, enables BUILD PUSH, nudges BuildHut + ChopWood).
+- Explainability: calls out that overcrowding steadily worsens mood/cohesion (dissent + grievance), so the player understands the urgency.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/css/app.css
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Let population exceed cap (e.g. buy/add a kitten) and confirm the Advisor offers **Fix housing** and that huts start finishing without extra micro.
+
