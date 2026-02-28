@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 16:27 CST - v0.9.104 Auto Recruit fix + why text
+
+Summary
+- Fix: Auto Recruit no longer errors when enabled (missing `season` reference in the automation block).
+- Explainability: Auto Recruit now writes a short ‚Äúwhy‚Äù string (housing / season window / stability / food+reserve requirement).
+- UI: Season panel shows that Auto Recruit ‚Äúwhy‚Äù line when Auto Recruit is enabled.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Recruit**, then watch the Season panel: it should tell you what condition is blocking recruitment (and it should successfully recruit once you‚Äôre stable mid-Spring with spare housing + enough food above reserves).
+
+---
+
 ## 2026-02-28 15:42 CST - v0.9.101 Pinned project discoverability
 
 Summary
@@ -2095,7 +2116,7 @@ What to try
 
 Summary
 - UI: Pause button now turns red when the Director **auto-pauses on danger**, and shows the danger reason in its tooltip.
-- QoL: Manual pause/resume clears the auto-danger reason so the UI doesnít stay ìalarm redî forever.
+- QoL: Manual pause/resume clears the auto-danger reason so the UI doesnÔøΩt stay ÔøΩalarm redÔøΩ forever.
 - Explainability: Makes slow spirals (starvation/freezing/raid risk) more visible at a glance, without changing sim balance.
 
 Files touched

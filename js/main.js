@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.103';
+  const GAME_VERSION = '0.9.104';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -289,7 +289,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -3140,7 +3140,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -3392,6 +3392,7 @@
         const targets = seasonTargets(state);
         const foodPerKitten = ediblePerKitten(state);
         const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
+        const season = seasonAt(state.t);
 
         // Conditions are intentionally strict to avoid "win-more" runaway:
         // - Only once per year, during Spring
@@ -3405,14 +3406,31 @@
         const pop = Math.max(1, state.kittens.length);
         const cost = Math.round((28 + Math.floor(pop / 5) * 4) / 2) * 2; // 28,32,36,...
 
+        // Explainability: surface why Auto Recruit is (or isn't) firing.
+        // Keep it short; the full condition set is already in the tooltip.
+        const whyParts = [];
+        if (!hasHousing) whyParts.push(`no housing (${state.kittens.length}/${cap})`);
+        if (yr === Number(state.director.recruitYear ?? -1)) whyParts.push('already recruited this year');
+        if (season.name !== 'Spring') whyParts.push(`wait for Spring (now ${season.name})`);
+        else if (!inSpring) whyParts.push('wait mid-Spring');
+        if (!stableFood) whyParts.push(`food/kitten ${(foodPerKitten).toFixed(1)} < ${(targets.foodPerKitten*1.08).toFixed(0)}`);
+        if (!stableThreat) whyParts.push(`threat ${fmt(state.res.threat)} > ${(targets.maxThreat*0.92).toFixed(0)}`);
+        if (!stableMood) whyParts.push(`avg mood ${(avgMood*100).toFixed(0)}% < 56%`);
+
+        // Respect food reserve (director won't "immigrate" below your buffer).
+        const minFoodAfter = getReserve(state,'food');
+        const needFood = cost + minFoodAfter;
+        if ((state.res.food ?? 0) < needFood) whyParts.push(`need food ≥ ${fmt(needFood)} (cost ${cost} + reserve)`);
+
+        state.director.autoRecruitWhy = whyParts.length ? whyParts.slice(0,2).join('; ') : `ready (cost ${cost} food)`;
+
         if (inSpring && hasHousing && yr !== Number(state.director.recruitYear ?? -1) && stableFood && stableThreat && stableMood) {
-          // Respect food reserve (director won't "immigrate" below your buffer).
-          const minFoodAfter = getReserve(state,'food');
           if ((state.res.food - cost) >= minFoodAfter) {
             state.res.food -= cost;
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
             state.kittens.push(makeKitten(id));
             state.director.recruitYear = yr;
+            state.director.autoRecruitWhy = '';
             log(`A stray kitten joined this Spring! (-${cost} food) Population: ${state.kittens.length}/${cap}`);
           }
         }
@@ -4277,6 +4295,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.104',
+      notes: [
+        'Fix: Auto Recruit no longer errors when enabled (season reference bug).',
+        'Explainability: Season panel now shows why Auto Recruit is not triggering (housing / season window / stability / food+reserve cost).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.101',
       notes: [
@@ -6483,7 +6509,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -6960,7 +6986,10 @@
     const arOn = !!state.director?.autoRecruit;
     const arYear = Number(state.director?.recruitYear ?? -1);
     const curYear = yearAt(state.t);
-    const arLine = arOn ? `Auto recruit: ON (Spring; ${arYear === curYear ? 'already recruited this year' : 'eligible'})\n` : '';
+    const arWhy = String(state.director?.autoRecruitWhy ?? '').trim();
+    const arLine = arOn
+      ? `Auto recruit: ON (Spring; ${arYear === curYear ? 'already recruited this year' : 'eligible'})${arWhy ? ` - ${arWhy}` : ''}\n`
+      : '';
 
     const acOn = !!state.director?.autoCrisis;
     const acWhy = String(state.director?.autoCrisisWhy ?? '').trim();
