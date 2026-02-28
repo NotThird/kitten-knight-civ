@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 10:57 CST - v0.9.83 Values bloc column (Faction legibility)
+
+Summary
+- UI/Explainability: Colony table now shows each kitten’s **values bloc** (Food/Safety/Progress/Social) as a dedicated column.
+- Makes the **Factions/Demands** civ-sim layer more readable at-a-glance (no need to open the inspector to see who’s in which bloc).
+- Inspector subheader also now includes the kitten’s bloc.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In the Colony table, sort mentally by **Bloc** and then hit the **Factions** panel: negotiate with the largest bloc and watch which kittens are “represented.”
+
+---
+
 ## 2026-02-28 10:42 CST - v0.9.82 Spoilage warning ping (food storage cap visibility)
 
 Summary

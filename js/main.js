@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.82';
+  const GAME_VERSION = '0.9.83';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3948,6 +3948,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.83',
+      notes: [
+        'UI/Explainability: Colony table now shows each kitten\'s values bloc (Food/Safety/Progress/Social) as a first-class column.',
+        'This makes Factions/Demands more legible: you can see who is in which bloc without opening the inspector.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.82',
       notes: [
         'NEW: Spoilage warning in the event log when food exceeds your storage cap by a meaningful margin.',
@@ -4494,7 +4502,8 @@
     const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
     const needNote = buddy ? ` | buddy-need: ${Math.round(clamp01(Number(k.buddyNeed ?? 0))*100)}%` : '';
     const align = valuesAlignment01(state, k);
-    inspectSubEl.textContent = `traits: ${traits} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    const bloc = dominantValueAxis(k);
+    inspectSubEl.textContent = `traits: ${traits} | bloc: ${bloc} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -6512,6 +6521,11 @@
       // Buddy: show relationship + current pressure as a first-class, readable civ-sim signal.
       const buddy = buddyOf(state, k);
       const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
+
+      // Values bloc: dominant axis (used by Factions). Exposed in-table for legibility.
+      const bloc = dominantValueAxis(k);
+      const blocTitle = `Values bloc (dominant axis): ${bloc}. Used by Factions + demands.`;
+      const blocHtml = `<span class="tag">${escapeHtml(bloc)}</span>`;
       const buddyCell = buddy ? `#${buddy.id} (${buddyNeedPct}%)` : '-';
       const buddyAge = buddy && Number(k.lastBuddyAt ?? 0) > 0 ? Math.max(0, state.t - Number(k.lastBuddyAt ?? 0)) : null;
       const buddyTitle = buddy
@@ -6574,6 +6588,7 @@
         <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
+        <td title="${escapeHtml(blocTitle)}">${blocHtml}</td>
         <td title="${escapeHtml(buddyTitle)}">${buddyHtml}</td>
         <td title="Preference + policy fit. Values: ${escapeHtml(vals)} | focus-fit ${Math.round(align*100)}% | (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
