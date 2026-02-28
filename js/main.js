@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.34';
+  const GAME_VERSION = '0.9.35';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3225,6 +3225,13 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.35',
+      notes: [
+        'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
+        'Explainability: makes the "colony is grumbling" fix path more discoverable without adding hidden automation.'
+      ]
+    },
+    {
       v: '0.9.34',
       notes: [
         'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
@@ -3551,6 +3558,9 @@
     const season = seasonAt(s.t);
     const pop = Math.max(1, s.kittens?.length ?? 1);
     const foodPerKitten = Number(s.res.food ?? 0) / pop;
+    const avgMood = (s.kittens && s.kittens.length)
+      ? (s.kittens.reduce((acc,k)=>acc + clamp01(Number(k.mood ?? 0.55)), 0) / pop)
+      : 0.55;
 
     const foodRate = Number(r.food ?? 0);
     const warmthRate = Number(r.warmth ?? 0);
@@ -3684,6 +3694,36 @@
           nudgePolicyMult(st,'BuildPalisade', 0.5);
           st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
           if (st.unlocked?.security) st.signals.ALARM = true;
+        }
+      });
+    }
+
+    // 3.5) Social stability (discoverability for civ-sim layer)
+    // If dissent is high and you can afford it, Council is the cleanest "push the colony back into compliance" lever.
+    const disNow = dissent01(s);
+    if (disNow > 0.55 && !councilActive(s) && canHoldCouncil(s)) {
+      lines.push(`• high dissent (${Math.round(disNow*100)}%) — Council can reduce grumbling quickly`);
+      recs.push({
+        id: 'council',
+        label: 'Hold Council',
+        tip: 'Spend food+science to reduce dissent and temporarily boost compliance (good when the colony is murmuring/striking).',
+        apply: (st) => {
+          const r = holdCouncil(st);
+          if (r?.msg) log(`Advisor: ${r.msg}`);
+        }
+      });
+    }
+
+    // If mood is low and you can afford it, Festival is the fastest morale lever.
+    if (avgMood < 0.48 && !festivalActive(s) && canHoldFestival(s)) {
+      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) — Festival can boost morale + output`);
+      recs.push({
+        id: 'festival',
+        label: 'Hold Festival',
+        tip: 'Spend food+wood to boost mood for ~50s (happy kittens work a bit better and loaf less).',
+        apply: (st) => {
+          const r = holdFestival(st);
+          if (r?.msg) log(`Advisor: ${r.msg}`);
         }
       });
     }

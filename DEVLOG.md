@@ -4,6 +4,22 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 22:54 CST - v0.9.35 Advisor: one-click Council/Festival
+
+Summary
+- Advisor can now recommend (and one-click) **Hold Council** when dissent is high and you can afford it.
+- Advisor can now recommend (and one-click) **Hold Festival** when average mood is low and you can afford it.
+- Adds discoverability for the civ-sim "social stability" layer without hiding automation.
+
+Files touched
+- `prototype/index.html`
+- `DEVLOG.md`
+
+What to try
+- Let dissent climb above ~55%, then click **Hold Council** from Advisor and watch Dissent/Compliance stabilize.
+
+---
+
 ## 2026-02-27 22:39 CST - v0.9.34 Director: Auto Rations
 
 Summary
