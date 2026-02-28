@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.16';
+  const GAME_VERSION = '0.9.17';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -249,7 +249,7 @@
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
-    effects: { festivalUntil: 0 },
+    effects: { festivalUntil: 0, councilUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
     log: []
   });
@@ -1108,8 +1108,10 @@
     const dis = dissent01(s);
     const a = autonomy01(s);
     const d = discipline01(s);
-    const c = 1 - dis * (0.35 + 0.35*a) + d * 0.35;
-    return Math.max(0.45, Math.min(1.15, c));
+    let c = 1 - dis * (0.35 + 0.35*a) + d * 0.35;
+    // Council temporarily boosts cohesion (more compliance with the plan).
+    if (councilActive(s)) c += 0.08;
+    return Math.max(0.45, Math.min(1.20, c));
   }
 
   // Autonomy sampling: at higher autonomy, kittens sometimes pick a near-top alternative.
@@ -1240,6 +1242,58 @@
     return { ok:true, msg:`Festival held (-${c.food} food, -${c.wood} wood). Mood rises for ~50s.` };
   }
 
+  // Council: cohesion lever (spend resources to reduce dissent / improve compliance temporarily)
+  function councilActive(s){
+    return Number(s.effects?.councilUntil ?? 0) > Number(s.t ?? 0);
+  }
+
+  function councilSecondsLeft(s){
+    return Math.max(0, Number(s.effects?.councilUntil ?? 0) - Number(s.t ?? 0));
+  }
+
+  function councilCost(s){
+    const n = Math.max(1, s.kittens?.length ?? 1);
+    return { food: 20 + 5*n, science: 40 + 10*n };
+  }
+
+  function canHoldCouncil(s){
+    const c = councilCost(s);
+    return availableAboveReserve(s,'food') >= c.food && availableAboveReserve(s,'science') >= c.science;
+  }
+
+  function holdCouncil(s){
+    s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
+    if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
+    if (!('councilUntil' in s.effects)) s.effects.councilUntil = 0;
+
+    s.social = s.social ?? { dissent: 0 };
+    if (!('dissent' in s.social)) s.social.dissent = 0;
+
+    const c = councilCost(s);
+    if (!canHoldCouncil(s)) return { ok:false, msg:`Need ${c.food} food + ${c.science} science above reserves.` };
+
+    // Spend (respecting reserves). Should be exact since canHoldCouncil checked.
+    const gotFood = spendUpToReserve(s,'food',c.food);
+    const gotSci  = spendUpToReserve(s,'science',c.science);
+    if (gotFood < c.food || gotSci < c.science) {
+      // Safety: refund partial spends.
+      s.res.food = Number(s.res.food ?? 0) + gotFood;
+      s.res.science = Number(s.res.science ?? 0) + gotSci;
+      return { ok:false, msg:`Council blocked by reserves/inputs (try lowering reserves).` };
+    }
+
+    const base = Math.max(Number(s.effects.councilUntil ?? 0), Number(s.t ?? 0));
+    s.effects.councilUntil = base + 45; // seconds
+
+    // Immediate cohesion boost: reduce dissent quickly (policy is “heard”).
+    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.70);
+
+    // Tiny immediate morale bump.
+    for (const k of (s.kittens ?? [])) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.03);
+
+    return { ok:true, msg:`Council held (-${c.food} food, -${c.science} science). Dissent falls for ~45s.` };
+  }
+
   function updateMoodPerSecond(s, k, task){
     // Mood is “how good this minute feels”: alignment with personality + basic stressors.
     // It intentionally moves slowly and has small effects.
@@ -1266,6 +1320,9 @@
 
     // Festivals: colony-wide morale boost (purely a timed policy lever).
     if (festivalActive(s)) m += 0.012;
+
+    // Council: cohesion boost (less grumbling while it lasts).
+    if (councilActive(s)) m += 0.006;
 
     // Background stress.
     if ((k.hunger ?? 0) > 0.85) m -= 0.010;
@@ -2254,6 +2311,9 @@
       const next = cur + (target - cur) * 0.045; // smoothing (≈ 20-25s to swing hard)
       state.social.dissent = clamp01(next);
 
+      // Council effect: during a council, dissent decays faster (cohesion boost).
+      if (councilActive(state)) state.social.dissent = clamp01(state.social.dissent * 0.93);
+
       // Banding + explainable log events on crossing.
       const dis = state.social.dissent;
       const band = (dis >= 0.70) ? 'strike' : (dis >= 0.45) ? 'murmur' : 'calm';
@@ -2733,9 +2793,9 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'Patch Notes button + modal (instead of only log spam).',
-    'Auto-opens patch notes once per version (tracked in save meta.seenVersion).',
-    'No save-breaking changes: old saves load cleanly.'
+    'NEW: Hold Council — spend food+science to reduce dissent and temporarily boost compliance.',
+    'Council effect is transparent: it shows in the Season panel and shifts compliance math.',
+    'No save-breaking changes: old saves load cleanly (councilUntil defaults to 0).'
   ];
 
   function closePatchNotes(){
@@ -3075,8 +3135,9 @@
     if (autoRec) autoRec.checked = !!state.director.autoRecruit;
 
     // Timed effects (for old saves)
-    state.effects = state.effects ?? { festivalUntil: 0 };
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
     if (!('festivalUntil' in state.effects)) state.effects.festivalUntil = 0;
+    if (!('councilUntil' in state.effects)) state.effects.councilUntil = 0;
 
     // Festival (morale lever)
     const festBtn = el('btnFestival');
@@ -3088,6 +3149,18 @@
       festBtn.textContent = (left > 0)
         ? `Festival: ${Math.ceil(left)}s`
         : `Hold Festival (${c.food}f, ${c.wood}w)`;
+    }
+
+    // Council (cohesion lever)
+    const councilBtn = el('btnCouncil');
+    if (councilBtn) {
+      const left = councilSecondsLeft(state);
+      const c = councilCost(state);
+      councilBtn.classList.toggle('active', left > 0);
+      councilBtn.disabled = (left <= 0) && !canHoldCouncil(state);
+      councilBtn.textContent = (left > 0)
+        ? `Council: ${Math.ceil(left)}s`
+        : `Hold Council (${c.food}f, ${c.science}sci)`;
     }
 
     // Project focus (build order nudge)
@@ -3276,6 +3349,9 @@
     const festLeft = festivalSecondsLeft(state);
     const festLine = (festLeft > 0) ? `Festival: active (${Math.ceil(festLeft)}s) — morale drifting up\n` : '';
 
+    const councilLeft = councilSecondsLeft(state);
+    const councilLine = (councilLeft > 0) ? `Council: active (${Math.ceil(councilLeft)}s) — dissent decays faster\n` : '';
+
     const amOn = !!state.director?.autoMode;
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
@@ -3309,6 +3385,7 @@
       amLine +
       arLine +
       festLine +
+      councilLine +
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       forecastLine +
@@ -3915,8 +3992,17 @@
 
   const festEl = document.getElementById('btnFestival');
   if (festEl) festEl.addEventListener('click', () => {
-    state.effects = state.effects ?? { festivalUntil: 0 };
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
     const res = holdFestival(state);
+    log(res.msg);
+    save();
+    render();
+  });
+
+  const councilEl = document.getElementById('btnCouncil');
+  if (councilEl) councilEl.addEventListener('click', () => {
+    state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
+    const res = holdCouncil(state);
     log(res.msg);
     save();
     render();

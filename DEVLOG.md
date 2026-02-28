@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 18:23 CST - v0.9.17 Director action: Hold Council (dissent/compliance lever)
+
+Summary
+- Added **Hold Council** button: spend **food + science** to reduce colony **Dissent** and temporarily boost **Compliance**.
+- Council is a timed, transparent effect (`councilUntil`) shown in the **Season** panel; while active, dissent decays faster.
+- Slight immediate mood bump on council to reinforce “cohesion restored” feel.
+- Compliance formula now includes a small temporary bonus while Council is active (kept bounded + explainable).
+- Migration-safe: old saves default `effects.councilUntil = 0` (no save break).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Push Dissent into **murmur/strike** (high work pace + Tight rations), then press **Hold Council** and watch Compliance jump + Loafing drop.
+
+---
+
 ## 2026-02-27 18:08 CST - v0.9.16 Patch notes modal (auto-opens once per version)
 
 Summary
