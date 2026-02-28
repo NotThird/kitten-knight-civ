@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 21:24 CST - v0.9.29 Safety Rules: Care action selectable
+
+Summary
+- FIX: Safety Rules action dropdown now includes **Care** (was missing, despite being a real action).
+- Explainability: a rule-driven **Care** attempt still respects reserves and will immediately fall back to **Socialize** if blocked.
+- Patch notes updated for v0.9.29.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Add a Safety Rule: `always â†’ Care`, set food/wood reserves high, and confirm the kitten transparently falls back to **Socialize** (and the Task cell shows the fallback).
+
+---
+
 ## 2026-02-27 20:54 CST - v0.9.27 Cumulative patch notes (since last seen version)
 
 Summary
@@ -706,7 +724,7 @@ What to try
 ## 2026-02-27 21:09 CST - v0.9.28 Spoilage multiplier + storage overcap advisor
 
 Summary
-- Explainability: top stats now show **Spoilage x…** (x1.00..x4.00) so food over-cap loss is visible at a glance.
+- Explainability: top stats now show **Spoilage xï¿½** (x1.00..x4.00) so food over-cap loss is visible at a glance.
 - Advisor: detects **storage over-cap** and offers a 1-click **Storage fix** (Project focus ? Storage when available, +BuildGranary, +PreserveFood, and a small wood reserve nudge).
 - Patch notes updated for v0.9.28.
 

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.28';
+  const GAME_VERSION = '0.9.29';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3130,6 +3130,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.29',
+      notes: [
+        'FIX: Safety Rules can now choose the Care action (previously missing from the rule action dropdown).',
+        'Explainability: rule-created Care actions still respect reserves and will fall back to Socialize if blocked.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.28',
       notes: [
         'Explainability: food storage over-cap now shows Spoilage multiplier (x1..x4) in stats.',
@@ -4314,7 +4322,7 @@
   }
 
   function actEditor(act, idx){
-    const opts = ['Eat','Rest','Loaf','Socialize','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
+    const opts = ['Eat','Rest','Loaf','Socialize','Care','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (state.unlocked.library) opts.push('Mentor');
     if (state.unlocked.workshop) opts.push('CraftTools');
     if (state.unlocked.construction && state.unlocked.workshop) opts.push('BuildWorkshop');
