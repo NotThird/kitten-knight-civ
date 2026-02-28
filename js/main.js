@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.41';
+  const GAME_VERSION = '0.9.42';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3363,6 +3363,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.42',
+      notes: [
+        'Advisor: new quick action to toggle Winter Prep when Winter is near (late Fall).',
+        'This makes the seasonal stockpile overlay more discoverable without auto-enabling it.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.41',
       notes: [
         'NEW: Priority presets (Balanced / Food / Safety / Progress) next to the Priority sliders.',
@@ -3814,6 +3822,27 @@
           st.director = st.director ?? { projectFocus:'Auto' };
           // Optional: focus the blocked project so the colony actually resumes it.
           st.director.projectFocus = blockedProj.focus;
+        }
+      });
+    }
+
+    // Winter prep discoverability (seasonal overlay)
+    // If Winter is soon and the player hasn't enabled Winter Prep, suggest it explicitly.
+    // This is a *policy* action (not auto), so it keeps the game about management choices.
+    const winterSoon = secondsToNextWinter(s);
+    const lateFall = (season.name === 'Fall' && season.phase >= 0.55);
+    const canPrep = !s.director?.winterPrep && (lateFall || (winterSoon > 0 && winterSoon <= 45));
+    if (canPrep) {
+      const eta = fmtEtaSeconds(winterSoon);
+      lines.push(`• Winter soon (${eta}) — consider Winter Prep (stockpile food/wood/warmth; raise reserves)`);
+
+      recs.push({
+        id: 'winterprep',
+        label: 'Winter Prep',
+        tip: 'Toggle the Winter Prep overlay: raises targets/reserves and shifts labor toward food/wood/fire (reversible).',
+        apply: (st) => {
+          // Uses the same toggle as the UI button; fully explainable and save-safe.
+          setWinterPrep(true);
         }
       });
     }

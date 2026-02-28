@@ -946,3 +946,22 @@ Files touched
 What to try
 - Hoard food above the Food Cap and confirm Spoilage rises above x1.00, then click **Storage fix** and watch the colony pivot into Granary/Jerky to stop bleeding food.
 
+
+---
+
+## 2026-02-28 00:40 CST - v0.9.42 Advisor Winter Prep quick action
+
+Summary
+- Advisor now explicitly warns when **Winter is near** (late Fall / =45s to Winter) and offers a 1-click **Winter Prep** action.
+- Winter Prep remains a manual, reversible overlay (no hidden auto-enable) — this just makes the tool discoverable.
+- Keeps the loop incremental: you feel the seasonal pressure, then choose whether to spend policy authority to stockpile.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In late Fall, click **Advisor ? Winter Prep** and watch targets/reserves/policy shift; then toggle it OFF in Spring to return to your previous stack.
