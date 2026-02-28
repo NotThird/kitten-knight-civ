@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.60';
+  const GAME_VERSION = '0.9.61';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3250,6 +3250,9 @@
       const shadowAvail = makeShadowAvail(state);
       const ctx = { shadowAvail };
 
+      // Explainability: track what kind of decision dominated lately (rules vs emergencies vs commits vs normal scoring).
+      const decisionKinds = { rule:0, emergency:0, commit:0, score:0 };
+
       // Decide in a stable order, but let needs/emergencies override plan.
       for (const k of state.kittens) {
         // Commitment timer ticks down at decision cadence (1s).
@@ -3281,9 +3284,16 @@
         k.why = d.why;
         plan.assigned[d.task] = (plan.assigned[d.task] ?? 0) + 1;
 
+        // Decision mix (explainability)
+        const kind = String(k._lastDecision?.kind ?? 'score');
+        if (kind in decisionKinds) decisionKinds[kind] += 1;
+        else decisionKinds.score += 1;
+
         // Reserve estimated scarce inputs for this task so later kittens see reduced availability.
         reserveForTask(shadowAvail, d.task);
       }
+      plan.decisionKinds = decisionKinds;
+
       // Attach last-second execution blockers so Plan debug can surface reserve/input stalls.
       plan.blocked = { ...(state._blockedThisSecond ?? {}) };
       plan.blockedMsg = { ...(state._blockedMsgThisSecond ?? {}) };
@@ -3293,6 +3303,11 @@
       state._actHist = state._actHist ?? [];
       state._actHist.push({ t: state.t, assigned: { ...(plan.assigned ?? {}) } });
       if (state._actHist.length > 30) state._actHist.splice(0, state._actHist.length - 30);
+
+      // Decision mix history (explainability): why the plan is being overridden.
+      state._decHist = state._decHist ?? [];
+      state._decHist.push({ t: state.t, kinds: { ...(plan.decisionKinds ?? {}) } });
+      if (state._decHist.length > 30) state._decHist.splice(0, state._decHist.length - 30);
 
       state._lastPlan = plan;
     }
@@ -3571,6 +3586,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.61',
+      notes: [
+        'Explainability: Plan debug now includes a "Decision mix" section (rules vs emergencies vs commitment vs normal scoring).',
+        'This makes it easier to tell whether the colony is off-plan because of hard safety overrides, personal needs, or just autonomy sampling.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.60',
       notes: [
@@ -5354,6 +5377,25 @@
               lines.push(`- ${it.a.padEnd(12)} ${pct.toString().padStart(3)}% (${it.ct})`);
             }
             if (items.length > top.length) lines.push(`- (+${items.length - top.length} more)`);
+          }
+        }
+
+        // Decision mix history: how often the plan was overridden by hard rules/emergencies/commitment.
+        const dh = Array.isArray(state._decHist) ? state._decHist : [];
+        if (dh.length >= 3) {
+          const tot = { rule:0, emergency:0, commit:0, score:0 };
+          for (const row of dh) {
+            const k = row?.kinds ?? {};
+            tot.rule += Number(k.rule ?? 0) || 0;
+            tot.emergency += Number(k.emergency ?? 0) || 0;
+            tot.commit += Number(k.commit ?? 0) || 0;
+            tot.score += Number(k.score ?? 0) || 0;
+          }
+          const sum = tot.rule + tot.emergency + tot.commit + tot.score;
+          if (sum > 0) {
+            const pct = (x)=>Math.round(100 * x / sum);
+            lines.push('');
+            lines.push(`Decision mix (last ${dh.length}s): rule ${pct(tot.rule)}% | emergency ${pct(tot.emergency)}% | commit ${pct(tot.commit)}% | score ${pct(tot.score)}%`);
           }
         }
 

@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 05:25 CST - v0.9.61 Explainability: Decision mix history in Plan debug
+
+Summary
+- Explainability: Plan debug now shows a **Decision mix (last ~30s)** line: rule vs emergency vs commit vs normal scoring.
+- Helps diagnose *why* the colony is off-plan (hard safety overrides vs personal needs vs commitment inertia vs autonomy sampling).
+- Stored transiently (not saved) to avoid save bloat.
+- Patch notes updated for v0.9.61.
+- Save-safe: UI-only explainability.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Trigger a winter warmth crunch (low warmth) and watch Decision mix swing toward **rule/commit**, then stabilize and see it return to mostly **score**.
+
+---
+
 ## 2026-02-28 05:10 CST - v0.9.60 Explainability: recent Activity breakdown in Plan debug
 
 Summary
