@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 05:56 CST - v0.9.63 Explainability: season transition log pings
+
+Summary
+- NEW: log a one-line **Season change** message when the season flips (Spring/Summer/Fall/Winter).
+- Message calls out the key mechanical shifts (Winter warmth decay + Forage penalty; Spring relief; Fall prep window).
+- Goal: reduce “why did my outputs suddenly change?” confusion without adding hidden automation.
+- Patch notes updated for v0.9.63.
+- Save-safe: uses a transient `state._lastSeasonName` field (not persisted).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let the sim run across a season boundary and watch the event log for the new **Season change → ...** ping.
+
+---
+
 ## 2026-02-28 05:41 CST - v0.9.62 Director: Consensus priority preset (values-driven)
 
 Summary

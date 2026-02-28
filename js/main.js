@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.62';
+  const GAME_VERSION = '0.9.63';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2762,6 +2762,24 @@
   function tickPressures(dt){
     const season = seasonAt(state.t);
 
+    // Season transition log (explainability): one clean ping when the season flips.
+    // This helps players connect "why did outputs change" to the seasonal model.
+    state._lastSeasonName = state._lastSeasonName ?? season.name;
+    if (state._lastSeasonName !== season.name) {
+      const from = state._lastSeasonName;
+      state._lastSeasonName = season.name;
+
+      const msg = (season.name === 'Winter')
+        ? 'Season change → Winter. Warmth decays faster and Forage output drops; keep warmth ≥ target and consider PreserveFood (jerky) + Granaries.'
+        : (season.name === 'Spring')
+          ? 'Season change → Spring. Forage penalties ease; you can pivot back toward Research/Industry once stable.'
+          : (season.name === 'Fall')
+            ? 'Season change → Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
+            : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
+
+      log(msg + (from ? ` (from ${from})` : ''));
+    }
+
     // Seasonal telegraphing (warnings you can react to)
     state._seasonWarn = state._seasonWarn ?? { winterPrep:false, springSoon:false };
     if (season.name === 'Fall' && season.phase >= 0.70) {
@@ -3586,6 +3604,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.63',
+      notes: [
+        'Explainability: season transitions now log a clear one-line reminder of what just changed (Winter penalties, Spring relief, Fall prep window).',
+        'Helps connect sudden output shifts to the seasonal model without needing to open panels.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.62',
       notes: [
