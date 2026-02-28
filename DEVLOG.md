@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 07:11 CST - v0.9.68 Curfew: safety ↔ morale governance lever
+
+Summary
+- NEW: **Curfew** toggle (Director button + **Q** hotkey): slows **threat growth** (fewer raids), but steadily **drains mood** and adds a small **dissent pressure** while active.
+- Curfew is save-safe (defaults OFF for old saves).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- When threat is climbing toward your max target, toggle **Curfew ON** and watch threat’s +/s drop; keep an eye on Mood/Dissent and turn it OFF once stable.
+
+---
+
 ## 2026-02-28 06:41 CST - v0.9.66 Jerky counts as edible food (fix starvation + heuristics)
 
 Summary
@@ -1428,7 +1447,7 @@ What to try
 ## 2026-02-28 06:56 CST - v0.9.67 Grievance: slow-burn resentment ? dissent pressure
 
 Summary
-- Added per-kitten **Grievance** (0�100%) that rises when kittens are pushed into disliked/misaligned work under strong central planning, and cools down with comfort work.
+- Added per-kitten **Grievance** (0�100%) that rises when kittens are pushed into disliked/misaligned work under strong central planning, and cools down with comfort work.
 - Colony-level **Grievance** average is now visible as a stat card.
 - **Dissent desire** now includes a grievance pressure term (visible in Social inspector driver breakdown).
 - **Hold Council** now also reduces grievance (represents being heard), helping you recover from rigid policy pushes.

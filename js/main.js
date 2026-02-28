@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.67';
+  const GAME_VERSION = '0.9.68';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -1751,6 +1751,10 @@
     const d = discipline01(s);
     m -= d * 0.0018; // at 100% → -0.0018 / sec
 
+    // Curfew (governance lever): makes the colony safer, but costs morale.
+    // Discipline amplifies the felt harshness slightly (more enforcement).
+    if (s.director?.curfew) m -= (0.0012 + 0.0010 * d);
+
     // Values mismatch (emergent civ-sim pressure):
     // When effective autonomy is low (strong central planning), forcing kittens away from their values
     // slowly reduces mood. High discipline amplifies that "resentment" a bit.
@@ -2868,9 +2872,10 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
+    if (!('curfew' in state.director)) state.director.curfew = false;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
@@ -2935,6 +2940,7 @@
       const hungerPressure = Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
       const grievancePressure = Math.max(0, avgGriev - 0.20) * 0.65; // resentment spills into politics
       const alarmPressure = alarmStress * 0.06;
+      const curfewPressure = (state.director?.curfew ? 0.045 : 0);
 
       let desire = 0;
       desire += moodPressure;
@@ -2943,6 +2949,7 @@
       desire += hungerPressure;
       desire += grievancePressure;
       desire += alarmPressure;
+      desire += curfewPressure;
 
       const rawDesire = desire;
 
@@ -2969,7 +2976,8 @@
         workPace: wp,
         rationsLabel: String(rat.label ?? state.rations ?? 'Normal'),
         alarmStress,
-        moodPressure, workPressure, rationPressure, hungerPressure, grievancePressure, alarmPressure,
+        curfew: !!state.director?.curfew,
+        moodPressure, workPressure, rationPressure, hungerPressure, grievancePressure, alarmPressure, curfewPressure,
         rawDesire,
         desireAfterPolicy,
         cur, next,
@@ -3242,10 +3250,11 @@
     const decay = season.name === 'Winter' ? 0.55 : 0.28;
     state.res.warmth = Math.max(0, state.res.warmth - decay * dt);
 
-    // Threat growth; reduced by palisade, and by security unlock
+    // Threat growth; reduced by palisade, by security unlock, and optionally by Curfew policy.
     const baseGrowth = state.unlocked.security ? 0.34 : 0.44;
     const palReduce = Math.min(0.28, state.res.palisade * 0.02);
-    state.res.threat = Math.min(120, state.res.threat + (baseGrowth * (1 - palReduce)) * dt);
+    const curfewMul = state.director?.curfew ? 0.75 : 1.00;
+    state.res.threat = Math.min(120, state.res.threat + (baseGrowth * (1 - palReduce) * curfewMul) * dt);
 
     // Tools wear (adds a maintenance loop once Workshop exists)
     // Tools represent shared implements; they get dull/break over time.
@@ -3678,6 +3687,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.68',
+      notes: [
+        'NEW: Curfew (Director button + Q hotkey). Curfew slows threat growth (fewer raids) but steadily lowers morale and slightly increases dissent pressure while active.',
+        'Explainability: Social inspector now includes Curfew as a dissent driver when enabled.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.67',
       notes: [
@@ -4314,6 +4331,7 @@
 
     if (key === 'w' || key === 'W') { setWinterPrep(!state.director?.winterPrep); return; }
     if (key === 'c' || key === 'C') { setCrisisProtocol(!state.director?.crisis); return; }
+    if (key === 'q' || key === 'Q') { setCurfew(!state.director?.curfew); return; }
 
     if (key === 'f' || key === 'F') {
       // Festival (only when not already active)
@@ -4938,9 +4956,10 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
+    if (!('curfew' in state.director)) state.director.curfew = false;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
@@ -4987,6 +5006,14 @@
       cpBtn.classList.toggle('active', cp);
       cpBtn.textContent = cp ? 'Crisis: ON' : 'Crisis Protocol';
     }
+
+    const cur = !!state.director.curfew;
+    const curBtn = el('btnCurfew');
+    if (curBtn) {
+      curBtn.classList.toggle('active', cur);
+      curBtn.textContent = cur ? 'Curfew: ON' : 'Curfew';
+    }
+
     const autoWp = el('autoWinterPrep');
     if (autoWp) autoWp.checked = !!state.director.autoWinterPrep;
     const autoFood = el('autoFoodCrisis');
@@ -6005,6 +6032,7 @@
       signals: structuredClone(state.signals ?? { BUILD:false, FOOD:false, ALARM:false }),
       director: {
         projectFocus: String(state.director.projectFocus ?? 'Auto'),
+        curfew: !!state.director.curfew,
         autonomy: clamp01(Number(state.director.autonomy ?? 0.60)),
         discipline: clamp01(Number(state.director.discipline ?? 0.40)),
         workPace: Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00)),
@@ -6030,6 +6058,7 @@
     state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (snap.director) {
       if ('projectFocus' in snap.director) state.director.projectFocus = String(snap.director.projectFocus ?? 'Auto');
+      if ('curfew' in snap.director) state.director.curfew = !!snap.director.curfew;
       if ('autonomy' in snap.director) state.director.autonomy = clamp01(Number(snap.director.autonomy ?? 0.60));
       if ('discipline' in snap.director) state.director.discipline = clamp01(Number(snap.director.discipline ?? 0.40));
       if ('workPace' in snap.director) state.director.workPace = Math.max(0.8, Math.min(1.2, Number(snap.director.workPace ?? 1.00) || 1.00));
@@ -6189,6 +6218,25 @@
       }
     }
   }
+
+  function setCurfew(on, st = state){
+    // Simple governance lever: reduces threat growth but costs morale.
+    const isGlobal = (st === state);
+    st.director = st.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    const prev = !!st.director.curfew;
+    st.director.curfew = !!on;
+    if (isGlobal && prev !== !!on) {
+      log(`Curfew → ${on ? 'ON' : 'OFF'} (${on ? 'threat grows slower, morale drifts down' : 'normal civic life resumes'})`);
+      save();
+      render();
+    }
+  }
+
+  const curBtn = document.getElementById('btnCurfew');
+  if (curBtn) curBtn.addEventListener('click', () => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
+    setCurfew(!state.director.curfew);
+  });
 
   document.getElementById('btnWinterPrep').addEventListener('click', () => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
