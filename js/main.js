@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.72';
+  const GAME_VERSION = '0.9.73';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3798,6 +3798,15 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.73',
+      notes: [
+        'Factions: negotiating now has a short cooldown and the UI shows a preview of the policy concession before you click.',
+        'Explainability: negotiation log now includes the exact policy/priority deltas that were applied.',
+        'Result: the civ-sim politics lever is clearer and less spammy (fewer accidental priority drifts).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.72',
       notes: [
         'Buddy bonds upgraded: kittens now track Buddy-need (rises when separated; falls when spending time together).',
@@ -5095,35 +5104,113 @@
 
     s.director = s.director ?? {};
     s.policyMult = s.policyMult ?? {};
+    s.social = s.social ?? { dissent: 0 };
+
+    // Cooldown: negotiations are a *politics* lever, not a spam button.
+    // Save-safe: fields are optional and default to 0.
+    const nextAt = Number(s.director.factionsNextAt ?? 0) || 0;
+    if (Number(s.t ?? 0) < nextAt) {
+      const left = Math.max(0, nextAt - Number(s.t ?? 0));
+      return { ok:false, msg:`Faction talks need time. Try again in ~${Math.ceil(left)}s.` };
+    }
+
+    const before = {
+      prioFood: Number(s.director.prioFood ?? 1) || 1,
+      prioSafety: Number(s.director.prioSafety ?? 1) || 1,
+      prioProgress: Number(s.director.prioProgress ?? 1) || 1,
+      workPace: Number(s.director.workPace ?? 1) || 1,
+      discipline: Number(s.director.discipline ?? 0.4) || 0.4,
+      policyMult: { ...(s.policyMult ?? {}) },
+      dissent: clamp01(Number(s.social.dissent ?? 0)),
+    };
 
     // Small, bounded policy nudges. These are meant to be *minor course corrections*, not one-click wins.
     if (ax === 'Food') {
-      s.director.prioFood = Math.min(1.5, (Number(s.director.prioFood ?? 1) || 1) + 0.10);
-      s.director.prioProgress = Math.max(0.5, (Number(s.director.prioProgress ?? 1) || 1) - 0.05);
+      s.director.prioFood = Math.min(1.5, before.prioFood + 0.10);
+      s.director.prioProgress = Math.max(0.5, before.prioProgress - 0.05);
     } else if (ax === 'Safety') {
-      s.director.prioSafety = Math.min(1.5, (Number(s.director.prioSafety ?? 1) || 1) + 0.10);
-      s.director.prioProgress = Math.max(0.5, (Number(s.director.prioProgress ?? 1) || 1) - 0.05);
+      s.director.prioSafety = Math.min(1.5, before.prioSafety + 0.10);
+      s.director.prioProgress = Math.max(0.5, before.prioProgress - 0.05);
     } else if (ax === 'Progress') {
-      s.director.prioProgress = Math.min(1.5, (Number(s.director.prioProgress ?? 1) || 1) + 0.10);
-      s.director.prioSafety = Math.max(0.5, (Number(s.director.prioSafety ?? 1) || 1) - 0.05);
+      s.director.prioProgress = Math.min(1.5, before.prioProgress + 0.10);
+      s.director.prioSafety = Math.max(0.5, before.prioSafety - 0.05);
     } else if (ax === 'Social') {
       // Social isn't a priority slider; it expresses through pacing + cohesion actions.
-      s.director.workPace = Math.max(0.8, (Number(s.director.workPace ?? 1) || 1) - 0.05);
-      s.director.discipline = clamp01((Number(s.director.discipline ?? 0.4) || 0.4) - 0.03);
+      s.director.workPace = Math.max(0.8, before.workPace - 0.05);
+      s.director.discipline = clamp01(before.discipline - 0.03);
       s.policyMult.Socialize = Math.min(2, Math.max(0, Number(s.policyMult.Socialize ?? 1) + 0.15));
       s.policyMult.Care = Math.min(2, Math.max(0, Number(s.policyMult.Care ?? 1) + 0.15));
       s.policyMult.Research = Math.min(2, Math.max(0, Number(s.policyMult.Research ?? 1) - 0.05));
     }
 
     // Tiny immediate cohesion boost (representing "being heard").
-    s.social = s.social ?? { dissent: 0 };
-    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.965);
+    s.social.dissent = clamp01(before.dissent * 0.965);
 
-    return { ok:true, msg:`Negotiated with the ${ax} bloc: small policy nudge applied (dissent eased a bit).` };
+    // Start cooldown.
+    s.director.factionsNextAt = Number(s.t ?? 0) + 45;
+    s.director.factionsLast = { at: Number(s.t ?? 0), axis: ax };
+
+    const after = {
+      prioFood: Number(s.director.prioFood ?? 1) || 1,
+      prioSafety: Number(s.director.prioSafety ?? 1) || 1,
+      prioProgress: Number(s.director.prioProgress ?? 1) || 1,
+      workPace: Number(s.director.workPace ?? 1) || 1,
+      discipline: Number(s.director.discipline ?? 0.4) || 0.4,
+      policyMult: { ...(s.policyMult ?? {}) },
+      dissent: clamp01(Number(s.social.dissent ?? 0)),
+    };
+
+    const fmtDelta = (label, a, b, digits=2) => {
+      const da = Number(a); const db = Number(b);
+      if (!Number.isFinite(da) || !Number.isFinite(db)) return '';
+      const d = db - da;
+      if (Math.abs(d) < 0.0001) return '';
+      const sign = d >= 0 ? '+' : '';
+      return `${label} ${da.toFixed(digits)}→${db.toFixed(digits)} (${sign}${d.toFixed(digits)})`;
+    };
+
+    const polDiff = [];
+    const keys = new Set([ ...Object.keys(before.policyMult || {}), ...Object.keys(after.policyMult || {}) ]);
+    for (const k of keys) {
+      const a = Number(before.policyMult?.[k] ?? 1);
+      const b = Number(after.policyMult?.[k] ?? 1);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+      if (Math.abs(b - a) > 0.0005) {
+        const sign = (b - a) >= 0 ? '+' : '';
+        polDiff.push(`${k} x${a.toFixed(2)}→x${b.toFixed(2)} (${sign}${(b-a).toFixed(2)})`);
+      }
+    }
+
+    const changes = [
+      fmtDelta('prioFood', before.prioFood, after.prioFood),
+      fmtDelta('prioSafety', before.prioSafety, after.prioSafety),
+      fmtDelta('prioProgress', before.prioProgress, after.prioProgress),
+      fmtDelta('workPace', before.workPace, after.workPace),
+      fmtDelta('discipline', before.discipline, after.discipline),
+      ...polDiff,
+    ].filter(Boolean);
+
+    const dissMsg = `${Math.round(before.dissent*100)}%→${Math.round(after.dissent*100)}%`;
+    const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
+
+    return { ok:true, msg:`Negotiated with the ${ax} bloc: ${changeMsg}. Dissent ${dissMsg}. (cooldown ~45s)` };
   }
 
   function renderFactions(s){
     if (!factionsEl) return;
+
+    s.director = s.director ?? {};
+    const nextAt = Number(s.director.factionsNextAt ?? 0) || 0;
+    const can = Number(s.t ?? 0) >= nextAt;
+    const left = Math.max(0, nextAt - Number(s.t ?? 0));
+
+    const preview = (ax) => {
+      if (ax === 'Food') return 'Concession: +prioFood, -prioProgress';
+      if (ax === 'Safety') return 'Concession: +prioSafety, -prioProgress';
+      if (ax === 'Progress') return 'Concession: +prioProgress, -prioSafety';
+      if (ax === 'Social') return 'Concession: -workPace, -discipline, +Socialize/Care policy, -Research policy';
+      return '';
+    };
 
     const groups = Object.create(null);
     for (const ax of ['Food','Safety','Progress','Social']) groups[ax] = { axis: ax, n:0, mood:0, griev:0, align:0 };
@@ -5146,14 +5233,23 @@
       const griev = g.griev / g.n;
       const align = g.align / g.n;
       const pct = (x)=>Math.round(100*x);
-      const btn = `<button class="btn" data-faction="${g.axis}" title="Make a small policy concession to this bloc (reduces dissent slightly).">Negotiate</button>`;
-      return `<div class="row" style="justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap">` +
-        `<div><span class="tag">${g.axis}</span> <span class="small">x${g.n}</span> <span class="small" style="opacity:.85">mood ${pct(mood)}% | griev ${pct(griev)}% | fit ${pct(align)}%</span></div>` +
-        `<div>${btn}</div>` +
+
+      const tip = preview(g.axis);
+      const cd = can ? '' : ` (cooldown ~${Math.ceil(left)}s)`;
+      const title = `Make a small policy concession to this bloc (reduces dissent slightly). ${tip}${cd}`.trim();
+
+      const btn = `<button class="btn" data-faction="${g.axis}" ${can ? '' : 'disabled'} title="${title}">Negotiate</button>`;
+      const sub = `<div class="small" style="opacity:.78; margin-top:2px">${tip}${can ? '' : ` — cooldown ${Math.ceil(left)}s`}</div>`;
+
+      return `<div style="padding:4px 0">` +
+        `<div class="row" style="justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap">` +
+          `<div><span class="tag">${g.axis}</span> <span class="small">x${g.n}</span> <span class="small" style="opacity:.85">mood ${pct(mood)}% | griev ${pct(griev)}% | fit ${pct(align)}%</span>${sub}</div>` +
+          `<div>${btn}</div>` +
+        `</div>` +
       `</div>`;
     }).join('');
 
-    factionsEl.innerHTML = lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities).</div>`;
+    factionsEl.innerHTML = lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Now with a short cooldown so you don’t accidentally drift too far.</div>`;
   }
 
   function render(){

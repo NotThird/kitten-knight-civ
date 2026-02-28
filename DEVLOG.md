@@ -1539,3 +1539,21 @@ Files touched
 What to try
 - Set **Autonomy low** and watch Buddy-need creep up; then bump **Socialize** policy multiplier (or let buddies socialize) and see it drain + stabilize mood.
 
+
+## 2026-02-28 08:26 CST - v0.9.73 Factions: negotiation preview + cooldown + delta logging
+
+Summary
+- Factions: **Negotiate** now has a short **cooldown (~45s)** so it’s a deliberate politics lever (not a spam click).
+- UI: each faction row now shows a **preview** of the policy concession you’ll make before clicking.
+- Explainability: negotiation log now includes the **exact deltas** applied (priority sliders / policy multipliers) plus the dissent reduction.
+- Save-safe: adds optional `director.factionsNextAt` / `director.factionsLast` fields.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Open **Factions**, click **Negotiate** with the largest bloc, then watch the log for the precise deltas and confirm the button cooldown + preview text.
