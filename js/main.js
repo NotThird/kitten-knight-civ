@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.88';
+  const GAME_VERSION = '0.9.89';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4022,6 +4022,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.89',
+      notes: [
+        'UI/Explainability: Colony table now shows a dedicated “Fit” column (policy focus-fit %) so you can quickly spot which kittens are misaligned with your current Mode + priority sliders.',
+        'The Fit tag is color-coded (green/yellow/red) and has a tooltip explaining why low fit can drag mood and raise dissent under strong central planning.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.88',
       notes: [
         'Civ-sim: Kittens now slowly drift their Values (Food/Safety/Progress/Social) toward what they actually do each second. Specialization becomes "sticky" over minutes, creating emergent faction shifts.',
@@ -6830,6 +6838,11 @@
       // Always show value-alignment vs current colony focus (explains mood/dissent drift under planning).
       // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.
       const align = valuesAlignment01(state, k);
+      const fitPct = Math.round(align * 100);
+      const fitColor = (fitPct >= 75) ? 'var(--good)' : (fitPct >= 55) ? 'var(--warn)' : 'var(--bad)';
+      const fitTitle = `Policy fit vs colony focus (Mode + priorities). Low fit under low autonomy tends to drag mood and raise dissent.`;
+      const fitHtml = `<span class="tag" style="border-color:${fitColor}; color:${fitColor}">${fitPct}%</span>`;
+
       const vals = valuesShort(k);
       const prefParts = [];
       if (likes.includes(k.task)) prefParts.push('Like');
@@ -6886,6 +6899,7 @@
         <td>${topSkills}</td>
         <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
         <td title="${escapeHtml(blocTitle)}">${blocHtml}</td>
+        <td title="${escapeHtml(fitTitle)}">${fitHtml}</td>
         <td title="${escapeHtml(buddyTitle)}">${buddyHtml}</td>
         <td title="Preference + policy fit. Values: ${escapeHtml(vals)} | focus-fit ${Math.round(align*100)}% | (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>

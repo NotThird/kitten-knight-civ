@@ -1841,3 +1841,24 @@ What to try
 - Run **Advance** for a few minutes, then open **Factions** and see if your dominant bloc shifts toward **Progress** as kittens acclimate.
 
 ---
+
+## 2026-02-28 12:27 CST - v0.9.89 Colony table: Fit column (policy alignment)
+
+Summary
+- NEW: Added a dedicated **Fit** column in the Colony table showing each kitten’s policy focus-fit (% alignment to current Mode + priority sliders).
+- Fit is color-coded (green/yellow/red) to make ‘who is misaligned’ instantly scannable.
+- Tooltip explains the civ-sim loop: low fit under strong planning (low effective autonomy) tends to drag mood and increase dissent pressure.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Push **Advance** + high **Discipline**, then watch which kittens show red Fit and whether mood/dissent starts to drift until you negotiate (Factions) or change priorities.
+
+---
+
