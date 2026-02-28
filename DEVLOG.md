@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 04:10 CST - v0.9.56 Food stat surfaces storage cap + spoilage (faster spiral diagnosis)
+
+Summary
+- QoL/Explainability: Food stat’s trend line now includes your current **Food Cap** and (when relevant) the **Spoilage x** multiplier.
+- Added a Food stat tooltip that explains the soft-cap → accelerated spoilage mechanic in one place.
+- This makes “why is food bleeding out?” diagnosable without cross-referencing separate stat cards.
+- Save-safe: UI-only change.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Overcap food (push Food above Food Cap) and verify the Food stat subline shows `spoil x… | cap …` while your Food rate drops.
+
+---
+
 ## 2026-02-28 03:55 CST - v0.9.55 Focus-fit stat (values alignment) for policy explainability
 
 Summary

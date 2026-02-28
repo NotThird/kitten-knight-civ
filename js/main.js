@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.55';
+  const GAME_VERSION = '0.9.56';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3552,6 +3552,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.56',
+      notes: [
+        'QoL/Explainability: the Food stat now shows your storage cap and (when relevant) current spoilage multiplier in its trend line.',
+        'Food stat tooltip now explains the soft-cap → spoilage mechanic in one place.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.55',
       notes: [
         'Explainability: added a Focus-fit stat (avg values alignment) so you can see at a glance when colony policy is mismatched with kitten values (often a precursor to mood/dissent issues).',
@@ -4801,6 +4809,7 @@
     }
 
     const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
+    const foodCapNow = foodStorageCap(state);
     const addCost = kittenCost();
     el('kittenCost').textContent = String(addCost);
     const popCapEl = el('kittenPopCap');
@@ -4860,7 +4869,11 @@
     const freezeEta = (warmthRate < -0.02) ? fmtEtaSeconds((state.res.warmth) / (-warmthRate)) : '-';
 
     const statSub = (key) => {
-      if (key === 'Food') return `${fmtRate(foodRate)} | 0 in ${starveEta}`;
+      if (key === 'Food') {
+        const spoilNote = (spoilMult > 1.05) ? ` | spoil x${spoilMult.toFixed(2)}` : '';
+        const capNote = ` | cap ${fmt(foodCapNow)}`;
+        return `${fmtRate(foodRate)} | 0 in ${starveEta}${spoilNote}${capNote}`;
+      }
       if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
       if (key === 'Wood') return `${fmtRate(woodRate)}`;
       if (key === 'Warmth') return `${fmtRate(warmthRate)} | tgt in ${warmthToTargetEta} | 0 in ${freezeEta}`;
@@ -4905,6 +4918,12 @@
       }
       if (k === 'Focus-fit') {
         d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline.';
+      }
+      if (k === 'Food') {
+        const oc = state._lastFoodOvercap ?? { cap: foodCapNow, food: Number(state.res.food ?? 0), mult: 1 };
+        const cap = Number(oc.cap ?? foodCapNow);
+        const mult = Number(oc.mult ?? spoilMult);
+        d.title = `Food storage soft cap: ${fmt(cap)}. If food is above cap, spoilage accelerates (shown as Spoilage x1..x4). Current spoilage: x${(Number.isFinite(mult)?mult:1).toFixed(2)}.`;
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
