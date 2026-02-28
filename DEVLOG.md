@@ -1939,3 +1939,22 @@ Files touched
 
 What to try
 - Create a rule: **If edible < 80 ? Forage** and verify it triggers even if fresh food is low but you still have jerky.
+
+---
+
+## 2026-02-28 13:42 CST - v0.9.94 QoL: keyboard shortcut for Defense Drills
+
+Summary
+- QoL: added keyboard shortcut **D** to run **Defense Drills** (same effect as the Run Drills button; only triggers if drills are not already active).
+- UI: Run Drills button tooltip now advertises the shortcut.
+- Patch Notes updated for v0.9.94.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- When threat starts climbing (or you hit **ALARM**), press **D** and watch the **Season** panel show an active Drills timer + slower threat growth.

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.93';
+  const GAME_VERSION = '0.9.94';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4109,6 +4109,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.94',
+      notes: [
+        'QoL: added keyboard shortcut D to run Defense Drills (same behavior as the button; only triggers if drills are not already active).',
+        'UI: Run Drills button tooltip now includes the shortcut.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.93',
       notes: [
         'Safety Rules: added condition “edible < X” (counts Food + Jerky) so you can trigger overrides based on total edible stores, not just fresh food.',
@@ -5047,6 +5055,18 @@
       state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0 };
       if (!councilActive(state)) {
         const res = holdCouncil(state);
+        log(res.msg);
+        save();
+        render();
+      }
+      return;
+    }
+
+    if (key === 'd' || key === 'D') {
+      // Defense drills (only when not already active)
+      state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
+      if (!drillActive(state)) {
+        const res = runDrills(state);
         log(res.msg);
         save();
         render();
