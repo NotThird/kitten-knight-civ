@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.70';
+  const GAME_VERSION = '0.9.71';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1815,14 +1815,28 @@
   // --- AI
   // Colony-level coordination: we compute a lightweight "plan" (desired worker counts per task)
   // and then each kitten picks actions with a congestion/need modifier.
-  function commitSecondsForTask(task){
+  //
+  // Director levers that affect coordination:
+  // - Higher Discipline = kittens stick to a chosen task longer (less thrash)
+  // - Higher Autonomy   = kittens switch tasks more readily (more emergent wandering/preferences)
+  function coordinationMul(s){
+    const dis = discipline01(s);           // 0..1
+    const effA = effectiveAutonomy01(s);  // 0..1
+    // 0.90..~1.85 (kept tame; commitment must stay short to remain responsive).
+    return 0.90 + 0.70 * dis + 0.25 * (1 - effA);
+  }
+
+  function commitSecondsForTask(s, task){
     // Keep it short so the AI is still responsive.
     // Safety rules + emergencies can always override.
-    if (['BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary'].includes(task)) return 4;
-    if (['CraftTools','Research','Forage','Farm','ChopWood'].includes(task)) return 3;
-    if (['Guard','StokeFire'].includes(task)) return 2;
-    if (['Eat','Rest','Loaf'].includes(task)) return 1;
-    return 2;
+    let base = 2;
+    if (['BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary'].includes(task)) base = 4;
+    else if (['CraftTools','Research','Forage','Farm','ChopWood'].includes(task)) base = 3;
+    else if (['Guard','StokeFire'].includes(task)) base = 2;
+    else if (['Eat','Rest','Loaf'].includes(task)) base = 1;
+
+    const secs = Math.round(base * coordinationMul(s));
+    return Math.max(1, Math.min(6, secs));
   }
 
   // --- Planning-time reservations (coordination)
@@ -1885,8 +1899,9 @@
     if ((k.taskLock ?? 0) > 0) {
       const cur = k.task ?? 'Rest';
       if (cur in taskDefs && taskDefs[cur].enabled(s)) {
-        k._lastDecision = { kind:'commit', at:s.t, task:cur, lock:Number(k.taskLock ?? 0) };
-        return { task: cur, why: `commit ${k.taskLock}s | ${k.why ?? ''}`.trim() };
+        k._lastDecision = { kind:'commit', at:s.t, task:cur, lock:Number(k.taskLock ?? 0), coord: coordinationMul(s) };
+        const cm = coordinationMul(s);
+        return { task: cur, why: `commit ${k.taskLock}s (coord x${cm.toFixed(2)}) | ${k.why ?? ''}`.trim() };
       }
     }
 
@@ -3399,7 +3414,7 @@
 
         // If we switched tasks, start a short commitment window.
         if (prevTask !== d.task) {
-          k.taskLock = commitSecondsForTask(d.task);
+          k.taskLock = commitSecondsForTask(state, d.task);
         }
 
         k.task = d.task;
@@ -3721,6 +3736,15 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.71',
+      notes: [
+        'Director: Discipline/Autonomy now (transparently) affect task commitment length via a Coordination multiplier.',
+        'Result: fewer 1s task flaps when Discipline is high; more emergent switching/wandering when Autonomy is high.',
+        'Explainability: COMMIT decisions now display the current coord multiplier, and the Discipline hint shows "commitment x…".',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.70',
       notes: [
@@ -5607,7 +5631,7 @@
     if (dh) {
       const effAut = effectiveAutonomy01(state);
       const compNow = compliance01(state);
-      dh.textContent = `${dPct}% | compliance x${compNow.toFixed(2)} | effective autonomy ${Math.round(effAut*100)}% | morale cost (small)`;
+      dh.textContent = `${dPct}% | compliance x${compNow.toFixed(2)} | effective autonomy ${Math.round(effAut*100)}% | commitment x${coordinationMul(state).toFixed(2)} | morale cost (small)`;
     }
 
     // Work pace (global throughput vs fatigue lever)

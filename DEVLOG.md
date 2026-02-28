@@ -1499,3 +1499,23 @@ Files touched
 
 What to try
 - Let dissent drift into **Murmur**, then click **Negotiate** on the biggest bloc and watch dissent/compliance stabilize (and notice how your priorities/policy shift).
+
+---
+
+## 2026-02-28 07:56 CST - v0.9.71 Coordination-scaled task commitment
+
+Summary
+- Director levers now affect **task commitment length**: higher **Discipline** increases coordination (less 1s flapping), higher **Autonomy** reduces it (more emergent switching).
+- Commitment duration remains short (clamped), and Safety Rules/emergencies still override immediately.
+- Explainability: COMMIT decisions now show the live **coord multiplier**, and the Discipline hint shows `commitment x…`.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Set **Discipline high** + **Autonomy low** and watch kittens stick to build/research tasks; then flip to **Autonomy high** and notice more preference-driven switching.
