@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 02:55 CST - v0.9.51 Preview-safe Winter Prep + correct Advisor overcap
+
+Summary
+- FIX: Advisor “storage over-cap / spoilage x…” now reads from the current sim state (was accidentally reading the global `state`, which breaks Council/preview sims).
+- FIX: Winter Prep and Crisis Protocol are now **preview-safe** (they can be applied to cloned states for Council/Advisor previews without mutating the live game).
+- Explainability: Council/Advisor previews are now trustworthy when they show “what would happen if you click this”.
+- Save-safe: no schema changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Open **Kitten Council**, hover a suggestion, and confirm the preview no longer causes any live toggles/log spam; then try **Advisor → Winter Prep** and verify it applies cleanly.
+
+---
+
 ## 2026-02-28 02:40 CST - v0.9.50 Keyboard shortcuts (policy micro-QoL)
 
 Summary

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.50';
+  const GAME_VERSION = '0.9.51';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3536,6 +3536,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.51',
+      notes: [
+        'FIX: Advisor now reads food storage over-cap/spoilage from the current state (was accidentally using the global state object).',
+        'FIX: Winter Prep / Crisis Protocol toggles are now preview-safe for Council/Advisor simulations (no accidental global mutations during preview).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.50',
       notes: [
         'QoL: keyboard shortcuts (when not typing): Space = Pause/Resume, 1–4 = Modes (Survive/Expand/Defend/Advance).',
@@ -4066,7 +4074,7 @@
     const recs = [];
 
     // 0) Storage cap / spoilage pressure (new player-visible midgame problem)
-    const overcap = state._lastFoodOvercap ?? { cap: foodStorageCap(s), food: Number(s.res.food ?? 0), mult: 1 };
+    const overcap = s._lastFoodOvercap ?? { cap: foodStorageCap(s), food: Number(s.res.food ?? 0), mult: 1 };
     const spoilMult = Number(overcap.mult ?? 1);
     const storageBad = Number.isFinite(spoilMult) && spoilMult > 1.05;
     if (storageBad) {
@@ -4148,8 +4156,8 @@
         label: 'Winter Prep',
         tip: 'Toggle the Winter Prep overlay: raises targets/reserves and shifts labor toward food/wood/fire (reversible).',
         apply: (st) => {
-          // Uses the same toggle as the UI button; fully explainable and save-safe.
-          setWinterPrep(true);
+          // Uses the same overlay logic as the UI button, but is pure for preview sims.
+          setWinterPrep(true, st);
         }
       });
     }
@@ -5543,95 +5551,123 @@
     if (!state.unlocked.security) state.signals.ALARM = false;
   }
 
-  function setWinterPrep(on){
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
-    if (on && !state.director.winterPrep) {
+  // --- "On-state" helpers (preview-safe for cloned states)
+  function snapshotDirectorSettingsOn(st){
+    const prev = state;
+    try { state = st; return snapshotDirectorSettings(); }
+    finally { state = prev; }
+  }
+
+  function applyDirectorSettingsOn(st, snap){
+    const prev = state;
+    try { state = st; applyDirectorSettings(snap); }
+    finally { state = prev; }
+  }
+
+  function setPolicyOn(st, mult, note){
+    st.policyMult = {
+      Socialize: mult.Socialize ?? 1,
+      Care: mult.Care ?? 1,
+      Forage: mult.Forage ?? 1,
+      Farm: mult.Farm ?? 1,
+      PreserveFood: mult.PreserveFood ?? 1,
+      ChopWood: mult.ChopWood ?? 1,
+      StokeFire: mult.StokeFire ?? 1,
+      Guard: mult.Guard ?? 1,
+      BuildHut: mult.BuildHut ?? 1,
+      BuildPalisade: mult.BuildPalisade ?? 1,
+      BuildGranary: mult.BuildGranary ?? 1,
+      BuildWorkshop: mult.BuildWorkshop ?? 1,
+      BuildLibrary: mult.BuildLibrary ?? 1,
+      CraftTools: mult.CraftTools ?? 1,
+      Mentor: mult.Mentor ?? 1,
+      Research: mult.Research ?? 1,
+    };
+    if (note) st._lastPolicyNote = String(note);
+  }
+
+  function setWinterPrep(on, st = state){
+    const isGlobal = (st === state);
+
+    st.director = st.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    if (on && !st.director.winterPrep) {
       // Save current director knobs so the player can cleanly revert.
-      state.director.saved = snapshotDirectorSettings();
+      st.director.saved = snapshotDirectorSettingsOn(st);
 
-      const n = state.kittens.length;
-      // Mode stays as-is; Winter Prep is intended as an overlay (so you can prep while in Expand/Advance).
-      // But we do gently bias the targets + reserves so the plan/scoring naturally shifts.
-      state.targets.foodPerKitten = Math.max(state.targets.foodPerKitten ?? 120, 155);
-      state.targets.warmth = Math.max(state.targets.warmth ?? 60, 72);
+      const n = st.kittens.length;
+      st.targets.foodPerKitten = Math.max(st.targets.foodPerKitten ?? 120, 155);
+      st.targets.warmth = Math.max(st.targets.warmth ?? 60, 72);
 
-      // Reserves: don't let builders/crafters drain the winter lifelines.
-      state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 };
-      state.reserve.food = Math.max(state.reserve.food ?? 0, 70 * n);
-      state.reserve.wood = Math.max(state.reserve.wood ?? 0, 28);
-      state.reserve.science = Math.max(state.reserve.science ?? 0, 25);
-      // Keep a small tool buffer so library building doesn't nuke productivity during winter.
-      state.reserve.tools = Math.max(state.reserve.tools ?? 0, state.unlocked.workshop ? (5 * n) : 0);
+      st.reserve = st.reserve ?? { food:0, wood:18, science:25, tools:0 };
+      st.reserve.food = Math.max(st.reserve.food ?? 0, 70 * n);
+      st.reserve.wood = Math.max(st.reserve.wood ?? 0, 28);
+      st.reserve.science = Math.max(st.reserve.science ?? 0, 25);
+      st.reserve.tools = Math.max(st.reserve.tools ?? 0, st.unlocked.workshop ? (5 * n) : 0);
 
-      // Policy: prioritize food + warmth + threat control, pause shiny projects.
-      // (Players can still override with multipliers or safety rules.)
-      setPolicy({ Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON: raise buffers + shift labor to food/wood/fire (and preserve surplus) so you do not spiral in Winter.');
+      setPolicyOn(st, { Forage:1.35, Farm:1.35, PreserveFood:1.30, ChopWood:1.25, StokeFire:1.55, Guard:1.15, BuildHut:0.55, BuildPalisade:1.00, BuildGranary:1.10, BuildWorkshop:0.55, BuildLibrary:0.45, CraftTools:0.65, Research:0.55 }, 'Winter Prep ON');
 
-      // Gentle specialization target: keep at least 1 Firekeeper once pop grows.
-      state.roleQuota = state.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
-      if (n >= 4) state.roleQuota.Firekeeper = Math.max(state.roleQuota.Firekeeper ?? 0, 1);
+      st.roleQuota = st.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
+      if (n >= 4) st.roleQuota.Firekeeper = Math.max(st.roleQuota.Firekeeper ?? 0, 1);
 
-      state.director.winterPrep = true;
-      save();
-      render();
-    } else if (!on && state.director.winterPrep) {
-      // Revert all director knobs back to snapshot.
-      const snap = state.director.saved;
-      applyDirectorSettings(snap);
-      state.director.saved = null;
-      state.director.winterPrep = false;
-      log('Winter Prep OFF: restored previous director settings.');
-      save();
-      render();
+      st.director.winterPrep = true;
+      if (isGlobal) { save(); render(); }
+    } else if (!on && st.director.winterPrep) {
+      const snap = st.director.saved;
+      applyDirectorSettingsOn(st, snap);
+      st.director.saved = null;
+      st.director.winterPrep = false;
+      if (isGlobal) {
+        log('Winter Prep OFF: restored previous director settings.');
+        save();
+        render();
+      }
     }
   }
 
-  function setCrisisProtocol(on){
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
-    if (on && !state.director.crisis) {
-      state.director.crisisSaved = snapshotDirectorSettings();
+  function setCrisisProtocol(on, st = state){
+    const isGlobal = (st === state);
 
-      const n = Math.max(1, state.kittens.length);
-      state.mode = 'Survive';
-      state.rations = 'Tight';
+    st.director = st.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto' };
+    if (on && !st.director.crisis) {
+      st.director.crisisSaved = snapshotDirectorSettingsOn(st);
 
-      // Targets: stabilize before anything else.
-      state.targets.foodPerKitten = Math.max(state.targets.foodPerKitten ?? 120, 140);
-      state.targets.warmth = Math.max(state.targets.warmth ?? 60, 66);
-      state.targets.maxThreat = Math.min(state.targets.maxThreat ?? 70, 60);
+      const n = Math.max(1, st.kittens.length);
+      st.mode = 'Survive';
+      st.rations = 'Tight';
 
-      // Signals: force food focus; raise ALARM if the tech exists.
-      state.signals = state.signals ?? { BUILD:false, FOOD:false, ALARM:false };
-      state.signals.FOOD = true;
-      state.signals.BUILD = false;
-      state.signals.ALARM = state.unlocked.security ? true : false;
+      st.targets.foodPerKitten = Math.max(st.targets.foodPerKitten ?? 120, 140);
+      st.targets.warmth = Math.max(st.targets.warmth ?? 60, 66);
+      st.targets.maxThreat = Math.min(st.targets.maxThreat ?? 70, 60);
 
-      // Reserves: clamp spending so the colony can't "eat" its own lifelines.
-      state.reserve = state.reserve ?? { food:0, wood:18, science:25, tools:0 };
-      state.reserve.food = Math.max(getReserve(state,'food'), Math.round((90 * n) / 10) * 10);
-      state.reserve.wood = Math.max(getReserve(state,'wood'), 26);
-      state.reserve.science = Math.max(getReserve(state,'science'), 25);
-      state.reserve.tools = Math.max(getReserve(state,'tools'), 0);
+      st.signals = st.signals ?? { BUILD:false, FOOD:false, ALARM:false };
+      st.signals.FOOD = true;
+      st.signals.BUILD = false;
+      st.signals.ALARM = st.unlocked.security ? true : false;
 
-      // Policy: heavy stabilization, almost no shiny sinks.
-      setPolicy({ Forage:1.65, Farm:1.55, PreserveFood:0.60, ChopWood:1.15, StokeFire:1.70, Guard:1.45, BuildHut:0.10, BuildPalisade:0.65, BuildGranary:0.10, BuildWorkshop:0.00, BuildLibrary:0.00, CraftTools:0.00, Research:0.10 }, 'Crisis Protocol ON: clamp spending + force stabilization (food/warmth/threat). Toggle OFF once stable.');
+      st.reserve = st.reserve ?? { food:0, wood:18, science:25, tools:0 };
+      st.reserve.food = Math.max(getReserve(st,'food'), Math.round((90 * n) / 10) * 10);
+      st.reserve.wood = Math.max(getReserve(st,'wood'), 26);
+      st.reserve.science = Math.max(getReserve(st,'science'), 25);
+      st.reserve.tools = Math.max(getReserve(st,'tools'), 0);
 
-      // Gentle role steering: keep at least one guard + firekeeper if population supports it.
-      state.roleQuota = state.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
-      if (n >= 4) state.roleQuota.Firekeeper = Math.max(state.roleQuota.Firekeeper ?? 0, 1);
-      if (n >= 5) state.roleQuota.Guard = Math.max(state.roleQuota.Guard ?? 0, 1);
+      setPolicyOn(st, { Forage:1.65, Farm:1.55, PreserveFood:0.60, ChopWood:1.15, StokeFire:1.70, Guard:1.45, BuildHut:0.10, BuildPalisade:0.65, BuildGranary:0.10, BuildWorkshop:0.00, BuildLibrary:0.00, CraftTools:0.00, Research:0.10 }, 'Crisis Protocol ON');
 
-      state.director.crisis = true;
-      save();
-      render();
-    } else if (!on && state.director.crisis) {
-      const snap = state.director.crisisSaved;
-      applyDirectorSettings(snap);
-      state.director.crisisSaved = null;
-      state.director.crisis = false;
-      log('Crisis Protocol OFF: restored previous director settings.');
-      save();
-      render();
+      st.roleQuota = st.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
+      if (n >= 4) st.roleQuota.Firekeeper = Math.max(st.roleQuota.Firekeeper ?? 0, 1);
+      if (n >= 5) st.roleQuota.Guard = Math.max(st.roleQuota.Guard ?? 0, 1);
+
+      st.director.crisis = true;
+      if (isGlobal) { save(); render(); }
+    } else if (!on && st.director.crisis) {
+      const snap = st.director.crisisSaved;
+      applyDirectorSettingsOn(st, snap);
+      st.director.crisisSaved = null;
+      st.director.crisis = false;
+      if (isGlobal) {
+        log('Crisis Protocol OFF: restored previous director settings.');
+        save();
+        render();
+      }
     }
   }
 
