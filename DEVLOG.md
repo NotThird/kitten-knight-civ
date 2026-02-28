@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 02:25 CST - v0.9.49 Need-aware mentoring (quota/plan driven)
+
+Summary
+- NEW: **Mentor** now teaches what the colony needs: it prioritizes skills that fill **role quota shortfalls**, then **current plan deficits**, before falling back to the mentor’s own specialty.
+- This makes “policy management” feel more civ-sim: your quotas/plans shape the colony’s long-run specialization instead of just today’s task picks.
+- Explainability: Mentor’s task tooltip now shows *why* that teaching skill was chosen (quota vs plan vs mentor top skill).
+- Save-safe: adds only a tiny `_mentor.why` note in runtime state; existing saves keep working.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Unlock **Library**, set a role quota (e.g. **Builder=2** or **Scholar=1**), then watch Mentors start teaching **Building/Scholarship** to the weakest candidates; hover the Mentor task for the reason.
+
+---
+
 ## 2026-02-28 02:10 CST - v0.9.48 Policy panel plan preview
 
 Summary

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.48';
+  const GAME_VERSION = '0.9.49';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1132,9 +1132,60 @@
           return;
         }
 
-        // Choose a skill to teach: mentor's top skill (excluding Cooking) if it exists; otherwise Scholarship.
+        // Choose a skill to teach.
+        // Default: mentor's top skill (excluding Cooking) if it exists; otherwise Scholarship.
+        // Upgrade: if the colony is short on a quota/plan role, teach the corresponding role skill instead.
         const top = topSkillInfo(k);
-        const teachSkill = (top.skill && top.skill !== 'Cooking') ? top.skill : 'Scholarship';
+        let teachSkill = (top.skill && top.skill !== 'Cooking') ? top.skill : 'Scholarship';
+        let teachRole = null;
+        let teachWhy = `mentor top skill: ${teachSkill}`;
+
+        // 1) Role quotas: if you're under quota, train toward that role.
+        const roleCounts = Object.create(null);
+        for (const kk of (s.kittens ?? [])) {
+          const r = String(kk?.role ?? 'Generalist');
+          roleCounts[r] = (roleCounts[r] ?? 0) + 1;
+        }
+        const q = s.roleQuota ?? {};
+        let bestQuota = { miss: 0, roleId: null, skill: null, why: '' };
+        for (const r of roleDefs) {
+          if (r.req && !r.req(s)) continue;
+          const want = Math.max(0, Math.min(99, Number(q?.[r.id] ?? 0) | 0));
+          if (want <= 0) continue;
+          const have = roleCounts[r.id] ?? 0;
+          const miss = Math.max(0, want - have);
+          if (miss > bestQuota.miss) {
+            bestQuota = { miss, roleId: r.id, skill: r.skill, why: `quota shortfall ${r.id} ${have}/${want}` };
+          }
+        }
+        if (bestQuota.miss > 0 && bestQuota.skill) {
+          teachSkill = bestQuota.skill;
+          teachRole = bestQuota.roleId;
+          teachWhy = bestQuota.why;
+        } else {
+          // 2) Plan deficit: if the last colony plan wants more of an action, teach the skill for that role.
+          const plan = s._lastPlan ?? null;
+          if (plan && plan.desired && plan.assigned) {
+            let bestNeed = { need: 0, roleId: null, skill: null, why: '' };
+            for (const r of roleDefs) {
+              if (r.req && !r.req(s)) continue;
+              let need = 0;
+              for (const a of r.actions) {
+                const want = Number(plan.desired?.[a] ?? 0);
+                const have = Number(plan.assigned?.[a] ?? 0);
+                if (want > have) need += (want - have);
+              }
+              if (need > bestNeed.need) {
+                bestNeed = { need, roleId: r.id, skill: r.skill, why: `plan deficit: need more ${r.id}` };
+              }
+            }
+            if (bestNeed.need > 0 && bestNeed.skill) {
+              teachSkill = bestNeed.skill;
+              teachRole = bestNeed.roleId;
+              teachWhy = bestNeed.why;
+            }
+          }
+        }
 
         // Pick a target: someone else with the lowest level in that skill (so mentoring actually balances the colony).
         const others = (s.kittens ?? []).filter(x => x && x.id !== k.id);
@@ -1143,10 +1194,13 @@
           return;
         }
         let target = others[0];
-        let bestLvl = Number(target.skills?.[teachSkill] ?? 1);
+        let bestScore = Infinity;
         for (const o of others) {
           const lvl = Number(o.skills?.[teachSkill] ?? 1);
-          if (lvl < bestLvl) { bestLvl = lvl; target = o; }
+          // If we're training to fill a role gap, prefer kittens NOT already in that role.
+          const rolePenalty = (teachRole && String(o.role ?? '') === teachRole) ? 0.35 : 0;
+          const score = lvl + rolePenalty;
+          if (score < bestScore) { bestScore = score; target = o; }
         }
 
         const eff = efficiency(s, k);
@@ -1172,7 +1226,7 @@
         target.mood = clamp01(Number(target.mood ?? 0.55) + dt * 0.003);
 
         // Track for UI explainability.
-        k._mentor = { id: target.id, skill: teachSkill };
+        k._mentor = { id: target.id, skill: teachSkill, why: teachWhy };
 
         k.energy = clamp01(k.energy - dt * 0.032 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.028 * wp);
@@ -3482,6 +3536,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.49',
+      notes: [
+        'NEW: Mentoring is now need-aware: mentors will preferentially teach skills that fill role quota shortfalls or current plan deficits (instead of always teaching their own specialty).',
+        'Explainability: Mentor task tooltip now shows why that teaching skill was chosen (quota vs plan vs mentor specialty).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.48',
       notes: [
         'Explainability: Policy panel now includes a Plan preview (desired worker counts) shown both WITH and WITHOUT your policy multipliers.',
@@ -5043,7 +5105,7 @@
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td title="${escapeHtml(taskTitle)}">${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
