@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.89';
+  const GAME_VERSION = '0.9.90';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -305,6 +305,24 @@
     return [pick];
   }
 
+  // --- Names (civ-sim readability)
+  // Deterministic per kitten id; makes it easier to notice emergent personalities + social dynamics.
+  const NAME_ADJ = ['Brisk','Clever','Drowsy','Sunny','Mossy','Wily','Gentle','Bold','Curious','Proud','Quiet','Stormy','Toasty','Nimble','Patient','Rusty','Velvet','Glitter','Sable','Honey'];
+  const NAME_NOUN = ['Mochi','Paws','Whisker','Pebble','Biscuit','Saffron','Cinder','Thimble','Sprout','Maple','Kite','Clover','Pippin','Nova','Button','Marble','Fable','Echo','Oat','Puff'];
+
+  function genName(id){
+    const rng = seededRng((Number(id ?? 0) * 214013 + 2531011) | 0);
+    const a = NAME_ADJ[Math.floor(rng() * NAME_ADJ.length)] ?? 'Curious';
+    const n = NAME_NOUN[Math.floor(rng() * NAME_NOUN.length)] ?? 'Paws';
+    return `${a} ${n}`;
+  }
+
+  function ensureKittenName(k){
+    if (!k || typeof k !== 'object') return;
+    if (typeof k.name === 'string' && k.name.trim()) return;
+    k.name = genName(k.id);
+  }
+
   // --- Values (emergent "policy fit")
   // Each kitten has a simple 4-axis value vector. When central planning is strong (low effective autonomy),
   // mismatching the colony's current focus slowly drags their mood down.
@@ -450,6 +468,7 @@
     const traits = genTraits(id);
     return {
       id,
+      name: genName(id),
       role: 'Generalist',
       roleWhy: 'boot',
       task: 'Forage',
@@ -4022,6 +4041,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.90',
+      notes: [
+        'Civ-sim flavor: kittens now have deterministic names (save-safe). Names show in the colony table and the Decision Inspector.',
+        'Explainability: buddy + faction behavior is easier to track when you can recognize individuals at a glance.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.89',
       notes: [
         'UI/Explainability: Colony table now shows a dedicated “Fit” column (policy focus-fit %) so you can quickly spot which kittens are misaligned with your current Mode + priority sliders.',
@@ -4619,7 +4646,8 @@
 
     const k = state.kittens[ui.inspectKidx];
     const p = k.personality ?? genPersonality(k.id ?? 0);
-    inspectTitleEl.textContent = `Kitten #${k.id} - ${k.role ?? 'Generalist'} (${k.task ?? '-'})`;
+    const nm = String(k.name ?? '').trim();
+    inspectTitleEl.textContent = `${nm || 'Kitten'} (#${k.id}) - ${k.role ?? 'Generalist'} (${k.task ?? '-'})`;
 
     const likes = (p.likes ?? []).join(', ') || '-';
     const hates = (p.dislikes ?? []).join(', ') || '-';
@@ -6886,7 +6914,7 @@
         : '-';
 
       tr.innerHTML = `
-        <td>${k.id}</td>
+        <td title="Kitten id #${k.id}">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag">#${k.id}</span></td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
         <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
@@ -8167,6 +8195,7 @@
         k.why = k.why ?? '';
         k.role = k.role ?? 'Generalist';
         k.roleWhy = k.roleWhy ?? '';
+        ensureKittenName(k);
         k.personality = k.personality ?? genPersonality(k.id ?? 0);
         k.traits = Array.isArray(k.traits) ? k.traits : genTraits(k.id ?? 0);
         k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 };

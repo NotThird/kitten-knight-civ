@@ -1862,3 +1862,22 @@ What to try
 
 ---
 
+
+---
+
+## 2026-02-28 12:42 CST - v0.9.90 Deterministic kitten names (readability)
+
+Summary
+- Civ-sim readability: kittens now have **deterministic names** based on id (save-safe; no RNG/state needed).
+- UI: colony table “#” column renamed to **Kitten** and now shows **Name + #id**.
+- Explainability: Decision Inspector title now includes the kitten’s name so you can track individuals across seasons, factions, and buddy stress.
+- Save compatibility: older saves are migrated by assigning missing names on load.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Start/continue a run and watch how named individuals drift into blocs/roles (it’s much easier to spot the "Brave guard" vs the "Studious scholar").
