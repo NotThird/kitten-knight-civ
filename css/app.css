@@ -37,6 +37,7 @@
     .rule { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; margin-bottom:8px; }
     .rule .top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .tag { font-size:11px; color:var(--muted); padding:2px 6px; border:1px solid rgba(255,255,255,.12); border-radius:999px; }
+    td.taskCell.blocked { background: rgba(251,191,36,.06); }
 
     .log, .panelmono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; white-space:pre-wrap; overflow:auto; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; }
     .log { max-height:160px; }

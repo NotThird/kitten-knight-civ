@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.84';
+  const GAME_VERSION = '0.9.85';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3949,6 +3949,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.85',
+      notes: [
+        'UI/Explainability: When a kitten’s chosen task is BLOCKED by reserves/inputs and it executes a fallback (e.g. BuildHut → ChopWood), the Task cell is now highlighted and tagged BLOCKED.',
+        'This makes it easier to spot "why builders are stalling" moments and tune Reserves/Policy accordingly.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.84',
       notes: [
         'UI/Explainability: Food Cap and Spoilage stat cards are now clickable and open a Storage Inspector with the full cap breakdown and guidance.',
@@ -6633,6 +6641,14 @@
       const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
       const decHtml = decLabel ? `<span class="tag" title="Decision override (${decLabel})">${decLabel}</span> ` : '';
 
+      // Execution layer explainability: if a sink task was blocked (usually by reserves/inputs) and we executed a fallback,
+      // make it visually obvious in the table so players can distinguish "the plan" vs "what actually happened".
+      const blockedFresh = !!k._fallbackTo;
+      const blockedHtml = blockedFresh
+        ? `<span class="tag" style="border-color: rgba(251,191,36,.35); color: var(--warn)" title="Blocked: could not spend required inputs (often due to reserves). Executed a fallback task this tick.">BLOCKED</span> `
+        : '';
+      const taskClass = blockedFresh ? 'taskCell blocked' : 'taskCell';
+
       const taskTitleParts = [];
       if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
       if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
@@ -6656,7 +6672,7 @@
       tr.innerHTML = `
         <td>${k.id}</td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>

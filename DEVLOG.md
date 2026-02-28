@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 11:27 CST - v0.9.85 Blocked fallback highlight (reserve thrash visibility)
+
+Summary
+- UI/Explainability: when a kitten’s chosen task is **BLOCKED** (usually by reserves/inputs) and it executes a fallback (e.g. **BuildHut → ChopWood**), the **Task** cell is now highlighted + tagged.
+- Makes it much easier to spot “builders/researchers are stalling” moments and adjust **Reserves / Policy / Project Focus**.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Wood reserve high (so building blocks), then watch the **BLOCKED** tag appear as builders fall back; tune the reserve until the tag disappears.
+
+---
+
 ## 2026-02-28 10:57 CST - v0.9.83 Values bloc column (Faction legibility)
 
 Summary
@@ -1749,7 +1767,7 @@ What to try
 Summary
 - UI/Explainability: **Food Cap** and **Spoilage** stat cards are now clickable.
 - NEW: Storage Inspector modal explains the **soft cap ? spoilage** system, shows the **cap breakdown** (base + huts + granaries), and prints your current overcap + season context.
-- Gives clear �what to do� levers (Granary focus / PreserveFood ? Jerky / stop over-foraging) without changing simulation balance.
+- Gives clear �what to do� levers (Granary focus / PreserveFood ? Jerky / stop over-foraging) without changing simulation balance.
 - No save-breaking changes.
 
 Files touched
