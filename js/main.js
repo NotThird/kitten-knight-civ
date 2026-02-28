@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.15';
+  const GAME_VERSION = '0.9.16';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2723,6 +2723,46 @@
     render();
   });
 
+  // --- Patch notes modal (explainability)
+  const patchModalEl = el('patchModal');
+  const patchTitleEl = el('patchTitle');
+  const patchSubEl = el('patchSub');
+  const patchBodyEl = el('patchBody');
+  const btnPatchNotesEl = el('btnPatchNotes');
+  const btnPatchCloseEl = el('btnPatchClose');
+  const uiPatch = { open:false };
+
+  const PATCH_NOTES = [
+    'Patch Notes button + modal (instead of only log spam).',
+    'Auto-opens patch notes once per version (tracked in save meta.seenVersion).',
+    'No save-breaking changes: old saves load cleanly.'
+  ];
+
+  function closePatchNotes(){
+    uiPatch.open = false;
+    if (patchModalEl) patchModalEl.classList.add('hidden');
+  }
+
+  function openPatchNotes(){
+    uiPatch.open = true;
+    if (patchModalEl) patchModalEl.classList.remove('hidden');
+    renderPatchNotes();
+  }
+
+  function renderPatchNotes(){
+    if (!patchModalEl || !patchTitleEl || !patchSubEl || !patchBodyEl) return;
+    if (!uiPatch.open) return;
+    patchTitleEl.textContent = `v${GAME_VERSION} — Patch notes`;
+    patchSubEl.textContent = 'These are the player-facing changes since your last version.';
+    patchBodyEl.textContent = PATCH_NOTES.map(x => `• ${x}`).join('\n');
+  }
+
+  if (btnPatchNotesEl) btnPatchNotesEl.addEventListener('click', openPatchNotes);
+  if (btnPatchCloseEl) btnPatchCloseEl.addEventListener('click', closePatchNotes);
+  if (patchModalEl) patchModalEl.addEventListener('click', (e) => {
+    if (e.target === patchModalEl) closePatchNotes();
+  });
+
   // --- Inspect modal (explainability)
   const inspectModalEl = el('inspectModal');
   const inspectTitleEl = el('inspectTitle');
@@ -2783,7 +2823,10 @@
     if (e.target === inspectModalEl) closeInspect();
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeInspect();
+    if (e.key === 'Escape') {
+      closeInspect();
+      closePatchNotes();
+    }
   });
 
   if (kittensEl) kittensEl.addEventListener('click', (e) => {
@@ -3469,6 +3512,7 @@
 
     // Keep inspector in sync with latest snapshots.
     renderInspect();
+    renderPatchNotes();
   }
 
   function escapeHtml(s){
@@ -4353,14 +4397,12 @@
     const seen = String(state.meta.seenVersion ?? '');
     if (seen === GAME_VERSION) return;
 
-    log(`Patch notes v${GAME_VERSION}:`);
-    log('- Added Dissent + Compliance to the top stat cards (so "why are they loafing/ignoring plan?" is obvious).');
-    log('- Dissent band (calm/murmur/strike) is now always visible without scrolling into the Season panel.');
-    log('- No save changes: existing saves load cleanly.');
-
+    // Mark seen FIRST so a refresh won't loop-pop the modal.
     state.meta.seenVersion = GAME_VERSION;
-    // Save immediately so refresh won’t repeat.
     save();
+
+    // Then show UI.
+    openPatchNotes();
   }
 
   render();

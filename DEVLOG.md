@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 18:08 CST - v0.9.16 Patch notes modal (auto-opens once per version)
+
+Summary
+- Added a **Patch Notes** button in the header.
+- Patch notes now display in a **modal** (re-uses the existing modal styling) instead of only logging into the event log.
+- On version update, patch notes **auto-open once**, tracked via `meta.seenVersion` in the save.
+- Keeps explainability: patch notes are explicit player-facing deltas (no hidden AI changes).
+- No save-breaking changes; existing saves load cleanly.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Refresh the page after this update and confirm the patch notes modal opens once; then refresh again and confirm it **does not** re-open.
+
+---
+
 ## 2026-02-27 17:53 CST - v0.9.15 Policy control: Mentor multiplier + preset support
 
 Summary
