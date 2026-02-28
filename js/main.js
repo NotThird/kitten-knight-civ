@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.19';
+  const GAME_VERSION = '0.9.20';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -1407,18 +1407,29 @@
       const r = s.rules[i];
       if (!r.enabled) continue;
       if (r.act.type in taskDefs && !taskDefs[r.act.type].enabled(s)) continue;
-      if (evalCond(r.cond, s, k)) return { task: r.act.type, why: `rule #${i+1}: ${shortRule(r)}` };
+      if (evalCond(r.cond, s, k)) {
+        // Transient explainability: show that a hard override fired (not the score picker).
+        k._lastDecision = { kind:'rule', at:s.t, task:r.act.type, ruleIndex:i+1, rule: shortRule(r) };
+        return { task: r.act.type, why: `rule #${i+1}: ${shortRule(r)}` };
+      }
     }
 
     // emergency
-    if (k.hunger > 0.92 && s.res.food > 0) return { task:'Eat', why:'emergency: starving' };
-    if (k.energy < 0.08) return { task:'Rest', why:'emergency: exhausted' };
+    if (k.hunger > 0.92 && s.res.food > 0) {
+      k._lastDecision = { kind:'emergency', at:s.t, task:'Eat', note:'starving' };
+      return { task:'Eat', why:'emergency: starving' };
+    }
+    if (k.energy < 0.08) {
+      k._lastDecision = { kind:'emergency', at:s.t, task:'Rest', note:'exhausted' };
+      return { task:'Rest', why:'emergency: exhausted' };
+    }
 
     // Commitment: if a kitten recently switched tasks, keep them on it briefly.
     // This prevents flapping and makes specialization/build-projects feel stable.
     if ((k.taskLock ?? 0) > 0) {
       const cur = k.task ?? 'Rest';
       if (cur in taskDefs && taskDefs[cur].enabled(s)) {
+        k._lastDecision = { kind:'commit', at:s.t, task:cur, lock:Number(k.taskLock ?? 0) };
         return { task: cur, why: `commit ${k.taskLock}s | ${k.why ?? ''}`.trim() };
       }
     }
@@ -1450,6 +1461,11 @@
     // Clear after surfacing once (keeps UI readable).
     k._blockedMsg = '';
     k._blockedAction = null;
+
+    // Mark how this decision was made (rule/emergency/commit/score).
+    // Useful when autonomy sampling makes them *not* pick the strict top score.
+    const best = scored?.[0]?.action ?? top.action;
+    k._lastDecision = { kind:'score', at:s.t, task:top.action, best, autonomyNote:(pick.note || '') };
 
     return { task: top.action, why: `eff=${(eff*100).toFixed(0)}%${momNote}${autoNote} | role=${k.role ?? '-'} | score: ${top.action}=${top.score.toFixed(1)}${planNote}${blockedNote} | ${top.reasons.slice(0,3).join(' ; ')}` };
   }
@@ -2837,11 +2853,10 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Auto Doctrine toggle — the Director can switch doctrine based on dissent + stability.',
-    'Labor doctrine (Balanced / Specialize / Rotate): a policy lever for specialization vs rotation.',
-    'Specialize: stronger role pressure + less boredom rotation (roles stick).',
-    'Rotate: weaker role pressure + more boredom rotation, and slightly reduces dissent buildup.',
-    'No save-breaking changes: old saves load cleanly (Auto Doctrine defaults OFF; doctrine defaults Balanced).'
+    'NEW: Decision Inspector now shows *how* the kitten picked its task (RULE / EMERGENCY / COMMIT / SCORE).',
+    'If autonomy sampling picked something other than the strict best score, the inspector calls it out.',
+    'Rule/emergency/commit picks still show the last computed scoring table as context ("informational").',
+    'No save-breaking changes: decision metadata is transient and stripped on save.'
   ];
 
   function closePatchNotes(){
@@ -2914,6 +2929,34 @@
     }
 
     const lines = [];
+
+    const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
+    if (d && typeof d === 'object') {
+      const kind = String(d.kind ?? '').toUpperCase() || 'UNKNOWN';
+      const task = String(d.task ?? k.task ?? '-');
+      const age = (typeof d.at === 'number') ? (state.t - d.at) : null;
+      const ageNote = (age !== null && Number.isFinite(age)) ? ` (age ${fmt(age)}s)` : '';
+
+      if (d.kind === 'rule') {
+        lines.push(`Decision: RULE → ${task}${ageNote}`);
+        lines.push(`  - rule #${d.ruleIndex ?? '?'}: ${d.rule ?? '-'}`);
+        lines.push('  - scoring below is informational (last computed top scores)');
+      } else if (d.kind === 'emergency') {
+        lines.push(`Decision: EMERGENCY → ${task}${ageNote}`);
+        lines.push(`  - note: ${d.note ?? '-'}`);
+        lines.push('  - scoring below is informational (last computed top scores)');
+      } else if (d.kind === 'commit') {
+        lines.push(`Decision: COMMIT → ${task}${ageNote}`);
+        lines.push(`  - remaining lock: ${Number(d.lock ?? 0).toFixed(0)}s`);
+        lines.push('  - scoring below is informational (last computed top scores)');
+      } else {
+        lines.push(`Decision: SCORE → ${task}${ageNote}`);
+        if (d.best && d.best !== task) lines.push(`  - top score was ${d.best} (autonomy sampled)`);
+        if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`);
+      }
+      lines.push('');
+    }
+
     for (let i=0;i<Math.min(10, rows.length);i++) {
       const r = rows[i];
       lines.push(`${String(i+1).padStart(2,' ')}. ${String(r.action).padEnd(14)} ${Number(r.score).toFixed(1)}`);
@@ -4458,6 +4501,7 @@
         delete k._lastScoredAt;
         delete k._autonomyPickNote;
         delete k._autonomyPickAt;
+        delete k._lastDecision;
       }
     }
 

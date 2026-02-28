@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 19:08 CST - v0.9.20 Decision Inspector: show decision origin (rule vs score)
+
+Summary
+- Decision Inspector now explicitly shows whether the current task came from **RULE**, **EMERGENCY**, **COMMIT**, or normal **SCORE** selection.
+- When **Autonomy** sampling picks something other than the strict best score, the inspector calls that out (makes emergence debuggable).
+- For rule/emergency/commit decisions, we still show the last computed score table as **informational context** (so you can see what they *would* have done).
+- No save break: decision metadata is transient and stripped during save.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Trigger a safety rule (e.g., hunger/tired), then click that kitten row and confirm the inspector reads **Decision: RULE/EMERGENCY** instead of looking like the score picker ‚Äúchanged its mind‚Äù.
+
+---
+
 ## 2026-02-27 18:23 CST - v0.9.17 Director action: Hold Council (dissent/compliance lever)
 
 Summary
@@ -516,7 +535,7 @@ What to try
 Summary
 - Added **Labor doctrine** selector: **Balanced**, **Specialize**, **Rotate**.
 - Doctrine tunes emergent behavior: **Specialize** increases role pressure + reduces boredom rotation; **Rotate** reduces role pressure + increases boredom rotation.
-- Doctrine also slightly affects **Dissent** buildup (Rotate reduces it a bit; Specialize increases it a bit) to reinforce the civ-sim ìsocial textureî.
+- Doctrine also slightly affects **Dissent** buildup (Rotate reduces it a bit; Specialize increases it a bit) to reinforce the civ-sim ÔøΩsocial textureÔøΩ.
 - Updated autonomy hint to show doctrine-aware **role pressure**.
 - Patch notes updated; migration-safe (missing doctrine defaults to Balanced).
 
