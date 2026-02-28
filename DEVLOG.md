@@ -528,3 +528,23 @@ Files touched
 
 What to try
 - Flip doctrine to **Specialize** (Autonomy ~20%) vs **Rotate** (Autonomy ~80%) and watch role stability + Loafing/Dissent trends diverge over a full season.
+
+---
+
+## 2026-02-27 18:53 CST - v0.9.19 Auto Doctrine (Director toggles labor doctrine via dissent)
+
+Summary
+- Added **Auto Doctrine** toggle: the Director can switch **Labor doctrine** (Balanced/Specialize/Rotate) based on **Dissent + compliance**.
+- When dissent is high, it favors **Rotate** (more natural rotation; slightly reduces dissent buildup).
+- When the colony is calm (low dissent, good compliance), it favors **Specialize** (roles stick harder; better momentum/output).
+- Adds a short **cooldown** between doctrine switches to avoid flapping.
+- Season panel now shows Auto Doctrine status + the current reason (explainability).
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Turn **Auto Doctrine ON**, crank **Work pace** up to trigger murmurs, then watch it flip to **Rotate**; stabilize with Council/rations and see it drift back toward **Specialize/Balanced**.

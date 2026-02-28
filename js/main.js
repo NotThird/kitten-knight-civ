@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.18';
+  const GAME_VERSION = '0.9.19';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -245,7 +245,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2266,7 +2266,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -2275,6 +2275,9 @@
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
+    if (!('autoDoctrine' in state.director)) state.director.autoDoctrine = false;
+    if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
+    if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
@@ -2490,6 +2493,28 @@
           if (choice.mode && choice.mode !== state.mode) {
             setModeCore(choice.mode, `Auto Mode: ${choice.why}`);
             state.director.autoModeNextChangeAt = state.t + 15;
+          }
+        }
+      }
+    }
+
+    // Director automation: optional auto-doctrine switching.
+    // Goal: let the colony "self-correct" its specialization/rotation based on cohesion.
+    // Rotate when dissent is high; Specialize when calm (more momentum + output); otherwise Balanced.
+    if (state.director.autoDoctrine && !state.director.crisis) {
+      state._autoDocTimer = (state._autoDocTimer ?? 0) + dt;
+      if (state._autoDocTimer >= 1) {
+        state._autoDocTimer = 0;
+
+        state.director.autoDoctrineNextChangeAt = Number(state.director.autoDoctrineNextChangeAt ?? 0) || 0;
+        if (state.t >= state.director.autoDoctrineNextChangeAt) {
+          const choice = chooseAutoDoctrine(state);
+          state.director.autoDoctrineWhy = choice.why;
+          const cur = doctrineKey(state);
+          if (choice.doctrine && choice.doctrine !== cur) {
+            state.director.doctrine = choice.doctrine;
+            log(`Auto Doctrine: ${choice.doctrine} (${choice.why})`);
+            state.director.autoDoctrineNextChangeAt = state.t + 18;
           }
         }
       }
@@ -2812,10 +2837,11 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Labor doctrine (Balanced / Specialize / Rotate) — a policy lever for specialization vs rotation.',
+    'NEW: Auto Doctrine toggle — the Director can switch doctrine based on dissent + stability.',
+    'Labor doctrine (Balanced / Specialize / Rotate): a policy lever for specialization vs rotation.',
     'Specialize: stronger role pressure + less boredom rotation (roles stick).',
     'Rotate: weaker role pressure + more boredom rotation, and slightly reduces dissent buildup.',
-    'No save-breaking changes: old saves load cleanly (doctrine defaults to Balanced).'
+    'No save-breaking changes: old saves load cleanly (Auto Doctrine defaults OFF; doctrine defaults Balanced).'
   ];
 
   function closePatchNotes(){
@@ -3111,7 +3137,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
@@ -3120,6 +3146,9 @@
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
+    if (!('autoDoctrine' in state.director)) state.director.autoDoctrine = false;
+    if (!('autoDoctrineNextChangeAt' in state.director)) state.director.autoDoctrineNextChangeAt = 0;
+    if (!('autoDoctrineWhy' in state.director)) state.director.autoDoctrineWhy = '';
     if (!('autoRecruit' in state.director)) state.director.autoRecruit = false;
     if (!('recruitYear' in state.director)) state.director.recruitYear = -1;
     if (!('projectFocus' in state.director)) state.director.projectFocus = 'Auto';
@@ -3152,6 +3181,8 @@
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
     const autoMode = el('autoMode');
     if (autoMode) autoMode.checked = !!state.director.autoMode;
+    const autoDoc = el('autoDoctrine');
+    if (autoDoc) autoDoc.checked = !!state.director.autoDoctrine;
     const autoRec = el('autoRecruit');
     if (autoRec) autoRec.checked = !!state.director.autoRecruit;
 
@@ -3377,6 +3408,10 @@
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` — ${amWhy}` : ''}\n` : '';
 
+    const adOn = !!state.director?.autoDoctrine;
+    const adWhy = String(state.director?.autoDoctrineWhy ?? '').trim();
+    const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` — ${adWhy}` : ''}\n` : '';
+
     const arOn = !!state.director?.autoRecruit;
     const arYear = Number(state.director?.recruitYear ?? -1);
     const curYear = yearAt(state.t);
@@ -3404,6 +3439,7 @@
       pfLine +
       autLine +
       amLine +
+      adLine +
       arLine +
       festLine +
       councilLine +
@@ -4084,6 +4120,17 @@
     render();
   });
 
+  const autoDoctrineEl = document.getElementById('autoDoctrine');
+  if (autoDoctrineEl) autoDoctrineEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00, doctrine:'Balanced' };
+    state.director.autoDoctrine = !!e.target.checked;
+    // Allow an immediate switch when toggled on.
+    if (state.director.autoDoctrine) state.director.autoDoctrineNextChangeAt = 0;
+    log(`Auto Doctrine → ${state.director.autoDoctrine ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
   const autoRecruitEl = document.getElementById('autoRecruit');
   if (autoRecruitEl) autoRecruitEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
@@ -4160,6 +4207,26 @@
 
     // Default: Survive (keeps buffers healthy without overcommitting).
     return { mode: 'Survive', why: 'not clearly stable yet' };
+  }
+
+  function chooseAutoDoctrine(s){
+    const dis = dissent01(s);
+    const band = String(s.social?.band ?? (dis >= 0.70 ? 'strike' : dis >= 0.45 ? 'murmur' : 'calm'));
+    const comp = compliance01(s);
+    const effAut = effectiveAutonomy01(s);
+
+    // High dissent: prioritize rotation (reduces boredom/rigidity and slightly reduces dissent buildup).
+    if (band === 'strike' || dis >= 0.60) {
+      return { doctrine: 'Rotate', why: `dissent ${Math.round(dis*100)}% (${band})` };
+    }
+
+    // Calm + reasonably compliant: let specialists stick and build momentum.
+    if (band === 'calm' && dis <= 0.22 && comp >= 0.92 && effAut <= 0.55) {
+      return { doctrine: 'Specialize', why: `calm (dissent ${Math.round(dis*100)}%, comp x${comp.toFixed(2)})` };
+    }
+
+    // Default: balanced (don’t oversteer).
+    return { doctrine: 'Balanced', why: `steady (dissent ${Math.round(dis*100)}%, comp x${comp.toFixed(2)})` };
   }
 
   function setModeCore(m, note){
