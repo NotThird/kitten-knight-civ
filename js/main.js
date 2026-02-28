@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.24';
+  const GAME_VERSION = '0.9.25';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2509,13 +2509,22 @@
 
       // Desired dissent is intentionally coarse: it responds to "this feels bad" signals.
       // avgMood below ~0.55 drives it up; higher work pace + tight rations drive it up.
+      // Track a breakdown for explainability (shown in Social Inspector).
+      // NOTE: these are *pressures* that get smoothed into the actual dissent meter.
+      const moodPressure = Math.max(0, 0.55 - avgMood) * 1.6;      // mood is the biggest driver
+      const workPressure = Math.max(0, (wp - 1)) * 0.9;            // overwork
+      const rationPressure = (rat.foodUse < 0.95 ? 0.08 : rat.foodUse > 1.05 ? -0.06 : 0);
+      const hungerPressure = Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
+      const alarmPressure = alarmStress * 0.06;
+
       let desire = 0;
-      desire += Math.max(0, 0.55 - avgMood) * 1.6;      // mood is the biggest driver
-      desire += Math.max(0, (wp - 1)) * 0.9;            // overwork
-      // Rations proxy: Tight (<1.0) increases dissent; Feast (>1.0) reduces it a bit.
-      desire += (rat.foodUse < 0.95 ? 0.08 : rat.foodUse > 1.05 ? -0.06 : 0);
-      desire += Math.max(0, hungerStress - 0.55) * 0.25; // persistent hunger
-      desire += alarmStress * 0.06;
+      desire += moodPressure;
+      desire += workPressure;
+      desire += rationPressure;
+      desire += hungerPressure;
+      desire += alarmPressure;
+
+      const rawDesire = desire;
 
       // Discipline reduces how quickly dissent forms (but never to zero).
       const disPol = discipline01(state);
@@ -2526,10 +2535,25 @@
       if (doc === 'Specialize') desire += 0.03;
       if (doc === 'Rotate') desire -= 0.05;
 
+      const desireAfterPolicy = desire;
+
       const target = clamp01(desire);
       const cur = clamp01(Number(state.social.dissent ?? 0));
       const next = cur + (target - cur) * 0.045; // smoothing (≈ 20-25s to swing hard)
       state.social.dissent = clamp01(next);
+
+      // Snapshot for Social Inspector (transient, not saved).
+      state._dissentDrivers = {
+        at: state.t,
+        avgMood, hungerStress,
+        workPace: wp,
+        rationsLabel: String(rat.label ?? state.rations ?? 'Normal'),
+        alarmStress,
+        moodPressure, workPressure, rationPressure, hungerPressure, alarmPressure,
+        rawDesire,
+        desireAfterPolicy,
+        cur, next,
+      };
 
       // Council effect: during a council, dissent decays faster (cohesion boost).
       if (councilActive(state)) state.social.dissent = clamp01(state.social.dissent * 0.93);
@@ -3012,6 +3036,14 @@
   const profilesEl = el('profiles');
   const profilesHintEl = el('profilesHint');
 
+  // Clickable stat cards (explainability)
+  if (statsEl) statsEl.addEventListener('click', (e) => {
+    const card = e.target?.closest?.('[data-stat]');
+    if (!card) return;
+    const key = String(card.dataset.stat || '');
+    if (key === 'dissent') openSocial();
+  });
+
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
   if (advisorEl) advisorEl.addEventListener('click', (e) => {
@@ -3084,9 +3116,9 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'FIX: Care policy multiplier now migrates correctly for older saves (no more NaN/undefined behavior in the policy panel).',
-    'FIX: Council timer field (councilUntil) now migrates for older saves (prevents effect timers from resetting strangely).',
-    'No save-breaking changes: missing fields are filled with safe defaults on load.'
+    'NEW: Social Inspector modal — click the Dissent stat to see what is driving dissent (mood, work pace, rations, hunger, alarm) and what knobs fix it.',
+    'Explainability: the inspector shows the current compliance multiplier and the exact dissent "desire" inputs the sim is smoothing toward.',
+    'No save-breaking changes: new fields are transient (not saved) or default safely.'
   ];
 
   function closePatchNotes(){
@@ -3120,7 +3152,15 @@
   const inspectSubEl = el('inspectSub');
   const inspectBodyEl = el('inspectBody');
   const btnInspectClose = el('btnInspectClose');
-  const ui = { inspectOpen:false, inspectKidx: -1 };
+
+  // --- Social inspector modal (explainability)
+  const socialModalEl = el('socialModal');
+  const socialTitleEl = el('socialTitle');
+  const socialSubEl = el('socialSub');
+  const socialBodyEl = el('socialBody');
+  const btnSocialClose = el('btnSocialClose');
+
+  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false };
 
   function closeInspect(){
     ui.inspectOpen = false;
@@ -3197,14 +3237,85 @@
     inspectBodyEl.textContent = lines.join('\n');
   }
 
+  function closeSocial(){
+    ui.socialOpen = false;
+    if (socialModalEl) socialModalEl.classList.add('hidden');
+  }
+
+  function openSocial(){
+    ui.socialOpen = true;
+    if (socialModalEl) socialModalEl.classList.remove('hidden');
+    renderSocial();
+  }
+
+  function renderSocial(){
+    if (!socialModalEl || !socialTitleEl || !socialSubEl || !socialBodyEl) return;
+    if (!ui.socialOpen) { socialModalEl.classList.add('hidden'); return; }
+
+    const dis = dissent01(state);
+    const band = String(state.social?.band ?? (dis >= 0.70 ? 'strike' : dis >= 0.45 ? 'murmur' : 'calm'));
+    const comp = compliance01(state);
+    const drivers = state._dissentDrivers ?? null;
+
+    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) — Compliance x${comp.toFixed(2)}`;
+
+    const season = seasonAt(state.t);
+    const rat = getRations(state);
+    const doc = doctrineKey(state);
+    const wp = workPaceMul(state);
+    const dpol = discipline01(state);
+
+    socialSubEl.textContent = `Season: ${season.name} | Rations: ${String(state.rations ?? 'Normal')} | Work pace: ${(wp*100).toFixed(0)}% | Discipline: ${(dpol*100).toFixed(0)}% | Doctrine: ${doc}`;
+
+    const lines = [];
+    lines.push('How dissent works (1s cadence):');
+    lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, alarm).');
+    lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
+    lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
+    lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
+    lines.push('');
+
+    if (drivers && typeof drivers === 'object') {
+      lines.push('Current inputs (last computed):');
+      lines.push(`• avg mood: ${(drivers.avgMood*100).toFixed(0)}%  (mood pressure: +${drivers.moodPressure.toFixed(3)})`);
+      lines.push(`• work pace: ${(drivers.workPace*100).toFixed(0)}%  (overwork pressure: +${drivers.workPressure.toFixed(3)})`);
+      lines.push(`• rations: ${drivers.rationsLabel}  (ration pressure: ${drivers.rationPressure>=0?'+':''}${drivers.rationPressure.toFixed(3)})`);
+      lines.push(`• avg hunger: ${(drivers.hungerStress*100).toFixed(0)}%  (hunger pressure: +${drivers.hungerPressure.toFixed(3)})`);
+      lines.push(`• alarm: ${drivers.alarmStress ? 'ON' : 'OFF'}  (alarm pressure: +${drivers.alarmPressure.toFixed(3)})`);
+      lines.push('');
+      lines.push(`Raw desire (pre-discipline/doctrine): ${drivers.rawDesire.toFixed(3)}`);
+      lines.push(`After discipline/doctrine: ${drivers.desireAfterPolicy.toFixed(3)} (target)`);
+      lines.push(`Current dissent: ${drivers.cur.toFixed(3)} → next ${drivers.next.toFixed(3)}`);
+      lines.push('');
+    } else {
+      lines.push('No driver snapshot yet (tick once).');
+      lines.push('');
+    }
+
+    lines.push('What to do (policy knobs):');
+    lines.push('• If mood is low: Feast rations, hold Festival, lower Work pace, or let Socialize/Care run.');
+    lines.push('• If overwork is high: lower Work pace or switch doctrine to Rotate temporarily.');
+    lines.push('• If hunger stress is high: stabilize food/kitten first (dissent will follow).');
+    lines.push('• If you need obedience NOW: raise Discipline (but expect small morale drift down).');
+
+    socialBodyEl.textContent = lines.join('\n');
+  }
+
   if (btnInspectClose) btnInspectClose.addEventListener('click', closeInspect);
   if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
     if (e.target === inspectModalEl) closeInspect();
   });
+
+  if (btnSocialClose) btnSocialClose.addEventListener('click', closeSocial);
+  if (socialModalEl) socialModalEl.addEventListener('click', (e) => {
+    if (e.target === socialModalEl) closeSocial();
+  });
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeInspect();
       closePatchNotes();
+      closeSocial();
     }
   });
 
@@ -3580,6 +3691,11 @@
     for (const [k,v] of stats) {
       const d = document.createElement('div');
       d.className = 'stat';
+      if (k === 'Dissent') {
+        d.dataset.stat = 'dissent';
+        d.title = 'Click to inspect what is driving dissent/compliance';
+        d.style.cursor = 'pointer';
+      }
       d.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
       statsEl.appendChild(d);
     }
@@ -3940,9 +4056,10 @@
     logEl.textContent = state.log.slice(-40).join('\n');
     logEl.scrollTop = logEl.scrollHeight;
 
-    // Keep inspector in sync with latest snapshots.
+    // Keep inspectors in sync with latest snapshots.
     renderInspect();
     renderPatchNotes();
+    renderSocial();
   }
 
   function escapeHtml(s){

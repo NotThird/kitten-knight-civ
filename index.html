@@ -273,6 +273,22 @@
   </div>
 </div>
 
+<!-- Social inspector modal (explainability: why dissent/compliance behaves the way it does) -->
+<div class="modal hidden" id="socialModal" role="dialog" aria-modal="true" aria-labelledby="socialTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Social inspector</div>
+        <h3 id="socialTitle" style="margin:2px 0 0 0;">Dissent + Compliance</h3>
+      </div>
+      <button class="btn" id="btnSocialClose">Close</button>
+    </div>
+    <div class="small" id="socialSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="socialBody"></div>
+  </div>
+</div>
+
 
 <script type="module" src="./js/main.js"></script>
 <script src="./js/pwa.js"></script>

@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 20:24 CST - v0.9.25 Social Inspector (dissent driver breakdown)
+
+Summary
+- NEW: **Social Inspector** modal — click the **Dissent** stat to see what’s driving dissent (mood, work pace, rations, hunger, alarm).
+- Explainability: inspector shows the exact per-tick **dissent desire** inputs and how they smooth into the current dissent value.
+- UX: adds actionable guidance on which Director knobs to turn (Festival/Council/Discipline/Work pace/rations/food stability).
+- Save-safe: driver snapshot is transient (`state._dissentDrivers`) and not persisted.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Intentionally spike dissent (Tight rations + Work pace 120%), then click **Dissent** and confirm the breakdown matches what you changed.
+
+---
+
 ## 2026-02-27 20:09 CST - v0.9.24 Save migration fixes (Care + Council) + Winter Prep string fix
 
 Summary
