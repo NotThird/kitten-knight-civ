@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.44';
+  const GAME_VERSION = '0.9.45';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -305,6 +305,82 @@
     return [pick];
   }
 
+  // --- Values (emergent "policy fit")
+  // Each kitten has a simple 4-axis value vector. When central planning is strong (low effective autonomy),
+  // mismatching the colony's current focus slowly drags their mood down.
+  // Goal: make "policy management" feel like negotiating with a population, not puppeteering.
+  const VALUE_AXES = ['Food','Safety','Progress','Social'];
+
+  function genValues(id, traits){
+    const rng = seededRng((id * 1664525 + 1013904223) | 0);
+    // Start near-balanced with small deterministic noise.
+    const v = {
+      Food: 0.25 + (rng()-0.5)*0.08,
+      Safety: 0.25 + (rng()-0.5)*0.08,
+      Progress: 0.25 + (rng()-0.5)*0.08,
+      Social: 0.25 + (rng()-0.5)*0.08,
+    };
+
+    const t = Array.isArray(traits) ? traits : [];
+    if (t.includes('Forager'))   { v.Food += 0.18; v.Safety += 0.05; v.Progress -= 0.10; v.Social -= 0.05; }
+    if (t.includes('Brave'))     { v.Safety += 0.22; v.Progress -= 0.05; }
+    if (t.includes('Studious'))  { v.Progress += 0.26; v.Social -= 0.05; }
+    if (t.includes('Builder'))   { v.Progress += 0.20; v.Food += 0.06; v.Social -= 0.04; }
+    if (t.includes('Caretaker')) { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.06; }
+
+    // Normalize + clamp.
+    for (const k of VALUE_AXES) v[k] = Math.max(0.03, Number(v[k] ?? 0));
+    const sum = VALUE_AXES.reduce((a,k)=>a+v[k],0) || 1;
+    for (const k of VALUE_AXES) v[k] /= sum;
+    return v;
+  }
+
+  function ensureValues(k){
+    if (!k || typeof k !== 'object') return;
+    if (k.values && typeof k.values === 'object') return;
+    k.values = genValues(Number(k.id ?? 0), k.traits);
+  }
+
+  function colonyFocusVec(s){
+    // Player-facing knobs: Director priorities + Mode.
+    const base = {
+      Food: prioMul(s,'prioFood'),
+      Safety: prioMul(s,'prioSafety'),
+      Progress: prioMul(s,'prioProgress'),
+      Social: 1.00,
+    };
+
+    const m = String(s.mode ?? 'Survive');
+    if (m === 'Survive') { base.Food += 0.25; base.Safety += 0.25; base.Progress -= 0.10; }
+    if (m === 'Expand')  { base.Progress += 0.22; base.Food += 0.10; base.Safety -= 0.06; }
+    if (m === 'Defend')  { base.Safety += 0.35; base.Food += 0.05; base.Progress -= 0.14; }
+    if (m === 'Advance') { base.Progress += 0.35; base.Social += 0.05; base.Food -= 0.10; base.Safety -= 0.10; }
+
+    // Clamp + normalize.
+    for (const k of VALUE_AXES) base[k] = Math.max(0.05, Number(base[k] ?? 0));
+    const sum = VALUE_AXES.reduce((a,k)=>a+base[k],0) || 1;
+    for (const k of VALUE_AXES) base[k] /= sum;
+    return base;
+  }
+
+  function valuesAlignment01(s, k){
+    ensureValues(k);
+    const kv = k?.values;
+    if (!kv) return 0.75;
+    const cv = colonyFocusVec(s);
+    let dot = 0;
+    for (const ax of VALUE_AXES) dot += Number(kv[ax] ?? 0) * Number(cv[ax] ?? 0);
+    return clamp01(dot * 1.25); // rescale so "neutral" feels like ~0.7–0.8
+  }
+
+  function valuesShort(k){
+    ensureValues(k);
+    const v = k?.values;
+    if (!v) return '-';
+    const pct = (x)=>Math.round(100*x);
+    return `F${pct(v.Food)} S${pct(v.Safety)} P${pct(v.Progress)} So${pct(v.Social)}`;
+  }
+
   function traitInfoList(k){
     const arr = Array.isArray(k?.traits) ? k.traits : [];
     const out = [];
@@ -316,6 +392,7 @@
   }
 
   function makeKitten(id){
+    const traits = genTraits(id);
     return {
       id,
       role: 'Generalist',
@@ -333,7 +410,9 @@
       // Personality: soft preferences that bias scoring (adds emergent specialization)
       personality: genPersonality(id),
       // Traits: steady "identity" bias (civ-sim flavor)
-      traits: genTraits(id),
+      traits,
+      // Values: what this kitten *wants* the colony to be doing (policy fit affects mood under central planning)
+      values: genValues(id, traits),
 
       // Social bond: each kitten has a "buddy" they vibe with.
       // When both buddies Socialize at the same time, dissent drops faster and both feel better.
@@ -1546,6 +1625,18 @@
     // It's intentionally subtle so it's a strategic lever, not a "never use" trap.
     const d = discipline01(s);
     m -= d * 0.0018; // at 100% → -0.0018 / sec
+
+    // Values mismatch (emergent civ-sim pressure):
+    // When effective autonomy is low (strong central planning), forcing kittens away from their values
+    // slowly reduces mood. High discipline amplifies that "resentment" a bit.
+    const align = valuesAlignment01(s, k);
+    const planPressure = (1 - effectiveAutonomy01(s));
+    const mismatch = (1 - align);
+    let stress = mismatch * planPressure;
+    stress *= (1 + 0.60 * d);
+    if (festivalActive(s)) stress *= 0.70;
+    if (councilActive(s)) stress *= 0.85;
+    m -= stress * 0.0035; // max-ish ~ -0.0035/sec in extreme mismatch/low autonomy
 
     k.mood = clamp01(m);
   }
@@ -3388,6 +3479,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.45',
+      notes: [
+        'NEW: Kitten Values (Food/Safety/Progress/Social). When central planning is strong (low effective autonomy), value mismatch slowly reduces mood.',
+        'Explainability: kitten table + inspector now show value vector and focus-fit % so you can see who is vibing with your current Mode + Priorities.',
+        'No save-breaking changes (values are generated deterministically for older saves).'
+      ]
+    },
+    {
       v: '0.9.44',
       notes: [
         'Kitten Council: added an "Undo last" button for a short window after accepting a council suggestion (restores previous policy multipliers).',
@@ -3618,7 +3717,8 @@
     const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
     const buddy = buddyOf(state, k);
     const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
-    inspectSubEl.textContent = `traits: ${traits} | likes: ${likes} | hates: ${hates}${buddyNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    const align = valuesAlignment01(state, k);
+    inspectSubEl.textContent = `traits: ${traits} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -4797,17 +4897,21 @@
       const traitLines = traitInfoList(k);
       const buddyLine = buddyShort ? `\nBuddy: #${buddy.id}` : '';
       const traitsTitle = traitLines.length
-        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}`
-        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}`;
+        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}\nValues: ${valuesShort(k)}`
+        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}\nValues: ${valuesShort(k)}`;
 
       // Pref: show whether the current task aligns with the kitten's likes/dislikes.
+      // Always show value-alignment vs current colony focus (explains mood/dissent drift under planning).
       // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.
+      const align = valuesAlignment01(state, k);
+      const vals = valuesShort(k);
       const prefParts = [];
       if (likes.includes(k.task)) prefParts.push('Like');
       if (dislikes.includes(k.task)) prefParts.push('Dislike');
+      prefParts.push(`Align ${Math.round(align*100)}%`);
       const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2);
       if (autoFresh) prefParts.push('Autonomy');
-      const pref = prefParts.length ? prefParts.join(' / ') : '-';
+      const pref = prefParts.join(' / ');
 
       const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
       const kind = String(d?.kind ?? 'score');
@@ -4832,7 +4936,7 @@
         <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
         <td>${topSkills}</td>
         <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
-        <td title="Preference alignment for current task (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
+        <td title="Preference + policy fit. Values: ${escapeHtml(vals)} | focus-fit ${Math.round(align*100)}% | (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
         <td class="why">${escapeHtml(k.why ?? '')}</td>
       `;
       kittensEl.appendChild(tr);

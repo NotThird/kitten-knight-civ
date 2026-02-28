@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 01:25 CST - v0.9.45 Kitten Values: policy-fit affects mood (emergent civ pressure)
+
+Summary
+- Added **Kitten Values** (Food/Safety/Progress/Social) as a deterministic per-kitten preference vector.
+- When **effective autonomy is low** (strong central planning), **value mismatch** slowly drags mood down (discipline amplifies this slightly; Festival/Council soften it).
+- Explainability: the kitten table now shows **focus-fit %** and the Inspector shows the full **values vector** so you can see who is aligned with your current Mode + Priorities.
+- Save-safe: older saves generate values deterministically from kitten id + traits.
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Set Mode = **Advance**, drop Autonomy, and watch which kittens show low focus-fit % (and start getting grumpier) vs which ones thrive.
+
+---
+
 ## 2026-02-28 00:55 CST - v0.9.43 Council: preview exact multiplier diffs (safer clicks)
 
 Summary
