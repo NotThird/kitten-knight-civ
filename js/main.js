@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.31';
+  const GAME_VERSION = '0.9.32';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3106,8 +3106,27 @@
     render();
   });
 
-  // Projects panel: quick "focus this" buttons
+  // Projects panel: quick actions
+  // - Focus: sets Project focus (build order nudge)
+  // - Unblock: lowers reserve(s) that are currently stalling an in-progress project (safe small steps)
   if (projectsEl) projectsEl.addEventListener('click', (e) => {
+    const ub = e.target?.closest?.('button[data-unblock]');
+    if (ub) {
+      const raw = String(ub.dataset.unblock || '');
+      const keys = raw.split(',').map(x => x.trim()).filter(Boolean);
+      if (keys.length) {
+        const step = { food:10, wood:2, science:5, tools:5 };
+        for (const k of keys) lowerReserve(state, k, step[k] ?? 5);
+        const focus = String(ub.dataset.focus || 'Auto');
+        state.director = state.director ?? { projectFocus:'Auto' };
+        state.director.projectFocus = focus;
+        log(`Unblocked project: lowered ${keys.join('+')} reserve; focus → ${focus}`);
+        save();
+        render();
+      }
+      return;
+    }
+
     const btn = e.target?.closest?.('button[data-focus]');
     if (!btn) return;
     const focus = String(btn.dataset.focus || 'Auto');
@@ -3177,6 +3196,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.32',
+      notes: [
+        'Projects panel: new Unblock button appears when an in-progress project is stalled by reserve-protected inputs (wood/science/tools).',
+        'Clicking Unblock lowers only the blocking reserve(s) by a small, safe step and sets Project focus to that track.',
+        'This mirrors the Advisor\'s unblock behavior but puts it right where you\'re watching build progress.'
+      ]
+    },
     {
       v: '0.9.31',
       notes: [
@@ -3990,7 +4017,10 @@
         <div style="margin-bottom:10px">
           <div class="row" style="justify-content:space-between; gap:10px">
             <div class="small" style="flex:1 1 auto">${pd.name}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
-            <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
+            <div class="row" style="gap:6px">
+              ${blockedBy.length ? `<button class=\"btn\" data-unblock=\"${blockedBy.join(',')}\" data-focus=\"${pd.focus}\" title=\"Lowers only the reserve(s) currently blocking this project (safe small steps), then sets focus\">Unblock</button>` : ''}
+              <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
+            </div>
           </div>
           <div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>
         </div>

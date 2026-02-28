@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 22:09 CST - v0.9.32 Projects panel: Unblock stalled builds
+
+Summary
+- Projects panel now shows an **Unblock** button when a project has progress but is stalled because **reserves are protecting required inputs** (wood/science/tools).
+- Clicking **Unblock** lowers only the blocking reserve(s) by a small, safe step and sets **Project focus** to that track.
+- Makes the “why won’t they finish this build?” loop fixable directly from the build progress UI (no hunting for the Advisor).
+
+Files touched
+- `prototype/index.html`
+- `dist/` (rebuilt)
+- `DEVLOG.md`
+
+What to try
+- Start a Workshop/Library build, raise Science/Tools reserve until it stalls, then click **Unblock** in Projects and confirm builders resume progress.
+
+---
+
 ## 2026-02-27 21:54 CST - v0.9.31 Advisor: detect reserve-blocked builds + quick fix
 
 Summary
