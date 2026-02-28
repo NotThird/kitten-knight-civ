@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.25';
+  const GAME_VERSION = '0.9.26';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3116,9 +3116,9 @@
   const uiPatch = { open:false };
 
   const PATCH_NOTES = [
-    'NEW: Social Inspector modal — click the Dissent stat to see what is driving dissent (mood, work pace, rations, hunger, alarm) and what knobs fix it.',
-    'Explainability: the inspector shows the current compliance multiplier and the exact dissent "desire" inputs the sim is smoothing toward.',
-    'No save-breaking changes: new fields are transient (not saved) or default safely.'
+    'QoL: the +Kitten button now shows pop/cap and disables itself when you are housing-capped or can\'t afford the food cost.',
+    'Explainability: hover the button to see the exact reason (need food vs build huts).',
+    'No save-breaking changes.'
   ];
 
   function closePatchNotes(){
@@ -3658,7 +3658,24 @@
     }
 
     const foodPerKitten = state.res.food / Math.max(1, state.kittens.length);
-    el('kittenCost').textContent = String(kittenCost());
+    const addCost = kittenCost();
+    el('kittenCost').textContent = String(addCost);
+    const popCapEl = el('kittenPopCap');
+    if (popCapEl) popCapEl.textContent = `${state.kittens.length}/${housingCap(state)}`;
+
+    // QoL: disable the +Kitten button when you can't afford it or you're at the housing cap.
+    const addBtn = el('btnAddKitten');
+    if (addBtn) {
+      const cap = housingCap(state);
+      const noFood = Number(state.res.food ?? 0) < addCost;
+      const noHousing = (state.kittens.length >= cap);
+      addBtn.disabled = noFood || noHousing;
+      addBtn.title = noHousing
+        ? `Housing full (${state.kittens.length}/${cap}). Build huts to raise cap.`
+        : noFood
+          ? `Need ${addCost} food to recruit a kitten.`
+          : 'Recruit a kitten (costs food; requires free housing).';
+    }
 
     // Social visibility (explainability): dissent directly weakens central planning.
     // Putting it in the top stats makes the "why are they loafing/ignoring plan?" moment instantly legible.

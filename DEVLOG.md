@@ -664,3 +664,20 @@ Files touched
 
 What to try
 - Turn **Auto Doctrine ON**, crank **Work pace** up to trigger murmurs, then watch it flip to **Rotate**; stabilize with Council/rations and see it drift back toward **Specialize/Balanced**.
+
+## 2026-02-27 20:39 CST - v0.9.26 Recruit button QoL (pop/cap + disabled states)
+
+Summary
+- QoL: **+Kitten** button now shows **pop/cap** inline so the housing constraint is always visible.
+- UX: **+Kitten** auto-disables when you’re **housing-capped** or **can’t afford** the current food cost.
+- Explainability: hover the button to see the exact block reason ("need food" vs "build huts").
+- Patch notes updated to reflect the change.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Get to pop cap, then hover +Kitten to confirm the tooltip explains the block; build a hut and watch it re-enable.
