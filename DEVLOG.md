@@ -2090,3 +2090,19 @@ What to try
 
 ---
 
+
+## 2026-02-28 15:57 CST - v0.9.102 Auto-danger pause indicator
+
+Summary
+- UI: Pause button now turns red when the Director **auto-pauses on danger**, and shows the danger reason in its tooltip.
+- QoL: Manual pause/resume clears the auto-danger reason so the UI doesn’t stay “alarm red” forever.
+- Explainability: Makes slow spirals (starvation/freezing/raid risk) more visible at a glance, without changing sim balance.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- Enable **Auto Pause (danger)**, let threat or food/warmth drift into risk, then confirm the Pause button highlights with the reason.

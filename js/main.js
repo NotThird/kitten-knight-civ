@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.101';
+  const GAME_VERSION = '0.9.102';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -5211,6 +5211,14 @@
 
   function togglePause(){
     state.paused = !state.paused;
+
+    // If we manually toggle pause/resume, clear any auto-pause reason so the UI doesn't stay "alarm red" forever.
+    // (Auto-pauses are meant to be an attention signal, not a permanent flag.)
+    if (state.director && 'autoDangerPauseWhy' in state.director) {
+      // Clear when resuming or when the player manually pauses.
+      state.director.autoDangerPauseWhy = '';
+    }
+
     const btn = el('btnPause');
     if (btn) btn.textContent = state.paused ? 'Resume' : 'Pause';
     save();
@@ -6418,6 +6426,16 @@
     if (verEl) verEl.textContent = `v${GAME_VERSION}`;
     el('clock').textContent = `t=${fmt(state.t)}s | pop=${state.kittens.length}/${housingCap(state)} | mode=${state.mode}`;
 
+    // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
+    const pauseBtn = el('btnPause');
+    if (pauseBtn) {
+      pauseBtn.textContent = state.paused ? 'Resume' : 'Pause';
+      const why = String(state.director?.autoDangerPauseWhy ?? '').trim();
+      const danger = state.paused && !!why;
+      pauseBtn.classList.toggle('danger', danger);
+      pauseBtn.title = danger ? `Auto-paused (danger): ${why}` : 'Shortcut: Space';
+    }
+
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
     const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
@@ -7585,9 +7603,7 @@
 
   // --- Buttons / Inputs
   document.getElementById('btnPause').addEventListener('click', () => {
-    state.paused = !state.paused;
-    document.getElementById('btnPause').textContent = state.paused ? 'Resume' : 'Pause';
-    save();
+    togglePause();
   });
 
   document.getElementById('btnReset').addEventListener('click', () => {
