@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 00:24 CST - v0.9.41 Director Priorities: quick presets
+
+Summary
+- Added **Priority presets** next to the Food/Safety/Progress sliders: Balanced / Food / Safety / Progress.
+- Presets set all 3 values at once (e.g. Food preset bumps Food to 125% and slightly lowers Progress) for faster, more legible steering.
+- Logs a single "Priority preset" line so you can correlate policy changes with behavior in the Decision Inspector.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In a stable Summer, hit **Progress** preset and watch how many kittens swap into Research/CraftTools in the Plan Debug within ~5 seconds.
+
+---
+
 ## 2026-02-28 00:09 CST - v0.9.40 Council: show exact policy nudges (explainability)
 
 Summary

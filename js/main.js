@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.40';
+  const GAME_VERSION = '0.9.41';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3363,6 +3363,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.41',
+      notes: [
+        'NEW: Priority presets (Balanced / Food / Safety / Progress) next to the Priority sliders.',
+        'This makes it easier to quickly steer individual kitten behavior without touching detailed policy multipliers.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.39',
       notes: [
         'NEW: Kitten Council — occasional bottom-up policy suggestions from individual kittens (based on likes/traits + colony status).',
@@ -5500,6 +5508,28 @@
     save();
     render();
   });
+
+  function setPriorities(pFood, pSafety, pProg, why){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(pFood) || 1.00));
+    state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(pSafety) || 1.00));
+    state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(pProg) || 1.00));
+    log(`Priority preset → ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}%`);
+    save();
+    render();
+  }
+
+  const prBal = document.getElementById('btnPrioBalanced');
+  if (prBal) prBal.addEventListener('click', ()=> setPriorities(1.00, 1.00, 1.00, 'Balanced'));
+
+  const prFoodBtn = document.getElementById('btnPrioFood');
+  if (prFoodBtn) prFoodBtn.addEventListener('click', ()=> setPriorities(1.25, 1.00, 0.90, 'Food'));
+
+  const prSafeBtn = document.getElementById('btnPrioSafety');
+  if (prSafeBtn) prSafeBtn.addEventListener('click', ()=> setPriorities(1.00, 1.25, 0.90, 'Safety'));
+
+  const prProgBtn = document.getElementById('btnPrioProgress');
+  if (prProgBtn) prProgBtn.addEventListener('click', ()=> setPriorities(0.95, 0.90, 1.25, 'Progress'));
 
   const docEl = document.getElementById('doctrine');
   if (docEl) docEl.addEventListener('change', (e)=>{
