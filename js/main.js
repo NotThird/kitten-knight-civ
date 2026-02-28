@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.95';
+  const GAME_VERSION = '0.9.96';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4109,6 +4109,13 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.96',
+      notes: [
+        'UI/Explainability: Buddy column now shows buddy name + id + need% (instead of only id), making relationship pressure easier to read at a glance.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.95',
       notes: [
         'Advisor: now surfaces active Faction Demands (with a one-click Accept/Ignore suggestion) so politics doesn\'t get missed while you\'re fighting fires.',
@@ -6993,13 +7000,14 @@
       const bloc = dominantValueAxis(k);
       const blocTitle = `Values bloc (dominant axis): ${bloc}. Used by Factions + demands.`;
       const blocHtml = `<span class="tag">${escapeHtml(bloc)}</span>`;
-      const buddyCell = buddy ? `#${buddy.id} (${buddyNeedPct}%)` : '-';
+      const buddyNameShort = buddy ? (String(buddy.name ?? '').trim().split(/\s+/).slice(-1)[0] || `#${buddy.id}`) : '';
+      const buddyCell = buddy ? `${buddyNameShort} #${buddy.id} (${buddyNeedPct}%)` : '-';
       const buddyAge = buddy && Number(k.lastBuddyAt ?? 0) > 0 ? Math.max(0, state.t - Number(k.lastBuddyAt ?? 0)) : null;
       const buddyTitle = buddy
-        ? `Buddy: #${buddy.id} | need ${buddyNeedPct}%${buddyAge !== null ? ` | last together ~${fmt(buddyAge)}s ago` : ''}`
+        ? `Buddy: ${String(buddy.name ?? ('Kitten ' + buddy.id))} (#${buddy.id}) | need ${buddyNeedPct}%${buddyAge !== null ? ` | last together ~${fmt(buddyAge)}s ago` : ''}`
         : 'No buddy';
 
-      const buddyLine = buddy ? `\nBuddy: #${buddy.id} (need ${buddyNeedPct}%)` : '';
+      const buddyLine = buddy ? `\nBuddy: ${String(buddy.name ?? ('Kitten ' + buddy.id))} (#${buddy.id}) (need ${buddyNeedPct}%)` : '';
 
       // Explainability: show recent value drift (learning) in the tooltip.
       const driftFresh = (k._valuesDriftNote && (state.t - Number(k._valuesDriftAt ?? 0)) < 30);

@@ -1974,3 +1974,19 @@ Files touched
 
 What to try
 - Let Dissent rise until a Demand appears on a season change; see the Advisor button and resolve it without opening the Factions panel.
+## 2026-02-28 14:12 CST - v0.9.96 Buddy names in colony table
+
+Summary
+- UI/Explainability: Buddy column now shows **buddy name + id + need%** (instead of just id), making relationship pressure readable at a glance.
+- Tooltips now include the buddy’s full name as well.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let buddy-need climb (avoid Socialize), then watch the Buddy column color + need% spike to flag brewing social stress.
+
+---
