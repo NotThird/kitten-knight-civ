@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.74';
+  const GAME_VERSION = '0.9.75';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3798,6 +3798,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.75',
+      notes: [
+        'UI/Explainability: starvation forecast now uses *edible* stores (food + jerky) instead of only fresh food.',
+        'Director stats: Food stat subline now shows fresh rate vs edible rate, plus time-to-zero for edible stores (more accurate when preserving food).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.74',
       notes: [
         'FIX/QoL: Save files now strip more transient runtime/debug fields (decision history, dissent driver snapshots, per-second timers).',
@@ -5503,14 +5511,17 @@
     const nextUnlockEta = nextUnlock ? fmtEtaSeconds(etaToTarget(state.res.science, nextUnlock.at, scienceRate)) : '-';
 
     // Danger forecasts (explainability): if a trend is negative, show time-to-zero.
-    const starveEta = (foodRate < -0.02) ? fmtEtaSeconds((state.res.food) / (-foodRate)) : '-';
+    // IMPORTANT: starvation risk depends on *edible* stores (food + jerky), not just fresh food.
+    const edibleRate = foodRate + jerkyRate;
+    const starveEtaFresh = (foodRate < -0.02) ? fmtEtaSeconds((state.res.food) / (-foodRate)) : '-';
+    const starveEtaEdible = (edibleRate < -0.02) ? fmtEtaSeconds((edibleFood(state)) / (-edibleRate)) : '-';
     const freezeEta = (warmthRate < -0.02) ? fmtEtaSeconds((state.res.warmth) / (-warmthRate)) : '-';
 
     const statSub = (key) => {
       if (key === 'Food') {
         const spoilNote = (spoilMult > 1.05) ? ` | spoil x${spoilMult.toFixed(2)}` : '';
         const capNote = ` | cap ${fmt(foodCapNow)}`;
-        return `${fmtRate(foodRate)} | 0 in ${starveEta}${spoilNote}${capNote}`;
+        return `fresh ${fmtRate(foodRate)} | edible ${fmtRate(edibleRate)} | 0 in ${starveEtaEdible}${spoilNote}${capNote}`;
       }
       if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
       if (key === 'Wood') return `${fmtRate(woodRate)}`;
@@ -5736,7 +5747,7 @@
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       forecastLine +
-      `Danger forecast: food→0 in ${starveEta} | warmth→0 in ${freezeEta}\n` +
+      `Danger forecast: edible→0 in ${starveEtaEdible} | warmth→0 in ${freezeEta}\n` +
       `Preserved: jerky ${fmt(state.res.jerky ?? 0)} (no spoilage)\n` +
       (() => {
         const oc = state._lastFoodOvercap ?? { cap: foodStorageCap(state), food: state.res.food, mult: 1 };

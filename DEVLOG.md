@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 08:56 CST - v0.9.75 Starvation forecast uses edible stores (food + jerky)
+
+Summary
+- UI/Explainability: **Food** stat now shows both **fresh** and **edible** (food+jerky) rates, and the time-to-zero forecast uses **edible stores**.
+- FIX: the ‚ÄúDanger forecast‚Äù line in inspectors now reports **edible‚Üí0 ETA** (avoids false panic when you‚Äôre living off jerky).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Build some jerky (PreserveFood), then intentionally run fresh food down: watch **edible** rate + **edible‚Üí0 ETA** stay truthful while fresh goes negative.
+
+---
+
 ## 2026-02-28 07:11 CST - v0.9.68 Curfew: safety ‚Üî morale governance lever
 
 Summary
@@ -1507,7 +1524,7 @@ What to try
 Summary
 - Director levers now affect **task commitment length**: higher **Discipline** increases coordination (less 1s flapping), higher **Autonomy** reduces it (more emergent switching).
 - Commitment duration remains short (clamped), and Safety Rules/emergencies still override immediately.
-- Explainability: COMMIT decisions now show the live **coord multiplier**, and the Discipline hint shows `commitment xÖ`.
+- Explainability: COMMIT decisions now show the live **coord multiplier**, and the Discipline hint shows `commitment xÔøΩ`.
 - Patch notes updated.
 
 Files touched
@@ -1543,8 +1560,8 @@ What to try
 ## 2026-02-28 08:26 CST - v0.9.73 Factions: negotiation preview + cooldown + delta logging
 
 Summary
-- Factions: **Negotiate** now has a short **cooldown (~45s)** so itís a deliberate politics lever (not a spam click).
-- UI: each faction row now shows a **preview** of the policy concession youíll make before clicking.
+- Factions: **Negotiate** now has a short **cooldown (~45s)** so itÔøΩs a deliberate politics lever (not a spam click).
+- UI: each faction row now shows a **preview** of the policy concession youÔøΩll make before clicking.
 - Explainability: negotiation log now includes the **exact deltas** applied (priority sliders / policy multipliers) plus the dissent reduction.
 - Save-safe: adds optional `director.factionsNextAt` / `director.factionsLast` fields.
 
@@ -1574,4 +1591,4 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesnít creep as fast.
+- Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesnÔøΩt creep as fast.
