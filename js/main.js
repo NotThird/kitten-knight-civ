@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.30';
+  const GAME_VERSION = '0.9.31';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3178,6 +3178,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.31',
+      notes: [
+        'Advisor: detects when an in-progress build (hut/palisade/granary/workshop/library) is stalled by reserves (wood/science/tools).',
+        'New quick action: Loosen reserve (drops only the blocking reserve(s) by a small step and focuses that project).',
+        'Explainability: reduces the "why won\'t they build?" confusion without removing the reserve system.'
+      ]
+    },
+    {
       v: '0.9.30',
       notes: [
         'New: kitten Traits (Brave/Studious/Builder/Caretaker/Forager). Traits add a steady bias to scoring (separate from Autonomy likes/dislikes).',
@@ -3460,6 +3468,13 @@
     s.reserve[key] = Math.max(getReserve(s, key), Math.max(0, Number(min) || 0));
   }
 
+  function lowerReserve(s, key, by){
+    s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };
+    const cur = getReserve(s, key);
+    const dec = Math.max(0, Number(by) || 0);
+    s.reserve[key] = Math.max(0, cur - dec);
+  }
+
   function buildAdvisor(s, targets){
     ensureRateState(s);
     const r = s._rate ?? {};
@@ -3494,6 +3509,52 @@
           nudgePolicyMult(st,'BuildGranary', 0.5);
           nudgePolicyMult(st,'PreserveFood', 0.5);
           raiseReserve(st,'wood', 22);
+        }
+      });
+    }
+
+    // 0.5) Build progress blocked by reserves
+    // Common early confusion: "why won't they finish the workshop/library?" → reserves are protecting inputs.
+    const avail = {
+      food: availableAboveReserve(s,'food'),
+      wood: availableAboveReserve(s,'wood'),
+      science: availableAboveReserve(s,'science'),
+      tools: availableAboveReserve(s,'tools'),
+    };
+    const projDefs = [
+      { key:'_hutProgress',  req:12, name:'Hut',      focus:'Housing',  show: () => !!s.unlocked?.construction, inputs:['wood'] },
+      { key:'_palProgress',  req:16, name:'Palisade', focus:'Defense',  show: () => !!s.unlocked?.construction, inputs:['wood'] },
+      { key:'_granProgress', req:22, name:'Granary',  focus:'Storage',  show: () => !!s.unlocked?.construction && !!s.unlocked?.granary, inputs:['wood'] },
+      { key:'_workProgress', req:26, name:'Workshop', focus:'Industry', show: () => !!s.unlocked?.construction && !!s.unlocked?.workshop, inputs:['wood','science'] },
+      { key:'_libProgress',  req:30, name:'Library',  focus:'Knowledge',show: () => !!s.unlocked?.construction && !!s.unlocked?.library, inputs:['wood','science','tools'] },
+    ];
+
+    let blockedProj = null;
+    for (const pd of projDefs) {
+      if (!pd.show()) continue;
+      const prog = Number(s[pd.key] ?? 0);
+      if (!Number.isFinite(prog) || prog <= 0.05) continue;
+      const blockedBy = (pd.inputs || []).filter(k => Number(avail[k] ?? 0) <= 0.01);
+      if (blockedBy.length) {
+        blockedProj = { ...pd, prog, blockedBy };
+        break;
+      }
+    }
+
+    if (blockedProj) {
+      lines.push(`• ${blockedProj.name} progress stalled: ${blockedProj.prog.toFixed(1)}/${blockedProj.req} (blocked by ${blockedProj.blockedBy.join('+')} reserve)`);
+      lines.push(`  - Nudge: lower that reserve slightly or produce more ${blockedProj.blockedBy.join('+')}`);
+
+      recs.push({
+        id: 'unblock',
+        label: 'Loosen reserve',
+        tip: `Lower reserves blocking ${blockedProj.name} so builders stop bouncing off protected inputs (safe: small steps).`,
+        apply: (st) => {
+          const step = { food:10, wood:2, science:5, tools:5 };
+          for (const k of (blockedProj.blockedBy ?? [])) lowerReserve(st, k, step[k] ?? 5);
+          st.director = st.director ?? { projectFocus:'Auto' };
+          // Optional: focus the blocked project so the colony actually resumes it.
+          st.director.projectFocus = blockedProj.focus;
         }
       });
     }

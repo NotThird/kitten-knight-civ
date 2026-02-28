@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-27 21:54 CST - v0.9.31 Advisor: detect reserve-blocked builds + quick fix
+
+Summary
+- Advisor now detects when an in-progress build project is stalled because **reserves are protecting required inputs** (wood/science/tools).
+- New Advisor quick action: **Loosen reserve** (drops only the blocking reserve(s) by a small step and sets Project focus to that build track).
+- Improves explainability around the reserve system without removing the strategic tradeoff.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Start a Workshop/Library build, set Science/Tools reserve high enough to block it, then click **Loosen reserve** in Advisor and confirm the project resumes.
+
+---
+
 ## 2026-02-27 21:39 CST - v0.9.30 Kitten traits (steady scoring bias)
 
 Summary
