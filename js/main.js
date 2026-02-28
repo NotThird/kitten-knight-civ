@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.108';
+  const GAME_VERSION = '0.9.109';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -797,6 +797,48 @@
       const inst = (cur - prev) / Math.max(0.001, dt);
       s._rate[key] = ema(s._rate[key], inst, alpha);
       s._prevRes[key] = cur;
+    }
+  }
+
+  // --- Explainability: smoothed build-progress deltas (project ETAs)
+  // Tracks *effective* progress/sec for each build track so the Projects panel can show an ETA.
+  // Save-safe: stored in transient keys (not persisted).
+  function ensureProjRateState(s){
+    if (!s._projRate) s._projRate = Object.create(null);
+    if (!s._prevProj) s._prevProj = { _hutProgress: Number(s._hutProgress ?? 0) || 0, _palProgress: Number(s._palProgress ?? 0) || 0, _granProgress: Number(s._granProgress ?? 0) || 0, _workProgress: Number(s._workProgress ?? 0) || 0, _libProgress: Number(s._libProgress ?? 0) || 0 };
+  }
+
+  function unwrapProjectDelta(delta, req){
+    // Project progress wraps down when a building completes (progress -= req).
+    // We treat that as continuous work for rate purposes.
+    let d = Number(delta ?? 0);
+    const r = Number(req ?? 0);
+    if (!Number.isFinite(d) || !Number.isFinite(r) || r <= 0) return 0;
+    if (d < 0) d = d + r; // wrapped completion
+    if (d < 0) d = 0;
+    return d;
+  }
+
+  function updateProjectRates(s, dt){
+    ensureProjRateState(s);
+    const tau = 10; // seconds (steadier than resources; avoids noisy ETAs)
+    const alpha = clamp01(dt / tau);
+
+    const defs = [
+      { key:'_hutProgress', req:12 },
+      { key:'_palProgress', req:16 },
+      { key:'_granProgress', req:22 },
+      { key:'_workProgress', req:26 },
+      { key:'_libProgress', req:30 },
+    ];
+
+    for (const d of defs) {
+      const prev = Number(s._prevProj?.[d.key] ?? 0);
+      const cur = Number(s[d.key] ?? 0);
+      const delta = unwrapProjectDelta(cur - prev, d.req);
+      const inst = delta / Math.max(0.001, dt);
+      s._projRate[d.key] = ema(s._projRate[d.key], inst, alpha);
+      s._prevProj[d.key] = cur;
     }
   }
 
@@ -3982,6 +4024,7 @@
 
     // Explainability: maintain smoothed deltas (not saved)
     updateRates(state, dt);
+    updateProjectRates(state, dt);
 
     // Autosave
     state._saveTimer = (state._saveTimer ?? 0) + dt;
@@ -4387,6 +4430,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.109',
+      notes: [
+        'QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).',
+        'Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as “blocked” (pairs with the Unblock button).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.108',
       notes: [
@@ -7040,6 +7091,12 @@
       const blockedBy = blockKeys(projInputs(pd.name));
       const blocked = blockedBy.length ? ` (blocked by ${blockedBy.join('+')} reserve)` : '';
 
+      // ETA (explainability): based on smoothed progress/sec. Only meaningful once progress has started.
+      const rate = Number(state._projRate?.[pd.key] ?? 0);
+      const rem = Math.max(0, req - prog);
+      const eta = (prog > 0.0001 && rate > 0.001) ? fmtEtaSeconds(rem / rate) : (prog > 0.0001 ? (blockedBy.length ? 'blocked' : '-') : '-');
+      const etaText = (prog > 0.0001) ? ` | ETA ${eta}` : '';
+
       const isPinned = (pinnedType === pd.name);
       const pinTag = isPinned ? ' <span class="tag good">PINNED</span>' : '';
       const pinBtn = isPinned
@@ -7049,7 +7106,7 @@
       projHtml.push(`
         <div style="margin-bottom:10px">
           <div class="row" style="justify-content:space-between; gap:10px">
-            <div class="small" style="flex:1 1 auto">${pd.name}${pinTag}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}</div>
+            <div class="small" style="flex:1 1 auto">${pd.name}${pinTag}: owned ${owned} - ${prog.toFixed(1)}/${req} (${Math.round(pct*100)}%)${blocked}${etaText}</div>
             <div class="row" style="gap:6px">
               ${pinBtn}
               ${blockedBy.length ? `<button class=\"btn\" data-unblock=\"${blockedBy.join(',')}\" data-focus=\"${pd.focus}\" title=\"Lowers only the reserve(s) currently blocking this project (safe small steps), then sets focus\">Unblock</button>` : ''}

@@ -2224,3 +2224,23 @@ Files touched
 What to try
 - Drag Work pace from 80%â†’120% back and forth: you should only see 1â€“2 log lines total (not dozens).
 
+
+---
+
+## 2026-02-28 17:43 CST - v0.9.109 Project ETAs (smoothed build progress)
+
+Summary
+- QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).
+- Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as “blocked” (pairs with the Unblock button).
+- Under the hood: added a transient per-project EMA rate tracker (no save data changes).
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+
+What to try
+- Start building a Hut/Palisade (get some progress), then watch the ETA update as you change Work pace / Policy / Reserves.
