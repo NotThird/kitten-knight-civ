@@ -1881,3 +1881,24 @@ Files touched
 
 What to try
 - Start/continue a run and watch how named individuals drift into blocs/roles (it’s much easier to spot the "Brave guard" vs the "Studious scholar").
+
+---
+
+## 2026-02-28 12:57 CST - v0.9.91 Policy Undo (multipliers + role quotas)
+
+Summary
+- QoL: added a **Policy Undo** button (2 minute window) in the Policy panel.
+- Undo snapshot captures your last manual change to **Policy multipliers** (including presets/reset and +/- tweaks).
+- Undo snapshot also captures **Role Quotas** changes (including quota reset).
+- Explainability: Undo shows time-left + the reason label (e.g., “tweak Forage”, “Policy preset ? Survive”).
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Hit any Policy preset, then immediately click **Undo** to revert.

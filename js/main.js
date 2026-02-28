@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.90';
+  const GAME_VERSION = '0.9.91';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3864,6 +3864,41 @@
     const sign = ch.d >= 0 ? '+' : '';
     return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
   }
+
+  // Policy undo (player QoL): restore last manual policy/role-quota change.
+  // Stored in save (director.policyUndo) but expires quickly so it doesn't become a time-travel mechanic.
+  function recordPolicyUndo(s, reason){
+    s.director = s.director ?? {};
+    // Keep this migration-safe: missing keys are fine.
+    const snap = {
+      at: Number(s.t ?? 0) || 0,
+      reason: String(reason || 'manual change'),
+      policyMult: { ...(s.policyMult ?? {}) },
+      roleQuota: { ...(s.roleQuota ?? {}) },
+    };
+    s.director.policyUndo = snap;
+  }
+
+  function policyUndoInfo(s){
+    const u = s?.director?.policyUndo;
+    if (!u) return { ok:false, left:0, reason:'' };
+    const at = Number(u.at ?? 0);
+    if (!Number.isFinite(at)) return { ok:false, left:0, reason:'' };
+    const ttl = 120;
+    const left = Math.max(0, ttl - (Number(s?.t ?? 0) - at));
+    return { ok: left > 0 && !!u.policyMult, left, reason: String(u.reason || '') };
+  }
+
+  function applyPolicyUndo(s){
+    const info = policyUndoInfo(s);
+    if (!info.ok) return { ok:false, msg:'Policy undo expired (or nothing to undo).' };
+    const u = s.director.policyUndo;
+    if (u?.policyMult) s.policyMult = { ...(u.policyMult ?? {}) };
+    if (u?.roleQuota) s.roleQuota = { ...(u.roleQuota ?? {}) };
+    s.director.policyUndo = null;
+    return { ok:true, msg:`Policy undo: restored previous policy snapshot${info.reason ? ` (${info.reason})` : ''}.` };
+  }
+
   if (councilPanelEl) councilPanelEl.addEventListener('click', (e) => {
     // Undo last accepted Council suggestion (short window, policy multipliers only).
     const undoBtn = e.target?.closest?.('button[data-council-undo]');
@@ -4040,6 +4075,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.91',
+      notes: [
+        'QoL: new Policy Undo button (2 minute window) restores your last manual Policy multiplier and Role quota change.',
+        'Undo snapshot is recorded for: +/- tweaks, presets, policy reset, and role quota reset.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.90',
       notes: [
@@ -7055,13 +7098,27 @@
         </div>`;
     };
 
-    const head = (desiredNow || desiredBase) ? `
+    const undo = policyUndoInfo(state);
+    const undoRow = `
+      <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:10px; align-items:center">
+        <div class="small" style="opacity:.9">
+          <b>Undo</b>
+          <span style="opacity:.85">(policy + role quotas)</span>
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn" data-policy-undo="1" ${undo.ok?'':'disabled'} title="Restores the last manual policy/role-quota change for ~2 minutes.">Undo</button>
+          <span class="small" style="opacity:.8">${undo.ok ? `~${Math.ceil(undo.left)}s left${undo.reason?` • ${escapeHtml(undo.reason)}`:''}` : '—'}</span>
+        </div>
+      </div>
+    `;
+
+    const head = undoRow + ((desiredNow || desiredBase) ? `
       <div class="small" style="margin-bottom:8px; opacity:.9">
         <b>Plan preview</b>
         <div class="why" style="margin-top:6px">${escapeHtml(desiredNow ? ('with policy: ' + desiredNow) : 'with policy: -')}${desiredBase ? ('\nwithout policy: ' + desiredBase) : ''}</div>
         <div class="small" style="opacity:.8; margin-top:6px">Tip: policy multipliers bias the colony plan; individual kittens may still diverge due to Autonomy, traits, and needs.</div>
       </div>
-    ` : '';
+    ` : '');
 
     policyEl.innerHTML = head + rows.map(([label,a]) => line(label,a)).join('');
   }
@@ -7118,6 +7175,7 @@
     // One-off bind for the reset button inside this panel.
     const rb = roleQuotasEl.querySelector('#btnRoleQuotaReset');
     if (rb) rb.onclick = () => {
+      recordPolicyUndo(state, 'role quotas reset');
       state.roleQuota = { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
       log('Role quotas reset (all 0).');
       save();
@@ -7928,9 +7986,23 @@
   policyEl.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
+
+    // Undo button (rendered inside the Policy panel)
+    if (btn.dataset.policyUndo) {
+      const res = applyPolicyUndo(state);
+      if (res?.msg) log(res.msg);
+      save();
+      render();
+      return;
+    }
+
     const a = btn.dataset.a;
     const pol = btn.dataset.pol;
     if (!a || !pol) return;
+
+    // Record undo snapshot BEFORE changing.
+    recordPolicyUndo(state, `tweak ${a}`);
+
     state.policyMult = state.policyMult ?? {};
     const cur = Number(state.policyMult[a] ?? 1);
     const step = 0.25;
@@ -7947,6 +8019,9 @@
     const rq = btn.dataset.rq;
     if (!role || !rq) return;
 
+    // Record undo snapshot BEFORE changing.
+    recordPolicyUndo(state, `role quota ${role}`);
+
     state.roleQuota = state.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
     const cur = Number(state.roleQuota[role] ?? 0);
     const next = (rq === 'inc') ? (cur + 1) : (cur - 1);
@@ -7957,6 +8032,9 @@
   });
 
   function setPolicy(mult, note){
+    // Record undo snapshot BEFORE applying any preset/reset.
+    recordPolicyUndo(state, note || 'policy preset');
+
     // Migration-safe: always keep all keys so older saves don't explode.
     state.policyMult = {
       Socialize: mult.Socialize ?? 1,
