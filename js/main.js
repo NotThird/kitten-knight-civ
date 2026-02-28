@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.43';
+  const GAME_VERSION = '0.9.44';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3246,6 +3246,25 @@
     return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
   }
   if (councilPanelEl) councilPanelEl.addEventListener('click', (e) => {
+    // Undo last accepted Council suggestion (short window, policy multipliers only).
+    const undoBtn = e.target?.closest?.('button[data-council-undo]');
+    if (undoBtn) {
+      const undo = state.director?.council?.undo ?? null;
+      const fresh = undo && Number.isFinite(Number(undo.at ?? 0)) && (state.t - Number(undo.at ?? 0)) <= 120;
+      if (fresh && undo?.policyMult) {
+        state.policyMult = { ...(undo.policyMult ?? {}) };
+        state.director = state.director ?? {};
+        state.director.council = state.director.council ?? {};
+        state.director.council.undo = null;
+        log('Council undo: restored previous policy multipliers.');
+        save();
+        render();
+      } else {
+        log('Council undo expired (or nothing to undo).');
+      }
+      return;
+    }
+
     const btn = e.target?.closest?.('button[data-council]');
     if (!btn) return;
     const id = String(btn.dataset.council || '');
@@ -3253,6 +3272,12 @@
     if (!rec || typeof rec.apply !== 'function') return;
 
     const before = { ...(state.policyMult ?? {}) };
+
+    // Store an undo snapshot (policy multipliers only) before applying.
+    state.director = state.director ?? {};
+    state.director.council = state.director.council ?? {};
+    state.director.council.undo = { at: state.t, policyMult: before };
+
     rec.apply(state);
     const after = { ...(state.policyMult ?? {}) };
     const diff = policyDiff(before, after);
@@ -3362,6 +3387,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.44',
+      notes: [
+        'Kitten Council: added an "Undo last" button for a short window after accepting a council suggestion (restores previous policy multipliers).',
+        'Explainability: council panel now shows what can be undone and for how long.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.43',
       notes: [
@@ -4180,9 +4213,21 @@
     const lastMsg = String(s.director?.council?.lastAppliedMsg ?? '');
     const showLast = lastMsg && (s.t - lastAt) <= 120;
 
+    const undo = s.director?.council?.undo ?? null;
+    const undoAt = Number(undo?.at ?? -9999);
+    const showUndo = undo && Number.isFinite(undoAt) && (s.t - undoAt) <= 120;
+    const undoLeft = showUndo ? Math.max(0, Math.ceil(120 - (s.t - undoAt))) : 0;
+    const undoHtml = showUndo
+      ? `<div class=\"row\" style=\"margin-top:6px; gap:8px; align-items:center; flex-wrap:wrap\">` +
+          `<button class=\"btn bad\" data-council-undo=\"1\" title=\"Undo the last accepted council suggestion (policy multipliers only).\">Undo last</button>` +
+          `<span class=\"small\" style=\"opacity:.8\">(${undoLeft}s window)</span>` +
+        `</div>`
+      : '';
+
     councilPanelEl.innerHTML = `${items}` +
       `<div class=\"why\">${escapeHtml(String(c.text ?? ''))}</div>` +
-      (showLast ? `<div class=\"small\" style=\"margin-top:6px; opacity:.85\">Last accepted: ${escapeHtml(lastMsg)}</div>` : '');
+      (showLast ? `<div class=\"small\" style=\"margin-top:6px; opacity:.85\">Last accepted: ${escapeHtml(lastMsg)}</div>` : '') +
+      undoHtml;
   }
 
   function render(){

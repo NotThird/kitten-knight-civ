@@ -982,3 +982,20 @@ Files touched
 
 What to try
 - In late Fall, click **Advisor ? Winter Prep** and watch targets/reserves/policy shift; then toggle it OFF in Spring to return to your previous stack.
+
+
+## 2026-02-28 01:10 CST - v0.9.44 Council: undo last suggestion (safety net)
+
+Summary
+- Kitten Council: after accepting a suggestion, you now get an **Undo last** button (120s window) that restores the previous policy multipliers.
+- Explainability: the council panel shows the remaining undo window timer so you can safely experiment.
+- Undo only affects policyMult (does not rewind resources/time), keeping it simple + save-safe.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Accept a council suggestion, then immediately click **Undo last** and confirm the multipliers snap back.
+
