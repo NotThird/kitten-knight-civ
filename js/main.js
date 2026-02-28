@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.68';
+  const GAME_VERSION = '0.9.69';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -2872,13 +2872,14 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoBuildPush' in state.director)) state.director.autoBuildPush = false;
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
@@ -3174,6 +3175,27 @@
         const changed = (Math.abs(prev.food - recFood) >= 10) || (Math.abs(prev.wood - recWood) >= 2) || (Math.abs(prev.science - recSci) >= 5) || (Math.abs(prev.tools - recTools) >= 5);
         if (changed) {
           log(`Auto Reserves: food≥${recFood}, wood≥${recWood}, science≥${recSci}, tools≥${recTools}`);
+        }
+      }
+    }
+
+    // Director automation: optional auto BUILD PUSH.
+    // Goal: when housing-capped, keep huts moving without constant manual toggling.
+    if (state.director.autoBuildPush) {
+      state._autoBuildTimer = (state._autoBuildTimer ?? 0) + dt;
+      if (state._autoBuildTimer >= 1) {
+        state._autoBuildTimer = 0;
+
+        const cap = housingCap(state);
+        const pop = state.kittens?.length ?? 0;
+        const should = pop >= cap;
+        if (should && !state.signals.BUILD) {
+          state.signals.BUILD = true;
+          log(`Auto Build Push: ON (housing capped ${pop}/${cap})`);
+        }
+        if (!should && state.signals.BUILD) {
+          state.signals.BUILD = false;
+          log('Auto Build Push: OFF (housing available).');
         }
       }
     }
@@ -3687,6 +3709,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.69',
+      notes: [
+        'NEW: Auto Build Push (Director checkbox). When enabled, BUILD PUSH toggles ON automatically while you are housing-capped, and OFF once housing is available again.',
+        'This reduces micro: you can keep your huts moving without babysitting the BUILD signal.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.68',
       notes: [
@@ -4963,6 +4993,7 @@
     if (!('autoWinterPrep' in state.director)) state.director.autoWinterPrep = false;
     if (!('autoFoodCrisis' in state.director)) state.director.autoFoodCrisis = false;
     if (!('autoReserves' in state.director)) state.director.autoReserves = false;
+    if (!('autoBuildPush' in state.director)) state.director.autoBuildPush = false;
     if (!('autoMode' in state.director)) state.director.autoMode = false;
     if (!('autoModeNextChangeAt' in state.director)) state.director.autoModeNextChangeAt = 0;
     if (!('autoModeWhy' in state.director)) state.director.autoModeWhy = '';
@@ -5020,6 +5051,8 @@
     if (autoFood) autoFood.checked = !!state.director.autoFoodCrisis;
     const autoRes = el('autoReserves');
     if (autoRes) autoRes.checked = !!state.director.autoReserves;
+    const autoBuild = el('autoBuildPush');
+    if (autoBuild) autoBuild.checked = !!state.director.autoBuildPush;
     const autoMode = el('autoMode');
     if (autoMode) autoMode.checked = !!state.director.autoMode;
     const autoDoc = el('autoDoctrine');
@@ -5351,6 +5384,9 @@
     const amWhy = String(state.director?.autoModeWhy ?? '').trim();
     const amLine = amOn ? `Auto mode: ON${amWhy ? ` - ${amWhy}` : ''}\n` : '';
 
+    const abOn = !!state.director?.autoBuildPush;
+    const abLine = abOn ? `Auto build push: ON (manages BUILD PUSH when housing-capped)\n` : '';
+
     const adOn = !!state.director?.autoDoctrine;
     const adWhy = String(state.director?.autoDoctrineWhy ?? '').trim();
     const adLine = adOn ? `Auto doctrine: ON (${doctrineKey(state)})${adWhy ? ` - ${adWhy}` : ''}\n` : '';
@@ -5390,6 +5426,7 @@
       pfLine +
       autLine +
       amLine +
+      abLine +
       adLine +
       aRatLine +
       arLine +
@@ -6286,9 +6323,18 @@
 
   const autoResEl = document.getElementById('autoReserves');
   if (autoResEl) autoResEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoReserves = !!e.target.checked;
     log(`Auto Reserves → ${state.director.autoReserves ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
+  const autoBuildEl = document.getElementById('autoBuildPush');
+  if (autoBuildEl) autoBuildEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director.autoBuildPush = !!e.target.checked;
+    log(`Auto Build Push → ${state.director.autoBuildPush ? 'ON' : 'OFF'}`);
     save();
     render();
   });

@@ -1460,3 +1460,21 @@ Files touched
 
 What to try
 - Set low Autonomy + high Discipline, crank a quota for a disliked job (watch Pref column), then see Grievance climb and Dissent follow; recover by raising Autonomy or holding Council.
+
+---
+
+## 2026-02-28 07:26 CST - v0.9.69 Auto Build Push (hands-off hut pressure)
+
+Summary
+- Added **Auto Build Push** Director toggle: automatically turns BUILD PUSH ON while you are **housing-capped**, and OFF once housing is available again.
+- Keeps hut building pressure consistent without needing to babysit the BUILD signal (still fully explainable/visible).
+- Added Season panel line indicating when Auto Build Push is active.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Build Push**, recruit up to the cap, and watch BUILD PUSH toggle itself ON until a hut completes.
