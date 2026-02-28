@@ -2050,3 +2050,22 @@ Files touched
 What to try
 - Close the tab for ~60–180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
 
+
+## 2026-02-28 15:27 CST - v0.9.100 Policy locks (Auto Policy guardrails)
+
+Summary
+- NEW: **Policy Lock** button next to each policy multiplier (0..2) in the Policy panel.
+- Auto Policy now respects locks: if a multiplier is locked, the governor will **not** nudge it.
+- Adds a clear log line when you lock/unlock a multiplier so changes are trackable during play.
+- Save-safe: stored under director.policyLocks (missing keys default to unlocked).
+
+Files touched
+- prototype/index.html
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Enable **Auto Policy**, lock **Research** (or **Guard**) and watch the governor adjust other multipliers while leaving the locked one untouched.
+
+---
+

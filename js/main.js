@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.99';
+  const GAME_VERSION = '0.9.100';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -5300,6 +5300,9 @@
   // Auto Policy: a tiny "governor" that nudges policy multipliers toward the player's Targets.
   // Design: small reversible adjustments (±0.05), bounded, and explainable.
   function autoTunePolicyTowardTargets(s){
+    s.director = s.director ?? {};
+    s.director.policyLocks = s.director.policyLocks ?? {};
+
     s.policyMult = s.policyMult ?? { Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
 
     const targets = seasonTargets(s);
@@ -5325,6 +5328,7 @@
 
     const nudgeTo = (a, want, maxDelta = step) => {
       if (!unlocked(a)) return;
+      if (s.director?.policyLocks?.[a]) return;
       const cur = clampPolicyMult(Number(s.policyMult?.[a] ?? 1));
       const w = clampPolicyMult(want);
       const d = Math.max(-maxDelta, Math.min(maxDelta, w - cur));
@@ -7369,6 +7373,8 @@
   function renderPolicy(){
     // Migration safety
     state.policyMult = state.policyMult ?? { Socialize:1, Care:1, Forage:1, PreserveFood:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 };
+    state.director = state.director ?? {};
+    state.director.policyLocks = state.director.policyLocks ?? {};
 
     const rows = [
       ['Socialize','Socialize'],
@@ -7408,6 +7414,7 @@
       const val = Math.max(0, Math.min(2, Number.isFinite(v)?v:1));
       state.policyMult[a] = val;
       const disabled = lock(a);
+      const isLocked = !!state.director?.policyLocks?.[a];
 
       const b = (plan && plan.desiredBase && (a in plan.desiredBase)) ? Number(plan.desiredBase[a] ?? 0) : null;
       const w = (plan && plan.desired && (a in plan.desired)) ? Number(plan.desired[a] ?? 0) : null;
@@ -7422,6 +7429,7 @@
             <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''}>-</button>
             <span class="small" style="display:inline-block; width:44px; text-align:center">${val.toFixed(2)}</span>
             <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''}>+</button>
+            <button class="btn mode ${isLocked?'active':''}" data-pol="lock" data-a="${a}" title="Auto Policy will not modify this multiplier while locked.">${isLocked?'Locked':'Lock'}</button>
             <span class="small" style="opacity:.85">(0..2)</span>
           </div>
         </div>`;
@@ -8351,6 +8359,18 @@
     const a = btn.dataset.a;
     const pol = btn.dataset.pol;
     if (!a || !pol) return;
+
+    // Lock toggle (Auto Policy guardrail)
+    if (pol === 'lock') {
+      state.director = state.director ?? {};
+      state.director.policyLocks = state.director.policyLocks ?? {};
+      const next = !state.director.policyLocks[a];
+      state.director.policyLocks[a] = next;
+      log(`Policy lock: ${a} ${next ? 'LOCKED' : 'unlocked'} (Auto Policy will ${next ? 'skip' : 'resume'} nudging it).`);
+      save();
+      render();
+      return;
+    }
 
     // Record undo snapshot BEFORE changing.
     recordPolicyUndo(state, `tweak ${a}`);
