@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.45';
+  const GAME_VERSION = '0.9.46';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3479,6 +3479,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.46',
+      notes: [
+        'FIX: Kitten Council once again reads real kitten likes/dislikes (personality); it was accidentally wired to an old k.prefs field.',
+        'NEW: Council can now make Values-driven suggestions (nudge Food/Safety/Progress priority sliders, or raise Autonomy) when focus-fit is poor under strong central planning.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.45',
       notes: [
         'NEW: Kitten Values (Food/Safety/Progress/Social). When central planning is strong (low effective autonomy), value mismatch slowly reduces mood.',
@@ -3868,6 +3876,19 @@
     const cur = Number(s.policyMult[key] ?? 1);
     s.policyMult[key] = clampPolicyMult(cur + delta);
   }
+
+  // Director priorities are 0.50..1.50 multipliers (1.00 = neutral). Council can nudge these too.
+  function clampPrio(v){
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 1.00;
+    return Math.max(0.50, Math.min(1.50, n));
+  }
+  function nudgeDirectorPrio(s, key, delta){
+    s.director = s.director ?? {};
+    const cur = Number(s.director[key] ?? 1.00);
+    s.director[key] = clampPrio(cur + delta);
+  }
+
   function raiseReserve(s, key, min){
     s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };
     s.reserve[key] = Math.max(getReserve(s, key), Math.max(0, Number(min) || 0));
@@ -4167,10 +4188,11 @@
 
     // Bias toward kittens who are unhappy / low mood (they're more likely to complain) but keep some randomness.
     let best = null;
+    const colonyDis = dissent01(s);
     for (const k of ks) {
       const mood = clamp01(Number(k.mood ?? 0.55));
-      const dis = clamp01(Number(k.dissent ?? 0));
-      const w = 0.55 + (0.55 - mood) * 0.9 + dis * 0.6 + Math.random() * 0.35;
+      // No per-kitten dissent; use colony-wide dissent as the "political atmosphere".
+      const w = 0.55 + (0.55 - mood) * 0.9 + colonyDis * 0.6 + Math.random() * 0.35;
       if (!best || w > best.w) best = { k, w };
     }
     return best?.k ?? ks[Math.floor(Math.random() * ks.length)];
@@ -4194,8 +4216,10 @@
     const threat = Number(s.res.threat ?? 0);
 
     const m = s.policyMult ?? {};
-    const likes = Array.isArray(k.prefs?.likes) ? k.prefs.likes : [];
-    const hates = Array.isArray(k.prefs?.dislikes) ? k.prefs.dislikes : [];
+    // Use the live personality system (likes/dislikes). Older council code used k.prefs (no longer exists).
+    const p = k.personality ?? genPersonality(k.id ?? 0);
+    const likes = Array.isArray(p?.likes) ? p.likes : [];
+    const hates = Array.isArray(p?.dislikes) ? p.dislikes : [];
 
     const recs = [];
 
@@ -4251,6 +4275,79 @@
       });
     }
 
+    // 3) Values-driven (civ-sim): if a kitten's Values mismatch the colony focus *and* central planning is strong,
+    // they push for a policy shift (or more autonomy).
+    const align = valuesAlignment01(s, k);
+    const effAuto = effectiveAutonomy01(s);
+    if (align < 0.66 && effAuto < 0.55) {
+      ensureValues(k);
+      const kv = k.values ?? null;
+      const cv = colonyFocusVec(s);
+
+      if (kv && cv) {
+        // Find the kitten's top value axis.
+        let topAx = 'Food';
+        let topV = -1;
+        for (const ax of VALUE_AXES) {
+          const v = Number(kv[ax] ?? 0);
+          if (v > topV) { topV = v; topAx = ax; }
+        }
+
+        // If the colony under-weights that axis meaningfully, ask for a nudge.
+        const gap = (Number(kv[topAx] ?? 0) - Number(cv[topAx] ?? 0));
+        if (gap > 0.10) {
+          if (topAx === 'Food') {
+            recs.push({
+              id: `values-${k.id}-food`,
+              label: 'Values: more Food focus',
+              effects: 'Priority Food +10%',
+              tip: `Kitten #${k.id} values Food; focus-fit is ${Math.round(align*100)}%.`,
+              apply: (st) => { nudgeDirectorPrio(st, 'prioFood', 0.10); }
+            });
+          } else if (topAx === 'Safety') {
+            recs.push({
+              id: `values-${k.id}-safety`,
+              label: 'Values: more Safety focus',
+              effects: 'Priority Safety +10%',
+              tip: `Kitten #${k.id} values Safety; focus-fit is ${Math.round(align*100)}%.`,
+              apply: (st) => { nudgeDirectorPrio(st, 'prioSafety', 0.10); }
+            });
+          } else if (topAx === 'Progress') {
+            recs.push({
+              id: `values-${k.id}-progress`,
+              label: 'Values: more Progress focus',
+              effects: 'Priority Progress +10%',
+              tip: `Kitten #${k.id} values Progress; focus-fit is ${Math.round(align*100)}%.`,
+              apply: (st) => { nudgeDirectorPrio(st, 'prioProgress', 0.10); }
+            });
+          } else if (topAx === 'Social') {
+            recs.push({
+              id: `values-${k.id}-social`,
+              label: 'Values: more Social focus',
+              effects: 'Socialize +0.25',
+              tip: `Kitten #${k.id} values Social; focus-fit is ${Math.round(align*100)}%.`,
+              apply: (st) => { nudgePolicyMult(st, 'Socialize', 0.25); }
+            });
+          }
+        }
+      }
+
+      // Alternate response: loosen central planning so mismatched kittens can self-select work.
+      if (align < 0.58 && effAuto < 0.40) {
+        recs.push({
+          id: `values-${k.id}-autonomy`,
+          label: 'Values: loosen planning',
+          effects: 'Autonomy +5%',
+          tip: `Low focus-fit (${Math.round(align*100)}%) under strong planning. Raising Autonomy increases emergent self-selection.`,
+          apply: (st) => {
+            st.director = st.director ?? {};
+            const cur = clamp01(Number(st.director.autonomy ?? 0.60));
+            st.director.autonomy = clamp01(cur + 0.05);
+          }
+        });
+      }
+    }
+
     // Keep it tight.
     const out = recs.slice(0, 3);
 
@@ -4270,7 +4367,7 @@
 
     const traits = (k.traits ?? []).join(', ') || '-';
     const mood = Math.round(clamp01(Number(k.mood ?? 0.55)) * 100);
-    const dis = Math.round(clamp01(Number(k.dissent ?? 0)) * 100);
+    const dis = Math.round(dissent01(s) * 100);
 
     const header = `Spokeskitten: #${k.id} (mood ${mood}%, dissent ${dis}%) | traits: ${traits}`;
     return { text: header, recs: out };

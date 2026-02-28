@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 01:40 CST - v0.9.46 Council: values-driven policy nudges + bugfix
+
+Summary
+- FIX: Kitten Council now reads the real personality likes/dislikes (it was incorrectly looking for `k.prefs`, so it often went silent).
+- FIX: Council now reports colony-wide dissent correctly (no phantom per-kitten dissent field).
+- NEW: Values-driven council suggestions when focus-fit is poor under strong central planning: nudges **Priority Food/Safety/Progress** or suggests raising **Autonomy**.
+- Explainability: council tooltips still preview exact multiplier diffs; new values-suggestions include focus-fit % in the tooltip.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Autonomy low, switch to a mismatched Mode (e.g., Advance), then watch Council suggest either a priority nudge or a small Autonomy increase.
+
+---
+
 ## 2026-02-28 01:25 CST - v0.9.45 Kitten Values: policy-fit affects mood (emergent civ pressure)
 
 Summary
