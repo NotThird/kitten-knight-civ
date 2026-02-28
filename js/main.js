@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.91';
+  const GAME_VERSION = '0.9.92';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3589,12 +3589,43 @@
       }
     }
 
-    // Housing overcrowding tax
+    // Housing overcrowding pressure
+    // Overcrowding is a classic civ-sim pain point that should push you toward building housing.
+    // It now has TWO layers:
+    // - Physical strain (energy/hunger) (existing)
+    // - Social strain (dissent + grievance) (new)
     const cap = housingCap(state);
-    if (state.kittens.length > cap) {
+    const over = Math.max(0, (state.kittens.length ?? 0) - cap);
+
+    // One-time log when overcrowding begins/ends (explainability)
+    state._overcrowdWarned = state._overcrowdWarned ?? false;
+    if (over > 0 && !state._overcrowdWarned) {
+      state._overcrowdWarned = true;
+      log(`Overcrowding: population exceeds housing cap (${state.kittens.length}/${cap}). Mood and cohesion will suffer until you build more huts.`);
+    }
+    if (over <= 0 && state._overcrowdWarned) {
+      state._overcrowdWarned = false;
+      log('Overcrowding resolved: housing cap is no longer exceeded.');
+    }
+
+    if (over > 0) {
+      // Physical strain
       for (const k of state.kittens) {
-        k.energy = clamp01(k.energy - dt * 0.010);
-        k.hunger = clamp01(k.hunger + dt * 0.006);
+        k.energy = clamp01(k.energy - dt * (0.010 + 0.002 * over));
+        k.hunger = clamp01(k.hunger + dt * (0.006 + 0.001 * over));
+      }
+
+      // Social strain (slow burn). More discipline can keep order, but doesn't eliminate stress.
+      state.social = state.social ?? { dissent: 0 };
+      if (!('dissent' in state.social)) state.social.dissent = 0;
+
+      const disPol = discipline01(state);
+      const dissentAdd = dt * (0.0016 + 0.0006 * over) * (1 - 0.45 * disPol);
+      state.social.dissent = clamp01(Number(state.social.dissent ?? 0) + dissentAdd);
+
+      for (const k of state.kittens) {
+        k.grievance = clamp01(Number(k.grievance ?? 0) + dt * (0.0012 + 0.0004 * over));
+        k.mood = clamp01(Number(k.mood ?? 0.55) - dt * (0.0009 + 0.0003 * over));
       }
     }
 
@@ -4075,6 +4106,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.92',
+      notes: [
+        'Civ-sim pressure: Overcrowding (pop > housing cap) now slowly increases Dissent and Grievance until you build more huts.',
+        'Explainability: the event log pings once when overcrowding begins and once when it ends.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.91',
       notes: [

@@ -1902,3 +1902,22 @@ Files touched
 
 What to try
 - Hit any Policy preset, then immediately click **Undo** to revert.
+
+---
+
+## 2026-02-28 13:12 CST - v0.9.92 Overcrowding ? dissent/grievance pressure
+
+Summary
+- Civ-sim pressure: when **population exceeds housing cap**, overcrowding now adds a slow-burn **Dissent** increase (reduced by Discipline) and raises kitten **Grievance**.
+- Overcrowding also applies a tiny colony-wide **Mood** penalty, making “build huts” a clearer, legible stability goal.
+- Explainability: event log pings once when overcrowding begins and once when it resolves.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Intentionally go **1 kitten over cap** and watch Dissent/Grievance climb until you prioritize **BuildHut** (or raise Discipline to blunt the dissent).
