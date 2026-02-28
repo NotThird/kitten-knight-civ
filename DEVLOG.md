@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 14:42 CST - v0.9.98 Auto Council + Director automation scoping fix
+
+Summary
+- NEW: **Auto Council** Director toggle (holds Council when dissent is high and you can afford it above reserves).
+- Explainability: Season panel now shows **Auto council** status + last reason (trigger/waiting).
+- Fix: corrected a missing brace that unintentionally gated other Director automations behind **Auto Drills**.
+- Patch notes updated to include Auto Council.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Council**, intentionally push dissent (high Work pace + Curfew), then watch it fire a Council once you have spare food+science.
+
+---
+
 ## 2026-02-28 11:57 CST - v0.9.87 Faction negotiation Undo snapshot
 
 Summary
@@ -1845,8 +1866,8 @@ What to try
 ## 2026-02-28 12:27 CST - v0.9.89 Colony table: Fit column (policy alignment)
 
 Summary
-- NEW: Added a dedicated **Fit** column in the Colony table showing each kitten’s policy focus-fit (% alignment to current Mode + priority sliders).
-- Fit is color-coded (green/yellow/red) to make ‘who is misaligned’ instantly scannable.
+- NEW: Added a dedicated **Fit** column in the Colony table showing each kittenï¿½s policy focus-fit (% alignment to current Mode + priority sliders).
+- Fit is color-coded (green/yellow/red) to make ï¿½who is misalignedï¿½ instantly scannable.
 - Tooltip explains the civ-sim loop: low fit under strong planning (low effective autonomy) tends to drag mood and increase dissent pressure.
 - Patch notes updated.
 - No save-breaking changes.
@@ -1869,8 +1890,8 @@ What to try
 
 Summary
 - Civ-sim readability: kittens now have **deterministic names** based on id (save-safe; no RNG/state needed).
-- UI: colony table “#” column renamed to **Kitten** and now shows **Name + #id**.
-- Explainability: Decision Inspector title now includes the kitten’s name so you can track individuals across seasons, factions, and buddy stress.
+- UI: colony table ï¿½#ï¿½ column renamed to **Kitten** and now shows **Name + #id**.
+- Explainability: Decision Inspector title now includes the kittenï¿½s name so you can track individuals across seasons, factions, and buddy stress.
 - Save compatibility: older saves are migrated by assigning missing names on load.
 
 Files touched
@@ -1880,7 +1901,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Start/continue a run and watch how named individuals drift into blocs/roles (it’s much easier to spot the "Brave guard" vs the "Studious scholar").
+- Start/continue a run and watch how named individuals drift into blocs/roles (itï¿½s much easier to spot the "Brave guard" vs the "Studious scholar").
 
 ---
 
@@ -1890,7 +1911,7 @@ Summary
 - QoL: added a **Policy Undo** button (2 minute window) in the Policy panel.
 - Undo snapshot captures your last manual change to **Policy multipliers** (including presets/reset and +/- tweaks).
 - Undo snapshot also captures **Role Quotas** changes (including quota reset).
-- Explainability: Undo shows time-left + the reason label (e.g., “tweak Forage”, “Policy preset ? Survive”).
+- Explainability: Undo shows time-left + the reason label (e.g., ï¿½tweak Forageï¿½, ï¿½Policy preset ? Surviveï¿½).
 - No save-breaking changes.
 
 Files touched
@@ -1909,7 +1930,7 @@ What to try
 
 Summary
 - Civ-sim pressure: when **population exceeds housing cap**, overcrowding now adds a slow-burn **Dissent** increase (reduced by Discipline) and raises kitten **Grievance**.
-- Overcrowding also applies a tiny colony-wide **Mood** penalty, making “build huts” a clearer, legible stability goal.
+- Overcrowding also applies a tiny colony-wide **Mood** penalty, making ï¿½build hutsï¿½ a clearer, legible stability goal.
 - Explainability: event log pings once when overcrowding begins and once when it resolves.
 - No save-breaking changes.
 
@@ -1978,7 +1999,7 @@ What to try
 
 Summary
 - UI/Explainability: Buddy column now shows **buddy name + id + need%** (instead of just id), making relationship pressure readable at a glance.
-- Tooltips now include the buddy’s full name as well.
+- Tooltips now include the buddyï¿½s full name as well.
 - No save-breaking changes.
 
 Files touched
@@ -1990,4 +2011,4 @@ What to try
 - Let buddy-need climb (avoid Socialize), then watch the Buddy column color + need% spike to flag brewing social stress.
 
 ---
-## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesn’t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n
+## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesnï¿½t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n

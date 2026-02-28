@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.97';
+  const GAME_VERSION = '0.9.98';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -247,7 +247,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -3078,7 +3078,7 @@
 
     // Director automation: optional auto-toggle for Winter Prep.
     // Goal: reduce micro without hiding the policy changes (it literally presses the same Winter Prep toggle).
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -3474,9 +3474,46 @@
           }
         }
       }
+    }
 
     // Goal: reduce micro by picking Survive/Expand/Defend/Advance based on obvious stability signals.
     // It respects Crisis Protocol (manual) and only changes occasionally to avoid flapping.
+    // Director automation: optional auto COUNCIL.
+    // Goal: reduce micro by holding Council when cohesion is the bottleneck.
+    // It only fires when dissent is high, basics are stable, and you can afford the cost above reserves.
+    if (state.director.autoCouncil) {
+      state._autoCouncilTimer = (state._autoCouncilTimer ?? 0) + dt;
+      if (state._autoCouncilTimer >= 1) {
+        state._autoCouncilTimer = 0;
+
+        state.director.autoCouncilNextAt = Number(state.director.autoCouncilNextAt ?? 0) || 0;
+        if (!councilActive(state) && state.t >= state.director.autoCouncilNextAt) {
+          const targets = seasonTargets(state);
+          const season = seasonAt(state.t);
+          const foodPerKitten = ediblePerKitten(state);
+          const warmth = Number(state.res.warmth ?? 0);
+          const threat = Number(state.res.threat ?? 0);
+          const dis = dissent01(state);
+
+          const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.95) && (warmth >= targets.warmth - (season.name === 'Winter' ? 6 : 10)) && (threat <= targets.maxThreat * 1.10);
+          const needCohesion = dis >= 0.58;
+
+          if (needCohesion && basicsOk && canHoldCouncil(state)) {
+            const res = holdCouncil(state);
+            if (res?.ok) {
+              state.director.autoCouncilWhy = `trigger: dissent ${(dis*100).toFixed(0)}%`;
+              log(`Auto Council: HELD (${state.director.autoCouncilWhy})`);
+            }
+            state.director.autoCouncilNextAt = state.t + 70;
+          } else {
+            if (!needCohesion) state.director.autoCouncilWhy = `waiting: dissent ${(dis*100).toFixed(0)}% < 58%`;
+            else if (!basicsOk) state.director.autoCouncilWhy = 'waiting: basics not stable (food/warmth/threat)';
+            else if (!canHoldCouncil(state)) state.director.autoCouncilWhy = 'waiting: not enough food+science above reserves';
+          }
+        }
+      }
+    }
+
     // Director automation: optional auto PAUSE on danger.
     // Goal: make slow spirals (starvation/freezing/raid buildup) more visible by stopping the sim when things are clearly about to go bad.
     // It will NOT auto-resume.
@@ -4146,6 +4183,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.98',
+      notes: [
+        'NEW: Auto Council checkbox. When enabled, the Director will automatically hold Council when dissent is high and you can afford it (food+science above reserves).',
+        'Fix: Director automation blocks are now correctly scoped again (Auto Drills no longer accidentally gated other automations).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.97',
       notes: [
@@ -6286,7 +6331,7 @@
     el('modeResearch').classList.toggle('active', state.mode==='Advance');
 
     // Seasonal one-click director toggle (pure UI/policy; doesn't change core sim)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     if (!('crisis' in state.director)) state.director.crisis = false;
     if (!('crisisSaved' in state.director)) state.director.crisisSaved = null;
     if (!('curfew' in state.director)) state.director.curfew = false;
@@ -6370,6 +6415,8 @@
     if (autoCrisis) autoCrisis.checked = !!state.director.autoCrisis;
     const autoDrills = el('autoDrills');
     if (autoDrills) autoDrills.checked = !!state.director.autoDrills;
+    const autoCouncil = el('autoCouncil');
+    if (autoCouncil) autoCouncil.checked = !!state.director.autoCouncil;
     const autoDP = el('autoDangerPause');
     if (autoDP) autoDP.checked = !!state.director.autoDangerPause;
 
@@ -6745,6 +6792,10 @@
     const aDrillWhy = String(state.director?.autoDrillsWhy ?? '').trim();
     const aDrillLine = aDrillOn ? `Auto drills: ON${aDrillWhy ? ` - ${aDrillWhy}` : ''}\n` : '';
 
+    const aCouncilOn = !!state.director?.autoCouncil;
+    const aCouncilWhy = String(state.director?.autoCouncilWhy ?? '').trim();
+    const aCouncilLine = aCouncilOn ? `Auto council: ON${aCouncilWhy ? ` - ${aCouncilWhy}` : ''}\n` : '';
+
     const aDPOn = !!state.director?.autoDangerPause;
     const aDPWhy = String(state.director?.autoDangerPauseWhy ?? '').trim();
     const aDPLine = aDPOn ? `Auto pause (danger): ON${aDPWhy ? ` - ${aDPWhy}` : ''}\n` : '';
@@ -6778,6 +6829,7 @@
       arLine +
       acLine +
       aDrillLine +
+      aCouncilLine +
       aDPLine +
       festLine +
       councilLine +
@@ -7843,6 +7895,17 @@
     render();
   });
 
+  const autoCouncilEl = document.getElementById('autoCouncil');
+  if (autoCouncilEl) autoCouncilEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
+    state.director.autoCouncil = !!e.target.checked;
+    if (state.director.autoCouncil) state.director.autoCouncilNextAt = 0;
+    state.director.autoCouncilWhy = '';
+    log(`Auto Council → ${state.director.autoCouncil ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
   const autoDPauseEl = document.getElementById('autoDangerPause');
   if (autoDPauseEl) autoDPauseEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRecruit:false, autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
@@ -8532,5 +8595,4 @@
   render();
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
-}
 })();
