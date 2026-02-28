@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 11:42 CST - v0.9.86 Faction demands expire with consequences
+
+Summary
+- Civ-sim pressure: **Faction Demands** no longer silently vanish on timeout.
+- If a demand expires unresolved, it now auto-resolves as a **soft ignore** (small dissent + grievance + mood hit for that bloc).
+- Explainability: the event log explicitly reports the expiry so you can connect mood/dissent drift to politics.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let a Demand spawn on a season change, then ignore it and watch the expiry log + small dissent bump.
+
+---
+
 ## 2026-02-28 11:27 CST - v0.9.85 Blocked fallback highlight (reserve thrash visibility)
 
 Summary

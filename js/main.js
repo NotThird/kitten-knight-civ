@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.85';
+  const GAME_VERSION = '0.9.86';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -2955,6 +2955,10 @@
   function tickPressures(dt){
     const season = seasonAt(state.t);
 
+    // Politics pressure: demands expire into consequences (instead of silently vanishing).
+    const exp = expireFactionDemandIfNeeded(state);
+    if (exp?.ok) log(exp.msg);
+
     // Season transition log (explainability): one clean ping when the season flips.
     // This helps players connect "why did outputs change" to the seasonal model.
     state._lastSeasonName = state._lastSeasonName ?? season.name;
@@ -3948,6 +3952,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.86',
+      notes: [
+        'Civ-sim pressure: Faction Demands now have teeth even if you ignore them by accident — when a Demand expires, it resolves as an automatic soft ignore (small dissent + grievance hit).',
+        'Explainability: the event log explicitly calls out when a demand expires, so you can connect the mood/dissent drift to politics.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.85',
       notes: [
@@ -5709,6 +5721,41 @@
     s.director.factionDemandLastAt = nowT;
 
     return s.director.factionDemand;
+  }
+
+  // Expired demands used to silently vanish (no consequence), which undermined the politics loop.
+  // Now: if a demand times out unresolved, it auto-resolves as a *soft* ignore.
+  function expireFactionDemandIfNeeded(s){
+    s.director = s.director ?? {};
+    const d = s.director.factionDemand;
+    if (!d || typeof d !== 'object') return null;
+    if (d.resolved) return null;
+
+    const exp = Number(d.expiresAt ?? 0) || 0;
+    const nowT = Number(s.t ?? 0) || 0;
+    if (!(exp > 0) || nowT <= exp) return null;
+
+    const ax = String(d.axis ?? '');
+
+    // Mark resolved first to avoid any double-processing.
+    d.resolved = true;
+    d.resolvedAt = nowT;
+    d.accepted = false;
+    d.expired = true;
+
+    // If axis is invalid, just resolve without effects (save safety).
+    if (!['Food','Safety','Progress','Social'].includes(ax)) return { ok:false, msg:'Faction demand expired (invalid axis).' };
+
+    // Softer than an explicit "Ignore" click: you didn't slam the door, you just missed the window.
+    s.social = s.social ?? { dissent: 0 };
+    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + 0.02);
+    for (const k of (s.kittens ?? [])) {
+      if (dominantValueAxis(k) !== ax) continue;
+      k.grievance = clamp01(Number(k.grievance ?? 0) + 0.03);
+      k.mood = clamp01(Number(k.mood ?? 0.55) - 0.015);
+    }
+
+    return { ok:true, msg:`Faction demand expired (${ax}). Dissent rises slightly; the bloc feels unheard.` };
   }
 
   function resolveFactionDemand(s, accept){
