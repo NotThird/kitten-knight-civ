@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.87';
+  const GAME_VERSION = '0.9.88';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -379,6 +379,61 @@
     if (!v) return '-';
     const pct = (x)=>Math.round(100*x);
     return `F${pct(v.Food)} S${pct(v.Safety)} P${pct(v.Progress)} So${pct(v.Social)}`;
+  }
+
+  function normalizeValuesVec(v){
+    if (!v || typeof v !== 'object') return { Food:0.25, Safety:0.25, Progress:0.25, Social:0.25 };
+    const out = { Food:Number(v.Food ?? 0), Safety:Number(v.Safety ?? 0), Progress:Number(v.Progress ?? 0), Social:Number(v.Social ?? 0) };
+    for (const ax of VALUE_AXES) out[ax] = Math.max(0.03, Number(out[ax] ?? 0));
+    const sum = VALUE_AXES.reduce((a,k)=>a+out[k],0) || 1;
+    for (const ax of VALUE_AXES) out[ax] /= sum;
+    return out;
+  }
+
+  // Values drift: kittens slowly learn a "comfort zone" from what they actually do.
+  // - Higher effective autonomy => faster drift (self-directed)
+  // - Central planning doesn't freeze them; it just makes drift slower.
+  // This creates a subtle emergent loop: specializing a colony changes *who your kittens become*.
+  function taskValueVec(task){
+    const a = String(task || '');
+    // Note: these are intentionally coarse; they should be legible, not perfect.
+    if (a === 'Forage' || a === 'Farm' || a === 'PreserveFood' || a === 'Eat') return { Food:0.70, Safety:0.10, Progress:0.12, Social:0.08 };
+    if (a === 'ChopWood' || a === 'BuildGranary') return { Food:0.35, Safety:0.18, Progress:0.37, Social:0.10 };
+    if (a === 'StokeFire') return { Food:0.10, Safety:0.70, Progress:0.08, Social:0.12 };
+    if (a === 'Guard' || a === 'BuildPalisade') return { Food:0.05, Safety:0.80, Progress:0.10, Social:0.05 };
+    if (a === 'Research' || a === 'Mentor' || a === 'CraftTools' || a === 'BuildWorkshop' || a === 'BuildLibrary') return { Food:0.10, Safety:0.10, Progress:0.72, Social:0.08 };
+    if (a === 'Socialize' || a === 'Care') return { Food:0.12, Safety:0.15, Progress:0.10, Social:0.63 };
+    if (a === 'Loaf') return { Food:0.10, Safety:0.10, Progress:0.05, Social:0.75 };
+    // Rest / BuildHut / unknown: keep it near-neutral.
+    return { Food:0.25, Safety:0.25, Progress:0.25, Social:0.25 };
+  }
+
+  function updateValuesPerSecond(s, k, task){
+    ensureValues(k);
+    if (!k?.values) return;
+
+    const v = normalizeValuesVec(k.values);
+    const tgt = normalizeValuesVec(taskValueVec(task));
+
+    // Rate tuned to be noticeable over minutes, not seconds.
+    const effA = effectiveAutonomy01(s);
+    const rate = 0.004 + 0.016 * effA; // ~0.4%..2.0% toward target per second
+
+    const before = { ...v };
+    for (const ax of VALUE_AXES) v[ax] = v[ax] + (tgt[ax] - v[ax]) * rate;
+
+    const after = normalizeValuesVec(v);
+    k.values = after;
+
+    // Explainability breadcrumb: what axis did this second "teach" the kitten?
+    let best = 'Food';
+    let bestD = -999;
+    for (const ax of VALUE_AXES) {
+      const d = Number(after[ax] ?? 0) - Number(before[ax] ?? 0);
+      if (d > bestD) { bestD = d; best = ax; }
+    }
+    k._valuesDriftAt = Number(s?.t ?? 0) || 0;
+    k._valuesDriftNote = `drift → ${best} (rate ${(rate*100).toFixed(1)}%/s)`;
   }
 
   function traitInfoList(k){
@@ -3611,6 +3666,10 @@
         // Relationship pressure (buddy system): small emergent social texture.
         updateBuddyNeedPerSecond(state, k, d.task);
 
+        // Values drift (civ-sim): kittens slowly learn from what they actually do.
+        // This makes long-run specialization feel "sticky" and creates emergent faction shifts.
+        updateValuesPerSecond(state, k, d.task);
+
         // Memory: track how long we've been doing the same job (1s resolution)
         k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
 
@@ -3962,6 +4021,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.88',
+      notes: [
+        'Civ-sim: Kittens now slowly drift their Values (Food/Safety/Progress/Social) toward what they actually do each second. Specialization becomes "sticky" over minutes, creating emergent faction shifts.',
+        'Explainability: Inspect + table tooltips show a short "drift → AXIS" note when it happens, so policy changes feel traceable.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.87',
       notes: [
@@ -4556,7 +4623,9 @@
     const needNote = buddy ? ` | buddy-need: ${Math.round(clamp01(Number(k.buddyNeed ?? 0))*100)}%` : '';
     const align = valuesAlignment01(state, k);
     const bloc = dominantValueAxis(k);
-    inspectSubEl.textContent = `traits: ${traits} | bloc: ${bloc} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+    const driftFresh = (k._valuesDriftNote && (state.t - Number(k._valuesDriftAt ?? 0)) < 30);
+    const driftNote = driftFresh ? ` | ${String(k._valuesDriftNote ?? '')}` : '';
+    inspectSubEl.textContent = `traits: ${traits} | bloc: ${bloc} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${driftNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -6748,9 +6817,14 @@
         : 'No buddy';
 
       const buddyLine = buddy ? `\nBuddy: #${buddy.id} (need ${buddyNeedPct}%)` : '';
+
+      // Explainability: show recent value drift (learning) in the tooltip.
+      const driftFresh = (k._valuesDriftNote && (state.t - Number(k._valuesDriftAt ?? 0)) < 30);
+      const driftLine = driftFresh ? `\nDrift: ${String(k._valuesDriftNote ?? '')}` : '';
+
       const traitsTitle = traitLines.length
-        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}\nValues: ${valuesShort(k)}`
-        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}\nValues: ${valuesShort(k)}`;
+        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}\nValues: ${valuesShort(k)}${driftLine}`
+        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}\nValues: ${valuesShort(k)}${driftLine}`;
 
       // Pref: show whether the current task aligns with the kitten's likes/dislikes.
       // Always show value-alignment vs current colony focus (explains mood/dissent drift under planning).

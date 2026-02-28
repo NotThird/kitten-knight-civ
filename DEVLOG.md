@@ -1821,3 +1821,23 @@ What to try
 - Intentionally overstock food above **Food Cap**, then click **Spoilage** to verify you can immediately see *why* food is bleeding and what to do about it.
 
 ---
+
+## 2026-02-28 12:12 CST - v0.9.88 Values drift (kittens learn from work)
+
+Summary
+- NEW (civ-sim): each kitten’s **Values** (Food/Safety/Progress/Social) now slowly drift toward what they actually do each second.
+- Higher **effective autonomy** (Autonomy + Dissent, reduced by Discipline) makes drift faster; central planning makes it slower.
+- Emergent behavior: specializing a colony changes *who your kittens become* over minutes, which can cascade into **Faction** makeup and demands.
+- Explainability: table + Inspect tooltips show a short, recent **"drift → AXIS"** note.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Run **Advance** for a few minutes, then open **Factions** and see if your dominant bloc shifts toward **Progress** as kittens acclimate.
+
+---
