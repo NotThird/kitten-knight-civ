@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 21:44 CST - v0.9.125 QoL: Task sorting + preference tags use executed task
+
+Summary
+- QoL/Explainability: sorting by **Task** now uses the *effective executed* task (shows fallback tasks when a sink is blocked by reserves/inputs).
+- QoL/Clarity: Like/Dislike tags in the Colony table now evaluate against the executed task (so blocked sink attempts don’t mislabel a kitten’s preferences).
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Sort the Colony table by **Task** during a reserve-constrained build (e.g., high wood reserve + BUILD PUSH) and confirm blocked builders cluster under the fallback task you’re actually getting.
+
+---
+
 ## 2026-02-28 21:29 CST - v0.9.124 Save stability: cap persisted Event log
 
 Summary

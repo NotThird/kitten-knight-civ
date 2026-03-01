@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.124';
+  const GAME_VERSION = '0.9.125';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -4547,6 +4547,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.125',
+      notes: [
+        'QoL/Explainability: Sorting by Task now uses the effective executed task (shows fallback tasks when a sink is blocked by reserves/inputs).',
+        'QoL/Explainability: Like/Dislike tags now evaluate against the executed task (so blocked fallbacks don\'t mislabel preferences).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.124',
       notes: [
         'QoL/Stability: Event log is now capped (persisted) so long sessions don\'t bloat save size / localStorage.',
@@ -7938,7 +7946,7 @@
       switch(String(key || '')){
         case 'name': return String(kk.name ?? '');
         case 'role': return String(kk.role ?? '');
-        case 'task': return String(kk.task ?? '');
+        case 'task': return String((kk._fallbackTo ? kk._fallbackTo : (kk.task ?? '')));
         case 'energy': return Number(kk.energy ?? 0);
         case 'hunger': return Number(kk.hunger ?? 0);
         case 'health': return Number(kk.health ?? 1);
@@ -8037,8 +8045,9 @@
 
       const vals = valuesShort(k);
       const prefParts = [];
-      if (likes.includes(k.task)) prefParts.push('Like');
-      if (dislikes.includes(k.task)) prefParts.push('Dislike');
+      const effTask = String(k._fallbackTo || k.task || '');
+      if (likes.includes(effTask)) prefParts.push('Like');
+      if (dislikes.includes(effTask)) prefParts.push('Dislike');
       prefParts.push(`Align ${Math.round(align*100)}%`);
       const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2);
       if (autoFresh) prefParts.push('Autonomy');
