@@ -1,5 +1,6 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
+import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter } from './sim.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -92,59 +93,6 @@ import { fmt, clamp01, now } from './util.js';
     return { skill: best, level: (bestLvl > 0 ? bestLvl : 1) };
   }
 
-  // --- Season model (no map yet, but real pressure)
-  const SEASON_LEN = 90; // seconds per season
-  const seasons = ['Spring','Summer','Fall','Winter'];
-  const YEAR_LEN = SEASON_LEN * seasons.length;
-  const seasonAt = (t) => {
-    const idx = Math.floor((t / SEASON_LEN) % seasons.length);
-    const phase = (t % SEASON_LEN) / SEASON_LEN;
-    return { name: seasons[idx], idx, phase };
-  };
-  const yearAt = (t) => Math.floor(Math.max(0, t) / YEAR_LEN);
-
-  // --- Seasonal target shaping (small "AI foresight" without hidden rules)
-  // We keep player-set targets as the baseline, then apply a transparent seasonal adjustment.
-  // The point: late-Fall stockpiling so Winter doesn't instantly collapse the colony.
-  function seasonTargets(s){
-    const base = s.targets ?? { foodPerKitten:120, warmth:60, maxThreat:70 };
-    const season = seasonAt(s.t);
-
-    let foodPerKitten = Number(base.foodPerKitten ?? 120) || 120;
-    let warmth = Number(base.warmth ?? 60) || 60;
-    let maxThreat = Number(base.maxThreat ?? 70) || 70;
-
-    let why = 'baseline';
-
-    // Prep window: late Fall pushes stockpiles (food + a bit of warmth) before winter penalties hit.
-    if (season.name === 'Fall' && season.phase >= 0.55) {
-      foodPerKitten += 25;
-      warmth += 6;
-      why = 'late-Fall prep (+food target, +warmth target)';
-    }
-
-    // Winter already has stronger warmth logic elsewhere; keep targets readable.
-    return { foodPerKitten, warmth, maxThreat, why };
-  }
-
-  function secondsToNextSeason(s){
-    const phase = (s.t % SEASON_LEN) / SEASON_LEN;
-    return (1 - phase) * SEASON_LEN;
-  }
-
-  function secondsToNextWinter(s){
-    const season = seasonAt(s.t);
-    // seasons: Spring(0) Summer(1) Fall(2) Winter(3)
-    const curIdx = season.idx;
-    const toIdx = 3;
-    const seasonsAhead = (toIdx - curIdx + seasons.length) % seasons.length;
-    // If we're already in Winter, 0.
-    if (seasonsAhead === 0) return 0;
-
-    const remThis = secondsToNextSeason(s);
-    const fullSeasons = Math.max(0, seasonsAhead - 1);
-    return remThis + fullSeasons * SEASON_LEN;
-  }
 
   // --- Auto Project Focus (Director)
   // "Project focus" is a player nudge to bias build choices.
