@@ -1,6 +1,6 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
-import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates } from './sim.js';
+import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick } from './sim.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -3964,43 +3964,13 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
       state._lastPlan = plan;
     }
 
-    for (const k of state.kittens) {
-      // Per-tick execution marker for blocked sink actions that fallback to a different task.
-      // Cleared every tick; set by doFallback(...).
-      k._fallbackTo = null;
-      // Per-tick mentoring target (only set when the Mentor action runs).
-      k._mentor = null;
-
-      const def = taskDefs[k.task] ?? taskDefs.Rest;
-      def.tick(state, k, dt);
-
-      // passive regen from warmth and shelter
-      const comfort = (state.res.warmth / 100) * 0.004 + state.res.huts * 0.0007;
-      k.energy = clamp01(k.energy + dt * comfort);
-      if (k.hunger > 0.82) k.energy = clamp01(k.energy - dt * 0.01);
-
-      // Starvation/sickness spiral: extreme hunger slowly damages health (even before death).
-      // Jerky counts as edible food; only apply the harsh spiral when *nothing edible* remains.
-      if (k.hunger > 0.92 && edibleFood(state) <= 0) {
-        k.health = clamp01((k.health ?? 1) - dt * 0.020);
-      } else if (k.hunger > 0.92) {
-        k.health = clamp01((k.health ?? 1) - dt * 0.006);
-      }
-
-      // hard fail: starvation (only if *no edible food* remains)
-      if (edibleFood(state) <= 0 && k.hunger >= 0.98) {
-        // lose a kitten (rare, but makes it a civ sim)
-        state.kittens = state.kittens.filter(x => x.id !== k.id);
-        log(`A kitten starved. Population: ${state.kittens.length}`);
-        break;
-      }
-    }
-
-    // Pinned project completion: clear the pin once ONE unit completes.
-    const pin = pinnedProjectInfo(state);
-    if (pin && pin.completed) {
-      clearPinnedProject(state, `Pinned project complete: built 1 ${pin.type}.`);
-    }
+    runKittensTick(state, dt, {
+      taskDefs,
+      edibleFood,
+      log,
+      pinnedProjectInfo,
+      clearPinnedProject,
+    });
 
     // Explainability: maintain smoothed deltas (not saved)
     updateRates(state, dt);

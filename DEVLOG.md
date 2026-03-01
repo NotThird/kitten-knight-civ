@@ -2846,3 +2846,26 @@ What to try
   - top stat trends still update smoothly (food/wood/warmth/etc)
   - Projects panel ETAs still update for in-progress builds
   - Auto Pause (danger) still forecasts starvation/freezing/raid risk correctly
+
+
+---
+
+## 2026-03-01 04:53 CST - P0.1 Modularization: extract per-tick kitten execution into sim.js
+
+Summary
+- Phase 0 modularization slice: extracted the per-tick kitten execution loop (task tick + passive comfort regen + starvation hard-fail + pinned project auto-clear) into js/sim.js as runKittensTick(...).
+- main.js now calls runKittensTick(state, dt, deps) instead of owning that loop.
+- No behavior changes intended; this is a pure boundary/cleanup move to keep core sim steps reusable for replay/offline harness work.
+
+Files touched
+- kitten-knight-civ/js/sim.js
+- kitten-knight-civ/js/main.js
+- dist/js/sim.js
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Load the game and sanity-check:
+  - kittens still execute tasks normally (Forage/Build/etc)
+  - pinned projects still clear after 1 completion
+  - starvation behavior still triggers only when no edible food remains

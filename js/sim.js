@@ -178,3 +178,53 @@ export function updateProjectRates(s, dt){
     s._prevProj[d.key] = cur;
   }
 }
+
+// --- Core per-tick kitten execution (modularization slice)
+// Extracted from main.js: execute each kitten's current task + apply passive regen and hard-fail checks.
+// Kept deterministic and dependency-injected so the sim layer can be reused in replay/offline harnesses.
+export function runKittensTick(s, dt, deps){
+  const taskDefs = deps?.taskDefs;
+  const edibleFood = deps?.edibleFood;
+  const log = deps?.log;
+  const pinnedProjectInfo = deps?.pinnedProjectInfo;
+  const clearPinnedProject = deps?.clearPinnedProject;
+
+  for (const k of s.kittens) {
+    // Per-tick execution marker for blocked sink actions that fallback to a different task.
+    // Cleared every tick; set by doFallback(...).
+    k._fallbackTo = null;
+    // Per-tick mentoring target (only set when the Mentor action runs).
+    k._mentor = null;
+
+    const def = taskDefs?.[k.task] ?? taskDefs?.Rest;
+    if (def?.tick) def.tick(s, k, dt);
+
+    // Passive regen from warmth and shelter
+    const comfort = (s.res.warmth / 100) * 0.004 + s.res.huts * 0.0007;
+    k.energy = clamp01(k.energy + dt * comfort);
+    if (k.hunger > 0.82) k.energy = clamp01(k.energy - dt * 0.01);
+
+    // Starvation/sickness spiral: extreme hunger slowly damages health (even before death).
+    // Jerky counts as edible food; only apply the harsh spiral when *nothing edible* remains.
+    const edible = (typeof edibleFood === 'function') ? edibleFood(s) : 0;
+    if (k.hunger > 0.92 && edible <= 0) {
+      k.health = clamp01((k.health ?? 1) - dt * 0.020);
+    } else if (k.hunger > 0.92) {
+      k.health = clamp01((k.health ?? 1) - dt * 0.006);
+    }
+
+    // Hard fail: starvation (only if *no edible food* remains)
+    if (edible <= 0 && k.hunger >= 0.98) {
+      // lose a kitten (rare, but makes it a civ sim)
+      s.kittens = s.kittens.filter(x => x.id !== k.id);
+      if (typeof log === 'function') log(`A kitten starved. Population: ${s.kittens.length}`);
+      break;
+    }
+  }
+
+  // Pinned project completion: clear the pin once ONE unit completes.
+  const pin = (typeof pinnedProjectInfo === 'function') ? pinnedProjectInfo(s) : null;
+  if (pin && pin.completed && typeof clearPinnedProject === 'function') {
+    clearPinnedProject(s, `Pinned project complete: built 1 ${pin.type}.`);
+  }
+}
