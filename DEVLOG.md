@@ -2394,3 +2394,22 @@ Files touched
 
 What to try
 - Click **Match blocs**, then sort the Colony table by **Bloc** and watch how stable the colony stays when you loosen central planning (raise Autonomy).
+
+---
+
+## 2026-02-28 19:43 CST - v0.9.117 Role Quota presets (Stable / Advance)
+
+Summary
+- QoL: Role Quotas panel now has **Preset: Stable** (keeps basics staffed, adds warmth/guard/building as needed) and **Preset: Advance** (keeps scholar/toolsmith/builder online when unlocked).
+- Presets are **unlock-aware** (won\'t assign Farmers before Farming, Toolsmith before Workshop, etc.) and **population-clamped** (won\'t exceed current pop).
+- Works with existing **Undo** (policy + role quotas) snapshots.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In **Role Quotas**, click **Preset: Stable** right before Winter and watch the colony self-staff Firekeeper/Forager/Woodcutter while still following your policy plan.

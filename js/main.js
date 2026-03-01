@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.116';
+  const GAME_VERSION = '0.9.117';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4506,6 +4506,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.117',
+      notes: [
+        'QoL: Role Quotas panel now includes one-click presets (Stable / Advance) to quickly steer colony specialization without micromanaging each quota.',
+        'Explainability: presets are population- and unlock-aware (won\'t assign Farmers before Farming, Toolsmith before Workshop, etc.).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.116',
       notes: [
         'NEW: Directive tools (batch): “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social).',
@@ -8077,9 +8085,13 @@
         </div>`;
     };
 
-    const footer = `<div class="row" style="margin-top:8px; justify-content:space-between">
+    const footer = `<div class="row" style="margin-top:8px; justify-content:space-between; align-items:center">
       <span class="small" style="opacity:.9">Tip: quotas work best with policy multipliers (e.g., set Builder quota=1 + BuildHut mult=1.5).</span>
-      <button class="btn" id="btnRoleQuotaReset">Reset</button>
+      <div class="row" style="gap:6px; flex-wrap:wrap; justify-content:flex-end">
+        <button class="btn" data-rqpreset="Stable" title="Quick role-quotas for a stable colony (food+wood+warmth+guard as needed).">Preset: Stable</button>
+        <button class="btn" data-rqpreset="Advance" title="Quick role-quotas for research/industry (keeps a scholar/toolsmith/builder online when unlocked).">Preset: Advance</button>
+        <button class="btn" id="btnRoleQuotaReset" title="Set all role quotas back to 0.">Reset</button>
+      </div>
     </div>`;
 
     roleQuotasEl.innerHTML = rows.map(([label,id,ok]) => line(label,id,ok)).join('') + footer;
@@ -8093,6 +8105,72 @@
       save();
       render();
     };
+  }
+
+
+  function applyRoleQuotaPreset(s, name){
+    // Record undo snapshot BEFORE applying a preset.
+    recordPolicyUndo(s, `role quota preset ${name}`);
+
+    s.roleQuota = s.roleQuota ?? { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
+
+    const n = Math.max(1, Number(s.kittens?.length ?? 1) || 1);
+    const season = seasonAt(s.t);
+    const targets = seasonTargets(s);
+    const foodPk = ediblePerKitten(s);
+    const warmth = Number(s.res?.warmth ?? 0);
+    const threat = Number(s.res?.threat ?? 0);
+
+    const next = { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 };
+
+    if (name === 'Stable') {
+      // Stabilize basics first; quotas are gentle targets (not locks).
+      // Always keep some food + wood online; add warmth + guard when pressured.
+      next.Forager = 1;
+      if (s.unlocked?.farm) next.Farmer = (foodPk < targets.foodPerKitten * 0.95) ? 1 : 0;
+      next.Woodcutter = 1;
+      next.Firekeeper = (season.name === 'Winter' || warmth < targets.warmth - 6) ? 1 : 0;
+      next.Guard = (threat > targets.maxThreat * 0.85 || s.signals?.ALARM) ? 1 : 0;
+      next.Builder = (s.unlocked?.construction && ((s.kittens?.length ?? 0) >= housingCap(s) || s.signals?.BUILD)) ? 1 : 0;
+      next.Scholar = (n >= 5) ? 1 : 0;
+      next.Toolsmith = (s.unlocked?.workshop && (Number(s.res?.tools ?? 0) < n * 8) && (Number(s.res?.science ?? 0) > getReserve(s,'science') + 10)) ? 1 : 0;
+    }
+
+    if (name === 'Advance') {
+      // Keep compounding engines online (Scholar/Toolsmith/Builder) while not dropping basics.
+      next.Forager = 1;
+      if (s.unlocked?.farm) next.Farmer = 1;
+      next.Woodcutter = 1;
+      next.Firekeeper = (season.name === 'Winter') ? 1 : 0;
+      next.Scholar = 1;
+      next.Toolsmith = s.unlocked?.workshop ? 1 : 0;
+      next.Builder = s.unlocked?.construction ? 1 : 0;
+      next.Guard = (threat > targets.maxThreat * 0.92 || s.signals?.ALARM) ? 1 : 0;
+    }
+
+    // Clamp to population and to unlocks.
+    if (!s.unlocked?.farm) next.Farmer = 0;
+    if (!s.unlocked?.construction) next.Builder = 0;
+    if (!s.unlocked?.workshop) next.Toolsmith = 0;
+
+    for (const k of Object.keys(next)) next[k] = Math.max(0, Math.min(99, Number(next[k] ?? 0) | 0));
+
+    // If the preset exceeds population, shave in a predictable order.
+    const shaveOrder = ['Firekeeper','Guard','Toolsmith','Builder','Scholar','Woodcutter','Farmer','Forager'];
+    let sum = Object.values(next).reduce((a,b)=>a+b,0);
+    while (sum > n) {
+      let changed = false;
+      for (const k of shaveOrder) {
+        if (sum <= n) break;
+        if ((next[k] ?? 0) > 0) { next[k] -= 1; sum -= 1; changed = true; }
+      }
+      if (!changed) break;
+    }
+
+    s.roleQuota = next;
+    log(`Role quota preset → ${name} (${Object.entries(next).filter(([,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ') || 'all 0'})`);
+    save();
+    render();
   }
 
   function condEditor(cond, idx){
@@ -9022,6 +9100,13 @@
   if (roleQuotasEl) roleQuotasEl.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
+
+    const preset = String(btn.dataset.rqpreset || '');
+    if (preset) {
+      applyRoleQuotaPreset(state, preset);
+      return;
+    }
+
     const role = btn.dataset.role;
     const rq = btn.dataset.rq;
     if (!role || !rq) return;
