@@ -3052,3 +3052,25 @@ What to try
 - Run `node scripts/replay_test.js` (should print `golden: OK`).
 - Temporarily change `scripts/canned_save.json` (or the sim) and confirm it fails with a golden mismatch.
 - If the change is intentional, run `node scripts/replay_test.js --update-golden` to refresh.
+
+
+---
+
+## 2026-03-01 12:25 CST - P0.2 CI: GitHub Actions sanity workflow (parse + replay)
+
+Summary
+- Added a minimal GitHub Actions **CI** workflow that runs on every push/PR:
+  - 
+ode scripts/parse_check.js (imports core ES modules)
+  - 
+ode scripts/replay_test.js (golden checksum enforced)
+- Goal: make replay checksum drift a visible regression signal.
+
+Files touched
+- .github/workflows/ci.yml
+- scripts/parse_check.js
+- DEVLOG.md
+
+What to try
+- Open the GitHub Actions tab and confirm **CI** passes (look for PARSE_IMPORT_OK + eplay_test: OK).
+
