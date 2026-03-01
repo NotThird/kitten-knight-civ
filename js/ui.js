@@ -306,6 +306,77 @@ export function renderDirectorProfiles(deps){
 }
 
 /**
+ * Render the Director pinned-project selector + hint text.
+ *
+ * Pure render helper: does NOT mutate state.
+ *
+ * @param {object} deps
+ * @param {any} deps.state
+ * @param {HTMLElement|null} deps.pinHintEl
+ * @param {HTMLElement|null} deps.btnClearPinEl
+ * @param {HTMLElement|null} deps.pinSelectEl
+ * @param {HTMLElement|null} deps.btnPinEl
+ * @param {HTMLElement|null} deps.pinProjectHintEl
+ * @param {(s:any)=>any|null} deps.pinnedProjectInfo
+ * @param {(type:string)=>any|null} deps.pinnedProjectDef
+ */
+export function renderPinnedProjectControls(deps){
+  const {
+    state,
+    pinHintEl,
+    btnClearPinEl,
+    pinSelectEl,
+    btnPinEl,
+    pinProjectHintEl,
+    pinnedProjectInfo,
+    pinnedProjectDef,
+  } = deps || {};
+
+  const pin = pinnedProjectInfo?.(state);
+
+  // Pinned project hint (discoverability)
+  if (pin && !pin.completed) {
+    if (pinHintEl) pinHintEl.textContent = `Pinned: ${pin.type} (finish 1)`;
+    if (btnClearPinEl) btnClearPinEl.style.display = '';
+  } else {
+    if (pinHintEl) pinHintEl.textContent = '';
+    if (btnClearPinEl) btnClearPinEl.style.display = 'none';
+  }
+
+  // Pin project selector (QoL: same pin mechanic, but discoverable from the Director panel)
+  if (pinSelectEl) {
+    // Disable options that aren't unlocked yet (keeps it explainable).
+    const opt = (val) => pinSelectEl.querySelector(`option[value="${val}"]`);
+    const lock = {
+      Hut: !state?.unlocked?.construction,
+      Palisade: !state?.unlocked?.construction,
+      Granary: !(state?.unlocked?.construction && state?.unlocked?.granary),
+      Workshop: !(state?.unlocked?.construction && state?.unlocked?.workshop),
+      Library: !(state?.unlocked?.construction && state?.unlocked?.library),
+    };
+    for (const [k, locked] of Object.entries(lock)) {
+      const o = opt(k);
+      if (o) o.disabled = !!locked;
+    }
+
+    // Sync selection to current pin.
+    const cur = (pin && !pin.completed) ? String(pin.type ?? '') : '';
+    if (String(pinSelectEl.value || '') !== cur) pinSelectEl.value = cur;
+
+    if (pinProjectHintEl) {
+      if (!state?.unlocked?.construction) pinProjectHintEl.textContent = 'Unlock Construction to pin builds.';
+      else pinProjectHintEl.textContent = cur ? 'Pin clears when 1 completes.' : 'Pick a project to pin (finish 1).';
+    }
+
+    if (btnPinEl) {
+      const sel = String(pinSelectEl.value || '');
+      const def = sel ? pinnedProjectDef?.(sel) : null;
+      btnPinEl.disabled = !def;
+    }
+  }
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

@@ -3193,3 +3193,22 @@ Files touched
 What to try
 - Open Director Profiles: confirm slots show **empty/saved HH:MM**.
 - Save a slot, refresh, and confirm the saved timestamp label persists.
+
+---
+
+## 2026-03-01 16:26 CST - P0.1 Modularization: extract pinned project UI rendering into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director pinned-project selector + hint rendering out of `main.js` into a pure UI helper: `renderPinnedProjectControls(...)` in `js/ui.js`.
+- `main.js` now just delegates rendering and injects the sim/state functions (`pinnedProjectInfo` / `pinnedProjectDef`).
+- No behavior changes intended (same unlock gating + enable/disable logic).
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director: confirm the pinned hint + Clear Pin button show/hide correctly.
+- Use the Pin Project dropdown: options should disable until the right unlocks (Granary/Workshop/Library).
+- Pin a Hut: confirm the Pin button enables only when a valid option is selected.

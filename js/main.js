@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderPinnedProjectControls } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -6117,52 +6117,17 @@ import { PATCH_HISTORY } from './content.js';
       }
     }
 
-    // Pinned project hint (discoverability)
-    const pinHint = el('pinHint');
-    const clearPinBtn = el('btnClearPin');
-    const pin = pinnedProjectInfo(state);
-    if (pin && !pin.completed) {
-      if (pinHint) pinHint.textContent = `Pinned: ${pin.type} (finish 1)`;
-      if (clearPinBtn) clearPinBtn.style.display = '';
-    } else {
-      if (pinHint) pinHint.textContent = '';
-      if (clearPinBtn) clearPinBtn.style.display = 'none';
-    }
-
-    // Pin project selector (QoL: same pin mechanic, but discoverable from the Director panel)
-    const pinSel = el('pinProjectSelect');
-    const pinBtn = el('btnPinProject');
-    const pinPHint = el('pinProjectHint');
-    if (pinSel) {
-      // Disable options that aren't unlocked yet (keeps it explainable).
-      const opt = (val) => pinSel.querySelector(`option[value=\"${val}\"]`);
-      const lock = {
-        Hut: !state.unlocked?.construction,
-        Palisade: !state.unlocked?.construction,
-        Granary: !(state.unlocked?.construction && state.unlocked?.granary),
-        Workshop: !(state.unlocked?.construction && state.unlocked?.workshop),
-        Library: !(state.unlocked?.construction && state.unlocked?.library),
-      };
-      for (const [k, locked] of Object.entries(lock)) {
-        const o = opt(k);
-        if (o) o.disabled = !!locked;
-      }
-
-      // Sync selection to current pin.
-      const cur = (pin && !pin.completed) ? String(pin.type ?? '') : '';
-      if (String(pinSel.value || '') !== cur) pinSel.value = cur;
-
-      if (pinPHint) {
-        if (!state.unlocked?.construction) pinPHint.textContent = 'Unlock Construction to pin builds.';
-        else pinPHint.textContent = cur ? 'Pin clears when 1 completes.' : 'Pick a project to pin (finish 1).';
-      }
-
-      if (pinBtn) {
-        const sel = String(pinSel.value || '');
-        const def = sel ? pinnedProjectDef(sel) : null;
-        pinBtn.disabled = !def;
-      }
-    }
+    // Pinned project selector + hint (Director)
+    renderPinnedProjectControls({
+      state,
+      pinHintEl: el('pinHint'),
+      btnClearPinEl: el('btnClearPin'),
+      pinSelectEl: el('pinProjectSelect'),
+      btnPinEl: el('btnPinProject'),
+      pinProjectHintEl: el('pinProjectHint'),
+      pinnedProjectInfo,
+      pinnedProjectDef,
+    });
 
     // Director profiles UI
     if (profilesEl) {
