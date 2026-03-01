@@ -165,7 +165,43 @@ async function main(){
   console.log(`  sim: +${seconds}s @ dt=${dt}s (steps=${steps})`);
   console.log(`  pop: ${startPop} -> ${endPop}`);
   console.log('  resΔ:', deltas.map(x => `${x.k}:${fmtDelta(x.d)}`).join(' | '));
-  console.log(`  vitals(avg): hunger=${(Math.round(avg(vitNow,'hunger')*1000)/1000)} energy=${(Math.round(avg(vitNow,'energy')*1000)/1000)} health=${(Math.round(avg(vitNow,'health')*1000)/1000)}`);
+
+  function fmt3(n){
+    return Math.round((Number(n ?? 0) || 0) * 1000) / 1000;
+  }
+
+  function minmax(arr, key){
+    if (!arr.length) return { min: 0, max: 0 };
+    let min = Infinity;
+    let max = -Infinity;
+    for (const o of arr) {
+      const v = Number(o[key] ?? 0) || 0;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    return { min, max };
+  }
+
+  const avgStart = {
+    hunger: avg(startVitals, 'hunger'),
+    energy: avg(startVitals, 'energy'),
+    health: avg(startVitals, 'health'),
+  };
+  const avgEnd = {
+    hunger: avg(vitNow, 'hunger'),
+    energy: avg(vitNow, 'energy'),
+    health: avg(vitNow, 'health'),
+  };
+  const mm = {
+    hunger: minmax(vitNow, 'hunger'),
+    energy: minmax(vitNow, 'energy'),
+    health: minmax(vitNow, 'health'),
+  };
+
+  console.log(`  vitals(avg): hunger ${fmt3(avgStart.hunger)} -> ${fmt3(avgEnd.hunger)} (${fmtDelta(avgEnd.hunger - avgStart.hunger)})`);
+  console.log(`              energy ${fmt3(avgStart.energy)} -> ${fmt3(avgEnd.energy)} (${fmtDelta(avgEnd.energy - avgStart.energy)})`);
+  console.log(`              health ${fmt3(avgStart.health)} -> ${fmt3(avgEnd.health)} (${fmtDelta(avgEnd.health - avgStart.health)})`);
+  console.log(`  vitals(end min..max): hunger ${fmt3(mm.hunger.min)}..${fmt3(mm.hunger.max)} | energy ${fmt3(mm.energy.min)}..${fmt3(mm.energy.max)} | health ${fmt3(mm.health.min)}..${fmt3(mm.health.max)}`);
 
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
