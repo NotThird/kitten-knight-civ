@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.121';
+  const GAME_VERSION = '0.9.122';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -289,7 +289,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -407,7 +407,7 @@
       Food: prioMul(s,'prioFood'),
       Safety: prioMul(s,'prioSafety'),
       Progress: prioMul(s,'prioProgress'),
-      Social: 1.00,
+      Social: prioMul(s,'prioSocial'),
     };
 
     const m = String(s.mode ?? 'Survive');
@@ -2241,9 +2241,11 @@
     const pFood = prioMul(s,'prioFood');
     const pSafety = prioMul(s,'prioSafety');
     const pProg = prioMul(s,'prioProgress');
+    const pSoc = prioMul(s,'prioSocial');
     const FOOD_ACT = new Set(['Forage','Farm','PreserveFood']);
     const SAFETY_ACT = new Set(['Guard','StokeFire']);
     const PROG_ACT = new Set(['Research','Mentor','CraftTools','BuildWorkshop','BuildLibrary']);
+    const SOCIAL_ACT = new Set(['Socialize','Care']);
     // Builders are special: they are both "safety" (palisade/huts/granary) and "progress" (infrastructure).
 
     // Availability above reserves (execution layer hard-stops spending below reserve; scoring should reflect this)
@@ -2296,6 +2298,10 @@
       if (PROG_ACT.has(a)) {
         const add = base(a) * (pProg - 1);
         if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
+      if (SOCIAL_ACT.has(a)) {
+        const add = base(a) * (pSoc - 1);
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Social x${pSoc.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (a === 'BuildHut' || a === 'BuildGranary' || a === 'BuildPalisade') {
         // Infrastructure: treat as a blend of Safety + Progress, so you can push building without always pushing research.
@@ -3282,12 +3288,14 @@
     if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
     if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
     if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
+    if (!('prioSocial' in state.director)) state.director.prioSocial = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(state.director.prioFood ?? 1.00) || 1.00));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(state.director.prioSafety ?? 1.00) || 1.00));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(state.director.prioProgress ?? 1.00) || 1.00));
+    state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(state.director.prioSocial ?? 1.00) || 1.00));
 
     // --- Social pressure: Dissent
     // Emergent behavior layer: when mood is low and policy is harsh, kittens become less compliant.
@@ -4536,6 +4544,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.122',
+      notes: [
+        'Director priorities: added a Social priority slider that biases Socialize/Care decisions (and shows in scoring reasons).',
+        'Politics: Social bloc negotiations now steer prioSocial (with undo support + governance log deltas).',
+        'No save-breaking changes (defaults to 100% if missing).'
+      ]
+    },
     {
       v: '0.9.121',
       notes: [
@@ -6578,6 +6594,7 @@
       prioFood: Number(s.director.prioFood ?? 1) || 1,
       prioSafety: Number(s.director.prioSafety ?? 1) || 1,
       prioProgress: Number(s.director.prioProgress ?? 1) || 1,
+      prioSocial: Number(s.director.prioSocial ?? 1) || 1,
       workPace: Number(s.director.workPace ?? 1) || 1,
       discipline: Number(s.director.discipline ?? 0.4) || 0.4,
       policyMult: { ...(s.policyMult ?? {}) },
@@ -6592,6 +6609,7 @@
         prioFood: before.prioFood,
         prioSafety: before.prioSafety,
         prioProgress: before.prioProgress,
+        prioSocial: before.prioSocial,
         workPace: before.workPace,
         discipline: before.discipline,
       },
@@ -6610,9 +6628,11 @@
       s.director.prioProgress = Math.min(1.5, before.prioProgress + 0.10);
       s.director.prioSafety = Math.max(0.5, before.prioSafety - 0.05);
     } else if (ax === 'Social') {
-      // Social isn't a priority slider; it expresses through pacing + cohesion actions.
-      s.director.workPace = Math.max(0.8, before.workPace - 0.05);
-      s.director.discipline = clamp01(before.discipline - 0.03);
+      // Social concession: invest more into cohesion actions (and slightly slow pure growth pressure).
+      s.director.prioSocial = Math.min(1.5, before.prioSocial + 0.10);
+      s.director.prioProgress = Math.max(0.5, before.prioProgress - 0.05);
+      s.director.workPace = Math.max(0.8, before.workPace - 0.03);
+      s.director.discipline = clamp01(before.discipline - 0.02);
       s.policyMult.Socialize = Math.min(2, Math.max(0, Number(s.policyMult.Socialize ?? 1) + 0.15));
       s.policyMult.Care = Math.min(2, Math.max(0, Number(s.policyMult.Care ?? 1) + 0.15));
       s.policyMult.Research = Math.min(2, Math.max(0, Number(s.policyMult.Research ?? 1) - 0.05));
@@ -6629,6 +6649,7 @@
       prioFood: Number(s.director.prioFood ?? 1) || 1,
       prioSafety: Number(s.director.prioSafety ?? 1) || 1,
       prioProgress: Number(s.director.prioProgress ?? 1) || 1,
+      prioSocial: Number(s.director.prioSocial ?? 1) || 1,
       workPace: Number(s.director.workPace ?? 1) || 1,
       discipline: Number(s.director.discipline ?? 0.4) || 0.4,
       policyMult: { ...(s.policyMult ?? {}) },
@@ -6660,6 +6681,7 @@
       fmtDelta('prioFood', before.prioFood, after.prioFood),
       fmtDelta('prioSafety', before.prioSafety, after.prioSafety),
       fmtDelta('prioProgress', before.prioProgress, after.prioProgress),
+      fmtDelta('prioSocial', before.prioSocial, after.prioSocial),
       fmtDelta('workPace', before.workPace, after.workPace),
       fmtDelta('discipline', before.discipline, after.discipline),
       ...polDiff,
@@ -6694,6 +6716,7 @@
     s.director.prioFood = Math.max(0.50, Math.min(1.50, Number(d.prioFood ?? 1) || 1));
     s.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(d.prioSafety ?? 1) || 1));
     s.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(d.prioProgress ?? 1) || 1));
+    s.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(d.prioSocial ?? 1) || 1));
     s.director.workPace = Math.max(0.8, Math.min(1.2, Number(d.workPace ?? 1) || 1));
     s.director.discipline = clamp01(Number(d.discipline ?? 0.4) || 0.4);
     if (u.policyMult && typeof u.policyMult === 'object') s.policyMult = { ...(u.policyMult ?? {}) };
@@ -6879,7 +6902,7 @@
       if (ax === 'Food') return 'Concession: +prioFood, -prioProgress';
       if (ax === 'Safety') return 'Concession: +prioSafety, -prioProgress';
       if (ax === 'Progress') return 'Concession: +prioProgress, -prioSafety';
-      if (ax === 'Social') return 'Concession: -workPace, -discipline, +Socialize/Care policy, -Research policy';
+      if (ax === 'Social') return 'Concession: +prioSocial, -prioProgress, -workPace, -discipline, +Socialize/Care policy, -Research policy';
       return '';
     };
 
@@ -7038,12 +7061,14 @@
     if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
     if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
     if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
+    if (!('prioSocial' in state.director)) state.director.prioSocial = 1.00;
     state.director.autonomy = clamp01(Number(state.director.autonomy ?? 0.60));
     state.director.discipline = clamp01(Number(state.director.discipline ?? 0.40));
     state.director.workPace = Math.max(0.8, Math.min(1.2, Number(state.director.workPace ?? 1.00) || 1.00));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(state.director.prioFood ?? 1.00) || 1.00));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(state.director.prioSafety ?? 1.00) || 1.00));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(state.director.prioProgress ?? 1.00) || 1.00));
+    state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(state.director.prioSocial ?? 1.00) || 1.00));
 
     const wp = !!state.director.winterPrep;
     const wpBtn = el('btnWinterPrep');
@@ -7643,14 +7668,16 @@
     }
 
     // Director priorities (high-level policy weights)
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood:1.00, prioSafety:1.00, prioProgress:1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood:1.00, prioSafety:1.00, prioProgress:1.00, prioSocial:1.00 };
     if (!('prioFood' in state.director)) state.director.prioFood = 1.00;
     if (!('prioSafety' in state.director)) state.director.prioSafety = 1.00;
     if (!('prioProgress' in state.director)) state.director.prioProgress = 1.00;
+    if (!('prioSocial' in state.director)) state.director.prioSocial = 1.00;
 
     const prFoodMul = prioMul(state,'prioFood');
     const prSafetyMul = prioMul(state,'prioSafety');
     const prProgMul = prioMul(state,'prioProgress');
+    const prSocMul = prioMul(state,'prioSocial');
 
     const prFoodEl = el('prioFood');
     if (prFoodEl) prFoodEl.value = String(Math.round(prFoodMul*100/5)*5);
@@ -7666,6 +7693,11 @@
     if (prProgEl) prProgEl.value = String(Math.round(prProgMul*100/5)*5);
     const prProgH = el('prioProgressHint');
     if (prProgH) prProgH.textContent = `${Math.round(prProgMul*100)}% | biases Research/Tools/Workshop/Library (+infra blend)`;
+
+    const prSocEl = el('prioSocial');
+    if (prSocEl) prSocEl.value = String(Math.round(prSocMul*100/5)*5);
+    const prSocH = el('prioSocialHint');
+    if (prSocH) prSocH.textContent = `${Math.round(prSocMul*100)}% | biases Socialize/Care (mood+dissent stability)`;
 
     // Labor doctrine (specialization vs rotation)
     const doc = doctrineKey(state);
@@ -8418,6 +8450,7 @@
         prioFood: prioMul(state,'prioFood'),
         prioSafety: prioMul(state,'prioSafety'),
         prioProgress: prioMul(state,'prioProgress'),
+        prioSocial: prioMul(state,'prioSocial'),
       },
     };
   }
@@ -8443,6 +8476,7 @@
       if ('prioFood' in snap.director) state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(snap.director.prioFood ?? 1.00) || 1.00));
       if ('prioSafety' in snap.director) state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(snap.director.prioSafety ?? 1.00) || 1.00));
       if ('prioProgress' in snap.director) state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(snap.director.prioProgress ?? 1.00) || 1.00));
+      if ('prioSocial' in snap.director) state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(snap.director.prioSocial ?? 1.00) || 1.00));
       if ('doctrine' in snap.director) {
         const v = String(snap.director.doctrine ?? 'Balanced');
         state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
@@ -8979,10 +9013,10 @@
     render();
   });
 
-  // Director priorities (Food/Safety/Progress)
+  // Director priorities (Food/Safety/Progress/Social)
   const prioFoodInput = document.getElementById('prioFood');
   if (prioFoodInput) prioFoodInput.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, pct / 100));
     uiDebouncedLog('prioFood', `Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
@@ -8992,7 +9026,7 @@
 
   const prioSafetyInput = document.getElementById('prioSafety');
   if (prioSafetyInput) prioSafetyInput.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, pct / 100));
     uiDebouncedLog('prioSafety', `Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
@@ -9002,7 +9036,7 @@
 
   const prioProgressInput = document.getElementById('prioProgress');
   if (prioProgressInput) prioProgressInput.addEventListener('input', (e)=>{
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, pct / 100));
     uiDebouncedLog('prioProgress', `Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
@@ -9010,27 +9044,38 @@
     render();
   });
 
-  function setPriorities(pFood, pSafety, pProg, why){
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00 };
+  const prioSocialInput = document.getElementById('prioSocial');
+  if (prioSocialInput) prioSocialInput.addEventListener('input', (e)=>{
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
+    const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
+    state.director.prioSocial = Math.max(0.50, Math.min(1.50, pct / 100));
+    uiDebouncedLog('prioSocial', `Priority (Social) → ${Math.round(state.director.prioSocial * 100)}%`);
+    save();
+    render();
+  });
+
+  function setPriorities(pFood, pSafety, pProg, pSoc, why){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     state.director.prioFood = Math.max(0.50, Math.min(1.50, Number(pFood) || 1.00));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(pSafety) || 1.00));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(pProg) || 1.00));
-    log(`Priority preset → ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}%`);
+    state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(pSoc) || 1.00));
+    log(`Priority preset → ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}% | Social ${(state.director.prioSocial*100).toFixed(0)}%`);
     save();
     render();
   }
 
   const prBal = document.getElementById('btnPrioBalanced');
-  if (prBal) prBal.addEventListener('click', ()=> setPriorities(1.00, 1.00, 1.00, 'Balanced'));
+  if (prBal) prBal.addEventListener('click', ()=> setPriorities(1.00, 1.00, 1.00, 1.00, 'Balanced'));
 
   const prFoodBtn = document.getElementById('btnPrioFood');
-  if (prFoodBtn) prFoodBtn.addEventListener('click', ()=> setPriorities(1.25, 1.00, 0.90, 'Food'));
+  if (prFoodBtn) prFoodBtn.addEventListener('click', ()=> setPriorities(1.25, 1.00, 0.90, 1.00, 'Food'));
 
   const prSafeBtn = document.getElementById('btnPrioSafety');
-  if (prSafeBtn) prSafeBtn.addEventListener('click', ()=> setPriorities(1.00, 1.25, 0.90, 'Safety'));
+  if (prSafeBtn) prSafeBtn.addEventListener('click', ()=> setPriorities(1.00, 1.25, 0.90, 1.00, 'Safety'));
 
   const prProgBtn = document.getElementById('btnPrioProgress');
-  if (prProgBtn) prProgBtn.addEventListener('click', ()=> setPriorities(0.95, 0.90, 1.25, 'Progress'));
+  if (prProgBtn) prProgBtn.addEventListener('click', ()=> setPriorities(0.95, 0.90, 1.25, 0.90, 'Progress'));
 
   function consensusPrioritiesFromValues(s){
     const ks = Array.isArray(s?.kittens) ? s.kittens : [];
@@ -9055,6 +9100,7 @@
       pFood: map(f),
       pSafety: map(sa),
       pProg: map(pr),
+      pSoc: map(so),
       avg: { Food:f, Safety:sa, Progress:pr, Social:so }
     };
   }
@@ -9062,11 +9108,11 @@
   const prConBtn = document.getElementById('btnPrioConsensus');
   if (prConBtn) prConBtn.addEventListener('click', ()=>{
     const c = consensusPrioritiesFromValues(state);
-    setPriorities(c.pFood, c.pSafety, c.pProg, 'Consensus');
+    setPriorities(c.pFood, c.pSafety, c.pProg, c.pSoc, 'Consensus');
     // Listening moment: a tiny, immediate dissent reduction.
     state.social = state.social ?? { dissent: 0 };
     state.social.dissent = clamp01(Number(state.social.dissent ?? 0) * 0.90);
-    log(`Consensus priorities (avg values F${Math.round(c.avg.Food*100)} S${Math.round(c.avg.Safety*100)} P${Math.round(c.avg.Progress*100)} So${Math.round(c.avg.Social*100)}): Food ${(c.pFood*100).toFixed(0)}% | Safety ${(c.pSafety*100).toFixed(0)}% | Progress ${(c.pProg*100).toFixed(0)}%`);
+    log(`Consensus priorities (avg values F${Math.round(c.avg.Food*100)} S${Math.round(c.avg.Safety*100)} P${Math.round(c.avg.Progress*100)} So${Math.round(c.avg.Social*100)}): Food ${(c.pFood*100).toFixed(0)}% | Safety ${(c.pSafety*100).toFixed(0)}% | Progress ${(c.pProg*100).toFixed(0)}% | Social ${(c.pSoc*100).toFixed(0)}%`);
     save();
     render();
   });

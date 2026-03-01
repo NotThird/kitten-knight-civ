@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 20:59 CST - v0.9.122 Director: Social priority (mood + cohesion steering)
+
+Summary
+- Added a **Social** Director priority slider (50–150%) that biases Socialize/Care choices.
+- Explainability: Social priority shows up in the Decision Inspector scoring reasons (prio Social x…).
+- Colony focus/values alignment now incorporates Social priority (affects focus-fit + bloc alignment).
+- Politics: negotiating with the **Social** bloc now nudges prioSocial (plus the existing cohesion-policy tweaks), and the undo snapshot restores it.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Raise **Social** to ~130% during rising dissent and watch the plan shift toward Socialize/Care (and see the reason lines in the inspector).
+
+---
+
 ## 2026-02-28 20:44 CST - v0.9.121 Inspector Directives: persistent + repeatable
 
 Summary
