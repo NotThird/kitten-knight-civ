@@ -106,3 +106,75 @@ export function momentumMul(k, action){
   // +2% per second after the first, capped at +20%.
   return 1 + Math.min(0.20, (streak - 1) * 0.02);
 }
+
+// --- Explainability: smoothed deltas (for UI rates + ETAs)
+// Deterministic, save-safe: stored in transient keys on state (not persisted).
+
+export function ensureRateState(s){
+  if (!s._rate) s._rate = Object.create(null);
+  if (!s._prevRes) s._prevRes = structuredClone(s.res);
+}
+
+export function ema(oldV, newV, alpha){
+  if (!Number.isFinite(oldV)) return newV;
+  return oldV + (newV - oldV) * alpha;
+}
+
+export function updateRates(s, dt){
+  ensureRateState(s);
+  const tau = 8; // seconds (higher = steadier)
+  const alpha = clamp01(dt / tau);
+
+  for (const key of Object.keys(s.res)) {
+    const prev = Number(s._prevRes[key] ?? 0);
+    const cur = Number(s.res[key] ?? 0);
+    const inst = (cur - prev) / Math.max(0.001, dt);
+    s._rate[key] = ema(s._rate[key], inst, alpha);
+    s._prevRes[key] = cur;
+  }
+}
+
+export function ensureProjRateState(s){
+  if (!s._projRate) s._projRate = Object.create(null);
+  if (!s._prevProj) s._prevProj = {
+    _hutProgress: Number(s._hutProgress ?? 0) || 0,
+    _palProgress: Number(s._palProgress ?? 0) || 0,
+    _granProgress: Number(s._granProgress ?? 0) || 0,
+    _workProgress: Number(s._workProgress ?? 0) || 0,
+    _libProgress: Number(s._libProgress ?? 0) || 0,
+  };
+}
+
+export function unwrapProjectDelta(delta, req){
+  // Project progress wraps down when a building completes (progress -= req).
+  // We treat that as continuous work for rate purposes.
+  let d = Number(delta ?? 0);
+  const r = Number(req ?? 0);
+  if (!Number.isFinite(d) || !Number.isFinite(r) || r <= 0) return 0;
+  if (d < 0) d = d + r; // wrapped completion
+  if (d < 0) d = 0;
+  return d;
+}
+
+export function updateProjectRates(s, dt){
+  ensureProjRateState(s);
+  const tau = 10; // seconds (steadier than resources; avoids noisy ETAs)
+  const alpha = clamp01(dt / tau);
+
+  const defs = [
+    { key:'_hutProgress', req:12 },
+    { key:'_palProgress', req:16 },
+    { key:'_granProgress', req:22 },
+    { key:'_workProgress', req:26 },
+    { key:'_libProgress', req:30 },
+  ];
+
+  for (const d of defs) {
+    const prev = Number(s._prevProj?.[d.key] ?? 0);
+    const cur = Number(s[d.key] ?? 0);
+    const delta = unwrapProjectDelta(cur - prev, d.req);
+    const inst = delta / Math.max(0.001, dt);
+    s._projRate[d.key] = ema(s._projRate[d.key], inst, alpha);
+    s._prevProj[d.key] = cur;
+  }
+}

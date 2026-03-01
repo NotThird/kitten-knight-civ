@@ -1,6 +1,6 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
-import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul } from './sim.js';
+import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates } from './sim.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -691,72 +691,8 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
     alt.tick(s, k, dt * 0.85);
   }
 
-  // --- Explainability: smoothed resource deltas + simple ETAs
-  function ensureRateState(s){
-    if (!s._rate) s._rate = Object.create(null);
-    if (!s._prevRes) s._prevRes = structuredClone(s.res);
-  }
-
-  function ema(oldV, newV, alpha){
-    if (!Number.isFinite(oldV)) return newV;
-    return oldV + (newV - oldV) * alpha;
-  }
-
-  function updateRates(s, dt){
-    ensureRateState(s);
-    const tau = 8; // seconds (higher = steadier)
-    const alpha = clamp01(dt / tau);
-
-    for (const key of Object.keys(s.res)) {
-      const prev = Number(s._prevRes[key] ?? 0);
-      const cur = Number(s.res[key] ?? 0);
-      const inst = (cur - prev) / Math.max(0.001, dt);
-      s._rate[key] = ema(s._rate[key], inst, alpha);
-      s._prevRes[key] = cur;
-    }
-  }
-
-  // --- Explainability: smoothed build-progress deltas (project ETAs)
-  // Tracks *effective* progress/sec for each build track so the Projects panel can show an ETA.
-  // Save-safe: stored in transient keys (not persisted).
-  function ensureProjRateState(s){
-    if (!s._projRate) s._projRate = Object.create(null);
-    if (!s._prevProj) s._prevProj = { _hutProgress: Number(s._hutProgress ?? 0) || 0, _palProgress: Number(s._palProgress ?? 0) || 0, _granProgress: Number(s._granProgress ?? 0) || 0, _workProgress: Number(s._workProgress ?? 0) || 0, _libProgress: Number(s._libProgress ?? 0) || 0 };
-  }
-
-  function unwrapProjectDelta(delta, req){
-    // Project progress wraps down when a building completes (progress -= req).
-    // We treat that as continuous work for rate purposes.
-    let d = Number(delta ?? 0);
-    const r = Number(req ?? 0);
-    if (!Number.isFinite(d) || !Number.isFinite(r) || r <= 0) return 0;
-    if (d < 0) d = d + r; // wrapped completion
-    if (d < 0) d = 0;
-    return d;
-  }
-
-  function updateProjectRates(s, dt){
-    ensureProjRateState(s);
-    const tau = 10; // seconds (steadier than resources; avoids noisy ETAs)
-    const alpha = clamp01(dt / tau);
-
-    const defs = [
-      { key:'_hutProgress', req:12 },
-      { key:'_palProgress', req:16 },
-      { key:'_granProgress', req:22 },
-      { key:'_workProgress', req:26 },
-      { key:'_libProgress', req:30 },
-    ];
-
-    for (const d of defs) {
-      const prev = Number(s._prevProj?.[d.key] ?? 0);
-      const cur = Number(s[d.key] ?? 0);
-      const delta = unwrapProjectDelta(cur - prev, d.req);
-      const inst = delta / Math.max(0.001, dt);
-      s._projRate[d.key] = ema(s._projRate[d.key], inst, alpha);
-      s._prevProj[d.key] = cur;
-    }
-  }
+  // --- Explainability: smoothed deltas (resource rates + project ETAs)
+  // Moved to sim.js to keep deterministic sim helpers centralized.
 
   function fmtRate(v){
     if (!Number.isFinite(v)) return '0/s';

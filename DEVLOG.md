@@ -2806,3 +2806,43 @@ Files touched
 What to try
 - Load the game and confirm the console is clean (no module 404s).
 - Quick smoke: let it run ~10s, toggle Pause, refresh, and confirm save/load still works.
+---
+
+## 2026-03-01 03:53 CST - P0.1 Modularization: extract efficiency + momentum into sim.js
+
+Summary
+- Phase 0 modularization slice: moved the two core tick helpers **efficiency(...)** and **momentumMul(...)** out of js/main.js into js/sim.js.
+- main.js now imports these helpers from sim.js instead of defining them inline.
+- No behavior changes intended; this is a pure boundary/cleanup move to keep the sim layer reusable for future replay/offline harness work.
+
+Files touched
+- `kitten-knight-civ/js/sim.js`
+- `kitten-knight-civ/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Load an existing save and sanity-check:
+  - kitten **Eff** values still respond to hunger/energy/winter warmth
+  - momentum specialization still ramps slightly when a kitten repeats the same productive task
+
+---
+
+## 2026-03-01 04:23 CST - P0.1 Modularization: extract rate smoothing helpers into sim.js
+
+Summary
+- Phase 0 modularization slice: moved the deterministic **resource rate** smoothing (`ensureRateState`, `updateRates`) and **project ETA rate** smoothing (`updateProjectRates`) out of `js/main.js` into `js/sim.js`.
+- `main.js` now imports these helpers from `sim.js`, further thinning the boot/UI file and centralizing sim utilities (useful for upcoming replay harness work).
+- No behavior changes intended.
+
+Files touched
+- `kitten-knight-civ/js/sim.js`
+- `kitten-knight-civ/js/main.js`
+- `dist/js/sim.js`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Open the game and sanity-check that:
+  - top stat trends still update smoothly (food/wood/warmth/etc)
+  - Projects panel ETAs still update for in-progress builds
+  - Auto Pause (danger) still forecasts starvation/freezing/raid risk correctly
