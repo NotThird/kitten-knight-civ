@@ -324,3 +324,28 @@ export function runDecisionSecond(s, deps){
   s._lastPlan = plan;
   return plan;
 }
+
+// --- Headless-friendly sim step (for replay/offline harnesses)
+// Mirrors main.js's step(dt) orchestration but keeps all dependencies injected.
+export function stepSim(s, dt, deps = {}){
+  const stepDt = Math.max(0, Number(dt ?? 0) || 0);
+  if (stepDt <= 0) return;
+
+  s.t = (Number(s.t ?? 0) || 0) + stepDt;
+
+  // Optional outer-layer hooks (kept out of this module for now)
+  if (typeof deps.applyUnlocks === 'function') deps.applyUnlocks(s);
+  if (typeof deps.tickPressures === 'function') deps.tickPressures(s, stepDt);
+
+  s._decTimer = (Number(s._decTimer ?? 0) || 0) + stepDt;
+  while (s._decTimer >= 1) {
+    s._decTimer -= 1;
+    runDecisionSecond(s, deps);
+  }
+
+  runKittensTick(s, stepDt, deps);
+
+  // Explainability: maintain smoothed deltas (not saved)
+  updateRates(s, stepDt);
+  updateProjectRates(s, stepDt);
+}

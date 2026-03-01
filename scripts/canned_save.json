@@ -1,0 +1,33 @@
+{
+  "t": 0,
+  "mode": "Survive",
+  "res": {
+    "food": 140,
+    "jerky": 20,
+    "wood": 80,
+    "warmth": 55,
+    "threat": 12,
+    "huts": 3,
+    "science": 0,
+    "tools": 0,
+    "granaries": 0,
+    "workshops": 0,
+    "libraries": 0
+  },
+  "kittens": [
+    {"id": 1, "task": "Rest", "hunger": 0.25, "energy": 0.85, "health": 1, "mood": 0.55, "grievance": 0},
+    {"id": 2, "task": "Rest", "hunger": 0.30, "energy": 0.75, "health": 1, "mood": 0.50, "grievance": 0.02},
+    {"id": 3, "task": "Rest", "hunger": 0.20, "energy": 0.80, "health": 1, "mood": 0.60, "grievance": 0}
+  ],
+  "rules": {"dummy": true},
+  "log": [],
+  "targets": {"foodPerKitten": 120, "warmth": 60, "maxThreat": 70},
+  "reserve": {"food": 0, "wood": 18, "science": 25, "tools": 0},
+  "signals": {"BUILD": false, "FOOD": false, "ALARM": false},
+  "unlocked": {"construction": false, "workshop": false, "farm": false, "security": false, "granary": false, "library": false},
+  "director": {"winterPrep": false, "saved": null, "crisis": false, "crisisSaved": null, "autoWinterPrep": false, "autoFoodCrisis": false, "autoReserves": false, "autoMode": false, "autoModeNextChangeAt": 0, "autoModeWhy": "", "autoDangerPause": false, "autoDangerPauseNextAt": 0, "autoDangerPauseWhy": "", "projectFocus": "Auto", "autonomy": 0.6},
+  "effects": {"festivalUntil": 0, "councilUntil": 0},
+  "policyMult": {"Socialize": 1, "Care": 1, "Forage": 1, "PreserveFood": 1, "Farm": 1, "ChopWood": 1, "StokeFire": 1, "Guard": 1, "BuildHut": 1, "BuildPalisade": 1, "BuildGranary": 1, "BuildWorkshop": 1, "BuildLibrary": 1, "CraftTools": 1, "Mentor": 1, "Research": 1},
+  "roleQuota": {"Forager": 0, "Farmer": 0, "Woodcutter": 0, "Firekeeper": 0, "Guard": 0, "Builder": 0, "Scholar": 0, "Toolsmith": 0},
+  "meta": {"version": "", "seenVersion": "", "lastTs": 0}
+}

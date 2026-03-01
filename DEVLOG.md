@@ -2904,3 +2904,26 @@ Files touched
 
 What to try
 - Run `node scripts/replay_test.js` (should print `replay_test: OK`).
+---
+
+## 2026-03-01 06:23 CST - P0.2 Replay harness: headless migrateState + stepSim (canned save)
+
+Summary
+- Phase 0.2: added a headless-friendly `migrateState(...)` helper in `js/state.js` (and refactored `loadGame(...)` to delegate to it).
+- Added `stepSim(s, dt, deps)` in `js/sim.js` so replay/offline harnesses can drive the same sim orchestration layer without DOM/UI.
+- Expanded `scripts/replay_test.js` to:
+  - load a `scripts/canned_save.json`,
+  - run migrations headlessly,
+  - simulate 60s via `stepSim`,
+  - assert basic invariants (no NaNs/infinities).
+
+Files touched
+- `dist/js/state.js`
+- `dist/js/sim.js`
+- `kitten-knight-civ/js/state.js`
+- `kitten-knight-civ/js/sim.js`
+- `scripts/replay_test.js`
+- `scripts/canned_save.json`
+
+What to try
+- Run `node scripts/replay_test.js`.
