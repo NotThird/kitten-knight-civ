@@ -27,9 +27,11 @@ function clamp01(n){
 async function main(){
   const simUrl = pathToFileURL(path.resolve(__dirname, '../js/sim.js')).href;
   const stateUrl = pathToFileURL(path.resolve(__dirname, '../js/state.js')).href;
+  const tasksUrl = pathToFileURL(path.resolve(__dirname, '../js/tasks_core.js')).href;
 
   const sim = await import(simUrl);
   const st = await import(stateUrl);
+  const tasks = await import(tasksUrl);
 
   // --- Basic season timeline invariants
   let lastIdx = null;
@@ -69,7 +71,18 @@ async function main(){
   // --- Headless deps: keep it minimal (we are testing orchestration + invariants, not balance)
   const deps = {
     // Execution layer
-    taskDefs: sim.minimalTaskDefs(),
+    taskDefs: tasks.makeCoreTaskDefs({
+      clamp01,
+      seasonAt: sim.seasonAt,
+      efficiency: sim.efficiency,
+      momentumMul: sim.momentumMul,
+      workPaceMul: () => 1,
+      // Harness stubs: keep deterministic, but don't require full main.js economy.
+      toolsBonus: () => 1,
+      libraryBonus: () => 1,
+      drillActive: () => 0,
+      gainXP: () => {},
+    }),
     edibleFood: sim.edibleFood,
     log: () => {},
 

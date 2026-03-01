@@ -1,5 +1,6 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
+import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
 
 (() => {
@@ -1376,6 +1377,20 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
       }
     },
   };
+
+  // P0.2 follow-up: shared subset of task defs consumed by both main.js and replay_test.
+  // We keep the existing inline defs for now, but override these four keys with a shared module.
+  Object.assign(taskDefs, makeCoreTaskDefs({
+    clamp01,
+    seasonAt,
+    efficiency,
+    momentumMul,
+    workPaceMul,
+    toolsBonus,
+    libraryBonus,
+    drillActive,
+    gainXP,
+  }));
 
   function gainXP(k, skill, amt){
     k.xp[skill] = (k.xp[skill] ?? 0) + amt;

@@ -2964,3 +2964,22 @@ Files touched
 
 What to try
 - Run `node scripts/replay_test.js` (should still print `replay_test: OK`).
+
+---
+
+## 2026-03-01 07:53 CST - P0.2 Replay harness: shared subset of real task defs (tasks_core)
+
+Summary
+- Phase 0.2: added `kitten-knight-civ/js/tasks_core.js`, a shared task-def factory (`makeCoreTaskDefs`) for the real economy tasks: **Forage / StokeFire / Guard / Research**.
+- `kitten-knight-civ/js/main.js` now overrides those four task defs from the shared module (keeps behavior 1:1 with the game while we continue modularization).
+- `scripts/replay_test.js` now uses the same shared task defs (with small stubs for tool/library bonuses + XP), reducing drift vs the live game.
+
+Files touched
+- `kitten-knight-civ/js/tasks_core.js`
+- `kitten-knight-civ/js/main.js`
+- `kitten-knight-civ/scripts/replay_test.js`
+- `DEVLOG.md`
+
+What to try
+- Run `node scripts/replay_test.js` (should print `replay_test: OK`).
+- Open the game and sanity-check early loops: Forage increases Food, StokeFire converts Wood→Warmth, Guard reduces Threat, Research increases Science.
