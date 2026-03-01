@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 23:45 CST - v0.9.133 QoL: Pinned projects auto-clear on completion
+
+Summary
+- QoL: pinned projects ("Pin (finish 1)") now auto-clear immediately when the requested build completes.
+- Prevents a subtle stuck state where the Director keeps treating the pin as active even after you successfully finished the build.
+- Applies to Hut / Palisade / Granary / Workshop / Library pins.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Pin a Hut (or Palisade) and let it complete; confirm the pin clears and the focus returns to normal behavior.
+
+---
+
 ## 2026-02-28 23:15 CST - v0.9.131 QoL: Inspectable stat cards now visibly "clickable"
 
 Summary
@@ -2694,7 +2715,7 @@ What to try
 
 Summary
 - Upgraded **Auto Pause (danger)** to use smoothed resource rates to forecast near-term collapse instead of only hard thresholds.
-- The director can now pause *before* you hit 0 edible food / 0 warmth / raid-at-100 threat when the trend says it’s imminent.
+- The director can now pause *before* you hit 0 edible food / 0 warmth / raid-at-100 threat when the trend says itï¿½s imminent.
 - Pause reasons now include a compact ETA for forecast-triggered pauses (ex: "0 in 18s").
 - Patch notes updated.
 

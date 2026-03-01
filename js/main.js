@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.132';
+  const GAME_VERSION = '0.9.133';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -185,6 +185,17 @@
     s.director = s.director ?? {};
     s.director.pinnedProject = null;
     if (msg) log(msg);
+  }
+
+  // Pinned projects are meant to be a tiny build-order loop: "finish ONE thing".
+  // Auto-clear the pin immediately once the requested project completes.
+  // Save-safe: if a save has an old pin, it'll still clear once completion is detected.
+  function maybeAutoClearPinnedProject(s, builtType){
+    const p = pinnedProjectInfo(s);
+    if (!p) return;
+    if (p.completed && String(p.type || '') === String(builtType || '')) {
+      clearPinnedProject(s, `Pinned project complete: ${p.type}.`);
+    }
   }
 
   function getEffectiveProjectFocus(s){
@@ -1191,6 +1202,7 @@
           s._hutProgress -= 12;
           s.res.huts += 1;
           log(`Built a hut. Huts: ${s.res.huts}`);
+          maybeAutoClearPinnedProject(s,'Hut');
         }
         k.energy = clamp01(k.energy - dt * 0.06 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
@@ -1219,6 +1231,7 @@
           s._palProgress -= 16;
           s.res.palisade += 1;
           log(`Built palisade segment. Palisade: ${s.res.palisade}`);
+          maybeAutoClearPinnedProject(s,'Palisade');
         }
         k.energy = clamp01(k.energy - dt * 0.06 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
@@ -1247,6 +1260,7 @@
           s._granProgress -= 22;
           s.res.granaries = (s.res.granaries ?? 0) + 1;
           log(`Built a granary. Granaries: ${s.res.granaries}`);
+          maybeAutoClearPinnedProject(s,'Granary');
         }
         k.energy = clamp01(k.energy - dt * 0.055 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.035 * wp);
@@ -1290,6 +1304,7 @@
           s._workProgress -= 26;
           s.res.workshops = (s.res.workshops ?? 0) + 1;
           log(`Built a workshop. Workshops: ${s.res.workshops} (industry x${workshopBonus(s).toFixed(2)})`);
+          maybeAutoClearPinnedProject(s,'Workshop');
         }
         k.energy = clamp01(k.energy - dt * 0.06 * wp);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
@@ -1349,6 +1364,7 @@
           s._libProgress -= 30;
           s.res.libraries = (s.res.libraries ?? 0) + 1;
           log(`Built a library. Libraries: ${s.res.libraries} (research x${libraryBonus(s).toFixed(2)})`);
+          maybeAutoClearPinnedProject(s,'Library');
         }
 
         k.energy = clamp01(k.energy - dt * 0.06 * wp);
@@ -4593,6 +4609,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.133',
+      notes: [
+        'QoL: pinned projects ("Pin (finish 1)") now auto-clear immediately when the requested build completes.',
+        'This prevents the Director from staying stuck in a stale pin state after you successfully finish the pinned Hut/Palisade/Granary/Workshop/Library.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.132',
       notes: [
