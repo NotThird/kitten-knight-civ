@@ -368,3 +368,394 @@ export function initPatchNotes(deps){
     setFromVersion(v){ uiPatch.fromVersion = String(v || ''); },
   };
 }
+
+/**
+ * Social/Storage/Threat inspectors (explainability modals).
+ * Kept dependency-injected so the UI module doesn't own simulation logic.
+ *
+ * @param {object} deps
+ * @param {()=>any} deps.getState
+ * @param {(n:number)=>string} deps.fmt
+ * @param {(n:number)=>number} deps.clamp01
+ * @param {(t:number)=>any} deps.seasonAt
+ * @param {(s:any)=>any} deps.seasonTargets
+ * @param {(s:any)=>number} deps.dissent01
+ * @param {(s:any)=>number} deps.compliance01
+ * @param {(s:any)=>any} deps.getRations
+ * @param {(s:any)=>string} deps.doctrineKey
+ * @param {(s:any)=>number} deps.workPaceMul
+ * @param {(s:any)=>number} deps.discipline01
+ * @param {string[]} deps.VALUE_AXES
+ * @param {(k:any)=>void} deps.ensureValues
+ * @param {(s:any,k:any)=>number} deps.valuesAlignment01
+ * @param {(k:any)=>string} deps.dominantValueAxis
+ * @param {(s:any)=>any} deps.colonyFocusVec
+ * @param {(s:any)=>number} deps.foodStorageCap
+ * @param {(sec:number)=>string} deps.fmtEtaSeconds
+ * @param {(a:number,b:number,rate:number)=>number} deps.etaToTarget
+ * @param {(rate:number)=>string} deps.fmtRate
+ * @param {(s:any)=>boolean} deps.drillActive
+ *
+ * @param {HTMLElement|null} deps.socialModalEl
+ * @param {HTMLElement|null} deps.socialTitleEl
+ * @param {HTMLElement|null} deps.socialSubEl
+ * @param {HTMLElement|null} deps.socialBodyEl
+ * @param {HTMLElement|null} deps.btnSocialClose
+ *
+ * @param {HTMLElement|null} deps.storageModalEl
+ * @param {HTMLElement|null} deps.storageTitleEl
+ * @param {HTMLElement|null} deps.storageSubEl
+ * @param {HTMLElement|null} deps.storageBodyEl
+ * @param {HTMLElement|null} deps.btnStorageClose
+ *
+ * @param {HTMLElement|null} deps.threatModalEl
+ * @param {HTMLElement|null} deps.threatTitleEl
+ * @param {HTMLElement|null} deps.threatSubEl
+ * @param {HTMLElement|null} deps.threatBodyEl
+ * @param {HTMLElement|null} deps.btnThreatClose
+ */
+export function initSocietyInspectors(deps){
+  const {
+    getState,
+    fmt,
+    clamp01,
+    seasonAt,
+    seasonTargets,
+    dissent01,
+    compliance01,
+    getRations,
+    doctrineKey,
+    workPaceMul,
+    discipline01,
+    VALUE_AXES,
+    ensureValues,
+    valuesAlignment01,
+    dominantValueAxis,
+    colonyFocusVec,
+    foodStorageCap,
+    fmtEtaSeconds,
+    etaToTarget,
+    fmtRate,
+    drillActive,
+
+    socialModalEl,
+    socialTitleEl,
+    socialSubEl,
+    socialBodyEl,
+    btnSocialClose,
+
+    storageModalEl,
+    storageTitleEl,
+    storageSubEl,
+    storageBodyEl,
+    btnStorageClose,
+
+    threatModalEl,
+    threatTitleEl,
+    threatSubEl,
+    threatBodyEl,
+    btnThreatClose,
+  } = deps || {};
+
+  const ui = { socialOpen:false, storageOpen:false, threatOpen:false };
+
+  function closeSocial(){
+    ui.socialOpen = false;
+    if (socialModalEl) socialModalEl.classList.add('hidden');
+  }
+
+  function openSocial(){
+    ui.socialOpen = true;
+    if (socialModalEl) socialModalEl.classList.remove('hidden');
+    renderSocial();
+  }
+
+  function renderSocial(){
+    const state = getState?.();
+    if (!socialModalEl || !socialTitleEl || !socialSubEl || !socialBodyEl) return;
+    if (!ui.socialOpen) { socialModalEl.classList.add('hidden'); return; }
+
+    const dis = dissent01?.(state) ?? 0;
+    const band = String(state?.social?.band ?? (dis >= 0.70 ? 'strike' : dis >= 0.45 ? 'murmur' : 'calm'));
+    const comp = compliance01?.(state) ?? 1;
+    const drivers = state?._dissentDrivers ?? null;
+
+    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) — Compliance x${comp.toFixed(2)}`;
+
+    const season = seasonAt?.(state?.t ?? 0);
+    const doc = doctrineKey?.(state);
+    const wp = workPaceMul?.(state) ?? 1;
+    const dpol = discipline01?.(state) ?? 0;
+
+    socialSubEl.textContent = `Season: ${season?.name ?? '?'} | Rations: ${String(state?.rations ?? 'Normal')} | Work pace: ${(wp*100).toFixed(0)}% | Discipline: ${(dpol*100).toFixed(0)}% | Doctrine: ${doc}`;
+
+    const lines = [];
+    lines.push('How dissent works (1s cadence):');
+    lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, grievance, alarm).');
+    lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
+    lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
+    lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
+    lines.push('');
+
+    if (drivers && typeof drivers === 'object') {
+      lines.push('Current inputs (last computed):');
+      lines.push(`• avg mood: ${(drivers.avgMood*100).toFixed(0)}%  (mood pressure: +${drivers.moodPressure.toFixed(3)})`);
+      lines.push(`• work pace: ${(drivers.workPace*100).toFixed(0)}%  (overwork pressure: +${drivers.workPressure.toFixed(3)})`);
+      lines.push(`• rations: ${drivers.rationsLabel}  (ration pressure: ${drivers.rationPressure>=0?'+':''}${drivers.rationPressure.toFixed(3)})`);
+      lines.push(`• avg hunger: ${(drivers.hungerStress*100).toFixed(0)}%  (hunger pressure: +${drivers.hungerPressure.toFixed(3)})`);
+      if (typeof drivers.avgGriev === 'number') lines.push(`• avg grievance: ${(drivers.avgGriev*100).toFixed(0)}%  (grievance pressure: +${Number(drivers.grievancePressure ?? 0).toFixed(3)})`);
+      lines.push(`• alarm: ${drivers.alarmStress ? 'ON' : 'OFF'}  (alarm pressure: +${drivers.alarmPressure.toFixed(3)})`);
+      lines.push('');
+      lines.push(`Raw desire (pre-discipline/doctrine): ${drivers.rawDesire.toFixed(3)}`);
+      lines.push(`After discipline/doctrine: ${drivers.desireAfterPolicy.toFixed(3)} (target)`);
+      lines.push(`Current dissent: ${drivers.cur.toFixed(3)} → next ${drivers.next.toFixed(3)}`);
+      lines.push('');
+    } else {
+      lines.push('No driver snapshot yet (tick once).');
+      lines.push('');
+    }
+
+    // Values mismatch: an explicit readout tying governance knobs (Mode + priorities) to population values.
+    try {
+      const n = Math.max(1, (state?.kittens ?? []).length);
+      const avg = { Food:0, Safety:0, Progress:0, Social:0 };
+      let avgAlign = 0;
+      for (const k of (state?.kittens ?? [])) {
+        ensureValues?.(k);
+        for (const ax of (VALUE_AXES ?? [])) avg[ax] += Number(k?.values?.[ax] ?? 0);
+        avgAlign += (valuesAlignment01?.(state, k) ?? 0);
+      }
+      for (const ax of (VALUE_AXES ?? [])) avg[ax] /= n;
+      const focus = colonyFocusVec?.(state) ?? avg;
+      avgAlign /= n;
+
+      const pct = (x)=>Math.round(100 * (Number(x) || 0));
+      const vecLine = (v)=>`Food ${pct(v.Food)}% | Safety ${pct(v.Safety)}% | Progress ${pct(v.Progress)}% | Social ${pct(v.Social)}%`;
+
+      // Biggest mismatch axis (signed, in percentage points).
+      let mm = { ax:'Food', d:0 };
+      for (const ax of (VALUE_AXES ?? [])) {
+        const d = (Number(focus?.[ax] ?? 0) - Number(avg?.[ax] ?? 0));
+        if (Math.abs(d) > Math.abs(mm.d)) mm = { ax, d };
+      }
+      const pp = Math.round(mm.d * 100);
+      const dir = pp >= 0 ? 'over' : 'under';
+
+      lines.push('');
+      lines.push('Governance: Values vs Focus (bottom-up vs top-down):');
+      lines.push(`• avg kitten Values:  ${vecLine(avg)}`);
+      lines.push(`• your current Focus: ${vecLine(focus)}   (avg focus-fit: ${Math.round(avgAlign*100)}%)`);
+      lines.push(`• biggest mismatch: ${mm.ax} (${Math.abs(pp)}pp ${dir} colony preference)`);
+
+      if (Math.abs(pp) >= 8) {
+        const hint = (pp > 0)
+          ? `You are pushing ${mm.ax} harder than the colony wants. Expect mood drag (esp. with low autonomy).`
+          : `You are under-investing in ${mm.ax} vs what the colony wants. Expect grumbling if stressors appear.`;
+        lines.push(`• note: ${hint}`);
+      }
+      lines.push('');
+    } catch (e) {
+      // Never break the inspector.
+    }
+
+    // Individual misalignment: show who is least aligned right now (reduces "hunt through inspectors" friction).
+    try {
+      const rows = (state?.kittens ?? []).map((k) => {
+        const id = Number(k?.id ?? 0);
+        const nm = String(k?.name ?? '').trim() || `Kitten #${id}`;
+        const align = (valuesAlignment01?.(state, k) ?? 0);
+        const g = clamp01?.(Number(k?.grievance ?? 0)) ?? 0;
+        const bloc = dominantValueAxis?.(k);
+        const role = String(k?.role ?? 'Generalist');
+        const task = String(k?.task ?? '-');
+        return { id, nm, align, g, bloc, role, task };
+      });
+
+      rows.sort((a,b) => (a.align - b.align) || (b.g - a.g));
+      const n = Math.min(5, rows.length);
+      if (n > 0) {
+        lines.push('Lowest focus-fit kittens (who may grumble first):');
+        for (let i=0;i<n;i++) {
+          const r = rows[i];
+          lines.push(`• #${r.id} ${r.nm} — fit ${Math.round(r.align*100)}% | grievance ${Math.round(r.g*100)}% | bloc ${r.bloc} | ${r.role} (${r.task})`);
+        }
+        lines.push('');
+        lines.push('Tip: if many low-fit kittens share a bloc, try nudging Priorities/Mode toward it (or raise Autonomy to accept diversity).');
+        lines.push('');
+      }
+    } catch (e) {
+      // Never break the inspector.
+    }
+
+    lines.push('What to do (policy knobs):');
+    lines.push('• If mood is low: Feast rations, hold Festival, lower Work pace, or let Socialize/Care run.');
+    lines.push('• If overwork is high: lower Work pace or switch doctrine to Rotate temporarily.');
+    lines.push('• If hunger stress is high: stabilize food/kitten first (dissent will follow).');
+    lines.push('• If you need obedience NOW: raise Discipline (but expect small morale drift down).');
+
+    socialBodyEl.textContent = lines.join('\n');
+  }
+
+  function closeStorage(){
+    ui.storageOpen = false;
+    if (storageModalEl) storageModalEl.classList.add('hidden');
+  }
+
+  function openStorage(){
+    ui.storageOpen = true;
+    if (storageModalEl) storageModalEl.classList.remove('hidden');
+    renderStorage();
+  }
+
+  function renderStorage(){
+    const state = getState?.();
+    if (!storageModalEl || !storageTitleEl || !storageSubEl || !storageBodyEl) return;
+    if (!ui.storageOpen) { storageModalEl.classList.add('hidden'); return; }
+
+    const cap = foodStorageCap?.(state) ?? 0;
+    const food = Number(state?.res?.food ?? 0) || 0;
+    const jerky = Number(state?.res?.jerky ?? 0) || 0;
+    const edible = Math.max(0, food + jerky);
+    const n = Math.max(1, Number(state?.kittens?.length ?? 1) || 1);
+    const ediblePk = edible / n;
+
+    // IMPORTANT: storage cap + spoilage only apply to fresh food (food), not preserved rations (jerky).
+    const oc = state?._lastFoodOvercap ?? { cap, food, mult: 1 };
+    const spoilMult = (clamp01?.((Number(oc.mult ?? 1) - 1) / 3) ?? 0) * 3 + 1; // sanitize to [1..4]
+
+    const huts = Math.max(0, Number(state?.res?.huts ?? 0));
+    const gran = Math.max(0, Number(state?.res?.granaries ?? 0));
+    const base = 260;
+    const hutBonus = huts * 28;
+    const granBonus = gran * 120;
+
+    const season = seasonAt?.(state?.t ?? 0);
+    const over = Math.max(0, food - cap);
+    const overPct = cap > 0 ? (over / cap) : 0;
+
+    storageTitleEl.textContent = `Fresh food cap: ${fmt?.(cap)} | Spoilage x${Number(spoilMult).toFixed(2)}`;
+    storageSubEl.textContent = `Season: ${season?.name ?? '?'} | Fresh food: ${fmt?.(food)}${jerky > 0 ? ` | Jerky: ${fmt?.(jerky)}` : ''} | Edible total: ${fmt?.(edible)} (${fmt?.(ediblePk)}/kitten)${over > 0 ? ` | over-cap by ${fmt?.(over)} (${(overPct*100).toFixed(0)}%)` : ''}`;
+
+    const lines = [];
+    lines.push('What this is:');
+    lines.push('• Fresh Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
+    lines.push('• Jerky does NOT spoil and does NOT count toward the fresh-food cap (it is your winter bank).');
+    lines.push('• Spoilage multiplier is capped at x4 to keep it a pressure, not a wipeout.');
+    lines.push('');
+    lines.push('Quick read (right now):');
+    lines.push(`• edible total = food + jerky = ${fmt?.(food)} + ${fmt?.(jerky)} = ${fmt?.(edible)} (${fmt?.(ediblePk)}/kitten)`);
+    lines.push(`• over-cap (fresh food only) = max(0, food - cap) = ${fmt?.(over)} → spoilage x${Number(spoilMult).toFixed(2)}`);
+    lines.push('');
+    lines.push('Cap breakdown (current):');
+    lines.push(`• base: ${fmt?.(base)}`);
+    lines.push(`• huts: +${fmt?.(hutBonus)}  (${huts} × 28)`);
+    lines.push(`• granaries: +${fmt?.(granBonus)}  (${gran} × 120)`);
+    lines.push(`= total cap: ${fmt?.(base + hutBonus + granBonus)}`);
+    lines.push('');
+    lines.push('How to respond (management levers):');
+    lines.push('• If spoilage is high: build Granary (Project focus → Storage) and/or PreserveFood into Jerky.');
+    lines.push('• If you are stable: don’t over-forage; redirect labor into wood/science/industry.');
+    lines.push('• If Winter is soon: a *little* over-cap is fine, but prefer banking surplus as Jerky.');
+
+    storageBodyEl.textContent = lines.join('\n');
+  }
+
+  function closeThreat(){
+    ui.threatOpen = false;
+    if (threatModalEl) threatModalEl.classList.add('hidden');
+  }
+
+  function openThreat(){
+    ui.threatOpen = true;
+    if (threatModalEl) threatModalEl.classList.remove('hidden');
+    renderThreat();
+  }
+
+  function renderThreat(){
+    const state = getState?.();
+    if (!threatModalEl || !threatTitleEl || !threatSubEl || !threatBodyEl) return;
+    if (!ui.threatOpen) { threatModalEl.classList.add('hidden'); return; }
+
+    const season = seasonAt?.(state?.t ?? 0);
+    const targets = seasonTargets?.(state) ?? { maxThreat: 70 };
+
+    const r = state?._rate ?? {};
+    const threat = Math.max(0, Number(state?.res?.threat ?? 0) || 0);
+    const threatRate = Number(r.threat ?? 0);
+
+    const pop = Math.max(1, Number(state?.kittens?.length ?? 1) || 1);
+    const pal = Math.max(0, Number(state?.res?.palisade ?? 0) || 0);
+    const guards = (state?.kittens ?? []).filter(k => String(k?.task ?? '') === 'Guard').length;
+    const sec = state?.unlocked?.security ? 1 : 0;
+    const drill = drillActive?.(state) ? 1 : 0;
+    const curfew = state?.director?.curfew ? 1 : 0;
+
+    const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
+    const mitigate = Math.max(0.25, 1 - 0.035 * defScore);
+    const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
+
+    const raidEta = (threatRate > 0.02 && threat < 100)
+      ? fmtEtaSeconds?.(etaToTarget?.(threat, 100, threatRate) ?? 0)
+      : (threat >= 100 ? 'NOW' : '-');
+
+    const threatTargetEta = (threatRate > 0.02 && threat < targets.maxThreat)
+      ? fmtEtaSeconds?.(etaToTarget?.(threat, targets.maxThreat, threatRate) ?? 0)
+      : (threat >= targets.maxThreat ? 'over' : '-');
+
+    threatTitleEl.textContent = `Threat: ${fmt?.(threat)} (${fmtRate?.(threatRate)}) | Raid ETA: ${raidEta}`;
+    threatSubEl.textContent = `Season: ${season?.name ?? '?'} | Target max threat: ${targets.maxThreat} | You are ${threat <= targets.maxThreat ? 'OK' : 'OVER'} (ETA to target: ${threatTargetEta})`;
+
+    const lines = [];
+    lines.push('What threat is:');
+    lines.push('• A rising pressure that triggers raids at 100 threat.');
+    lines.push('• Threat rises over time; winter slows it a bit.');
+    lines.push('• Your defenses do NOT stop raids from happening; they reduce raid damage and can repel raids outright.');
+    lines.push('');
+
+    lines.push('Defense model (current):');
+    lines.push(`• palisade: ${pal}`);
+    lines.push(`• guards (assigned now): ${guards} / pop ${pop}`);
+    lines.push(`• security tech: ${sec ? 'yes' : 'no'} | drills active: ${drill ? 'yes' : 'no'} | curfew: ${curfew ? 'yes' : 'no'}`);
+    lines.push(`• defense score = pal*0.7 + guards*1.4 + security*2 + drills*3 + curfew*1.5 = ${fmt?.(defScore)}`);
+    lines.push(`• damage multiplier (mitigation) = max(0.25, 1 - 0.035*defScore) = x${mitigate.toFixed(2)} (lower is better)`);
+    lines.push(`• repel chance = min(0.65, 0.04*guards + 0.012*pal + 0.10*drills + 0.06*security) = ${(repelChance*100).toFixed(0)}%`);
+    lines.push('');
+
+    lines.push('How to manage threat (levers):');
+    lines.push('• Short term: assign more Guard, run Drills, toggle Curfew.');
+    lines.push('• Medium term: build Palisade, unlock Security tech (science).');
+    lines.push('• Policy: in Defend mode or when threat is rising, raise Guard and Palisade multipliers; lower non-essential spending.');
+
+    threatBodyEl.textContent = lines.join('\n');
+  }
+
+  if (btnSocialClose) btnSocialClose.addEventListener('click', closeSocial);
+  if (socialModalEl) socialModalEl.addEventListener('click', (e) => {
+    if (e.target === socialModalEl) closeSocial();
+  });
+
+  if (btnStorageClose) btnStorageClose.addEventListener('click', closeStorage);
+  if (storageModalEl) storageModalEl.addEventListener('click', (e) => {
+    if (e.target === storageModalEl) closeStorage();
+  });
+
+  if (btnThreatClose) btnThreatClose.addEventListener('click', closeThreat);
+  if (threatModalEl) threatModalEl.addEventListener('click', (e) => {
+    if (e.target === threatModalEl) closeThreat();
+  });
+
+  return {
+    ui,
+    openSocial,
+    closeSocial,
+    renderSocial,
+    openStorage,
+    closeStorage,
+    renderStorage,
+    openThreat,
+    closeThreat,
+    renderThreat,
+    closeAll(){ closeSocial(); closeStorage(); closeThreat(); },
+    renderAll(){ renderSocial(); renderStorage(); renderThreat(); },
+  };
+}
