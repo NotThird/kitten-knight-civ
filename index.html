@@ -408,6 +408,22 @@
   </div>
 </div>
 
+<!-- Threat inspector modal (explainability: why raids happen and how defense mitigates them) -->
+<div class="modal hidden" id="threatModal" role="dialog" aria-modal="true" aria-labelledby="threatTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Threat inspector</div>
+        <h3 id="threatTitle" style="margin:2px 0 0 0;">Raids + Defense</h3>
+      </div>
+      <button class="btn" id="btnThreatClose">Close</button>
+    </div>
+    <div class="small" id="threatSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="threatBody"></div>
+  </div>
+</div>
+
 
 <script type="module" src="./js/main.js"></script>
 <script src="./js/pwa.js"></script>

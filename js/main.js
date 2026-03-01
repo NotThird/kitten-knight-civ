@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.129';
+  const GAME_VERSION = '0.9.130';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -4187,6 +4187,7 @@
     const key = String(card.dataset.stat || '');
     if (key === 'dissent' || key === 'compliance' || key === 'focusfit' || key === 'grievance') openSocial();
     if (key === 'storage') openStorage();
+    if (key === 'threat') openThreat();
   });
 
   // Colony table sorting (QoL)
@@ -4546,6 +4547,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.130',
+      notes: [
+        'NEW Explainability: click the Threat stat card to open a Threat inspector (raid ETA, mitigation, repel chance, and defense breakdown).',
+        'Escape closes the Threat inspector like other modals.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.129',
       notes: [
@@ -5390,7 +5399,13 @@
   const storageBodyEl = el('storageBody');
   const btnStorageClose = el('btnStorageClose');
 
-  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false, storageOpen:false };
+  const threatModalEl = el('threatModal');
+  const threatTitleEl = el('threatTitle');
+  const threatSubEl = el('threatSub');
+  const threatBodyEl = el('threatBody');
+  const btnThreatClose = el('btnThreatClose');
+
+  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false, storageOpen:false, threatOpen:false };
 
   function closeInspect(){
     ui.inspectOpen = false;
@@ -5734,6 +5749,74 @@
     storageBodyEl.textContent = lines.join('\n');
   }
 
+  function closeThreat(){
+    ui.threatOpen = false;
+    if (threatModalEl) threatModalEl.classList.add('hidden');
+  }
+
+  function openThreat(){
+    ui.threatOpen = true;
+    if (threatModalEl) threatModalEl.classList.remove('hidden');
+    renderThreat();
+  }
+
+  function renderThreat(){
+    if (!threatModalEl || !threatTitleEl || !threatSubEl || !threatBodyEl) return;
+    if (!ui.threatOpen) { threatModalEl.classList.add('hidden'); return; }
+
+    const season = seasonAt(state.t);
+    const targets = seasonTargets(state);
+
+    const r = state._rate ?? {};
+    const threat = Math.max(0, Number(state.res.threat ?? 0) || 0);
+    const threatRate = Number(r.threat ?? 0);
+
+    const pop = Math.max(1, Number(state.kittens?.length ?? 1) || 1);
+    const pal = Math.max(0, Number(state.res.palisade ?? 0) || 0);
+    const guards = (state.kittens ?? []).filter(k => String(k?.task ?? '') === 'Guard').length;
+    const sec = state.unlocked?.security ? 1 : 0;
+    const drill = drillActive(state) ? 1 : 0;
+    const curfew = state.director?.curfew ? 1 : 0;
+
+    const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
+    const mitigate = Math.max(0.25, 1 - 0.035 * defScore);
+    const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
+
+    const raidEta = (threatRate > 0.02 && threat < 100)
+      ? fmtEtaSeconds(etaToTarget(threat, 100, threatRate))
+      : (threat >= 100 ? 'NOW' : '-');
+
+    const threatTargetEta = (threatRate > 0.02 && threat < targets.maxThreat)
+      ? fmtEtaSeconds(etaToTarget(threat, targets.maxThreat, threatRate))
+      : (threat >= targets.maxThreat ? 'over' : '-');
+
+    threatTitleEl.textContent = `Threat: ${fmt(threat)} (${fmtRate(threatRate)}) | Raid ETA: ${raidEta}`;
+    threatSubEl.textContent = `Season: ${season.name} | Target max threat: ${targets.maxThreat} | You are ${threat <= targets.maxThreat ? 'OK' : 'OVER'} (ETA to target: ${threatTargetEta})`;
+
+    const lines = [];
+    lines.push('What threat is:');
+    lines.push('• A rising pressure that triggers raids at 100 threat.');
+    lines.push('• Threat rises over time; winter slows it a bit.');
+    lines.push('• Your defenses do NOT stop raids from happening; they reduce raid damage and can repel raids outright.');
+    lines.push('');
+
+    lines.push('Defense model (current):');
+    lines.push(`• palisade: ${pal}`);
+    lines.push(`• guards (assigned now): ${guards} / pop ${pop}`);
+    lines.push(`• security tech: ${sec ? 'yes' : 'no'} | drills active: ${drill ? 'yes' : 'no'} | curfew: ${curfew ? 'yes' : 'no'}`);
+    lines.push(`• defense score = pal*0.7 + guards*1.4 + security*2 + drills*3 + curfew*1.5 = ${fmt(defScore)}`);
+    lines.push(`• damage multiplier (mitigation) = max(0.25, 1 - 0.035*defScore) = x${mitigate.toFixed(2)} (lower is better)`);
+    lines.push(`• repel chance = min(0.65, 0.04*guards + 0.012*pal + 0.10*drills + 0.06*security) = ${(repelChance*100).toFixed(0)}%`);
+    lines.push('');
+
+    lines.push('How to manage threat (levers):');
+    lines.push('• Short term: assign more Guard, run Drills, toggle Curfew.');
+    lines.push('• Medium term: build Palisade, unlock Security tech (science).');
+    lines.push('• Policy: in Defend mode or when threat is rising, raise Guard and Palisade multipliers; lower non-essential spending.');
+
+    threatBodyEl.textContent = lines.join('\n');
+  }
+
   if (btnInspectClose) btnInspectClose.addEventListener('click', closeInspect);
   if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
     if (e.target === inspectModalEl) closeInspect();
@@ -5747,6 +5830,11 @@
   if (btnStorageClose) btnStorageClose.addEventListener('click', closeStorage);
   if (storageModalEl) storageModalEl.addEventListener('click', (e) => {
     if (e.target === storageModalEl) closeStorage();
+  });
+
+  if (btnThreatClose) btnThreatClose.addEventListener('click', closeThreat);
+  if (threatModalEl) threatModalEl.addEventListener('click', (e) => {
+    if (e.target === threatModalEl) closeThreat();
   });
 
   function uiIsTypingTarget(t){
@@ -5775,6 +5863,7 @@
       closePatchNotes();
       closeSocial();
       closeStorage();
+      closeThreat();
       return;
     }
 
@@ -7571,6 +7660,11 @@
       }
       if (k === 'Edible') {
         d.title = 'Total edible stores = Food + Jerky. Starvation checks use edible, not just fresh food.';
+      }
+      if (k === 'Threat') {
+        d.dataset.stat = 'threat';
+        d.title = 'Threat rises over time and triggers raids at 100. Click to inspect the raid/defense model (mitigation + repel chance).';
+        d.style.cursor = 'pointer';
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';

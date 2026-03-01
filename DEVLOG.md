@@ -2647,3 +2647,23 @@ Files touched
 
 What to try
 - Open Patch Notes and confirm v0.9.129 appears; then use any feature that runs a preview (Advisor/Council/Factions tooltips) and sanity-check that predicted behavior matches what happens when you click.
+
+---
+
+## 2026-02-28 23:00 CST - v0.9.130 Threat inspector (raids + defense explainability)
+
+Summary
+- NEW: click the **Threat** stat card to open a Threat inspector panel (raid ETA, threat target ETA, and trend).
+- Explainability: inspector breaks down **defense score**, **damage mitigation multiplier**, and **repel chance** from palisade/guards/security/drills/curfew.
+- QoL: Escape now closes the Threat inspector like the other modals.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspector’s mitigation + repel chance update in real time.
