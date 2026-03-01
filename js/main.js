@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.119';
+  const GAME_VERSION = '0.9.120';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3908,19 +3908,50 @@
     if (state._raidTimer >= 1) {
       state._raidTimer = 0;
       if (state.res.threat >= 100) {
-        state.res.threat = Math.max(20, state.res.threat - 35);
-        const stealFood = Math.min(state.res.food, 35 + Math.random()*30);
-        const stealWood = Math.min(state.res.wood, 15 + Math.random()*20);
-        state.res.food -= stealFood;
-        state.res.wood -= stealWood;
-        // hurt: raise hunger a bit + add injury (health)
-        for (const k of state.kittens) {
-          k.hunger = clamp01(k.hunger + 0.08);
-          k.health = clamp01((k.health ?? 1) - (0.07 + Math.random()*0.06));
+        // Raid outcome now depends on your defenses.
+        // - Palisade (built) reduces damage
+        // - Guards on duty help repel raids
+        // - Security unlock enables ALARM + better response
+        // - Drills/Curfew provide small temporary mitigation
+        const pal = Math.max(0, Number(state.res.palisade ?? 0));
+        const guards = (state.kittens ?? []).filter(k => String(k?.task ?? '') === 'Guard').length;
+        const sec = state.unlocked.security ? 1 : 0;
+        const drill = drillActive(state) ? 1 : 0;
+        const curfew = state.director?.curfew ? 1 : 0;
+
+        const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
+        const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) → 0.25 (strong defense)
+        const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
+
+        const repelled = Math.random() < repelChance;
+
+        if (repelled) {
+          state.res.threat = Math.max(12, state.res.threat - (55 + 10 * Math.random()));
+          // A successful defense is a morale win.
+          for (const k of state.kittens) {
+            k.mood = clamp01(Number(k.mood ?? 0.55) + 0.02);
+            k.grievance = clamp01(Number(k.grievance ?? 0) * 0.96);
+          }
+          log(`RAID REPELLED! (guards ${guards}, palisade ${pal}) Threat pushed back.`);
+        } else {
+          state.res.threat = Math.max(20, state.res.threat - 35);
+
+          const stealFood = Math.min(state.res.food, (35 + Math.random()*30) * mitigate);
+          const stealWood = Math.min(state.res.wood, (15 + Math.random()*20) * mitigate);
+          state.res.food -= stealFood;
+          state.res.wood -= stealWood;
+
+          // Hurt: raise hunger a bit + add injury (health), reduced by defense.
+          const injBase = (0.07 + Math.random()*0.06) * mitigate;
+          for (const k of state.kittens) {
+            k.hunger = clamp01(Number(k.hunger ?? 0) + 0.08 * mitigate);
+            k.health = clamp01((Number(k.health ?? 1) || 1) - injBase);
+          }
+
+          log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported. (mitigation x${mitigate.toFixed(2)}; guards ${guards}, palisade ${pal})`);
+          // Auto alarm (only once you know what "ALARM" means)
+          state.signals.ALARM = state.unlocked.security ? true : false;
         }
-        log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported.`);
-        // auto alarm (only once you know what "ALARM" means)
-        state.signals.ALARM = state.unlocked.security ? true : false;
       }
     }
 
@@ -4505,6 +4536,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.120',
+      notes: [
+        'Combat sim: Raids are now mitigated by your defenses (Palisade + Guards on duty + Security/Drills/Curfew). Strong defenses can fully repel a raid.',
+        'Explainability: Raid log now reports mitigation factor + your defense snapshot (guards/palisade).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.119',
       notes: [

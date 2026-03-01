@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 20:29 CST - v0.9.120 Raids now respect defenses (palisade + guards)
+
+Summary
+- Combat sim: Raid losses/injuries now scale down based on **Palisade** and **Guards on duty**, with small bonuses from **Security**, **Drills**, and **Curfew**.
+- New outcome: strong defenses can fully **repel** a raid (threat knocked back; small morale bump).
+- Explainability: Raid log now prints the mitigation factor and the defense snapshot (guards + palisade) so you can see *why* it hurt (or didn’t).
+- Version bump + JS parse sanity check.
+
+Files touched
+- `prototype/index.html`
+- `DEVLOG.md`
+
+What to try
+- Let threat hit 100 twice: first with **0 palisade/0 guards**, then with **2+ guards + palisade**, and compare the raid log + damage.
+
+---
+
 ## 2026-02-28 20:14 CST - v0.9.119 Director stats: Edible buffer at a glance
 
 Summary
