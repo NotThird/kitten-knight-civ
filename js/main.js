@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.109';
+  const GAME_VERSION = '0.9.110';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4431,6 +4431,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.110',
+      notes: [
+        'QoL: Kitten Council now pops a “NEW” badge and a single Event log line when a fresh council suggestion appears (so you don\'t miss bottom-up nudges while zoomed in elsewhere).',
+        'Explainability: the log line includes the spokeskitten id + suggestion labels.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.109',
       notes: [
         'QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).',
@@ -6014,9 +6022,11 @@
 
   function buildCouncil(s, targets){
     s.director = s.director ?? {};
-    s.director.council = s.director.council ?? { nextAt: 0, lastKey: '' };
+    s.director.council = s.director.council ?? { nextAt: 0, lastKey: '', lastAnnouncedKey:'', flashUntil:0 };
     if (!('nextAt' in s.director.council)) s.director.council.nextAt = 0;
     if (!('lastKey' in s.director.council)) s.director.council.lastKey = '';
+    if (!('lastAnnouncedKey' in s.director.council)) s.director.council.lastAnnouncedKey = '';
+    if (!('flashUntil' in s.director.council)) s.director.council.flashUntil = 0;
 
     const cool = Number(s.director.council.nextAt ?? 0) || 0;
     if (s.t < cool) return { text: `Next council in ~${Math.ceil(cool - s.t)}s.`, recs: [] };
@@ -6178,6 +6188,14 @@
       return { text: 'Council has nothing new right now.', recs: [] };
     }
     s.director.council.lastKey = key;
+    s.director.council.flashUntil = s.t + 12;
+
+    // One-time announce (QoL): make council nudges harder to miss without spamming every frame.
+    if (String(s.director.council.lastAnnouncedKey || '') !== String(key || '')) {
+      s.director.council.lastAnnouncedKey = key;
+      const labels = out.map(r => r.label || r.id).filter(Boolean).join(' / ');
+      log(`Council: spokeskitten #${k.id} suggests ${labels}.`);
+    }
 
     const traits = (k.traits ?? []).join(', ') || '-';
     const mood = Math.round(clamp01(Number(k.mood ?? 0.55)) * 100);
@@ -6191,6 +6209,13 @@
     if (!councilPanelEl) return;
     const c = buildCouncil(s, targets);
     councilRecs = Array.isArray(c.recs) ? c.recs : [];
+
+    // NEW badge: briefly show when a fresh council suggestion appears.
+    const badgeEl = el('councilNew');
+    if (badgeEl) {
+      const until = Number(s.director?.council?.flashUntil ?? 0) || 0;
+      badgeEl.style.display = (councilRecs.length && s.t < until) ? 'inline-block' : 'none';
+    }
 
     if (!councilRecs.length) {
       councilPanelEl.textContent = String(c.text ?? '');

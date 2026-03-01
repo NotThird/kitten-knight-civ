@@ -2244,3 +2244,24 @@ Files touched
 
 What to try
 - Start building a Hut/Palisade (get some progress), then watch the ETA update as you change Work pace / Policy / Reserves.
+
+---
+
+## 2026-02-28 17:58 CST - v0.9.110 Kitten Council: NEW badge + announcement log
+
+Summary
+- QoL: Kitten Council now shows a brief **NEW** badge when a fresh suggestion appears.
+- QoL: a single Event log line announces the spokeskitten + suggestion labels (no per-frame spam).
+- Patch notes updated + version bump.
+- Dist rebuilt.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Let the sim run until a council suggestion appears; confirm you see the **NEW** badge + a one-time log line, then apply a suggestion.
