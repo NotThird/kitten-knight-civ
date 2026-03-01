@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -4306,33 +4306,15 @@ import { PATCH_HISTORY } from './content.js';
     for (const k of ['A','B','C']) if (!(k in s.director.profiles)) s.director.profiles[k] = null;
   }
 
-  if (profilesEl) profilesEl.addEventListener('click', (e) => {
-    const btn = e.target?.closest?.('button[data-prof]');
-    if (!btn) return;
-    const slot = String(btn.dataset.prof || '');
-    const act = String(btn.dataset.pact || '');
-    if (!['A','B','C'].includes(slot)) return;
-
-    ensureProfiles(state);
-
-    if (act === 'save') {
-      state.director.profiles[slot] = {
-        savedAt: Date.now(),
-        snap: snapshotDirectorSettings(),
-      };
-      log(`Saved profile ${slot}.`);
-    } else if (act === 'load') {
-      const p = state.director.profiles[slot];
-      if (!p?.snap) { log(`Profile ${slot} is empty.`); render(); return; }
-      applyDirectorSettings(p.snap);
-      log(`Loaded profile ${slot}.`);
-    } else if (act === 'clear') {
-      state.director.profiles[slot] = null;
-      log(`Cleared profile ${slot}.`);
-    }
-
-    save();
-    render();
+  initDirectorProfiles({
+    profilesEl,
+    getState: () => state,
+    ensureProfiles,
+    snapshotDirectorSettings,
+    applyDirectorSettings,
+    log,
+    save,
+    render,
   });
   // --- Patch notes modal (explainability)
   const patchModalEl = el('patchModal');

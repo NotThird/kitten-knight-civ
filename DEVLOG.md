@@ -3158,3 +3158,20 @@ What to try
 - Click **Import**: paste a save JSON and confirm it loads.
 - Click **Reset**: confirm it clears localStorage + returns to a fresh state.
 
+
+---
+
+## 2026-03-01 15:25 CST - P0.1 Modularization: extract Director Profiles wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the **Director Profiles (A/B/C)** button click wiring out of `main.js` and into `initDirectorProfiles(...)` in `js/ui.js`.
+- `main.js` now just instantiates the UI helper and injects the sim/state concerns (ensureProfiles + snapshot/apply).
+- No behavior changes intended; this is a boundary move to keep main.js thinner.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director Profiles, Save a slot, change some policy sliders, then Load that slot and confirm everything snaps back.

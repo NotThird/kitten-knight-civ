@@ -205,6 +205,69 @@ export function initSaveIO(deps){
 }
 
 /**
+ * Director Profiles (A/B/C) save/load/clear wiring.
+ *
+ * Keeps the snapshot/apply logic injected from main.js (sim/state concern).
+ *
+ * @param {object} deps
+ * @param {HTMLElement|null} deps.profilesEl
+ * @param {()=>any} deps.getState
+ * @param {(s:any)=>void} deps.ensureProfiles
+ * @param {()=>any} deps.snapshotDirectorSettings
+ * @param {(snap:any)=>void} deps.applyDirectorSettings
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initDirectorProfiles(deps){
+  const {
+    profilesEl,
+    getState,
+    ensureProfiles,
+    snapshotDirectorSettings,
+    applyDirectorSettings,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!profilesEl) return;
+
+  profilesEl.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('button[data-prof]');
+    if (!btn) return;
+
+    const slot = String(btn.dataset.prof || '');
+    const act = String(btn.dataset.pact || '');
+    if (!['A','B','C'].includes(slot)) return;
+
+    const s = getState?.();
+    if (!s) return;
+
+    ensureProfiles?.(s);
+
+    if (act === 'save') {
+      s.director.profiles[slot] = {
+        savedAt: Date.now(),
+        snap: snapshotDirectorSettings?.(),
+      };
+      log?.(`Saved profile ${slot}.`);
+    } else if (act === 'load') {
+      const p = s.director.profiles?.[slot];
+      if (!p?.snap) { log?.(`Profile ${slot} is empty.`); render?.(); return; }
+      applyDirectorSettings?.(p.snap);
+      log?.(`Loaded profile ${slot}.`);
+    } else if (act === 'clear') {
+      if (s.director?.profiles) s.director.profiles[slot] = null;
+      log?.(`Cleared profile ${slot}.`);
+    }
+
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
