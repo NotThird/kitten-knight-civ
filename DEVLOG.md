@@ -2628,3 +2628,22 @@ Files touched
 
 What to try
 - Turn **Auto Policy** ON, then hit **Lock basics** and see the colony still adapts via non-locked levers (Research/Build/etc) without touching your survival multipliers.
+---
+
+## 2026-02-28 22:45 CST - v0.9.129 Preview-safe scoring (no global-state leaks)
+
+Summary
+- FIX: role pressure, personality pressure, and plan pressure now read from the current sim state (`s`) instead of the live global `state` (important for cloned-state previews).
+- Advisor/Council preview sims (and any future lookahead tools) are now more trustworthy: decisions match the previewed policy/autonomy/dissent, not whatever the live tab is doing.
+- No balance changes intended; this is a correctness + explainability reliability fix.
+- Patch notes updated for v0.9.129 (and backfilled v0.9.128 notes that were missing from the list).
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Open Patch Notes and confirm v0.9.129 appears; then use any feature that runs a preview (Advisor/Council/Factions tooltips) and sanity-check that predicted behavior matches what happens when you click.

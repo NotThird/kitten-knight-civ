@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.128';
+  const GAME_VERSION = '0.9.129';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -1739,7 +1739,7 @@
     return { row, note };
   }
 
-  function applyRolePressure(scored, k){
+  function applyRolePressure(scored, k, s){
     const role = k.role ?? 'Generalist';
     if (role === 'Generalist') return;
     const def = roleDefs.find(r=>r.id===role);
@@ -1747,9 +1747,9 @@
 
     // Autonomy: higher autonomy means individuals resist rigid specialization a bit.
     // (They still specialize via skills + the plan; this just dampens the role push.)
-    const a = effectiveAutonomy01(state);
-    const comp = compliance01(state);
-    const doc = doctrineKey(state);
+    const a = effectiveAutonomy01(s);
+    const comp = compliance01(s);
+    const doc = doctrineKey(s);
     const docMul = (doc === 'Specialize') ? 1.18 : (doc === 'Rotate') ? 0.78 : 1.00;
     const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy → 0.75 @ 100% (then doctrine scales it)
 
@@ -1763,15 +1763,15 @@
     }
   }
 
-  function applyPersonalityPressure(scored, k){
+  function applyPersonalityPressure(scored, k, s){
     // Preferences add a nudge so individuals feel different.
     // Effective autonomy controls how strongly likes/dislikes pull vs colony policy.
     const p = k.personality ?? genPersonality(k.id ?? 0);
-    const a = effectiveAutonomy01(state);
+    const a = effectiveAutonomy01(s);
 
     const likeBonus = 6 + 10 * a;      // 6..16
     const dislikePenalty = 4 + 8 * a;  // 4..12
-    const doc = doctrineKey(state);
+    const doc = doctrineKey(s);
     const boreDoc = (doc === 'Rotate') ? 1.35 : (doc === 'Specialize') ? 0.75 : 1.00;
     const boreMul = (0.6 + 0.8 * a) * boreDoc;     // 0.6..1.4 (then doctrine scales it)
 
@@ -2178,9 +2178,9 @@
 
     const eff = efficiency(s, k);
     const scored = scoreActions(s, k, ctx);
-    applyPlanPressure(scored, plan);
-    applyRolePressure(scored, k);
-    applyPersonalityPressure(scored, k);
+    applyPlanPressure(scored, plan, s);
+    applyRolePressure(scored, k, s);
+    applyPersonalityPressure(scored, k, s);
     applyTraitPressure(scored, k);
     scored.sort((a,b)=>b.score-a.score);
 
@@ -3130,11 +3130,11 @@
     return { desired, desiredBase, assigned: Object.create(null) };
   }
 
-  function applyPlanPressure(scored, plan){
+  function applyPlanPressure(scored, plan, s){
     if (!plan) return;
 
     // Social layer: dissent reduces obedience to the central plan; discipline restores it.
-    const comp = compliance01(state);
+    const comp = compliance01(s);
 
     for (const row of scored) {
       const a = row.action;
@@ -4546,6 +4546,22 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.129',
+      notes: [
+        'FIX: Action scoring now uses the current sim state consistently (plan pressure, role pressure, and personality pressure are preview-safe).',
+        'This makes Advisor/Council previews and any cloned-state simulations more trustworthy (no hidden reads from the live global state).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
+      v: '0.9.128',
+      notes: [
+        'Explainability/QoL: Top stat cards now show time-to-reserve (ETA until Food/Wood/Science/Tools hit your configured Reserves) when trends are negative.',
+        'Added a clear BELOW RES flag when you are already under a reserve buffer.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.127',
       notes: [
