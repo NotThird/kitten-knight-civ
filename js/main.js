@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.112';
+  const GAME_VERSION = '0.9.113';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -529,6 +529,9 @@
       traits,
       // Values: what this kitten *wants* the colony to be doing (policy fit affects mood under central planning)
       values: genValues(id, traits),
+
+      // Directive: a persistent per-kitten bias layer (player set). NOT a hard lock.
+      directive: 'Auto',
 
       // Social bond: each kitten has a "buddy" they vibe with.
       // When both buddies Socialize at the same time, dissent drops faster and both feel better.
@@ -2299,6 +2302,22 @@
         const mul = (0.55 * pSafety + 0.45 * pProg);
         const add = base(a) * (mul - 1);
         if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) → ${add>=0?'+':''}${add.toFixed(1)}`); }
+      }
+
+      // Per-kitten Directive: a persistent scoring nudge (player-set). Not a lock.
+      const dir = String(k.directive ?? 'Auto');
+      if (dir !== 'Auto') {
+        const dirMatch = (dir === 'Food' && FOOD_ACT.has(a))
+          || (dir === 'Safety' && (SAFETY_ACT.has(a) || a === 'BuildPalisade' || a === 'BuildGranary' || a === 'BuildHut' || a === 'StokeFire'))
+          || (dir === 'Progress' && (PROG_ACT.has(a) || a === 'BuildWorkshop' || a === 'BuildLibrary' || a === 'CraftTools'))
+          || (dir === 'Social' && (a === 'Socialize' || a === 'Care'))
+          || (dir === 'Rest' && (a === 'Rest' || a === 'Loaf'));
+        if (dirMatch) {
+          // Additive bump so it stays legible and doesn't overpower emergencies.
+          const add = 6 + 0.10 * base(a);
+          score += add;
+          reasons.push(`directive ${dir} → +${add.toFixed(1)}`);
+        }
       }
 
       // Mood: unhappy kittens are more likely to seek rest; happy kittens tolerate productive work better.
@@ -4465,6 +4484,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.113',
+      notes: [
+        'NEW: Per-kitten Directive. Click a kitten row → set Directive (Food/Safety/Progress/Social/Rest) to bias their scoring persistently (not a hard lock).',
+        'UI: Pref column now shows “Dir X” when a kitten has a non-Auto directive, so you can spot your specialists at a glance.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.111',
       notes: [
         'Explainability: the Social inspector now lists the most misaligned kittens (low focus-fit) so you can see who is grumbling without opening each inspector.',
@@ -5158,6 +5185,7 @@
   const inspectTitleEl = el('inspectTitle');
   const inspectSubEl = el('inspectSub');
   const inspectBodyEl = el('inspectBody');
+  const inspectControlsEl = el('inspectControls');
   const btnInspectClose = el('btnInspectClose');
 
   // --- Social inspector modal (explainability)
@@ -5213,6 +5241,39 @@
     const driftFresh = (k._valuesDriftNote && (state.t - Number(k._valuesDriftAt ?? 0)) < 30);
     const driftNote = driftFresh ? ` | ${String(k._valuesDriftNote ?? '')}` : '';
     inspectSubEl.textContent = `traits: ${traits} | bloc: ${bloc} | values: ${valuesShort(k)} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${driftNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
+
+    // Controls: per-kitten Directive (a small, persistent bias layer)
+    if (inspectControlsEl) {
+      const dir = String(k.directive ?? 'Auto');
+      const opts = ['Auto','Food','Safety','Progress','Social','Rest'];
+      inspectControlsEl.innerHTML = `
+        <label class="small" title="Directive: a persistent nudge for this kitten's scoring. This is NOT a hard lock (safety rules/emergencies still override).">Directive
+          <select id="inspectDirective">
+            ${opts.map(o => `<option value="${o}" ${o===dir?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </label>
+        <span class="small" style="opacity:.85" title="What this does">Bias: ${dir==='Auto'?'none':dir}</span>
+        <button class="btn" id="btnDirectiveClear" ${dir==='Auto'?'disabled':''} title="Reset directive to Auto.">Clear</button>
+      `;
+
+      const sel = inspectControlsEl.querySelector('#inspectDirective');
+      if (sel) {
+        sel.addEventListener('change', () => {
+          const v = String(sel.value || 'Auto');
+          k.directive = opts.includes(v) ? v : 'Auto';
+          // Make it immediately visible in-table.
+          k.why = String(k.why ?? '');
+          render();
+        }, { once:true });
+      }
+      const btn = inspectControlsEl.querySelector('#btnDirectiveClear');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          k.directive = 'Auto';
+          render();
+        }, { once:true });
+      }
+    }
 
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
     if (!rows.length) {
@@ -7695,6 +7756,8 @@
       prefParts.push(`Align ${Math.round(align*100)}%`);
       const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2);
       if (autoFresh) prefParts.push('Autonomy');
+      const dir = String(k.directive ?? 'Auto');
+      if (dir && dir !== 'Auto') prefParts.push(`Dir ${dir}`);
       const pref = prefParts.join(' / ');
 
       const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
@@ -9127,6 +9190,10 @@
         ensureKittenName(k);
         k.personality = k.personality ?? genPersonality(k.id ?? 0);
         k.traits = Array.isArray(k.traits) ? k.traits : genTraits(k.id ?? 0);
+        // Migration: per-kitten Directive (player-set bias)
+        if (!('directive' in k)) k.directive = 'Auto';
+        const _dir = String(k.directive ?? 'Auto');
+        k.directive = ['Auto','Food','Safety','Progress','Social','Rest'].includes(_dir) ? _dir : 'Auto';
         k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 };
         k.xp = k.xp ?? { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 };
         for (const [sk,lv] of Object.entries({ Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 })) if (!(sk in k.skills)) k.skills[sk] = lv;

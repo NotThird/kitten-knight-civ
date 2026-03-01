@@ -2308,3 +2308,25 @@ Files touched
 
 What to try
 - Click **Fit** to find the most misaligned kittens, then open the Social inspector to see why theyâ€™re unhappy.
+
+---
+
+## 2026-02-28 18:43 CST - v0.9.113 Per-kitten Directive (persistent scoring bias)
+
+Summary
+- NEW: Per-kitten **Directive** (Auto/Food/Safety/Progress/Social/Rest) to bias that kitten’s scoring persistently (not a hard lock; rules/emergencies still override).
+- UI: Directive can be set in the Decision Inspector (click a kitten row), with a one-click Clear button.
+- UI: Colony table Pref column now shows **Dir X** when a kitten has a non-Auto directive.
+- Patch notes updated + version bump.
+- Dist rebuilt.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- dist/css/app.css
+- DEVLOG.md
+
+What to try
+- Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when it’s safe.
