@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 19:59 CST - v0.9.118 Faction Demand acceptance: cooldown-safe + better governance logging
+
+Summary
+- FIX: Accepting a **Faction Demand** now always applies the intended policy concession (no longer blocked by the normal negotiation cooldown).
+- Explainability: Demand outcomes now write explicit **Governance log** entries (Accepted / Ignored / Expired) with concrete consequence deltas.
+- Small refactor: `negotiateWithFaction()` now accepts optional opts (cooldown bypass + custom governance log labels) without changing existing callers.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Let **Dissent** climb until a **Faction Demand** appears, then spam a normal **Negotiate** right before clicking **Accept** â€” it should still apply the concession and log the result in Governance log.
+
+---
+
 ## 2026-02-28 18:58 CST - v0.9.114 Storage inspector: edible breakdown
 
 Summary
@@ -2379,8 +2399,8 @@ What to try
 
 Summary
 - NEW: Director panel now includes **Directive tools**.
-- “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social) for quick bottom-up specialization.
-- “Clear all” resets all Directives back to Auto.
+- ï¿½Match blocsï¿½ sets each kittenï¿½s Directive to match their dominant Values bloc (Food/Safety/Progress/Social) for quick bottom-up specialization.
+- ï¿½Clear allï¿½ resets all Directives back to Auto.
 - QoL: Director panel shows an **active directives X/Y** hint.
 - Version bump + dist rebuild.
 - No save-breaking changes.

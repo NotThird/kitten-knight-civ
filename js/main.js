@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.117';
+  const GAME_VERSION = '0.9.118';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4506,6 +4506,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.118',
+      notes: [
+        'FIX: Accepting a Faction Demand now always applies the intended policy concession (it no longer fails due to the normal negotiation cooldown).',
+        'Explainability: demand outcomes (Accepted / Ignored / Expired) now write clear entries into the Governance log with the concrete consequences.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.117',
       notes: [
         'QoL: Role Quotas panel now includes one-click presets (Stable / Advance) to quickly steer colony specialization without micromanaging each quota.',
@@ -6475,7 +6483,12 @@
     return best;
   }
 
-  function negotiateWithFaction(s, axis){
+  function negotiateWithFaction(s, axis, opts){
+    const o = (opts && typeof opts === 'object') ? opts : {};
+    const ignoreCooldown = !!o.ignoreCooldown;
+    const govKind = String(o.govKind ?? 'Faction Negotiation');
+    const govWhy = String(o.govWhy ?? '');
+
     const ax = String(axis || '').trim();
     if (!['Food','Safety','Progress','Social'].includes(ax)) return { ok:false, msg:'Unknown faction.' };
 
@@ -6484,11 +6497,14 @@
     s.social = s.social ?? { dissent: 0 };
 
     // Cooldown: negotiations are a *politics* lever, not a spam button.
+    // BUT: faction demands should still be "actionable" even if you just negotiated.
     // Save-safe: fields are optional and default to 0.
-    const nextAt = Number(s.director.factionsNextAt ?? 0) || 0;
-    if (Number(s.t ?? 0) < nextAt) {
-      const left = Math.max(0, nextAt - Number(s.t ?? 0));
-      return { ok:false, msg:`Faction talks need time. Try again in ~${Math.ceil(left)}s.` };
+    if (!ignoreCooldown) {
+      const nextAt = Number(s.director.factionsNextAt ?? 0) || 0;
+      if (Number(s.t ?? 0) < nextAt) {
+        const left = Math.max(0, nextAt - Number(s.t ?? 0));
+        return { ok:false, msg:`Faction talks need time. Try again in ~${Math.ceil(left)}s.` };
+      }
     }
 
     const before = {
@@ -6513,7 +6529,7 @@
         discipline: before.discipline,
       },
       policyMult: { ...(before.policyMult ?? {}) },
-      reason: `Negotiation with ${ax}`,
+      reason: String(o.reason ?? `Negotiation with ${ax}`),
     };
 
     // Small, bounded policy nudges. These are meant to be *minor course corrections*, not one-click wins.
@@ -6586,7 +6602,8 @@
     const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
 
     // Explainability: mirror to Governance log.
-    recordGovLog(s, { kind:'Faction Negotiation', why:`${ax} bloc`, changes: changes.slice(0, 6) });
+    const why = govWhy || `${ax} bloc`;
+    recordGovLog(s, { kind: govKind || 'Faction Negotiation', why, changes: changes.slice(0, 6) });
 
     return { ok:true, msg:`Negotiated with the ${ax} bloc: ${changeMsg}. Dissent ${dissMsg}. (cooldown ~45s)` };
   }
@@ -6733,6 +6750,9 @@
       k.mood = clamp01(Number(k.mood ?? 0.55) - 0.015);
     }
 
+    // Explainability: mirror to Governance log.
+    recordGovLog(s, { kind:'Faction Demand (Expired)', why:`${ax} bloc demand`, changes:[`dissent +0.02`, `bloc grievance +0.03`, `bloc mood -0.02`] });
+
     return { ok:true, msg:`Faction demand expired (${ax}). Dissent rises slightly; the bloc feels unheard.` };
   }
 
@@ -6751,7 +6771,12 @@
 
     if (accept) {
       // Stronger than a normal negotiation: being "heard" matters.
-      const res = negotiateWithFaction(s, d.axis);
+      const res = negotiateWithFaction(s, d.axis, {
+        ignoreCooldown: true,
+        govKind: 'Faction Demand (Accepted)',
+        govWhy: `${d.axis} bloc demand`,
+        reason: `Demand accepted (${d.axis})`,
+      });
       // Extra cohesion bump + small grievance relief for that bloc.
       s.social.dissent = clamp01(Number(s.social.dissent ?? 0) * 0.92);
       for (const k of (s.kittens ?? [])) {
@@ -6766,6 +6791,9 @@
         k.grievance = clamp01(Number(k.grievance ?? 0) + 0.05);
         k.mood = clamp01(Number(k.mood ?? 0.55) - 0.03);
       }
+      // Explainability: mirror to Governance log.
+      recordGovLog(s, { kind:'Faction Demand (Ignored)', why:`${d.axis} bloc demand`, changes:[`dissent +0.04`, `bloc grievance +0.05`, `bloc mood -0.03`] });
+
       return { ok:true, msg:`Demand ignored (${d.axis}). Dissent rises; the bloc grows resentful.` };
     }
   }
