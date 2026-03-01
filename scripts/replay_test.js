@@ -263,6 +263,57 @@ async function main(){
     `score:${decisionMix.score} (${fmtPct(decisionMix.score)}%)`
   );
 
+  // Deterministic end-state checksum (single-line CI diff signal)
+  function round6(n){
+    const x = Number(n ?? 0) || 0;
+    return Math.round(x * 1e6) / 1e6;
+  }
+
+  function stableStringify(v){
+    if (v === null) return 'null';
+    const t = typeof v;
+    if (t === 'number') return String(v);
+    if (t === 'boolean') return v ? 'true' : 'false';
+    if (t === 'string') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+    if (t === 'object') {
+      const keys = Object.keys(v).sort();
+      return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+    }
+    return JSON.stringify(String(v));
+  }
+
+  // FNV-1a 32-bit (fast + stable across runtimes)
+  function fnv1a32(str){
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      // h *= 16777619 (with 32-bit overflow)
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  const checksumPayload = {
+    pop: endPop,
+    res: Object.fromEntries(keyRes.map(k => [k, round6(endRes[k] ?? 0)])),
+    vitals: {
+      avg: { hunger: round6(avgEnd.hunger), energy: round6(avgEnd.energy), health: round6(avgEnd.health) },
+      min: { hunger: round6(mm.hunger.min), energy: round6(mm.energy.min), health: round6(mm.health.min) },
+      max: { hunger: round6(mm.hunger.max), energy: round6(mm.energy.max), health: round6(mm.health.max) },
+    },
+    taskMix: Object.fromEntries(
+      Object.entries(taskMix)
+        .map(([k, v]) => [String(k), round6(v)])
+        .sort((a, b) => a[0].localeCompare(b[0]))
+    ),
+    decisionMix,
+  };
+
+  const checksumStr = stableStringify(checksumPayload);
+  const checksumHex = fnv1a32(checksumStr).toString(16).padStart(8, '0');
+  console.log(`  checksum: fnv1a32:${checksumHex}`);
+
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
     t: 0,

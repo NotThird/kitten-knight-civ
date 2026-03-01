@@ -3014,3 +3014,21 @@ Files touched
 What to try
 - Run 
 ode scripts/replay_test.js and confirm the summary includes decisionMix: (and remains deterministic run-to-run).
+
+---
+
+## 2026-03-01 11:24 CST - P0.2 Replay harness: end-state checksum line
+
+Summary
+- Added a deterministic `checksum:` line to the replay harness summary (both `scripts/replay_test.js` and `kitten-knight-civ/scripts/replay_test.js`).
+- Checksum is an **FNV-1a 32-bit** hash over a stable payload: pop + key resources + vitals aggregates + taskMix + decisionMix.
+- Gives CI logs a single-line, easy-to-diff replay signature.
+
+Files touched
+- scripts/replay_test.js
+- kitten-knight-civ/scripts/replay_test.js
+- DEVLOG.md
+
+What to try
+- Run `node scripts/replay_test.js` and confirm the checksum is stable run-to-run.
+- With the current canned save, you should see: `checksum: fnv1a32:9ca10bb0`.
