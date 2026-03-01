@@ -1,6 +1,6 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
-import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick } from './sim.js';
+import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -3879,89 +3879,19 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
     state._decTimer = (state._decTimer ?? 0) + dt;
     if (state._decTimer >= 1) {
       state._decTimer -= 1;
-      ensureBuddies(state);
-
-      // Explainability: reset per-second blocked-action counters (populated by doFallback during execution).
-      state._blockedThisSecond = Object.create(null);
-      state._blockedMsgThisSecond = Object.create(null);
-
-      const plan = desiredWorkerPlan(state);
-      updateRoles(state, plan);
-
-      // Planning-time reservations: keep later kittens from piling onto the same scarce-input sink.
-      const shadowAvail = makeShadowAvail(state);
-      const ctx = { shadowAvail };
-
-      // Explainability: track what kind of decision dominated lately (rules vs emergencies vs commits vs normal scoring).
-      const decisionKinds = { rule:0, emergency:0, commit:0, score:0 };
-
-      // Decide in a stable order, but let needs/emergencies override plan.
-      for (const k of state.kittens) {
-        // Commitment timer ticks down at decision cadence (1s).
-        k.taskLock = Math.max(0, (k.taskLock ?? 0) - 1);
-
-        // Block cooldown timer ticks down too (prevents repeated retries of blocked sink actions).
-        k.blockedCooldown = k.blockedCooldown ?? {};
-        for (const key of Object.keys(k.blockedCooldown)) {
-          const v = Math.max(0, (Number(k.blockedCooldown[key] ?? 0) || 0) - 1);
-          if (v <= 0) delete k.blockedCooldown[key];
-          else k.blockedCooldown[key] = v;
-        }
-
-        const prevTask = k.task;
-        const d = decideTask(state, k, plan, ctx);
-
-        // Mood update (1s cadence) so the colony feels a bit more "alive".
-        updateMoodPerSecond(state, k, d.task);
-
-        // Grievance update (1s cadence): slow-burn resentment that can translate into dissent.
-        updateGrievancePerSecond(state, k, d.task);
-
-        // Relationship pressure (buddy system): small emergent social texture.
-        updateBuddyNeedPerSecond(state, k, d.task);
-
-        // Values drift (civ-sim): kittens slowly learn from what they actually do.
-        // This makes long-run specialization feel "sticky" and creates emergent faction shifts.
-        updateValuesPerSecond(state, k, d.task);
-
-        // Memory: track how long we've been doing the same job (1s resolution)
-        k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
-
-        // If we switched tasks, start a short commitment window.
-        if (prevTask !== d.task) {
-          k.taskLock = commitSecondsForTask(state, d.task);
-        }
-
-        k.task = d.task;
-        k.why = d.why;
-        plan.assigned[d.task] = (plan.assigned[d.task] ?? 0) + 1;
-
-        // Decision mix (explainability)
-        const kind = String(k._lastDecision?.kind ?? 'score');
-        if (kind in decisionKinds) decisionKinds[kind] += 1;
-        else decisionKinds.score += 1;
-
-        // Reserve estimated scarce inputs for this task so later kittens see reduced availability.
-        reserveForTask(shadowAvail, d.task);
-      }
-      plan.decisionKinds = decisionKinds;
-
-      // Attach last-second execution blockers so Plan debug can surface reserve/input stalls.
-      plan.blocked = { ...(state._blockedThisSecond ?? {}) };
-      plan.blockedMsg = { ...(state._blockedMsgThisSecond ?? {}) };
-
-      // Activity history (explainability): keep a rolling window of what actually happened.
-      // This helps answer: "why does the colony *feel* off-plan?" (autonomy, needs, dissent).
-      state._actHist = state._actHist ?? [];
-      state._actHist.push({ t: state.t, assigned: { ...(plan.assigned ?? {}) } });
-      if (state._actHist.length > 30) state._actHist.splice(0, state._actHist.length - 30);
-
-      // Decision mix history (explainability): why the plan is being overridden.
-      state._decHist = state._decHist ?? [];
-      state._decHist.push({ t: state.t, kinds: { ...(plan.decisionKinds ?? {}) } });
-      if (state._decHist.length > 30) state._decHist.splice(0, state._decHist.length - 30);
-
-      state._lastPlan = plan;
+      runDecisionSecond(state, {
+        ensureBuddies,
+        desiredWorkerPlan,
+        updateRoles,
+        makeShadowAvail,
+        decideTask,
+        updateMoodPerSecond,
+        updateGrievancePerSecond,
+        updateBuddyNeedPerSecond,
+        updateValuesPerSecond,
+        commitSecondsForTask,
+        reserveForTask,
+      });
     }
 
     runKittensTick(state, dt, {

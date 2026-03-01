@@ -2869,3 +2869,23 @@ What to try
   - kittens still execute tasks normally (Forage/Build/etc)
   - pinned projects still clear after 1 completion
   - starvation behavior still triggers only when no edible food remains
+
+---
+
+## 2026-03-01 05:23 CST - P0.1 Modularization: extract 1s decision/planning tick into sim.js
+
+Summary
+- Phase 0 modularization slice: extracted the 1-second “decision cadence” block (plan creation + per-kitten task selection + decision/act history bookkeeping) out of `js/main.js` into `js/sim.js` as `runDecisionSecond(s, deps)`.
+- `main.js` now calls `runDecisionSecond(...)` and passes the needed deterministic helpers via dependency injection (matching the `runKittensTick(...)` pattern).
+- No behavior changes intended; this is a boundary cleanup to prep for a deterministic replay harness.
+
+Files touched
+- `js/sim.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Load the game and sanity-check:
+  - kittens still re-plan once per second (tasks change at the same cadence)
+  - Plan debug still shows desired/assigned + decision mix/activity history
+  - no console errors (module import for runDecisionSecond)

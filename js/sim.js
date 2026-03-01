@@ -228,3 +228,99 @@ export function runKittensTick(s, dt, deps){
     clearPinnedProject(s, `Pinned project complete: built 1 ${pin.type}.`);
   }
 }
+
+// --- Core per-second decision/planning tick (modularization slice)
+// Extracted from main.js: everything that happens at the 1s "decision cadence".
+// Deterministic + dependency-injected so replay/offline harnesses can run the same logic.
+export function runDecisionSecond(s, deps){
+  const ensureBuddies = deps?.ensureBuddies;
+  const desiredWorkerPlan = deps?.desiredWorkerPlan;
+  const updateRoles = deps?.updateRoles;
+  const makeShadowAvail = deps?.makeShadowAvail;
+  const decideTask = deps?.decideTask;
+  const updateMoodPerSecond = deps?.updateMoodPerSecond;
+  const updateGrievancePerSecond = deps?.updateGrievancePerSecond;
+  const updateBuddyNeedPerSecond = deps?.updateBuddyNeedPerSecond;
+  const updateValuesPerSecond = deps?.updateValuesPerSecond;
+  const commitSecondsForTask = deps?.commitSecondsForTask;
+  const reserveForTask = deps?.reserveForTask;
+
+  if (typeof ensureBuddies === 'function') ensureBuddies(s);
+
+  // Explainability: reset per-second blocked-action counters (populated by doFallback during execution).
+  s._blockedThisSecond = Object.create(null);
+  s._blockedMsgThisSecond = Object.create(null);
+
+  const plan = (typeof desiredWorkerPlan === 'function') ? desiredWorkerPlan(s) : { desired:{}, assigned:{} };
+  if (typeof updateRoles === 'function') updateRoles(s, plan);
+
+  // Planning-time reservations: keep later kittens from piling onto the same scarce-input sink.
+  const shadowAvail = (typeof makeShadowAvail === 'function') ? makeShadowAvail(s) : null;
+  const ctx = { shadowAvail };
+
+  // Explainability: track what kind of decision dominated lately (rules vs emergencies vs commits vs normal scoring).
+  const decisionKinds = { rule:0, emergency:0, commit:0, score:0 };
+
+  // Decide in a stable order, but let needs/emergencies override plan.
+  for (const k of (s.kittens ?? [])) {
+    // Commitment timer ticks down at decision cadence (1s).
+    k.taskLock = Math.max(0, (k.taskLock ?? 0) - 1);
+
+    // Block cooldown timer ticks down too (prevents repeated retries of blocked sink actions).
+    k.blockedCooldown = k.blockedCooldown ?? {};
+    for (const key of Object.keys(k.blockedCooldown)) {
+      const v = Math.max(0, (Number(k.blockedCooldown[key] ?? 0) || 0) - 1);
+      if (v <= 0) delete k.blockedCooldown[key];
+      else k.blockedCooldown[key] = v;
+    }
+
+    const prevTask = k.task;
+    const d = (typeof decideTask === 'function') ? decideTask(s, k, plan, ctx) : { task: prevTask, why: 'no-decider' };
+
+    // Mood/grievance/social drift at 1s cadence (makes colony feel "alive" without per-frame churn).
+    if (typeof updateMoodPerSecond === 'function') updateMoodPerSecond(s, k, d.task);
+    if (typeof updateGrievancePerSecond === 'function') updateGrievancePerSecond(s, k, d.task);
+    if (typeof updateBuddyNeedPerSecond === 'function') updateBuddyNeedPerSecond(s, k, d.task);
+    if (typeof updateValuesPerSecond === 'function') updateValuesPerSecond(s, k, d.task);
+
+    // Memory: track how long we've been doing the same job (1s resolution)
+    k.taskStreak = (prevTask === d.task) ? ((k.taskStreak ?? 0) + 1) : 0;
+
+    // If we switched tasks, start a short commitment window.
+    if (prevTask !== d.task && typeof commitSecondsForTask === 'function') {
+      k.taskLock = commitSecondsForTask(s, d.task);
+    }
+
+    k.task = d.task;
+    k.why = d.why;
+    plan.assigned = plan.assigned ?? {};
+    plan.assigned[d.task] = (plan.assigned[d.task] ?? 0) + 1;
+
+    // Decision mix (explainability)
+    const kind = String(k._lastDecision?.kind ?? 'score');
+    if (kind in decisionKinds) decisionKinds[kind] += 1;
+    else decisionKinds.score += 1;
+
+    // Reserve estimated scarce inputs for this task so later kittens see reduced availability.
+    if (typeof reserveForTask === 'function') reserveForTask(shadowAvail, d.task);
+  }
+
+  plan.decisionKinds = decisionKinds;
+
+  // Attach last-second execution blockers so Plan debug can surface reserve/input stalls.
+  plan.blocked = { ...(s._blockedThisSecond ?? {}) };
+  plan.blockedMsg = { ...(s._blockedMsgThisSecond ?? {}) };
+
+  // Activity history (explainability): keep a rolling window of what actually happened.
+  s._actHist = s._actHist ?? [];
+  s._actHist.push({ t: s.t, assigned: { ...(plan.assigned ?? {}) } });
+  if (s._actHist.length > 30) s._actHist.splice(0, s._actHist.length - 30);
+
+  // Decision mix history (explainability): why the plan is being overridden.
+  s._decHist = s._decHist ?? [];
+  s._decHist.push({ t: s.t, kinds: { ...(plan.decisionKinds ?? {}) } });
+  if (s._decHist.length > 30) s._decHist.splice(0, s._decHist.length - 30);
+
+  s._lastPlan = plan;
+  return plan;
+}
