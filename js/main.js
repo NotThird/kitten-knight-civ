@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.114';
+  const GAME_VERSION = '0.9.115';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -3185,6 +3185,7 @@
 
     // Season transition log (explainability): one clean ping when the season flips.
     // This helps players connect "why did outputs change" to the seasonal model.
+    // NEW: include a small "season report" (stats + targets) so it's actionable without opening panels.
     state._lastSeasonName = state._lastSeasonName ?? season.name;
     if (state._lastSeasonName !== season.name) {
       const from = state._lastSeasonName;
@@ -3198,7 +3199,28 @@
             ? 'Season change → Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
             : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
 
-      log(msg + (from ? ` (from ${from})` : ''));
+      const yr = yearAt(state.t) + 1;
+      const pop = Number(state.kittens?.length ?? 0);
+      const cap = housingCap(state);
+      const ediblePk = ediblePerKitten(state);
+      const warm = Number(state.res?.warmth ?? 0);
+      const thr = Number(state.res?.threat ?? 0);
+      const diss = dissent01(state);
+      let avgMood = 0;
+      if (pop > 0) {
+        for (const k of state.kittens) avgMood += Number(k.mood ?? 0.60);
+        avgMood /= pop;
+      } else {
+        avgMood = 0.60;
+      }
+      const targets = seasonTargets(state);
+      const demand = activeFactionDemand(state);
+
+      const report = `Year ${yr} | pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}% | mood ${(avgMood*100).toFixed(0)}%`;
+      const targetLine = `Targets now: edible/kit ≥ ${targets.foodPerKitten}, warmth ≥ ${targets.warmth}, threat ≤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
+      const demandLine = demand ? `Faction demand active: ${demand.axis} bloc (${String(demand.what ?? 'concessions')})` : '';
+
+      log(msg + (from ? ` (from ${from})` : '') + `\n${report}\n${targetLine}` + (demandLine ? `\n${demandLine}` : ''));
 
       // Civ-sim: faction demands often emerge at season boundaries when priorities naturally shift.
       const fd = maybeStartFactionDemand(state, `season ${from}→${season.name}`);
@@ -4483,6 +4505,13 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.115',
+      notes: [
+        'QoL/Explainability: Season-change log now includes a compact Season Report (key stats + current season targets + active faction demand if any).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.114',
       notes: [

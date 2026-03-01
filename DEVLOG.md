@@ -2351,3 +2351,24 @@ Files touched
 
 What to try
 - Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when it�s safe.
+
+---
+
+## 2026-02-28 19:13 CST - v0.9.115 Season-change " Season Report\ (actionable stats + targets)
+
+Summary
+- QoL/Explainability: season-change log now includes a compact Season Report (year, pop/cap, edible/kitten, warmth, threat, dissent, avg mood).
+- Explainability: report also prints the current season targets (edible/kitten, warmth, threat) and notes when a faction demand is already active.
+- Kept the existing seasonal hint text (Winter/Spring/Summer/Fall) so new players still get the conceptual reminder.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/css/app.css
+- dist/js/main.js
+- DEVLOG.md
+
+What to try
+- Let a season flip, then use the Season Report line to decide whether to toggle Winter Prep / Crisis Protocol *before* the spiral starts.
