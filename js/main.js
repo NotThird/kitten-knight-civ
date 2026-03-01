@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.127';
+  const GAME_VERSION = '0.9.128';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -7426,21 +7426,52 @@
     const starveEtaEdible = (edibleRate < -0.02) ? fmtEtaSeconds((edibleFood(state)) / (-edibleRate)) : '-';
     const freezeEta = (warmthRate < -0.02) ? fmtEtaSeconds((state.res.warmth) / (-warmthRate)) : '-';
 
+    // Reserve forecasts: when a rate is negative, show time until you hit your configured buffer.
+    // This makes reserves feel like a real planning lever (not just a hidden execution constraint).
+    const resFood = getReserve(state,'food');
+    const resWood = getReserve(state,'wood');
+    const resSci = getReserve(state,'science');
+    const resTools = getReserve(state,'tools');
+
+    const etaToReserve = (cur, resv, rate) => {
+      const c = Number(cur ?? 0);
+      const r0 = Number(resv ?? 0);
+      const rr = Number(rate ?? 0);
+      if (!Number.isFinite(c) || !Number.isFinite(r0) || !Number.isFinite(rr)) return '-';
+      if (c <= r0 + 0.0001) return '0s';
+      if (rr >= -0.02) return '-';
+      return fmtEtaSeconds((c - r0) / (-rr));
+    };
+
     const statSub = (key) => {
       if (key === 'Food') {
         const spoilNote = (spoilMult > 1.05) ? ` | spoil x${spoilMult.toFixed(2)}` : '';
         const capNote = ` | cap ${fmt(foodCapNow)}`;
-        return `fresh ${fmtRate(foodRate)} | 0 in ${starveEtaFresh}${spoilNote}${capNote}`;
+        const resEta = etaToReserve(state.res.food, resFood, foodRate);
+        const below = (Number(state.res.food ?? 0) < resFood - 0.01) ? ' | BELOW RES' : '';
+        return `fresh ${fmtRate(foodRate)} | 0 in ${starveEtaFresh} | res ${fmt(resFood)} in ${resEta}${below}${spoilNote}${capNote}`;
       }
       if (key === 'Edible') {
         return `food+jerky ${fmtRate(edibleRate)} | 0 in ${starveEtaEdible}`;
       }
       if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
-      if (key === 'Wood') return `${fmtRate(woodRate)}`;
+      if (key === 'Wood') {
+        const resEta = etaToReserve(state.res.wood, resWood, woodRate);
+        const below = (Number(state.res.wood ?? 0) < resWood - 0.01) ? ' | BELOW RES' : '';
+        return `${fmtRate(woodRate)} | res ${fmt(resWood)} in ${resEta}${below}`;
+      }
       if (key === 'Warmth') return `${fmtRate(warmthRate)} | tgt in ${warmthToTargetEta} | 0 in ${freezeEta}`;
       if (key === 'Threat') return `${fmtRate(threatRate)} | tgt in ${threatTargetEta} | raid in ${raidEta}`;
-      if (key === 'Science') return `${fmtRate(scienceRate)} | next unlock in ${nextUnlockEta}`;
-      if (key === 'Tools') return `${fmtRate(toolsRate)}`;
+      if (key === 'Science') {
+        const resEta = etaToReserve(state.res.science, resSci, scienceRate);
+        const below = (Number(state.res.science ?? 0) < resSci - 0.01) ? ' | BELOW RES' : '';
+        return `${fmtRate(scienceRate)} | next unlock in ${nextUnlockEta} | res ${fmt(resSci)} in ${resEta}${below}`;
+      }
+      if (key === 'Tools') {
+        const resEta = etaToReserve(state.res.tools ?? 0, resTools, toolsRate);
+        const below = (Number(state.res.tools ?? 0) < resTools - 0.01) ? ' | BELOW RES' : '';
+        return `${fmtRate(toolsRate)} | res ${fmt(resTools)} in ${resEta}${below}`;
+      }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
       return '';
     };

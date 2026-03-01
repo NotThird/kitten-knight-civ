@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 22:30 CST - v0.9.128 Explainability: Reserve hit ETA in top stats
+
+Summary
+- Explainability/QoL: top stat cards now show **time-to-reserve** (ETA until Food/Wood/Science/Tools hit your configured Reserves) when the current trend is negative.
+- Added a clear **BELOW RES** flag when you are already under a reserve buffer, so "why are builders/crafters refusing?" is obvious immediately.
+- Keeps existing time-to-zero forecasts (starvation/freezing/raid) intact.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Set Food reserve to ~100 and intentionally overspend into a negative food rate; confirm the Food stat shows an ETA to reserve and flips to **BELOW RES** once crossed.
+
+---
+
 ## 2026-02-28 22:14 CST - v0.9.127 QoL: Pin project selector in Director panel
 
 Summary
