@@ -2,7 +2,8 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from './content.js';
+import { initUI, initPatchNotes, initInspectModal } from './ui.js';
+import { PATCH_HISTORY } from './content.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -4349,6 +4350,26 @@ import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from
   const inspectControlsEl = el('inspectControls');
   const btnInspectClose = el('btnInspectClose');
 
+  const inspectUI = initInspectModal({
+    getState: () => state,
+    fmt,
+    clamp01,
+    genPersonality,
+    buddyOf,
+    valuesAlignment01,
+    dominantValueAxis,
+    valuesShort,
+    log,
+    save,
+    render,
+    inspectModalEl,
+    inspectTitleEl,
+    inspectSubEl,
+    inspectBodyEl,
+    inspectControlsEl,
+    btnInspectClose,
+  });
+
   // --- Social inspector modal (explainability)
   const socialModalEl = el('socialModal');
   const socialTitleEl = el('socialTitle');
@@ -4368,22 +4389,15 @@ import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from
   const threatBodyEl = el('threatBody');
   const btnThreatClose = el('btnThreatClose');
 
-  const ui = { inspectOpen:false, inspectKidx: -1, socialOpen:false, storageOpen:false, threatOpen:false };
+  const ui = { socialOpen:false, storageOpen:false, threatOpen:false };
 
-  function closeInspect(){
-    ui.inspectOpen = false;
-    ui.inspectKidx = -1;
-    if (inspectModalEl) inspectModalEl.classList.add('hidden');
-  }
+  function closeInspect(){ inspectUI.close(); }
 
-  function openInspect(kidx){
-    ui.inspectOpen = true;
-    ui.inspectKidx = kidx;
-    if (inspectModalEl) inspectModalEl.classList.remove('hidden');
-    renderInspect();
-  }
+  function openInspect(kidx){ inspectUI.open(kidx); }
 
   function renderInspect(){
+    return inspectUI.render();
+
     if (!inspectModalEl || !inspectTitleEl || !inspectSubEl || !inspectBodyEl) return;
     if (!ui.inspectOpen || ui.inspectKidx < 0 || ui.inspectKidx >= state.kittens.length) {
       inspectModalEl.classList.add('hidden');
@@ -4780,11 +4794,6 @@ import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from
     threatBodyEl.textContent = lines.join('\n');
   }
 
-  if (btnInspectClose) btnInspectClose.addEventListener('click', closeInspect);
-  if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
-    if (e.target === inspectModalEl) closeInspect();
-  });
-
   if (btnSocialClose) btnSocialClose.addEventListener('click', closeSocial);
   if (socialModalEl) socialModalEl.addEventListener('click', (e) => {
     if (e.target === socialModalEl) closeSocial();
@@ -4822,7 +4831,7 @@ import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      closeInspect();
+      inspectUI.close();
       patchNotesUI.close();
       closeSocial();
       closeStorage();

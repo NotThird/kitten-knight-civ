@@ -3119,3 +3119,22 @@ What to try
 - Click **Patch Notes** in the header: confirm it opens and renders correctly.
 - Hard refresh and verify there are no console/module 404 errors (content.js should load).
 
+
+---
+
+## 2026-03-01 13:55 CST - P0.1 Modularization: extract Decision/Inspect modal into ui.js
+
+Summary
+- Phase 0 modularization slice: extracted the Decision/Inspect modal subsystem (open/close/render + directive controls) into `initInspectModal(...)` in `js/ui.js`.
+- `main.js` now delegates inspect modal rendering through the module boundary (further thinning the boot file).
+- Also fixed a small import-line glitch where a literal `\n` had accidentally been embedded into the `ui.js` import line.
+- No behavior changes intended.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Click any kitten row to open the Decision Inspector; verify Directive controls still work (change directive repeatedly + refresh).
+- Press **Esc** to close the inspector.
