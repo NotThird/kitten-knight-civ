@@ -3212,3 +3212,21 @@ What to try
 - In Director: confirm the pinned hint + Clear Pin button show/hide correctly.
 - Use the Pin Project dropdown: options should disable until the right unlocks (Granary/Workshop/Library).
 - Pin a Hut: confirm the Pin button enables only when a valid option is selected.
+
+
+---
+
+## 2026-03-01 16:56 CST - P0.1 Modularization: extract Project Focus hint rendering into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Project focus** hint text rendering (auto "why" line + manual description) out of main.js into a pure UI helper: renderProjectFocusHint(...) in js/ui.js.
+- main.js now delegates rendering and injects getEffectiveProjectFocus (keeps the sim-side decision logic in main).
+- No behavior changes intended; UI text should match prior output 1:1.
+
+Files touched
+- js/ui.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- In Director, switch **Project focus** between Auto and a manual value (Housing/Defense/etc) and confirm the hint line updates correctly (including the auto "why" text).

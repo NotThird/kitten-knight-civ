@@ -306,6 +306,43 @@ export function renderDirectorProfiles(deps){
 }
 
 /**
+ * Render the "Project focus" hint line (Director panel).
+ *
+ * Pure render helper: does NOT mutate state.
+ *
+ * @param {object} deps
+ * @param {any} deps.state
+ * @param {HTMLSelectElement|null} deps.projectFocusSelectEl
+ * @param {HTMLElement|null} deps.projectFocusHintEl
+ * @param {(s:any)=>{focus:string, why:string, auto:boolean}} deps.getEffectiveProjectFocus
+ */
+export function renderProjectFocusHint(deps){
+  const { state, projectFocusSelectEl, projectFocusHintEl, getEffectiveProjectFocus } = deps || {};
+
+  if (projectFocusSelectEl) projectFocusSelectEl.value = String(state?.director?.projectFocus ?? 'Auto');
+  if (!projectFocusHintEl) return;
+
+  const setPf = String(state?.director?.projectFocus ?? 'Auto');
+  const eff = getEffectiveProjectFocus?.(state) ?? { focus:'Auto', why:'', auto:true };
+  const pf = String(eff.focus ?? 'Auto');
+
+  const desc = (x) => (x === 'Housing') ? 'push huts until housing is comfy'
+    : (x === 'Defense') ? 'keep a builder on palisade'
+    : (x === 'Industry') ? 'try to finish a workshop / keep tools maintained (needs wood+science)'
+    : (x === 'Storage') ? 'try to finish a granary (needs wood)'
+    : (x === 'Knowledge') ? 'try to finish a library (needs wood+science+tools)'
+    : '';
+
+  if (setPf === 'Auto') {
+    projectFocusHintEl.textContent = (pf === 'Auto')
+      ? `(auto) no focus - ${eff.why}`
+      : `(auto) ${pf}: ${desc(pf)} - ${eff.why}`;
+  } else {
+    projectFocusHintEl.textContent = `${desc(setPf)} (manual)`;
+  }
+}
+
+/**
  * Render the Director pinned-project selector + hint text.
  *
  * Pure render helper: does NOT mutate state.

@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderPinnedProjectControls } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -6095,27 +6095,12 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     // Project focus (build order nudge)
-    const pfSel = el('projectFocus');
-    if (pfSel) pfSel.value = String(state.director.projectFocus ?? 'Auto');
-    const pfHint = el('projectFocusHint');
-    if (pfHint) {
-      const setPf = String(state.director.projectFocus ?? 'Auto');
-      const eff = getEffectiveProjectFocus(state);
-      const pf = String(eff.focus ?? 'Auto');
-
-      const desc = (x) => (x === 'Housing') ? 'push huts until housing is comfy'
-        : (x === 'Defense') ? 'keep a builder on palisade'
-        : (x === 'Industry') ? 'try to finish a workshop / keep tools maintained (needs wood+science)'
-        : (x === 'Storage') ? 'try to finish a granary (needs wood)'
-        : (x === 'Knowledge') ? 'try to finish a library (needs wood+science+tools)'
-        : '';
-
-      if (setPf === 'Auto') {
-        pfHint.textContent = (pf === 'Auto') ? `(auto) no focus - ${eff.why}` : `(auto) ${pf}: ${desc(pf)} - ${eff.why}`;
-      } else {
-        pfHint.textContent = `${desc(setPf)} (manual)`;
-      }
-    }
+    renderProjectFocusHint({
+      state,
+      projectFocusSelectEl: el('projectFocus'),
+      projectFocusHintEl: el('projectFocusHint'),
+      getEffectiveProjectFocus,
+    });
 
     // Pinned project selector + hint (Director)
     renderPinnedProjectControls({
