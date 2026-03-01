@@ -2265,3 +2265,26 @@ Files touched
 
 What to try
 - Let the sim run until a council suggestion appears; confirm you see the **NEW** badge + a one-time log line, then apply a suggestion.
+
+
+---
+
+## 2026-02-28 18:13 CST - v0.9.111 Social inspector: lowest focus-fit kittens + clickable stat
+
+Summary
+- Explainability: Social inspector now lists the **lowest focus-fit kittens** (fit %, grievance %, bloc, current role/task) so you can see who is most misaligned at a glance.
+- QoL: Focus-fit stat card is now clickable (opens the Social inspector).
+- QoL: Grievance stat card is now clickable (opens the Social inspector).
+- Patch notes updated + version bump.
+- Dist rebuilt.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- dist/css/app.css
+- DEVLOG.md
+
+What to try
+- Push Mode/Priorities hard (e.g., Advance + Progress 150%) and watch the Social inspector list the kittens with the lowest fit; then click Focus-fit/Grievance to jump there.

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.110';
+  const GAME_VERSION = '0.9.111';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4099,7 +4099,7 @@
     const card = e.target?.closest?.('[data-stat]');
     if (!card) return;
     const key = String(card.dataset.stat || '');
-    if (key === 'dissent' || key === 'compliance') openSocial();
+    if (key === 'dissent' || key === 'compliance' || key === 'focusfit' || key === 'grievance') openSocial();
     if (key === 'storage') openStorage();
   });
 
@@ -4430,6 +4430,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.111',
+      notes: [
+        'Explainability: the Social inspector now lists the most misaligned kittens (low focus-fit) so you can see who is grumbling without opening each inspector.',
+        'QoL: click the Focus-fit (or Grievance) stat card to open the Social inspector directly.',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.110',
       notes: [
@@ -5325,6 +5333,35 @@
         lines.push(`• note: ${hint}`);
       }
       lines.push('');
+    } catch (e) {
+      // Never break the inspector.
+    }
+
+    // Individual misalignment: show who is least aligned right now (reduces "hunt through inspectors" friction).
+    try {
+      const rows = (state.kittens ?? []).map((k) => {
+        const id = Number(k?.id ?? 0);
+        const nm = String(k?.name ?? '').trim() || `Kitten #${id}`;
+        const align = valuesAlignment01(state, k);
+        const g = clamp01(Number(k?.grievance ?? 0));
+        const bloc = dominantValueAxis(k);
+        const role = String(k?.role ?? 'Generalist');
+        const task = String(k?.task ?? '-');
+        return { id, nm, align, g, bloc, role, task };
+      });
+
+      rows.sort((a,b) => (a.align - b.align) || (b.g - a.g));
+      const n = Math.min(5, rows.length);
+      if (n > 0) {
+        lines.push('Lowest focus-fit kittens (who may grumble first):');
+        for (let i=0;i<n;i++) {
+          const r = rows[i];
+          lines.push(`• #${r.id} ${r.nm} — fit ${Math.round(r.align*100)}% | grievance ${Math.round(r.g*100)}% | bloc ${r.bloc} | ${r.role} (${r.task})`);
+        }
+        lines.push('');
+        lines.push('Tip: if many low-fit kittens share a bloc, try nudging Priorities/Mode toward it (or raise Autonomy to accept diversity).');
+        lines.push('');
+      }
     } catch (e) {
       // Never break the inspector.
     }
@@ -7037,7 +7074,9 @@
         d.style.cursor = 'pointer';
       }
       if (k === 'Grievance') {
-        d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure.';
+        d.dataset.stat = 'grievance';
+        d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure. Click to inspect the social model.';
+        d.style.cursor = 'pointer';
       }
       if (k === 'Autonomy') {
         d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
@@ -7052,7 +7091,9 @@
         d.title = 'Director Work pace policy. Higher pace increases output but increases fatigue/hunger and slowly drags mood; lower pace is steadier but slower.';
       }
       if (k === 'Focus-fit') {
-        d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline.';
+        d.dataset.stat = 'focusfit';
+        d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline. Click to inspect the social model.';
+        d.style.cursor = 'pointer';
       }
       if (k === 'Food') {
         const oc = state._lastFoodOvercap ?? { cap: foodCapNow, food: Number(state.res.food ?? 0), mult: 1 };
