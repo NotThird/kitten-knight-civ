@@ -2765,3 +2765,25 @@ Files touched
 
 What to try
 - Click **Negotiate** on any faction bloc and verify you get a preview + confirm; toggle Confirm politics OFF and verify it applies immediately.
+
+
+---
+
+## 2026-03-01 02:21 CST - P0.1 Modularization: extract save/load into state.js
+
+Summary
+- Phase 0 modularization slice: moved Save/Load + migrations into a new ES module: `js/state.js`.
+- `main.js` now imports `saveGame/loadGame` and delegates save/load through the module boundary.
+- No behavior changes intended; should be save-compatible.
+
+Files touched
+- `dist/js/state.js`
+- `dist/js/main.js`
+- `kitten-knight-civ/js/state.js`
+- `kitten-knight-civ/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Refresh with an existing save: confirm load works (kittens/resources appear) and that Export/Import still works.
+- Make a small change (toggle a director setting), refresh, and confirm it persisted.
+
