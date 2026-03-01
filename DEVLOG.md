@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 21:14 CST - v0.9.123 Bloc health panel (values blocs at a glance)
+
+Summary
+- NEW: Added a **Bloc health** panel showing each values bloc’s **size + avg fit + avg mood + avg grievance**.
+- Explainability: includes a simple “highest-pressure bloc” nudge so you can quickly tell *who* is driving dissent.
+- UI-only: no simulation/balance changes; helps policy management feel more like a civ-sim.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Let dissent climb a bit, then open **Bloc health** and compare the “pressure” hint with what you see in **Factions** (try negotiating that bloc and watch fit/grievance shift).
+
+---
+
 ## 2026-02-28 20:59 CST - v0.9.122 Director: Social priority (mood + cohesion steering)
 
 Summary

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.122';
+  const GAME_VERSION = '0.9.123';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4159,6 +4159,7 @@
   const govLogEl = el('govlog');
   const councilPanelEl = el('council');
   const factionsEl = el('factions');
+  const blocHealthEl = el('blocHealth');
   const unlocksEl = el('unlocks');
   const seasonEl = el('season');
   const policyEl = el('policy');
@@ -4544,6 +4545,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.123',
+      notes: [
+        'NEW: Bloc health panel (by values bloc) shows avg policy-fit, mood, and grievance so you can see who is unhappy at a glance.',
+        'Explainability: panel includes a simple nudge pointing at the current highest-pressure bloc (useful when dissent starts creeping).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.122',
       notes: [
@@ -6991,6 +7000,68 @@
     factionsEl.innerHTML = demandHtml + undoHtml + lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Cooldown prevents rapid drift; Undo lets you back out once if you over-correct.</div>`;
   }
 
+  function renderBlocHealth(s){
+    if (!blocHealthEl) return;
+
+    const axes = ['Food','Safety','Progress','Social'];
+    const groups = Object.create(null);
+    for (const ax of axes) groups[ax] = { axis: ax, n:0, mood:0, griev:0, fit:0 };
+
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    for (const k of kittens) {
+      const ax = dominantValueAxis(k);
+      const g = groups[ax] ?? (groups[ax] = { axis: ax, n:0, mood:0, griev:0, fit:0 });
+      g.n += 1;
+      g.mood += clamp01(Number(k.mood ?? 0.55));
+      g.griev += clamp01(Number(k.grievance ?? 0));
+      g.fit += valuesAlignment01(s, k);
+    }
+
+    const arr = Object.values(groups).filter(g => g.n > 0).sort((a,b)=>b.n-a.n);
+    if (!arr.length) { blocHealthEl.textContent = '-'; return; }
+
+    const pct = (x)=>Math.round(100 * clamp01(Number(x ?? 0)));
+
+    // Most-unhappy heuristic: large bloc + low fit + high grievance.
+    const pressureScore = (g) => {
+      const fit = g.fit / g.n;
+      const griev = g.griev / g.n;
+      // We weight size so big blocs show up as "politically relevant".
+      return (g.n * 1.0) * (1 - fit) * (0.55 + griev);
+    };
+
+    let worst = arr[0];
+    for (const g of arr) if (pressureScore(g) > pressureScore(worst)) worst = g;
+
+    const lines = [];
+    lines.push('Axis | size | fit | mood | grievance | read');
+    lines.push('-----|------|-----|------|-----------|-----');
+
+    for (const g of arr) {
+      const fit = g.fit / g.n;
+      const mood = g.mood / g.n;
+      const griev = g.griev / g.n;
+
+      let tag = 'ok';
+      if (fit < 0.55 || griev >= 0.35) tag = 'bad';
+      else if (fit < 0.68 || griev >= 0.25) tag = 'warn';
+
+      const read = (tag === 'bad') ? 'UNHAPPY' : (tag === 'warn') ? 'uneasy' : 'fine';
+
+      lines.push(`${g.axis.padEnd(8)} | ${String(g.n).padStart(4)} | ${String(pct(fit)).padStart(3)}% | ${String(pct(mood)).padStart(3)}% | ${String(pct(griev)).padStart(3)}%      | ${read}`);
+    }
+
+    if (worst && worst.n > 0) {
+      const wFit = worst.fit / worst.n;
+      const wGr = worst.griev / worst.n;
+      const hint = `Nudge: biggest pressure looks like ${worst.axis} (fit ${pct(wFit)}%, griev ${pct(wGr)}%). If dissent is rising, try: Negotiate ${worst.axis} OR increase prio${worst.axis} briefly.`;
+      lines.push('');
+      lines.push(hint);
+    }
+
+    blocHealthEl.textContent = lines.join('\n');
+  }
+
   function render(){
     const season = seasonAt(state.t);
     const targets = seasonTargets(state);
@@ -7616,6 +7687,7 @@
     renderGovLog(state);
     renderCouncil(state, targets);
     renderFactions(state);
+    renderBlocHealth(state);
 
     unlocksEl.textContent = unlockDefs.map(u => `${state.seenUnlocks[u.id]?'[x]':'[ ]'} ${u.name} @ ${u.at} - ${u.desc}`).join('\n');
 
