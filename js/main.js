@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.118';
+  const GAME_VERSION = '0.9.119';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4506,6 +4506,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.119',
+      notes: [
+        'QoL/Clarity: Added an Edible stat (Food+Jerky) so you can see true starvation buffer at a glance (many systems use edible, not just fresh food).',
+        'Explainability: Food stat subtitle now focuses on fresh-food trend + time-to-zero; Edible stat shows total edible trend + time-to-zero.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.118',
       notes: [
         'FIX: Accepting a Faction Demand now always applies the intended policy concession (it no longer fails due to the normal negotiation cooldown).',
@@ -7200,7 +7208,10 @@
       if (key === 'Food') {
         const spoilNote = (spoilMult > 1.05) ? ` | spoil x${spoilMult.toFixed(2)}` : '';
         const capNote = ` | cap ${fmt(foodCapNow)}`;
-        return `fresh ${fmtRate(foodRate)} | edible ${fmtRate(edibleRate)} | 0 in ${starveEtaEdible}${spoilNote}${capNote}`;
+        return `fresh ${fmtRate(foodRate)} | 0 in ${starveEtaFresh}${spoilNote}${capNote}`;
+      }
+      if (key === 'Edible') {
+        return `food+jerky ${fmtRate(edibleRate)} | 0 in ${starveEtaEdible}`;
       }
       if (key === 'Jerky') return `${fmtRate(jerkyRate)}`;
       if (key === 'Wood') return `${fmtRate(woodRate)}`;
@@ -7214,6 +7225,7 @@
 
     const stats = [
       ['Food', fmt(state.res.food)],
+      ['Edible', fmt(edibleFood(state))],
       ['Jerky', fmt(state.res.jerky ?? 0)],
       ['Wood', fmt(state.res.wood)],
       ['Warmth', fmt(state.res.warmth)],
@@ -7286,7 +7298,10 @@
         const oc = state._lastFoodOvercap ?? { cap: foodCapNow, food: Number(state.res.food ?? 0), mult: 1 };
         const cap = Number(oc.cap ?? foodCapNow);
         const mult = Number(oc.mult ?? spoilMult);
-        d.title = `Food storage soft cap: ${fmt(cap)}. If food is above cap, spoilage accelerates (shown as Spoilage x1..x4). Current spoilage: x${(Number.isFinite(mult)?mult:1).toFixed(2)}.`;
+        d.title = `Fresh food (not counting jerky). Food storage soft cap: ${fmt(cap)}. If food is above cap, spoilage accelerates (shown as Spoilage x1..x4). Current spoilage: x${(Number.isFinite(mult)?mult:1).toFixed(2)}.`;
+      }
+      if (k === 'Edible') {
+        d.title = 'Total edible stores = Food + Jerky. Starvation checks use edible, not just fresh food.';
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';

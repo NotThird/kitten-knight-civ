@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 20:14 CST - v0.9.119 Director stats: Edible buffer at a glance
+
+Summary
+- QoL/Clarity: Added an **Edible** stat (Food+Jerky) so you can see true starvation buffer at a glance.
+- Explainability: Food stat subtitle now focuses on **fresh-food** trend + time-to-zero; Edible stat shows **total edible** trend + time-to-zero.
+- Tooltip polish: Food tooltip now explicitly says it is **fresh** (spoils); Edible tooltip says it matches starvation checks.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Deliberately build up Jerky, then watch how **Edible** stays healthy even if **Food** dips — and compare the two “0 in …” forecasts.
+
+---
+
 ## 2026-02-28 19:59 CST - v0.9.118 Faction Demand acceptance: cooldown-safe + better governance logging
 
 Summary
