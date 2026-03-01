@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.126';
+  const GAME_VERSION = '0.9.127';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -4547,6 +4547,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.127',
+      notes: [
+        'QoL: Added a "Pin project" selector + button in the Director panel so pinning builds is discoverable without scrolling to Projects.',
+        'Pinning still clears automatically after ONE unit completes, and it still sets Project focus to match.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.126',
       notes: [
         'QoL: Policy panel now has one-click bulk Policy Locks (Lock basics / Lock all / Unlock all) so Auto Policy can\'t fight your manual tuning.',
@@ -7290,6 +7298,41 @@
       if (clearPinBtn) clearPinBtn.style.display = 'none';
     }
 
+    // Pin project selector (QoL: same pin mechanic, but discoverable from the Director panel)
+    const pinSel = el('pinProjectSelect');
+    const pinBtn = el('btnPinProject');
+    const pinPHint = el('pinProjectHint');
+    if (pinSel) {
+      // Disable options that aren't unlocked yet (keeps it explainable).
+      const opt = (val) => pinSel.querySelector(`option[value=\"${val}\"]`);
+      const lock = {
+        Hut: !state.unlocked?.construction,
+        Palisade: !state.unlocked?.construction,
+        Granary: !(state.unlocked?.construction && state.unlocked?.granary),
+        Workshop: !(state.unlocked?.construction && state.unlocked?.workshop),
+        Library: !(state.unlocked?.construction && state.unlocked?.library),
+      };
+      for (const [k, locked] of Object.entries(lock)) {
+        const o = opt(k);
+        if (o) o.disabled = !!locked;
+      }
+
+      // Sync selection to current pin.
+      const cur = (pin && !pin.completed) ? String(pin.type ?? '') : '';
+      if (String(pinSel.value || '') !== cur) pinSel.value = cur;
+
+      if (pinPHint) {
+        if (!state.unlocked?.construction) pinPHint.textContent = 'Unlock Construction to pin builds.';
+        else pinPHint.textContent = cur ? 'Pin clears when 1 completes.' : 'Pick a project to pin (finish 1).';
+      }
+
+      if (pinBtn) {
+        const sel = String(pinSel.value || '');
+        const def = sel ? pinnedProjectDef(sel) : null;
+        pinBtn.disabled = !def;
+      }
+    }
+
     // Director profiles UI
     if (profilesEl) {
       ensureProfiles(state);
@@ -8954,6 +8997,36 @@
   const clearPinEl = document.getElementById('btnClearPin');
   if (clearPinEl) clearPinEl.addEventListener('click', () => {
     clearPinnedProject(state, 'Pinned project cleared.');
+    save();
+    render();
+  });
+
+  const pinSelEl = document.getElementById('pinProjectSelect');
+  if (pinSelEl) pinSelEl.addEventListener('change', () => {
+    // Pure UI; real pin happens on button press (keeps it hard to misclick).
+    render();
+  });
+
+  const pinBtnEl = document.getElementById('btnPinProject');
+  if (pinBtnEl) pinBtnEl.addEventListener('click', () => {
+    const sel = String(document.getElementById('pinProjectSelect')?.value || '');
+    if (!sel) { log('Pick a project to pin.'); render(); return; }
+
+    const def = pinnedProjectDef(sel);
+    if (!def) { log('Pin failed: unknown project.'); render(); return; }
+
+    state.director = state.director ?? { projectFocus:'Auto' };
+
+    // Only meaningful once Construction exists.
+    if (!state.unlocked?.construction) { log('Unlock Construction before pinning projects.'); render(); return; }
+
+    const startOwned = Number(def.owned?.(state) ?? 0);
+    state.director.pinnedProject = { type: def.type, startOwned, at: state.t };
+
+    // Convenience: pin also sets focus to the matching track.
+    if (def.focus) state.director.projectFocus = def.focus;
+
+    log(`Pinned project: ${def.type} (finish 1).`);
     save();
     render();
   });

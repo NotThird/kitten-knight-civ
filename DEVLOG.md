@@ -4,6 +4,28 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 22:14 CST - v0.9.127 QoL: Pin project selector in Director panel
+
+Summary
+- QoL: added a **Pin project** selector + **Pin (finish 1)** button directly in the Director panel (no need to scroll to Projects).
+- Pinning still auto-clears after **ONE** unit completes.
+- Pinning still sets **Project focus** to the matching track (so the AI immediately leans into it).
+- UI: pin selector disables projects you havenâ€™t unlocked yet (e.g., Granary before Granaries tech).
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In early Construction, pin **Hut** from the Director panel and verify it clears automatically after 1 hut completes.
+
+---
+
 ## 2026-02-28 21:44 CST - v0.9.125 QoL: Task sorting + preference tags use executed task
 
 Summary
@@ -2573,7 +2595,7 @@ What to try
 
 Summary
 - QoL: Added **bulk Policy Locks** controls in the Policy panel (Lock basics / Lock all / Unlock all).
-- This makes it easy to freeze your chosen multipliers so **Auto Policy** can’t fight your manual tuning during a run.
+- This makes it easy to freeze your chosen multipliers so **Auto Policy** canï¿½t fight your manual tuning during a run.
 - Bulk actions are save-safe and only affect the existing per-action lock flags.
 - Patch notes updated.
 

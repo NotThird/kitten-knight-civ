@@ -51,6 +51,22 @@
         <button class="btn" id="btnClearPin" title="Clear pinned project (stops forcing focus)" style="display:none">Clear pin</button>
       </div>
 
+      <div style="height:6px"></div>
+      <div class="row">
+        <label class="small" title="Pin: temporarily force focus to finish ONE unit of a project. The pin clears itself when 1 completes.">Pin project
+          <select id="pinProjectSelect">
+            <option value="">None</option>
+            <option value="Hut">Hut</option>
+            <option value="Palisade">Palisade</option>
+            <option value="Granary">Granary</option>
+            <option value="Workshop">Workshop</option>
+            <option value="Library">Library</option>
+          </select>
+        </label>
+        <button class="btn" id="btnPinProject" title="Pin the selected project (finish 1). Also sets Project focus to match.">Pin (finish 1)</button>
+        <span class="small" id="pinProjectHint" style="opacity:.85"></span>
+      </div>
+
       <div style="height:10px"></div>
       <div class="small">Director profiles</div>
       <div class="small" style="margin-bottom:6px">Save/load your current mode + targets + reserves + policy + quotas (good for seasonal playbooks).</div>
