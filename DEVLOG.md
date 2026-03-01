@@ -2231,7 +2231,7 @@ What to try
 
 Summary
 - QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).
-- Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as �blocked� (pairs with the Unblock button).
+- Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as �blocked� (pairs with the Unblock button).
 - Under the hood: added a transient per-project EMA rate tracker (no save data changes).
 - Version bump + dist rebuild.
 - No save-breaking changes.
@@ -2288,3 +2288,23 @@ Files touched
 
 What to try
 - Push Mode/Priorities hard (e.g., Advance + Progress 150%) and watch the Social inspector list the kittens with the lowest fit; then click Focus-fit/Grievance to jump there.
+
+---
+
+## 2026-02-28 18:28 CST - v0.9.112 Colony table sorting (click headers)
+
+Summary
+- QoL: the Colony table can now be sorted by clicking column headers (desc → asc → off).
+- Added sorting for key civ-sim debugging signals: Fit, Eff, Mood, Griev, Buddy-need, etc.
+- Visual indicator: active sort header shows ▲/▼.
+- Sorting is transient UI state only (does not affect sim; not saved).
+- Version bump + dist rebuild.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/css/app.css
+- dist/js/main.js
+
+What to try
+- Click **Fit** to find the most misaligned kittens, then open the Social inspector to see why they’re unhappy.

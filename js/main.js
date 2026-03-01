@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.111';
+  const GAME_VERSION = '0.9.112';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4067,7 +4067,11 @@
   // --- UI
   const el = (id) => document.getElementById(id);
   const statsEl = el('stats');
+  const kittensTableEl = el('kittensTable');
   const kittensEl = el('kittens');
+
+  // Transient UI state (NOT saved)
+  const uiSort = { key:'', dir:0 }; // dir: +1 asc, -1 desc
   const rulesEl = el('rules');
   const logEl = el('log');
   const goalsEl = el('goals');
@@ -4102,6 +4106,36 @@
     if (key === 'dissent' || key === 'compliance' || key === 'focusfit' || key === 'grievance') openSocial();
     if (key === 'storage') openStorage();
   });
+
+  // Colony table sorting (QoL)
+  function defaultSortDirFor(key){
+    // dir: +1 asc, -1 desc
+    return (key === 'hunger') ? +1 : -1;
+  }
+
+  function setSort(key){
+    const k = String(key || '');
+    if (!k) { uiSort.key = ''; uiSort.dir = 0; return; }
+    if (uiSort.key === k) {
+      // cycle: desc/asc/none
+      if (uiSort.dir === -1) uiSort.dir = +1;
+      else if (uiSort.dir === +1) { uiSort.key = ''; uiSort.dir = 0; }
+      else uiSort.dir = defaultSortDirFor(k);
+    } else {
+      uiSort.key = k;
+      uiSort.dir = defaultSortDirFor(k);
+    }
+    render();
+  }
+
+  if (kittensTableEl) {
+    const thead = kittensTableEl.querySelector('thead');
+    if (thead) thead.addEventListener('click', (e) => {
+      const th = e.target?.closest?.('th[data-sort]');
+      if (!th) return;
+      setSort(String(th.dataset.sort || ''));
+    });
+  }
 
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
@@ -7537,9 +7571,72 @@
     }
 
     // kittens
+    // Sorting is purely UI/QoL: it does not affect simulation and it is not saved.
+    if (kittensTableEl) {
+      const ths = kittensTableEl.querySelectorAll('thead th.sortable[data-sort]');
+      ths.forEach(th => {
+        const key = String(th.dataset.sort || '');
+        const arrow = th.querySelector('.arrow');
+        const active = (uiSort.key && key === uiSort.key);
+        th.classList.toggle('active', !!active);
+        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? '▲' : '▼') : '';
+        th.title = 'Click to sort (desc → asc → off)';
+      });
+    }
+
+    const entries = state.kittens.map((k, idx) => ({ k, idx }));
+
+    function sortValFor(k, key){
+      const kk = k || {};
+      switch(String(key || '')){
+        case 'name': return String(kk.name ?? '');
+        case 'role': return String(kk.role ?? '');
+        case 'task': return String(kk.task ?? '');
+        case 'energy': return Number(kk.energy ?? 0);
+        case 'hunger': return Number(kk.hunger ?? 0);
+        case 'health': return Number(kk.health ?? 1);
+        case 'mood': return Number(kk.mood ?? 0.55);
+        case 'griev': return Number(kk.grievance ?? 0);
+        case 'eff': return efficiency(state, kk);
+        case 'apt': {
+          const top = topSkillInfo(kk);
+          return Number(top.level ?? 1);
+        }
+        case 'bloc': return String(dominantValueAxis(kk) ?? '');
+        case 'fit': return valuesAlignment01(state, kk);
+        case 'buddy': return Number(kk.buddyNeed ?? 0);
+        default: return 0;
+      }
+    }
+
+    if (uiSort.key && uiSort.dir) {
+      const key = uiSort.key;
+      const dir = uiSort.dir;
+
+      entries.sort((a,b) => {
+        const av = sortValFor(a.k, key);
+        const bv = sortValFor(b.k, key);
+
+        // Numbers
+        if (typeof av === 'number' && typeof bv === 'number') {
+          const an = Number.isFinite(av) ? av : 0;
+          const bn = Number.isFinite(bv) ? bv : 0;
+          if (an !== bn) return (an - bn) * dir;
+          return (a.idx - b.idx);
+        }
+
+        // Strings
+        const as = String(av ?? '');
+        const bs = String(bv ?? '');
+        if (as !== bs) return as.localeCompare(bs) * dir;
+        return (a.idx - b.idx);
+      });
+    }
+
     kittensEl.innerHTML = '';
-    for (let kidx=0; kidx<state.kittens.length; kidx++) {
-      const k = state.kittens[kidx];
+    for (const ent of entries) {
+      const kidx = ent.idx;
+      const k = ent.k;
       const tr = document.createElement('tr');
       tr.dataset.kidx = String(kidx);
       tr.style.cursor = 'pointer';
