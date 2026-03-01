@@ -3032,3 +3032,23 @@ Files touched
 What to try
 - Run `node scripts/replay_test.js` and confirm the checksum is stable run-to-run.
 - With the current canned save, you should see: `checksum: fnv1a32:9ca10bb0`.
+
+
+---
+
+## 2026-03-01 11:54 CST - P0.2 Replay harness: golden checksum assert (+ update escape hatch)
+
+Summary
+- Replay harness now enforces a **golden checksum** for `scripts/canned_save.json` (fails if the end-state checksum drifts).
+- Added `--update-golden` flag to intentionally refresh the golden checksum file (`scripts/canned_save.golden.json`).
+- This turns the checksum into a real regression tripwire for CI/local runs while still keeping iteration unblocked.
+
+Files touched
+- `scripts/replay_test.js`
+- `scripts/canned_save.golden.json`
+- `DEVLOG.md`
+
+What to try
+- Run `node scripts/replay_test.js` (should print `golden: OK`).
+- Temporarily change `scripts/canned_save.json` (or the sim) and confirm it fails with a golden mismatch.
+- If the change is intentional, run `node scripts/replay_test.js --update-golden` to refresh.

@@ -312,7 +312,45 @@ async function main(){
 
   const checksumStr = stableStringify(checksumPayload);
   const checksumHex = fnv1a32(checksumStr).toString(16).padStart(8, '0');
-  console.log(`  checksum: fnv1a32:${checksumHex}`);
+  const checksumFull = `fnv1a32:${checksumHex}`;
+  console.log(`  checksum: ${checksumFull}`);
+
+  // --- Golden checksum assert (drift detector)
+  // Default: enforce that canned_save.json produces the expected checksum.
+  // Escape hatch: `--update-golden` rewrites the golden file to the new checksum.
+  const argv = process.argv.slice(2);
+  const updateGolden = argv.includes('--update-golden');
+  const skipGolden = argv.includes('--no-golden');
+  const goldenPath = path.resolve(__dirname, './canned_save.golden.json');
+
+  if (!skipGolden) {
+    if (updateGolden) {
+      fs.writeFileSync(
+        goldenPath,
+        JSON.stringify({ checksum: checksumFull, updatedAt: new Date().toISOString() }, null, 2) + '\n',
+        'utf8'
+      );
+      console.log(`  golden: updated -> ${goldenPath}`);
+    } else {
+      if (!fs.existsSync(goldenPath)) {
+        throw new Error(
+          `missing golden checksum file: ${goldenPath}\n` +
+          `Run: node scripts/replay_test.js --update-golden`
+        );
+      }
+      const golden = JSON.parse(fs.readFileSync(goldenPath, 'utf8'));
+      const expected = String(golden?.checksum ?? '').trim();
+      if (expected !== checksumFull) {
+        throw new Error(
+          `golden checksum mismatch for canned_save.json\n` +
+          `  expected: ${expected}\n` +
+          `  actual:   ${checksumFull}\n` +
+          `If intentional, run: node scripts/replay_test.js --update-golden`
+        );
+      }
+      console.log('  golden: OK');
+    }
+  }
 
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
