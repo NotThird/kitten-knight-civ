@@ -2566,3 +2566,23 @@ Files touched
 
 What to try
 - In **Role Quotas**, click **Preset: Stable** right before Winter and watch the colony self-staff Firekeeper/Forager/Woodcutter while still following your policy plan.
+
+---
+
+## 2026-02-28 21:59 CST - v0.9.126 Bulk Policy Locks (Auto Policy guardrail)
+
+Summary
+- QoL: Added **bulk Policy Locks** controls in the Policy panel (Lock basics / Lock all / Unlock all).
+- This makes it easy to freeze your chosen multipliers so **Auto Policy** can’t fight your manual tuning during a run.
+- Bulk actions are save-safe and only affect the existing per-action lock flags.
+- Patch notes updated.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- dist/css/app.css
+- DEVLOG.md
+
+What to try
+- Turn **Auto Policy** ON, then hit **Lock basics** and see the colony still adapts via non-locked levers (Research/Build/etc) without touching your survival multipliers.

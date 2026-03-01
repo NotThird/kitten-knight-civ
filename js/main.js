@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.125';
+  const GAME_VERSION = '0.9.126';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -4547,6 +4547,13 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.126',
+      notes: [
+        'QoL: Policy panel now has one-click bulk Policy Locks (Lock basics / Lock all / Unlock all) so Auto Policy can\'t fight your manual tuning.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.125',
       notes: [
         'QoL/Explainability: Sorting by Task now uses the effective executed task (shows fallback tasks when a sink is blocked by reserves/inputs).',
@@ -8263,7 +8270,21 @@
       </div>
     `;
 
-    const head = undoRow + ((desiredNow || desiredBase) ? `
+    const bulkRow = `
+      <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:10px; align-items:center">
+        <div class="small" style="opacity:.9">
+          <b>Policy locks</b>
+          <span style="opacity:.85">(bulk)</span>
+        </div>
+        <div class="row" style="gap:8px; flex-wrap:wrap; justify-content:flex-end">
+          <button class="btn" data-polbulk="lockBasics" title="Lock the basic survival levers (Forage/Farm/PreserveFood/ChopWood/StokeFire/Guard) so Auto Policy won\'t change them.">Lock basics</button>
+          <button class="btn" data-polbulk="lockAll" title="Lock ALL policy multipliers so Auto Policy can\'t change them.">Lock all</button>
+          <button class="btn" data-polbulk="unlockAll" title="Unlock ALL policy multipliers so Auto Policy can resume nudging them.">Unlock all</button>
+        </div>
+      </div>
+    `;
+
+    const head = undoRow + bulkRow + ((desiredNow || desiredBase) ? `
       <div class="small" style="margin-bottom:8px; opacity:.9">
         <b>Plan preview</b>
         <div class="why" style="margin-top:6px">${escapeHtml(desiredNow ? ('with policy: ' + desiredNow) : 'with policy: -')}${desiredBase ? ('\nwithout policy: ' + desiredBase) : ''}</div>
@@ -9298,6 +9319,31 @@
     if (btn.dataset.policyUndo) {
       const res = applyPolicyUndo(state);
       if (res?.msg) log(res.msg);
+      save();
+      render();
+      return;
+    }
+
+    const bulk = String(btn.dataset.polbulk || '');
+    if (bulk) {
+      state.director = state.director ?? {};
+      state.director.policyLocks = state.director.policyLocks ?? {};
+
+      // Targets: everything visible in Policy panel.
+      const allKeys = Object.keys(state.policyMult ?? {});
+      const basics = ['Forage','Farm','PreserveFood','ChopWood','StokeFire','Guard'];
+
+      if (bulk === 'lockAll') {
+        for (const k of allKeys) state.director.policyLocks[k] = true;
+        log('Policy locks: LOCKED ALL (Auto Policy will skip all multipliers).');
+      } else if (bulk === 'unlockAll') {
+        state.director.policyLocks = {};
+        log('Policy locks: unlocked all (Auto Policy can resume nudging).');
+      } else if (bulk === 'lockBasics') {
+        for (const k of basics) state.director.policyLocks[k] = true;
+        log('Policy locks: locked basics (food/warmth/threat levers).');
+      }
+
       save();
       render();
       return;
