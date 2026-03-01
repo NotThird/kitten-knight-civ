@@ -2875,7 +2875,7 @@ What to try
 ## 2026-03-01 05:23 CST - P0.1 Modularization: extract 1s decision/planning tick into sim.js
 
 Summary
-- Phase 0 modularization slice: extracted the 1-second “decision cadence” block (plan creation + per-kitten task selection + decision/act history bookkeeping) out of `js/main.js` into `js/sim.js` as `runDecisionSecond(s, deps)`.
+- Phase 0 modularization slice: extracted the 1-second ï¿½decision cadenceï¿½ block (plan creation + per-kitten task selection + decision/act history bookkeeping) out of `js/main.js` into `js/sim.js` as `runDecisionSecond(s, deps)`.
 - `main.js` now calls `runDecisionSecond(...)` and passes the needed deterministic helpers via dependency injection (matching the `runKittensTick(...)` pattern).
 - No behavior changes intended; this is a boundary cleanup to prep for a deterministic replay harness.
 
@@ -3074,3 +3074,28 @@ Files touched
 What to try
 - Open the GitHub Actions tab and confirm **CI** passes (look for PARSE_IMPORT_OK + eplay_test: OK).
 
+
+
+---
+
+## 2026-03-01 12:55 CST - P0.1 Modularization: extract lightweight UI wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: extracted a small, dependency-injected UI module (js/ui.js).
+- Moved three UI concerns out of main.js:
+  - clickable stat-card inspector routing (Social/Storage/Threat)
+  - colony table header sorting wiring + transient uiSort state
+  - debounced UI log helper (uiDebouncedLog) for sliders
+- main.js now imports initUI(...) and receives uiSort + uiDebouncedLog back for render/handlers.
+- No behavior changes intended; this is a boundary/cleanup move to keep UI code separable from sim for future refactors.
+
+Files touched
+- js/ui.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- In the game: click Dissent/Compliance/Focus-fit/Grievance and confirm Social inspector opens.
+- Click Food Cap/Spoilage and Threat stat cards and confirm the right inspector opens.
+- Click colony table headers to sort (desc->asc->off) and verify it still re-renders correctly.
+- Drag Discipline/Work pace/Priorities sliders and confirm the event log stays debounced.

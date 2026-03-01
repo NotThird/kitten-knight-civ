@@ -2,6 +2,7 @@ import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
+import { initUI } from './ui.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -3965,8 +3966,6 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
   const kittensTableEl = el('kittensTable');
   const kittensEl = el('kittens');
 
-  // Transient UI state (NOT saved)
-  const uiSort = { key:'', dir:0 }; // dir: +1 asc, -1 desc
   const rulesEl = el('rules');
   const logEl = el('log');
   const goalsEl = el('goals');
@@ -3984,55 +3983,17 @@ import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSea
   const profilesEl = el('profiles');
   const profilesHintEl = el('profilesHint');
 
-  // UI log debounce (prevents Event log spam when dragging sliders)
-  const _uiLogTimers = Object.create(null);
-  function uiDebouncedLog(key, msg, delayMs=350){
-    const k = String(key || 'ui');
-    if (_uiLogTimers[k]) clearTimeout(_uiLogTimers[k]);
-    _uiLogTimers[k] = setTimeout(() => {
-      try { log(String(msg || '')); } catch (e) {}
-    }, Math.max(0, Number(delayMs) || 0));
-  }
-
-  // Clickable stat cards (explainability)
-  if (statsEl) statsEl.addEventListener('click', (e) => {
-    const card = e.target?.closest?.('[data-stat]');
-    if (!card) return;
-    const key = String(card.dataset.stat || '');
-    if (key === 'dissent' || key === 'compliance' || key === 'focusfit' || key === 'grievance') openSocial();
-    if (key === 'storage') openStorage();
-    if (key === 'threat') openThreat();
+  // Transient UI state + small listeners (sorting, debounced UI logs, stat-card clicks)
+  const { uiSort, uiDebouncedLog } = initUI({
+    statsEl,
+    kittensTableEl,
+    log,
+    save,
+    render,
+    openSocial,
+    openStorage,
+    openThreat,
   });
-
-  // Colony table sorting (QoL)
-  function defaultSortDirFor(key){
-    // dir: +1 asc, -1 desc
-    return (key === 'hunger') ? +1 : -1;
-  }
-
-  function setSort(key){
-    const k = String(key || '');
-    if (!k) { uiSort.key = ''; uiSort.dir = 0; return; }
-    if (uiSort.key === k) {
-      // cycle: desc/asc/none
-      if (uiSort.dir === -1) uiSort.dir = +1;
-      else if (uiSort.dir === +1) { uiSort.key = ''; uiSort.dir = 0; }
-      else uiSort.dir = defaultSortDirFor(k);
-    } else {
-      uiSort.key = k;
-      uiSort.dir = defaultSortDirFor(k);
-    }
-    render();
-  }
-
-  if (kittensTableEl) {
-    const thead = kittensTableEl.querySelector('thead');
-    if (thead) thead.addEventListener('click', (e) => {
-      const th = e.target?.closest?.('th[data-sort]');
-      if (!th) return;
-      setSort(String(th.dataset.sort || ''));
-    });
-  }
 
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
