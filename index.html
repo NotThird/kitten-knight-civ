@@ -159,6 +159,14 @@
         <button class="btn" id="btnPrioConsensus" title="Bottom-up: set priorities based on the colony's average values (reduces value mismatch and can calm dissent).">Consensus</button>
       </div>
 
+      <div style="height:6px"></div>
+      <div class="row" style="gap:6px">
+        <span class="small" style="opacity:.9" title="Directives are per-kitten persistent nudges. These buttons help you set them in one click (without editing each kitten).">Directive tools</span>
+        <button class="btn" id="btnDirBloc" title="Set each kitten's Directive to match their dominant Values bloc (Food/Safety/Progress/Social). This makes the colony feel more bottom-up.">Match blocs</button>
+        <button class="btn" id="btnDirClearAll" title="Reset ALL kitten Directives back to Auto.">Clear all</button>
+        <span class="small" id="dirToolsHint" style="opacity:.85"></span>
+      </div>
+
       <div style="height:8px"></div>
       <div class="row">
         <label class="small" title="Labor doctrine: how hard you push specialization vs rotation. Specialize makes roles stick (higher role pressure, lower boredom rotation). Rotate reduces role pressure, increases boredom rotation, and slightly reduces dissent buildup.">Labor doctrine

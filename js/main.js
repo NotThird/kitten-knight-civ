@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.115';
+  const GAME_VERSION = '0.9.116';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4506,6 +4506,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.116',
+      notes: [
+        'NEW: Directive tools (batch): “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social).',
+        'QoL: Director panel now shows an “active directives X/Y” hint so you can see how many kittens you’ve specialized at a glance.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.115',
       notes: [
         'QoL/Explainability: Season-change log now includes a compact Season Report (key stats + current season targets + active faction demand if any).',
@@ -7585,6 +7593,13 @@
       rrEl.textContent = `Recommended (${sn}): food≥${rr.food} | wood≥${rr.wood} | science≥${rr.science} | tools≥${rr.tools}`;
     }
 
+    // Directive tools hint: make "who is directed" visible without opening the table.
+    const dirHintEl = el('dirToolsHint');
+    if (dirHintEl) {
+      const c = countActiveDirectives(state);
+      dirHintEl.textContent = c.total ? `active directives: ${c.active}/${c.total}` : '';
+    }
+
     renderPolicy();
     renderRoleQuotas();
 
@@ -8872,6 +8887,50 @@
     state.social = state.social ?? { dissent: 0 };
     state.social.dissent = clamp01(Number(state.social.dissent ?? 0) * 0.90);
     log(`Consensus priorities (avg values F${Math.round(c.avg.Food*100)} S${Math.round(c.avg.Safety*100)} P${Math.round(c.avg.Progress*100)} So${Math.round(c.avg.Social*100)}): Food ${(c.pFood*100).toFixed(0)}% | Safety ${(c.pSafety*100).toFixed(0)}% | Progress ${(c.pProg*100).toFixed(0)}%`);
+    save();
+    render();
+  });
+
+  // --- Directive tools (batch per-kitten directives)
+  function countActiveDirectives(s){
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    let active = 0;
+    for (const k of ks) {
+      const dir = String(k?.directive ?? 'Auto');
+      if (dir && dir !== 'Auto') active++;
+    }
+    return { active, total: ks.length };
+  }
+
+  function setDirectivesMatchBlocs(s){
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    const counts = { Food:0, Safety:0, Progress:0, Social:0 };
+    for (const k of ks) {
+      const axis = dominantValueAxis(k);
+      const dir = (axis === 'Food' || axis === 'Safety' || axis === 'Progress' || axis === 'Social') ? axis : 'Auto';
+      k.directive = dir;
+      if (dir !== 'Auto') counts[dir] = (counts[dir] ?? 0) + 1;
+    }
+    const parts = Object.entries(counts).filter(([,n])=>n>0).map(([k,n])=>`${k}:${n}`);
+    log(`Directive tools → Match blocs (${parts.join(' | ') || 'none'})`);
+  }
+
+  function clearAllDirectives(s){
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    for (const k of ks) k.directive = 'Auto';
+    log('Directive tools → Clear all (Directives reset to Auto).');
+  }
+
+  const btnDirBloc = document.getElementById('btnDirBloc');
+  if (btnDirBloc) btnDirBloc.addEventListener('click', ()=>{
+    setDirectivesMatchBlocs(state);
+    save();
+    render();
+  });
+
+  const btnDirClearAll = document.getElementById('btnDirClearAll');
+  if (btnDirClearAll) btnDirClearAll.addEventListener('click', ()=>{
+    clearAllDirectives(state);
     save();
     render();
   });

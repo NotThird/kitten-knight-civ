@@ -2372,3 +2372,25 @@ Files touched
 
 What to try
 - Let a season flip, then use the Season Report line to decide whether to toggle Winter Prep / Crisis Protocol *before* the spiral starts.
+
+---
+
+## 2026-02-28 19:28 CST - v0.9.116 Directive tools (batch: match blocs)
+
+Summary
+- NEW: Director panel now includes **Directive tools**.
+- “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social) for quick bottom-up specialization.
+- “Clear all” resets all Directives back to Auto.
+- QoL: Director panel shows an **active directives X/Y** hint.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- prototype/index.html
+- dist/index.html
+- dist/js/main.js
+- dist/css/app.css
+- DEVLOG.md
+
+What to try
+- Click **Match blocs**, then sort the Colony table by **Bloc** and watch how stable the colony stays when you loosen central planning (raise Autonomy).
