@@ -102,13 +102,25 @@ async function main(){
     sim.stepSim(s, dt, deps);
 
     assert(isFiniteNumber(s.t), `t NaN/Inf at i=${i}: ${s.t}`);
+    const EPS = 1e-7;
+
     for (const [rk, rv] of Object.entries(s.res ?? {})) {
       assert(isFiniteNumber(rv), `res.${rk} NaN/Inf at i=${i}: ${rv}`);
+      // Most resources should never go negative. Allow a tiny epsilon for float math.
+      assert(rv >= -EPS, `res.${rk} negative at i=${i}: ${rv}`);
     }
+
+    assert((s.kittens ?? []).length <= 500, `kittens array grew unbounded at i=${i}: len=${(s.kittens ?? []).length}`);
+
     for (const k of (s.kittens ?? [])) {
       assert(isFiniteNumber(k.hunger), `kitten.hunger NaN/Inf at i=${i}: ${k.hunger}`);
       assert(isFiniteNumber(k.energy), `kitten.energy NaN/Inf at i=${i}: ${k.energy}`);
       assert(isFiniteNumber(k.health), `kitten.health NaN/Inf at i=${i}: ${k.health}`);
+
+      // Core vitals are clamped 0..1 in sim; allow epsilon so we catch runaway values.
+      assert(k.hunger >= -EPS && k.hunger <= 1 + EPS, `kitten.hunger out of [0,1] at i=${i}: ${k.hunger}`);
+      assert(k.energy >= -EPS && k.energy <= 1 + EPS, `kitten.energy out of [0,1] at i=${i}: ${k.energy}`);
+      assert(k.health >= -EPS && k.health <= 1 + EPS, `kitten.health out of [0,1] at i=${i}: ${k.health}`);
     }
   }
 
