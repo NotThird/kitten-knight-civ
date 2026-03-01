@@ -84,6 +84,127 @@ export function initUI(deps){
 }
 
 /**
+ * Save export/import/reset wiring.
+ *
+ * This stays in ui.js so main.js can stay focused on sim/mechanics.
+ *
+ * @param {object} deps
+ * @param {string} deps.saveKey
+ * @param {()=>void} deps.save               - force a clean snapshot into localStorage
+ * @param {()=>any} deps.load                - load state from localStorage
+ * @param {()=>any} deps.defaultState
+ * @param {()=>any} deps.getState
+ * @param {(s:any)=>void} deps.setState
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.render
+ * @param {HTMLElement|null} deps.btnResetEl
+ * @param {HTMLElement|null} deps.btnExportEl
+ * @param {HTMLElement|null} deps.btnImportEl
+ */
+export function initSaveIO(deps){
+  const {
+    saveKey,
+    save,
+    load,
+    defaultState,
+    getState,
+    setState,
+    log,
+    render,
+    btnResetEl,
+    btnExportEl,
+    btnImportEl,
+  } = deps || {};
+
+  const SAVE_KEY = String(saveKey || '');
+
+  function getSaveString(){
+    // Force a clean snapshot first.
+    try { save?.(); } catch (e) {}
+    try { return localStorage.getItem(SAVE_KEY) ?? ''; } catch (e) { return ''; }
+  }
+
+  async function copyToClipboard(text){
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+
+    // Fallback (older browsers / insecure context)
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = String(text ?? '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return !!ok;
+    } catch {
+      return false;
+    }
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([String(text ?? '')], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = String(filename || 'save.json');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  if (btnResetEl) btnResetEl.addEventListener('click', () => {
+    if (!confirm('Hard reset?')) return;
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    try { setState?.(defaultState?.() ?? {}); } catch (e) { setState?.({}); }
+    render?.();
+  });
+
+  if (btnExportEl) btnExportEl.addEventListener('click', async () => {
+    const txt = getSaveString();
+    if (!txt) { log?.('No save data found to export.'); render?.(); return; }
+
+    const ok = await copyToClipboard(txt);
+    if (ok) log?.('Save exported: copied to clipboard. (Also downloading a .json file)');
+    else log?.('Save exported: clipboard copy failed (downloaded a .json file instead).');
+
+    const stamp = new Date().toISOString().replaceAll(':','-');
+    downloadText(`kitten-knight-civ-save-${stamp}.json`, txt);
+    render?.();
+  });
+
+  if (btnImportEl) btnImportEl.addEventListener('click', () => {
+    const pasted = prompt('Paste a save string (JSON). This will overwrite your current save.');
+    if (!pasted) return;
+    try {
+      const obj = JSON.parse(pasted);
+      if (!obj || !obj.res || !obj.kittens || !obj.rules) throw new Error('Missing required keys.');
+      localStorage.setItem(SAVE_KEY, JSON.stringify(obj));
+      const next = load?.() ?? defaultState?.();
+      setState?.(next);
+      log?.('Save imported successfully.');
+      render?.();
+    } catch (e) {
+      log?.(`Import failed: ${(e && e.message) ? e.message : 'invalid JSON'}`);
+      render?.();
+    }
+  });
+
+  return {
+    getSaveString,
+    exportNow: () => btnExportEl?.click?.(),
+  };
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

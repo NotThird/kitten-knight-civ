@@ -3138,3 +3138,23 @@ Files touched
 What to try
 - Click any kitten row to open the Decision Inspector; verify Directive controls still work (change directive repeatedly + refresh).
 - Press **Esc** to close the inspector.
+
+---
+
+## 2026-03-01 14:55 CST - P0.1 Modularization: extract Save export/import/reset wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved Save **Export/Import/Hard Reset** button wiring out of `main.js` and into a new `initSaveIO(...)` helper in `js/ui.js`.
+- `main.js` now delegates UI events to the module boundary (keeps boot file thinner; keeps sim/mechanics separate).
+- No behavior changes intended (same prompt/confirm flows; same clipboard + download behavior).
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Click **Export**: confirm it copies to clipboard and downloads a JSON file.
+- Click **Import**: paste a save JSON and confirm it loads.
+- Click **Reset**: confirm it clears localStorage + returns to a fresh state.
+

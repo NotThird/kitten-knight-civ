@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7405,85 +7405,22 @@ import { PATCH_HISTORY } from './content.js';
     togglePause();
   });
 
-  document.getElementById('btnReset').addEventListener('click', () => {
-    if (!confirm('Hard reset?')) return;
-    localStorage.removeItem(SAVE_KEY);
-    state = defaultState();
-    render();
+  // --- Save export/import/reset (moved behind UI boundary)
+  initSaveIO({
+    saveKey: SAVE_KEY,
+    save,
+    load,
+    defaultState,
+    getState: () => state,
+    setState: (next) => { state = next; },
+    log,
+    render,
+    btnResetEl: document.getElementById('btnReset'),
+    btnExportEl: document.getElementById('btnExport'),
+    btnImportEl: document.getElementById('btnImport'),
   });
 
   document.getElementById('btnTick').addEventListener('click', () => { for (let i=0;i<100;i++) step(0.1); render(); });
-
-  // --- Save export/import (quality-of-life; makes it easy to share saves + reproduce bugs)
-  function getSaveString(){
-    // Force a clean snapshot first.
-    save();
-    return localStorage.getItem(SAVE_KEY) ?? '';
-  }
-
-  async function copyToClipboard(text){
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch {}
-
-    // Fallback (older browsers / insecure context)
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      const ok = document.execCommand('copy');
-      ta.remove();
-      return !!ok;
-    } catch { return false; }
-  }
-
-  function downloadText(filename, text){
-    const blob = new Blob([text], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  }
-
-  document.getElementById('btnExport').addEventListener('click', async () => {
-    const txt = getSaveString();
-    if (!txt) { log('No save data found to export.'); render(); return; }
-
-    const ok = await copyToClipboard(txt);
-    if (ok) log('Save exported: copied to clipboard. (Also downloading a .json file)');
-    else log('Save exported: clipboard copy failed (downloaded a .json file instead).');
-
-    const stamp = new Date().toISOString().replaceAll(':','-');
-    downloadText(`kitten-knight-civ-save-${stamp}.json`, txt);
-    render();
-  });
-
-  document.getElementById('btnImport').addEventListener('click', () => {
-    const pasted = prompt('Paste a save string (JSON). This will overwrite your current save.');
-    if (!pasted) return;
-    try {
-      const obj = JSON.parse(pasted);
-      if (!obj || !obj.res || !obj.kittens || !obj.rules) throw new Error('Missing required keys.');
-      localStorage.setItem(SAVE_KEY, JSON.stringify(obj));
-      state = load() ?? defaultState();
-      log('Save imported successfully.');
-      render();
-    } catch (e) {
-      log(`Import failed: ${(e && e.message) ? e.message : 'invalid JSON'}`);
-      render();
-    }
-  });
 
   function snapshotDirectorSettings(){
     state.director = state.director ?? { projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
