@@ -1,6 +1,8 @@
 // sim.js — core time/season helpers
 // Phase 0 modularization: extracted from main.js to isolate deterministic sim utilities.
 
+import { clamp01 } from './util.js';
+
 export const SEASON_LEN = 90; // seconds per season
 export const seasons = ['Spring','Summer','Fall','Winter'];
 export const YEAR_LEN = SEASON_LEN * seasons.length;
@@ -59,4 +61,48 @@ export function secondsToNextWinter(s){
   const remThis = secondsToNextSeason(s);
   const fullSeasons = Math.max(0, seasonsAhead - 1);
   return remThis + fullSeasons * SEASON_LEN;
+}
+
+// --- Work effectiveness (makes "Eat/Rest" meaningful and creates emergent slowdown spirals)
+// 1.00 = full speed, lower when hungry/tired/cold.
+// NOTE: intentionally simple + explainable; shown in UI as "Eff".
+export function efficiency(s, k){
+  const energy = clamp01(Number(k?.energy ?? 0));
+  const hunger = clamp01(Number(k?.hunger ?? 0)); // 0 = full, 1 = starving
+
+  // Energy: below 30% you crater.
+  const energyMul = clamp01((energy - 0.30) / 0.70);
+
+  // Hunger: above 85% you crater.
+  const sat = 1 - hunger;
+  const hungerMul = clamp01((sat - 0.15) / 0.85);
+
+  // Cold: only really bites in winter + low warmth.
+  const season = seasonAt(s?.t ?? 0);
+  let coldMul = 1;
+  if (season.name === 'Winter') {
+    const w = clamp01(Number(s?.res?.warmth ?? 0) / 40); // 0..1 at warmth 0..40
+    coldMul = 0.65 + 0.35 * w; // 0.65..1.00
+  }
+
+  // Health: sickness/injury reduces throughput but doesn't hard-stop.
+  const health = clamp01(Number(k?.health ?? 1));
+  const healthMul = 0.55 + 0.45 * health; // 0.55..1.00
+
+  // Mood: tiny boost/penalty based on how "aligned" they feel.
+  const mood = clamp01(Number(k?.mood ?? 0.55));
+  const moodMul = 0.88 + 0.24 * mood; // 0.88..1.12
+
+  return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul * moodMul);
+}
+
+// --- Momentum (emergent specialization via "getting in the groove")
+// If a kitten keeps doing the same productive task for several seconds, they get a small throughput bonus.
+export function momentumMul(k, action){
+  const a = String(action ?? '');
+  if (!a || a === 'Eat' || a === 'Rest' || a === 'Loaf' || a === 'Socialize' || a === 'Care') return 1;
+  const streak = Math.max(0, Number(k?.taskStreak ?? 0) || 0);
+  if (streak <= 1) return 1;
+  // +2% per second after the first, capped at +20%.
+  return 1 + Math.min(0.20, (streak - 1) * 0.02);
 }

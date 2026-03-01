@@ -1,57 +1,11 @@
 import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
-import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter } from './sim.js';
+import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul } from './sim.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
-
-  // --- Work effectiveness (makes "Eat/Rest" meaningful and creates emergent slowdown spirals)
-  // 1.00 = full speed, lower when hungry/tired/cold.
-  // NOTE: this is intentionally simple + explainable; we expose it in UI as "Eff".
-  function efficiency(s, k){
-    const energy = clamp01(Number(k.energy ?? 0));
-    const hunger = clamp01(Number(k.hunger ?? 0)); // 0 = full, 1 = starving
-
-    // Energy: below 30% you crater.
-    const energyMul = clamp01((energy - 0.30) / 0.70);
-
-    // Hunger: above 85% you crater.
-    const sat = 1 - hunger;
-    const hungerMul = clamp01((sat - 0.15) / 0.85);
-
-    // Cold: only really bites in winter + low warmth.
-    const season = seasonAt(s.t);
-    let coldMul = 1;
-    if (season.name === 'Winter') {
-      const w = clamp01(Number(s.res?.warmth ?? 0) / 40); // 0..1 at warmth 0..40
-      coldMul = 0.65 + 0.35 * w; // 0.65..1.00
-    }
-
-    // Health: sickness/injury reduces throughput but doesn't hard-stop.
-    const health = clamp01(Number(k.health ?? 1));
-    const healthMul = 0.55 + 0.45 * health; // 0.55..1.00
-
-    // Mood: tiny boost/penalty based on how "aligned" they feel (personality + stress).
-    // Kept intentionally small so needs (food/warmth) still dominate.
-    const mood = clamp01(Number(k.mood ?? 0.55));
-    const moodMul = 0.88 + 0.24 * mood; // 0.88..1.12
-
-    return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul * moodMul);
-  }
-
-  // --- Momentum (emergent specialization via "getting in the groove")
-  // If a kitten keeps doing the same productive task for several seconds, they get a small throughput bonus.
-  // This pairs with commitment windows + role bias to create readable specialization without hard locks.
-  function momentumMul(k, action){
-    const a = String(action ?? '');
-    if (!a || a === 'Eat' || a === 'Rest' || a === 'Loaf' || a === 'Socialize' || a === 'Care') return 1;
-    const streak = Math.max(0, Number(k.taskStreak ?? 0) || 0);
-    if (streak <= 1) return 1;
-    // +2% per second after the first, capped at +20%.
-    return 1 + Math.min(0.20, (streak - 1) * 0.02);
-  }
 
   // --- Aptitude: kittens slowly become specialists (via skill levels) and prefer work they are good at.
   // This gives "policy management" long-term consequences: if you keep leaning on Forage, those kittens get better at it.
