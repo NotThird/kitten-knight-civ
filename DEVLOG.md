@@ -2728,3 +2728,22 @@ Files touched
 
 What to try
 - Enable **Auto Pause (danger)**, then intentionally run a negative food trend (raise Work pace + Tight rations) and watch it pause before edible hits zero.
+
+---
+
+## 2026-03-01 00:00 CST - v0.9.134 Commitment stat card (coordination clarity)
+
+Summary
+- NEW: added a **Commitment** stat card (x-multiplier) showing how long kittens tend to stick to tasks before reconsidering.
+- Explainability: Commitment exposes the hidden Discipline + Effective Autonomy -> coordination multiplier, with example lock times for build/work tasks.
+- This makes diagnosing task thrash ("why won't they stay on building") possible without digging into policy tooltips.
+- Version bumped to v0.9.134.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Crank **Autonomy** high (and/or trigger dissent) vs crank **Discipline** high, then watch **Commitment** and the colony's task-switching behavior change.

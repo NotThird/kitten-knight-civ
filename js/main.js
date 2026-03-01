@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.133';
+  const GAME_VERSION = '0.9.134';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -7663,6 +7663,12 @@
         const below = (Number(state.res.tools ?? 0) < resTools - 0.01) ? ' | BELOW RES' : '';
         return `${fmtRate(toolsRate)} | res ${fmt(resTools)} in ${resEta}${below}`;
       }
+      if (key === 'Commitment') {
+        const cm = coordinationMul(state);
+        const build = commitSecondsForTask(state,'BuildHut');
+        const work = commitSecondsForTask(state,'Forage');
+        return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1–6s)`;
+      }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
       return '';
     };
@@ -7695,6 +7701,7 @@
       ['Eff Auto', `${Math.round(effectiveAutonomy01(state)*100)}%`],
       ['Discipline', `${Math.round(discipline01(state)*100)}%`],
       ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
+      ['Commitment', `x${coordinationMul(state).toFixed(2)}`],
       ['Focus-fit', `${Math.round(avgAlign*100)}%`],
     ];
 
@@ -7732,6 +7739,9 @@
       }
       if (k === 'Work pace') {
         d.title = 'Director Work pace policy. Higher pace increases output but increases fatigue/hunger and slowly drags mood; lower pace is steadier but slower.';
+      }
+      if (k === 'Commitment') {
+        d.title = 'Coordination/commitment multiplier (derived from Discipline + Effective Autonomy). Higher = kittens stick to tasks longer (less thrash); lower = they switch more often (more emergent wandering).';
       }
       if (k === 'Focus-fit') {
         d.dataset.stat = 'focusfit';
