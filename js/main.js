@@ -1,13 +1,10 @@
 import { saveGame, loadGame } from './state.js';
+import { fmt, clamp01, now } from './util.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
-
-  const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
-  const clamp01 = (x) => Math.max(0, Math.min(1, x));
-  const now = () => performance.now();
 
   // --- Work effectiveness (makes "Eat/Rest" meaningful and creates emergent slowdown spirals)
   // 1.00 = full speed, lower when hungry/tired/cold.

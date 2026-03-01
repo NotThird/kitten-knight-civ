@@ -2787,3 +2787,22 @@ What to try
 - Refresh with an existing save: confirm load works (kittens/resources appear) and that Export/Import still works.
 - Make a small change (toggle a director setting), refresh, and confirm it persisted.
 
+
+---
+
+## 2026-03-01 02:53 CST - P0.1 Modularization: extract tiny helpers into util.js
+
+Summary
+- Phase 0 modularization slice: extracted tiny shared helpers into a new ES module: js/util.js.
+- main.js now imports mt, clamp01, and 
+ow from util.js instead of defining them inline.
+- No behavior changes intended; this is a pure boundary/cleanup move.
+
+Files touched
+- js/util.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- Load the game and confirm the console is clean (no module 404s).
+- Quick smoke: let it run ~10s, toggle Pause, refresh, and confirm save/load still works.
