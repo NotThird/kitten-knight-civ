@@ -69,18 +69,16 @@ async function main(){
   // --- Headless deps: keep it minimal (we are testing orchestration + invariants, not balance)
   const deps = {
     // Execution layer
-    taskDefs: {
-      Rest: { tick: () => {} },
-    },
-    edibleFood: (ss) => (Number(ss?.res?.food ?? 0) || 0) + (Number(ss?.res?.jerky ?? 0) || 0),
+    taskDefs: sim.minimalTaskDefs(),
+    edibleFood: sim.edibleFood,
     log: () => {},
 
-    // Decision layer (no-ops for now)
+    // Decision layer (lite headless)
     ensureBuddies: () => {},
     desiredWorkerPlan: () => ({ desired:{}, assigned:{} }),
     updateRoles: () => {},
     makeShadowAvail: () => ({}),
-    decideTask: (ss, k) => ({ task: k.task ?? 'Rest', why: 'headless' }),
+    decideTask: (ss, k) => sim.decideTaskLite(ss, k),
     updateMoodPerSecond: () => {},
     updateGrievancePerSecond: () => {},
     updateBuddyNeedPerSecond: () => {},
@@ -88,9 +86,9 @@ async function main(){
     commitSecondsForTask: () => 0,
     reserveForTask: () => {},
 
-    // Optional outer-layer hooks (not extracted yet)
+    // Optional outer-layer hooks (now partially extracted)
     applyUnlocks: () => {},
-    tickPressures: () => {},
+    tickPressures: (ss, ddtt) => sim.tickPressuresCore(ss, ddtt),
 
     pinnedProjectInfo: () => null,
     clearPinnedProject: () => {},

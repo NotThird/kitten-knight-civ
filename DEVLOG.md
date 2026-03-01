@@ -2927,3 +2927,21 @@ Files touched
 
 What to try
 - Run `node scripts/replay_test.js`.
+
+---
+
+## 2026-03-01 06:53 CST - P0.2 Replay harness: headless pressures + minimal task bundle
+
+Summary
+- Phase 0.2: added a small headless-safe `tickPressuresCore(s, dt)` to `dist/js/sim.js` and `js/sim.js` (warmth decay, threat drift, food spoilage soft-cap, and baseline hunger/energy drift).
+- Added a minimal action bundle for the replay harness (`minimalTaskDefs()` + `decideTaskLite(...)`) so canned-save replays exercise real resource dynamics (not just invariants).
+- Updated `scripts/replay_test.js` to use the new helpers (now tests real sim movement without importing main.js).
+
+Files touched
+- `dist/js/sim.js`
+- `js/sim.js`
+- `scripts/replay_test.js`
+- `DEVLOG.md`
+
+What to try
+- Run `node scripts/replay_test.js` and confirm it prints `replay_test: OK`.

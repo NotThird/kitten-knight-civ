@@ -325,6 +325,141 @@ export function runDecisionSecond(s, deps){
   return plan;
 }
 
+// --- Headless-friendly pressures + minimal task bundle (P0.2 slice)
+// Goal: let replay/offline harnesses run *meaningful* colony dynamics without importing main.js.
+// This is intentionally conservative and incomplete vs the full game tickPressures.
+
+export function foodStorageCap(s){
+  const huts = Math.max(0, Number(s?.res?.huts ?? 0));
+  const gran = Math.max(0, Number(s?.res?.granaries ?? 0));
+  const base = 260;
+  return base + huts * 90 + gran * 260;
+}
+
+export function edibleFood(s){
+  return (Number(s?.res?.food ?? 0) || 0) + (Number(s?.res?.jerky ?? 0) || 0);
+}
+
+export function tickPressuresCore(s, dt, deps = {}){
+  const stepDt = Math.max(0, Number(dt ?? 0) || 0);
+  if (!s || stepDt <= 0) return;
+
+  s.res = s.res ?? {};
+  s.kittens = s.kittens ?? [];
+
+  const season = seasonAt(s.t ?? 0);
+
+  // --- Warmth decay (winter is harsher)
+  // Tuned only to be plausible + deterministic for headless tests.
+  const warmDecay = (season.name === 'Winter') ? 0.18 : 0.06;
+  s.res.warmth = Math.max(0, (Number(s.res.warmth ?? 0) || 0) - warmDecay * stepDt);
+
+  // --- Threat drift upward (slow, unless guards/drills/etc in full game)
+  const thrGrow = (season.name === 'Winter') ? 0.040 : 0.030;
+  s.res.threat = Math.max(0, (Number(s.res.threat ?? 0) || 0) + thrGrow * stepDt);
+
+  // --- Food spoilage soft-cap (keeps granaries meaningful)
+  const cap = foodStorageCap(s);
+  const food = Math.max(0, Number(s.res.food ?? 0) || 0);
+  if (food > cap) {
+    const over = food - cap;
+    const overFrac = over / Math.max(1, cap);
+    const spoilMul = 1 + Math.min(3, overFrac * 3); // 1..4
+    const baseSpoil = 0.012; // /s
+    const loss = baseSpoil * spoilMul * stepDt;
+    s.res.food = Math.max(0, food - loss);
+  }
+
+  // --- Baseline hunger/energy drift so headless sims aren't "frozen"
+  // (Full game applies richer per-task costs; this just keeps state moving.)
+  for (const k of s.kittens) {
+    k.hunger = clamp01((Number(k.hunger ?? 0) || 0) + stepDt * 0.008);
+    k.energy = clamp01((Number(k.energy ?? 1) || 0) - stepDt * 0.006);
+    k.health = clamp01(Number(k.health ?? 1));
+  }
+
+  // Optional hook for tests (no-op in game)
+  if (typeof deps.onPressures === 'function') deps.onPressures(s, stepDt, season);
+}
+
+export function efficiencyLite(s, k){
+  const energy = clamp01(Number(k?.energy ?? 1));
+  const hunger = clamp01(Number(k?.hunger ?? 0));
+  const sat = 1 - hunger;
+  const season = seasonAt(s?.t ?? 0);
+  const coldMul = (season.name === 'Winter') ? (0.70 + 0.30 * clamp01((Number(s?.res?.warmth ?? 0) || 0) / 40)) : 1;
+  return Math.max(0.25, (0.60 + 0.40 * energy) * (0.55 + 0.45 * sat) * coldMul);
+}
+
+export function minimalTaskDefs(){
+  // Minimal action set used by replay_test. Not intended to match full balance.
+  return {
+    Rest: {
+      tick: (s, k, dt) => {
+        k.energy = clamp01((Number(k.energy ?? 0) || 0) + dt * 0.020);
+        // Eat tiny amount if hungry and food exists.
+        if (k.hunger > 0.15 && (Number(s.res.food ?? 0) || 0) > 0.2) {
+          const eat = Math.min(0.30 * dt, Number(s.res.food ?? 0) || 0);
+          s.res.food = Math.max(0, (Number(s.res.food ?? 0) || 0) - eat);
+          k.hunger = clamp01(k.hunger - eat * 0.012);
+        }
+      }
+    },
+    Forage: {
+      tick: (s, k, dt) => {
+        const season = seasonAt(s.t ?? 0);
+        const eff = efficiencyLite(s, k);
+        const winterPenalty = (season.name === 'Winter') ? 0.55 : 1.0;
+        const gain = 0.16 * eff * winterPenalty * dt;
+        s.res.food = (Number(s.res.food ?? 0) || 0) + gain;
+        k.hunger = clamp01(k.hunger - gain * 0.006);
+      }
+    },
+    StokeFire: {
+      tick: (s, k, dt) => {
+        const eff = efficiencyLite(s, k);
+        const needWood = 0.050 * dt;
+        const wood = Number(s.res.wood ?? 0) || 0;
+        if (wood >= needWood) {
+          s.res.wood = wood - needWood;
+          s.res.warmth = (Number(s.res.warmth ?? 0) || 0) + 0.35 * eff * dt;
+        }
+      }
+    },
+    Guard: {
+      tick: (s, k, dt) => {
+        const eff = efficiencyLite(s, k);
+        s.res.threat = Math.max(0, (Number(s.res.threat ?? 0) || 0) - 0.10 * eff * dt);
+      }
+    },
+    Research: {
+      tick: (s, k, dt) => {
+        const eff = efficiencyLite(s, k);
+        s.res.science = (Number(s.res.science ?? 0) || 0) + 0.07 * eff * dt;
+      }
+    },
+  };
+}
+
+export function decideTaskLite(s, k){
+  // Very small headless planner: keep edible/kitten and warmth near seasonal targets.
+  const pop = Math.max(1, Number(s?.kittens?.length ?? 1));
+  const targets = seasonTargets(s);
+
+  const ediblePk = edibleFood(s) / pop;
+  const warm = Number(s?.res?.warmth ?? 0) || 0;
+  const thr = Number(s?.res?.threat ?? 0) || 0;
+
+  if (ediblePk < targets.foodPerKitten * 0.65) return { task:'Forage', why:'lite: food deficit' };
+  if (warm < targets.warmth * 0.70) return { task:'StokeFire', why:'lite: warmth deficit' };
+  if (thr > targets.maxThreat * 1.10) return { task:'Guard', why:'lite: threat high' };
+
+  // Otherwise: build science in good times.
+  if ((Number(s?.res?.science ?? 0) || 0) < 60) return { task:'Research', why:'lite: early science' };
+
+  return { task:'Rest', why:'lite: rest' };
+}
+
 // --- Headless-friendly sim step (for replay/offline harnesses)
 // Mirrors main.js's step(dt) orchestration but keeps all dependencies injected.
 export function stepSim(s, dt, deps = {}){
