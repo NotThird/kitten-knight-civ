@@ -2945,3 +2945,22 @@ Files touched
 
 What to try
 - Run `node scripts/replay_test.js` and confirm it prints `replay_test: OK`.
+
+---
+
+## 2026-03-01 07:23 CST - P0.2 Replay harness: extract lite task bundle into tasks_lite.js
+
+Summary
+- Phase 0.2: moved the replay harness lite task bundle (`efficiencyLite`, `minimalTaskDefs`, `decideTaskLite`) out of `js/sim.js` into a dedicated module: `js/tasks_lite.js`.
+- `sim.js` now re-exports those helpers, keeping the public API stable while we iterate toward a shared subset of real task defs.
+- No behavior changes intended; replay harness should still run identically.
+
+Files touched
+- `kitten-knight-civ/js/tasks_lite.js`
+- `kitten-knight-civ/js/sim.js`
+- `dist/js/tasks_lite.js`
+- `dist/js/sim.js`
+- `DEVLOG.md`
+
+What to try
+- Run `node scripts/replay_test.js` (should still print `replay_test: OK`).
