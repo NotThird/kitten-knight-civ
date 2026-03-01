@@ -1,8 +1,8 @@
-import { saveGame, loadGame } from './state.js';
+﻿import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI } from './ui.js';
+import { initUI, initPatchNotes } from './ui.js';\nimport { PATCH_HISTORY } from './content.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
@@ -345,7 +345,7 @@ import { initUI } from './ui.js';
     const cv = colonyFocusVec(s);
     let dot = 0;
     for (const ax of VALUE_AXES) dot += Number(kv[ax] ?? 0) * Number(cv[ax] ?? 0);
-    return clamp01(dot * 1.25); // rescale so "neutral" feels like ~0.7–0.8
+    return clamp01(dot * 1.25); // rescale so "neutral" feels like ~0.7â€“0.8
   }
 
   function valuesShort(k){
@@ -408,7 +408,7 @@ import { initUI } from './ui.js';
       if (d > bestD) { bestD = d; best = ax; }
     }
     k._valuesDriftAt = Number(s?.t ?? 0) || 0;
-    k._valuesDriftNote = `drift → ${best} (rate ${(rate*100).toFixed(1)}%/s)`;
+    k._valuesDriftNote = `drift â†’ ${best} (rate ${(rate*100).toFixed(1)}%/s)`;
   }
 
   function traitInfoList(k){
@@ -542,12 +542,12 @@ import { initUI } from './ui.js';
   function defaultRules(){
 
     return [
-      rule('If hungry > 0.75 → Eat', {type:'hungry_gt', v:0.75}, {type:'Eat'}),
-      rule('If tired > 0.88 → Rest', {type:'tired_gt', v:0.88}, {type:'Rest'}),
-      rule('If health < 0.45 → Rest', {type:'health_lt', v:0.45}, {type:'Rest'}),
-      rule('If warmth < 35 → StokeFire', {type:'warmth_lt', v:35}, {type:'StokeFire'}),
-      rule('If threat > 85 or ALARM → Guard', {type:'threat_gt_or_alarm', v:85}, {type:'Guard'}),
-      rule('If FOOD CRISIS → Forage', {type:'signal', v:'FOOD'}, {type:'Forage'}),
+      rule('If hungry > 0.75 â†’ Eat', {type:'hungry_gt', v:0.75}, {type:'Eat'}),
+      rule('If tired > 0.88 â†’ Rest', {type:'tired_gt', v:0.88}, {type:'Rest'}),
+      rule('If health < 0.45 â†’ Rest', {type:'health_lt', v:0.45}, {type:'Rest'}),
+      rule('If warmth < 35 â†’ StokeFire', {type:'warmth_lt', v:35}, {type:'StokeFire'}),
+      rule('If threat > 85 or ALARM â†’ Guard', {type:'threat_gt_or_alarm', v:85}, {type:'Guard'}),
+      rule('If FOOD CRISIS â†’ Forage', {type:'signal', v:'FOOD'}, {type:'Forage'}),
     ];
   }
 
@@ -850,7 +850,7 @@ import { initUI } from './ui.js';
         const woodAvail = availableAboveReserve(s,'wood');
         if (foodAvail <= 0.01 || woodAvail <= 0.01) {
           // If we can't afford care, fall back to a free cohesion action.
-          doFallback(s, k, dt, 'Socialize', `Care blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) → Socialize`);
+          doFallback(s, k, dt, 'Socialize', `Care blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) â†’ Socialize`);
           return;
         }
 
@@ -866,7 +866,7 @@ import { initUI } from './ui.js';
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
         if (!Number.isFinite(norm) || norm <= 0.0001) {
-          doFallback(s, k, dt, 'Socialize', 'Care blocked → Socialize');
+          doFallback(s, k, dt, 'Socialize', 'Care blocked â†’ Socialize');
           return;
         }
 
@@ -921,7 +921,7 @@ import { initUI } from './ui.js';
         const woodAvail = availableAboveReserve(s,'wood');
         if (foodAvail <= 0.01 || woodAvail <= 0.01) {
           const alt = (foodAvail <= woodAvail) ? 'Forage' : 'ChopWood';
-          doFallback(s, k, dt, alt, `PreserveFood blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) → ${alt}`);
+          doFallback(s, k, dt, alt, `PreserveFood blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) â†’ ${alt}`);
           return;
         }
 
@@ -937,7 +937,7 @@ import { initUI } from './ui.js';
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
         if (!Number.isFinite(norm) || norm <= 0.0001) {
-          doFallback(s, k, dt, 'Forage', 'PreserveFood blocked → Forage');
+          doFallback(s, k, dt, 'Forage', 'PreserveFood blocked â†’ Forage');
           return;
         }
 
@@ -1024,7 +1024,7 @@ import { initUI } from './ui.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildHut blocked by wood reserve → ChopWood' : 'BuildHut blocked (no wood) → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildHut blocked by wood reserve â†’ ChopWood' : 'BuildHut blocked (no wood) â†’ ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1033,7 +1033,7 @@ import { initUI } from './ui.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve â†’ ChopWood');
           return;
         }
         s._hutProgress = (s._hutProgress ?? 0) + use;
@@ -1053,7 +1053,7 @@ import { initUI } from './ui.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildPalisade blocked by wood reserve → ChopWood' : 'BuildPalisade blocked (no wood) → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildPalisade blocked by wood reserve â†’ ChopWood' : 'BuildPalisade blocked (no wood) â†’ ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1062,7 +1062,7 @@ import { initUI } from './ui.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve â†’ ChopWood');
           return;
         }
         s._palProgress = (s._palProgress ?? 0) + use;
@@ -1082,7 +1082,7 @@ import { initUI } from './ui.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildGranary blocked by wood reserve → ChopWood' : 'BuildGranary blocked (no wood) → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildGranary blocked by wood reserve â†’ ChopWood' : 'BuildGranary blocked (no wood) â†’ ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1091,7 +1091,7 @@ import { initUI } from './ui.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve â†’ ChopWood');
           return;
         }
         s._granProgress = (s._granProgress ?? 0) + use;
@@ -1117,8 +1117,8 @@ import { initUI } from './ui.js';
           // If we're blocked, do something that unblocks us (prefer science if science is the limiting input).
           const alt = (s.res.science <= 0 || sciAvail <= woodAvail) ? 'Research' : 'ChopWood';
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01)
-            ? `BuildWorkshop blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) → ${alt}`
-            : `BuildWorkshop blocked (need wood+science) → ${alt}`;
+            ? `BuildWorkshop blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) â†’ ${alt}`
+            : `BuildWorkshop blocked (need wood+science) â†’ ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1133,7 +1133,7 @@ import { initUI } from './ui.js';
         // Progress is limited by the scarcer input and by time.
         const prog = Math.min(maxByTime, maxByWood, maxBySci);
         if (prog <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'BuildWorkshop blocked by reserve → Research');
+          doFallback(s, k, dt, 'Research', 'BuildWorkshop blocked by reserve â†’ Research');
           return;
         }
         spendUpToReserve(s,'wood', prog * 0.85);
@@ -1171,8 +1171,8 @@ import { initUI } from './ui.js';
           else alt = 'ChopWood';
 
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01 || toolsAvail <= 0.01)
-            ? `BuildLibrary blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail, ${toolsAvail.toFixed(1)} tools avail) → ${alt}`
-            : `BuildLibrary blocked (need wood+science+tools) → ${alt}`;
+            ? `BuildLibrary blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail, ${toolsAvail.toFixed(1)} tools avail) â†’ ${alt}`
+            : `BuildLibrary blocked (need wood+science+tools) â†’ ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1190,7 +1190,7 @@ import { initUI } from './ui.js';
         const prog = Math.min(maxByTime, maxByWood, maxBySci, maxByTools);
 
         if (prog <= 0.0001) {
-          doFallback(s, k, dt, 'CraftTools', 'BuildLibrary blocked → CraftTools');
+          doFallback(s, k, dt, 'CraftTools', 'BuildLibrary blocked â†’ CraftTools');
           return;
         }
 
@@ -1224,8 +1224,8 @@ import { initUI } from './ui.js';
           // If tools are blocked, do something that refills the limiting input.
           const alt = (s.res.science <= 0 || sciAvail <= woodAvail) ? 'Research' : 'ChopWood';
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01)
-            ? `CraftTools blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) → ${alt}`
-            : `CraftTools blocked (need wood+science) → ${alt}`;
+            ? `CraftTools blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) â†’ ${alt}`
+            : `CraftTools blocked (need wood+science) â†’ ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1238,7 +1238,7 @@ import { initUI } from './ui.js';
         const useSci  = Math.min(sciAvail, 0.40 * mult * dt * eff * wp);
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
+          doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve â†’ Research');
           return;
         }
         const made = craft * 0.55 * workshopBonus(s) * mom; // workshops improve throughput
@@ -1259,7 +1259,7 @@ import { initUI } from './ui.js';
         // Mentoring is intentionally a "stable times" action: if science is scarce or protected by reserves, it falls back to Research.
         const sciAvail = availableAboveReserve(s,'science');
         if ((s.res.science ?? 0) <= 0 || sciAvail <= 0.01) {
-          doFallback(s, k, dt, 'Research', `Mentor blocked by science reserve (avail ${sciAvail.toFixed(1)}) → Research`);
+          doFallback(s, k, dt, 'Research', `Mentor blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ Research`);
           return;
         }
 
@@ -1343,7 +1343,7 @@ import { initUI } from './ui.js';
         const wantSci = 0.42 * mult * dt * eff * mom * wp;
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
+          doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve â†’ Research');
           return;
         }
 
@@ -1400,7 +1400,7 @@ import { initUI } from './ui.js';
       k.xp[skill] -= xpToNext(level);
       level += 1;
       k.skills[skill] = level;
-      log(`Kitten ${k.id} leveled ${skill} → ${level}`);
+      log(`Kitten ${k.id} leveled ${skill} â†’ ${level}`);
     }
   }
   function xpToNext(level){ return 10 + Math.pow(level, 1.35) * 6; }
@@ -1490,11 +1490,11 @@ import { initUI } from './ui.js';
           if (have < q) {
             const miss = q - have;
             quotaAdj = Math.min(40, 14 + miss * 12);
-            quotaWhy = `quota ${have}/${q} → +${quotaAdj}`;
+            quotaWhy = `quota ${have}/${q} â†’ +${quotaAdj}`;
           } else if (have > q) {
             const over = have - q;
             quotaAdj = -Math.min(30, 10 + over * 10);
-            quotaWhy = `quota ${have}/${q} → ${quotaAdj}`;
+            quotaWhy = `quota ${have}/${q} â†’ ${quotaAdj}`;
           }
         }
 
@@ -1590,7 +1590,7 @@ import { initUI } from './ui.js';
     const n = Math.max(1, Math.min(3, scored.length));
     const top = scored.slice(0, n);
 
-    // Temperature: higher autonomy → flatter choice distribution.
+    // Temperature: higher autonomy â†’ flatter choice distribution.
     const temp = 2 + a * 10; // 2..12
     const max = Math.max(...top.map(r => Number(r.score) || 0));
     const weights = top.map(r => Math.exp(((Number(r.score) || 0) - max) / temp));
@@ -1620,7 +1620,7 @@ import { initUI } from './ui.js';
     const comp = compliance01(s);
     const doc = doctrineKey(s);
     const docMul = (doc === 'Specialize') ? 1.18 : (doc === 'Rotate') ? 0.78 : 1.00;
-    const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy → 0.75 @ 100% (then doctrine scales it)
+    const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy â†’ 0.75 @ 100% (then doctrine scales it)
 
     for (const row of scored) {
       if (!def.actions.includes(row.action)) continue;
@@ -1628,7 +1628,7 @@ import { initUI } from './ui.js';
       const base = Math.min(22, 8 + (lvl-1) * 3.5);
       const add = base * roleMul * comp;
       row.score += add;
-      row.reasons.push(`role=${role} (${def.skill} L${lvl}) → +${add.toFixed(0)}` + (comp < 0.95 ? ` (comp x${comp.toFixed(2)})` : ''));
+      row.reasons.push(`role=${role} (${def.skill} L${lvl}) â†’ +${add.toFixed(0)}` + (comp < 0.95 ? ` (comp x${comp.toFixed(2)})` : ''));
     }
   }
 
@@ -1647,11 +1647,11 @@ import { initUI } from './ui.js';
     for (const row of scored) {
       if (p.likes?.includes(row.action)) {
         row.score += likeBonus;
-        row.reasons.push(`likes ${row.action} → +${likeBonus.toFixed(0)}`);
+        row.reasons.push(`likes ${row.action} â†’ +${likeBonus.toFixed(0)}`);
       }
       if (p.dislikes?.includes(row.action)) {
         row.score -= dislikePenalty;
-        row.reasons.push(`dislikes ${row.action} → -${dislikePenalty.toFixed(0)}`);
+        row.reasons.push(`dislikes ${row.action} â†’ -${dislikePenalty.toFixed(0)}`);
       }
 
       if (row.action === (k.task ?? '')) {
@@ -1661,7 +1661,7 @@ import { initUI } from './ui.js';
         if (!noBore.includes(row.action) && streak > 8) {
           const sub = Math.min(18, (streak - 8) * 2) * boreMul;
           row.score -= sub;
-          row.reasons.push(`bored of ${row.action} (${streak}s) → -${sub.toFixed(0)}`);
+          row.reasons.push(`bored of ${row.action} (${streak}s) â†’ -${sub.toFixed(0)}`);
         }
       }
     }
@@ -1679,7 +1679,7 @@ import { initUI } from './ui.js';
         const add = Number(def.bias[row.action] ?? 0);
         if (!add) continue;
         row.score += add;
-        row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
+        row.reasons.push(`trait ${def.id} â†’ +${add.toFixed(0)}`);
       }
     }
   }
@@ -1869,13 +1869,13 @@ import { initUI } from './ui.js';
 
     // Work pace policy: pushing hard makes the colony a bit grumpier over time; relaxed pace is a small morale relief.
     const wp = workPaceMul(s);
-    if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 → -0.0036 / sec
-    if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 → +0.0020 / sec
+    if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 â†’ -0.0036 / sec
+    if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 â†’ +0.0020 / sec
 
     // Discipline (cohesion) has a small, steady morale cost.
     // It's intentionally subtle so it's a strategic lever, not a "never use" trap.
     const d = discipline01(s);
-    m -= d * 0.0018; // at 100% → -0.0018 / sec
+    m -= d * 0.0018; // at 100% â†’ -0.0018 / sec
 
     // Curfew (governance lever): makes the colony safer, but costs morale.
     // Discipline amplifies the felt harshness slightly (more enforcement).
@@ -2159,25 +2159,25 @@ import { initUI } from './ui.js';
       // We apply it as an additive bump proportional to the mode base so it stays readable and doesn't dominate emergencies.
       if (FOOD_ACT.has(a)) {
         const add = base(a) * (pFood - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Food x${pFood.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Food x${pFood.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (SAFETY_ACT.has(a)) {
         const add = base(a) * (pSafety - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Safety x${pSafety.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Safety x${pSafety.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (PROG_ACT.has(a)) {
         const add = base(a) * (pProg - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (SOCIAL_ACT.has(a)) {
         const add = base(a) * (pSoc - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Social x${pSoc.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Social x${pSoc.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (a === 'BuildHut' || a === 'BuildGranary' || a === 'BuildPalisade') {
         // Infrastructure: treat as a blend of Safety + Progress, so you can push building without always pushing research.
         const mul = (0.55 * pSafety + 0.45 * pProg);
         const add = base(a) * (mul - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) → ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
 
       // Per-kitten Directive: a persistent scoring nudge (player-set). Not a lock.
@@ -2192,7 +2192,7 @@ import { initUI } from './ui.js';
           // Additive bump so it stays legible and doesn't overpower emergencies.
           const add = 6 + 0.10 * base(a);
           score += add;
-          reasons.push(`directive ${dir} → +${add.toFixed(1)}`);
+          reasons.push(`directive ${dir} â†’ +${add.toFixed(1)}`);
         }
       }
 
@@ -2201,7 +2201,7 @@ import { initUI } from './ui.js';
       if (a === 'Rest' && mood < 0.35) {
         const add = (0.35 - mood) * 45;
         score += add;
-        reasons.push(`low mood ${mood.toFixed(2)} → +${add.toFixed(1)} Rest`);
+        reasons.push(`low mood ${mood.toFixed(2)} â†’ +${add.toFixed(1)} Rest`);
       }
 
       // Loafing is a "soft strike" / morale recovery action.
@@ -2210,25 +2210,25 @@ import { initUI } from './ui.js';
         if (mood < 0.55) {
           const add = (0.55 - mood) * 55;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
         }
         const dis = dissent01(s);
         if (dis > 0.45) {
           // Under murmurs/strike, some kittens idle/drag their paws unless you restore cohesion.
           const disAdj = (dis - 0.45) * 85 * (1 - 0.55 * discipline01(s));
           score += disAdj;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${disAdj.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${disAdj.toFixed(1)}`);
         }
         // If dissent is VERY high but basics are stable, we want some kittens to actively organize
         // (Socialize/Care) rather than everyone passively loafing.
         const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.95) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10) && !s.signals?.ALARM;
         if (dis > 0.65 && basicsOk) {
           score -= 14;
-          reasons.push('strike + stable basics → -14 (prefer organizing)');
+          reasons.push('strike + stable basics â†’ -14 (prefer organizing)');
         }
         // If we're actually starving or freezing, loafing should lose hard.
-        if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency → -45'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency â†’ -45'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold â†’ -25'); }
       }
 
       // Socialize is an active cohesion action: lowers dissent (improves plan compliance) and boosts mood.
@@ -2238,10 +2238,10 @@ import { initUI } from './ui.js';
         if (dis > 0.35) {
           const add = Math.min(60, 12 + (dis - 0.35) * 110);
           score += add;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${add.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
         } else {
           score -= 8;
-          reasons.push('low dissent → -8');
+          reasons.push('low dissent â†’ -8');
         }
 
         // Strike recovery: if dissent is extreme but the colony isn't actively starving/freezing,
@@ -2250,12 +2250,12 @@ import { initUI } from './ui.js';
         if (dis > 0.65 && basicsOk) {
           const add = 18 + 12 * discipline01(s);
           score += add;
-          reasons.push(`strike recovery → +${add.toFixed(1)}`);
+          reasons.push(`strike recovery â†’ +${add.toFixed(1)}`);
         }
         if (mood < 0.55) {
           const add = (0.55 - mood) * 40;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
         }
 
         // Buddy need: if you're missing your buddy, Socialize becomes more attractive.
@@ -2263,19 +2263,19 @@ import { initUI } from './ui.js';
         if (need > 0.55 && buddyOf(s, k)) {
           const add = (need - 0.55) * 48;
           score += add;
-          reasons.push(`misses buddy (${Math.round(need*100)}%) → +${add.toFixed(1)}`);
+          reasons.push(`misses buddy (${Math.round(need*100)}%) â†’ +${add.toFixed(1)}`);
         }
 
         // If we're in danger, don't chat.
-        if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure → -40'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
-        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 28; reasons.push('threat pressure → -28'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure â†’ -40'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold â†’ -25'); }
+        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 28; reasons.push('threat pressure â†’ -28'); }
         // Small synergy: Discipline makes organizing more effective (less chaotic).
         const dpol = discipline01(s);
         if (dpol > 0.35) {
           const add = (dpol - 0.35) * 18;
           score += add;
-          reasons.push(`discipline ${(dpol*100).toFixed(0)}% → +${add.toFixed(1)}`);
+          reasons.push(`discipline ${(dpol*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
         }
       }
 
@@ -2286,10 +2286,10 @@ import { initUI } from './ui.js';
         if (dis > 0.30) {
           const add = Math.min(75, 10 + (dis - 0.30) * 120);
           score += add;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${add.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
         } else {
           score -= 10;
-          reasons.push('low dissent → -10');
+          reasons.push('low dissent â†’ -10');
         }
 
         // Strike recovery: if dissent is extreme but basics are stable, "Care" becomes a legitimate
@@ -2298,32 +2298,32 @@ import { initUI } from './ui.js';
         if (dis > 0.65 && basicsOk) {
           const add = 14 + 10 * discipline01(s);
           score += add;
-          reasons.push(`strike recovery (paid care) → +${add.toFixed(1)}`);
+          reasons.push(`strike recovery (paid care) â†’ +${add.toFixed(1)}`);
         }
 
         if (mood < 0.60) {
           const add = (0.60 - mood) * 55;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
         }
 
         // Resource gating: don't burn buffers.
         const fA = Number(foodAvail ?? 0);
         const wA = Number(woodAvail ?? 0);
-        if (fA < 10) { score -= 18; reasons.push(`low spare food (${fA.toFixed(1)}) → -18`); }
-        if (wA < 6) { score -= 16; reasons.push(`low spare wood (${wA.toFixed(1)}) → -16`); }
+        if (fA < 10) { score -= 18; reasons.push(`low spare food (${fA.toFixed(1)}) â†’ -18`); }
+        if (wA < 6) { score -= 16; reasons.push(`low spare wood (${wA.toFixed(1)}) â†’ -16`); }
 
         // If we're in danger, stop spending.
-        if (foodPerKitten < targets.foodPerKitten * 0.92) { score -= 50; reasons.push('food pressure → -50'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 28; reasons.push('winter + cold → -28'); }
-        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 25; reasons.push('threat pressure → -25'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.92) { score -= 50; reasons.push('food pressure â†’ -50'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 28; reasons.push('winter + cold â†’ -28'); }
+        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 25; reasons.push('threat pressure â†’ -25'); }
 
         // Discipline synergy: institutions make aid more organized.
         const dpol = discipline01(s);
         if (dpol > 0.35) {
           const add = (dpol - 0.35) * 22;
           score += add;
-          reasons.push(`discipline ${(dpol*100).toFixed(0)}% → +${add.toFixed(1)}`);
+          reasons.push(`discipline ${(dpol*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
         }
       }
 
@@ -2331,7 +2331,7 @@ import { initUI } from './ui.js';
         const add = (mood - 0.55) * 10; // small
         if (Math.abs(add) >= 1) {
           score += add;
-          reasons.push(`mood ${mood.toFixed(2)} → ${add >= 0 ? '+' : ''}${add.toFixed(1)}`);
+          reasons.push(`mood ${mood.toFixed(2)} â†’ ${add >= 0 ? '+' : ''}${add.toFixed(1)}`);
         }
       }
 
@@ -2339,7 +2339,7 @@ import { initUI } from './ui.js';
       // so the kitten doesn't keep "trying" a no-op sink.
       if (k._blockedAction === a) {
         score -= 35;
-        reasons.push(`blocked last tick → -35`);
+        reasons.push(`blocked last tick â†’ -35`);
       }
 
       // Anti-thrash: if we recently learned this action is blocked, keep a short cooldown.
@@ -2347,7 +2347,7 @@ import { initUI } from './ui.js';
       if (cd > 0) {
         const sub = Math.min(38, 18 + cd * 6);
         score -= sub;
-        reasons.push(`cooldown(${cd}s) after block → -${sub.toFixed(0)}`);
+        reasons.push(`cooldown(${cd}s) after block â†’ -${sub.toFixed(0)}`);
       }
 
       // Momentum: staying on a productive task gets a small bonus (pairs with throughput bonus).
@@ -2356,7 +2356,7 @@ import { initUI } from './ui.js';
         if (mom > 1.0001) {
           const add = Math.min(12, (mom - 1) * 55);
           score += add;
-          reasons.push(`momentum x${mom.toFixed(2)} → +${add.toFixed(1)}`);
+          reasons.push(`momentum x${mom.toFixed(2)} â†’ +${add.toFixed(1)}`);
         }
       }
 
@@ -2368,12 +2368,12 @@ import { initUI } from './ui.js';
         const add = Math.min(12, Math.max(0, (lvl - 1) * 1.4));
         if (add >= 0.5) {
           score += add;
-          reasons.push(`skill ${aSkill}=${lvl} → +${add.toFixed(1)}`);
+          reasons.push(`skill ${aSkill}=${lvl} â†’ +${add.toFixed(1)}`);
         }
         if (topSkill.skill && topSkill.skill === aSkill && topSkill.level >= 3) {
           const add2 = Math.min(6, 1.2 * (topSkill.level - 2));
           score += add2;
-          reasons.push(`top skill match → +${add2.toFixed(1)}`);
+          reasons.push(`top skill match â†’ +${add2.toFixed(1)}`);
         }
       }
 
@@ -2383,10 +2383,10 @@ import { initUI } from './ui.js';
           const deficit = (targets.foodPerKitten - foodPerKitten) / Math.max(1, targets.foodPerKitten);
           const add = clamp01(deficit) * 65;
           score += add;
-          reasons.push(`food/kitten ${foodPerKitten.toFixed(1)}<${targets.foodPerKitten} → +${add.toFixed(1)}`);
+          reasons.push(`food/kitten ${foodPerKitten.toFixed(1)}<${targets.foodPerKitten} â†’ +${add.toFixed(1)}`);
         }
-        if (s.signals.FOOD) { score += 45; reasons.push('FOOD CRISIS → +45'); }
-        if (season.name === 'Winter' && a === 'Forage') { score -= 10; reasons.push('winter forage penalty → -10'); }
+        if (s.signals.FOOD) { score += 45; reasons.push('FOOD CRISIS â†’ +45'); }
+        if (season.name === 'Winter' && a === 'Forage') { score -= 10; reasons.push('winter forage penalty â†’ -10'); }
       }
 
       // preservation (turn surplus into non-spoiling rations)
@@ -2396,20 +2396,20 @@ import { initUI } from './ui.js';
         if (surplus > 0) {
           const add = clamp01(surplus / (targets.foodPerKitten * n)) * 55;
           score += add;
-          reasons.push(`surplus food ${surplus.toFixed(1)} → +${add.toFixed(1)}`);
+          reasons.push(`surplus food ${surplus.toFixed(1)} â†’ +${add.toFixed(1)}`);
         } else {
           score -= 25;
-          reasons.push('no surplus to preserve → -25');
+          reasons.push('no surplus to preserve â†’ -25');
         }
         // Seasonal push: late Fall + Winter want preserved buffers.
-        if (season.name === 'Fall' && season.phase >= 0.55) { score += 14; reasons.push('late-Fall stockpile → +14'); }
-        if (season.name === 'Winter') { score += 18; reasons.push('winter stability → +18'); }
+        if (season.name === 'Fall' && season.phase >= 0.55) { score += 14; reasons.push('late-Fall stockpile â†’ +14'); }
+        if (season.name === 'Winter') { score += 18; reasons.push('winter stability â†’ +18'); }
         // Needs wood, so don't do it when wood is critically low.
-        if (s.res.wood < 10) { score -= 22; reasons.push('low wood → -22'); }
+        if (s.res.wood < 10) { score -= 22; reasons.push('low wood â†’ -22'); }
         const woodRes = getReserve(s,'wood');
         const foodRes = getReserve(s,'food');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
-        if (foodRes > 0 && foodAvail <= 0.05) { score -= 55; reasons.push(`blocked by food reserve (avail ${foodAvail.toFixed(1)}) → -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
+        if (foodRes > 0 && foodAvail <= 0.05) { score -= 55; reasons.push(`blocked by food reserve (avail ${foodAvail.toFixed(1)}) â†’ -55`); }
       }
 
       // warmth pressure
@@ -2420,9 +2420,9 @@ import { initUI } from './ui.js';
           const deficit = (target - s.res.warmth) / Math.max(1, target);
           const add = clamp01(deficit) * (winter ? 85 : 55);
           score += add;
-          reasons.push(`warmth ${s.res.warmth.toFixed(1)}<${target} → +${add.toFixed(1)}`);
+          reasons.push(`warmth ${s.res.warmth.toFixed(1)}<${target} â†’ +${add.toFixed(1)}`);
         }
-        if (s.res.wood <= 0.5) { score -= 30; reasons.push('no wood → -30'); }
+        if (s.res.wood <= 0.5) { score -= 30; reasons.push('no wood â†’ -30'); }
       }
 
       // threat pressure
@@ -2432,63 +2432,63 @@ import { initUI } from './ui.js';
           const over = (s.res.threat - tdef) / Math.max(1, tdef);
           const add = clamp01(over) * 90;
           score += add;
-          reasons.push(`threat ${s.res.threat.toFixed(1)}>${tdef} → +${add.toFixed(1)}`);
+          reasons.push(`threat ${s.res.threat.toFixed(1)}>${tdef} â†’ +${add.toFixed(1)}`);
         }
-        if (s.signals.ALARM) { score += 40; reasons.push('ALARM → +40'); }
+        if (s.signals.ALARM) { score += 40; reasons.push('ALARM â†’ +40'); }
       }
 
       // construction
       if (a === 'BuildHut') {
-        if (pf === 'Housing') { score += 22; reasons.push('project focus: Housing → +22'); }
-        else if (pf !== 'Auto' && ['Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
+        if (pf === 'Housing') { score += 22; reasons.push('project focus: Housing â†’ +22'); }
+        else if (pf !== 'Auto' && ['Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
         const cap = housingCap(s);
         if (s.kittens.length >= cap) {
           score += 60;
-          reasons.push(`housing cap ${cap} hit → +60`);
+          reasons.push(`housing cap ${cap} hit â†’ +60`);
         }
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -40`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -40`); }
         // Project focus: finishing a started hut is usually better than swapping off.
         const prog = Number(s._hutProgress ?? 0);
         if (prog > 0 && k.task === 'BuildHut') {
           const remain = Math.max(0, 12 - prog);
           const add = remain <= 4 ? 34 : 16;
           score += add;
-          reasons.push(`continue hut (${prog.toFixed(1)}/12) → +${add}`);
+          reasons.push(`continue hut (${prog.toFixed(1)}/12) â†’ +${add}`);
         }
-        if (s.signals.BUILD) { score += 28; reasons.push('BUILD PUSH → +28'); }
-        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood → -35'); }
+        if (s.signals.BUILD) { score += 28; reasons.push('BUILD PUSH â†’ +28'); }
+        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood â†’ -35'); }
         const woodRes = getReserve(s,'wood');
         // IMPORTANT: if we're at/below reserve, execution will spend 0 wood; penalize so builders don't idle on blocked tasks.
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
       }
 
       if (a === 'BuildPalisade') {
-        if (pf === 'Defense') { score += 22; reasons.push('project focus: Defense → +22'); }
-        else if (pf !== 'Auto' && ['Housing','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
+        if (pf === 'Defense') { score += 22; reasons.push('project focus: Defense â†’ +22'); }
+        else if (pf !== 'Auto' && ['Housing','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
         // Project focus: keep a builder on the wall once started.
         const prog = Number(s._palProgress ?? 0);
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -40`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -40`); }
         if (prog > 0 && k.task === 'BuildPalisade') {
           const remain = Math.max(0, 16 - prog);
           const add = remain <= 5 ? 32 : 14;
           score += add;
-          reasons.push(`continue palisade (${prog.toFixed(1)}/16) → +${add}`);
+          reasons.push(`continue palisade (${prog.toFixed(1)}/16) â†’ +${add}`);
         }
-        if (s.res.threat > s.targets.maxThreat * 0.9) { score += 40; reasons.push('threat rising → +40'); }
-        if (s.signals.ALARM) { score += 20; reasons.push('ALARM → +20'); }
-        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood → -35'); }
+        if (s.res.threat > s.targets.maxThreat * 0.9) { score += 40; reasons.push('threat rising â†’ +40'); }
+        if (s.signals.ALARM) { score += 20; reasons.push('ALARM â†’ +20'); }
+        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood â†’ -35'); }
         const woodRes = getReserve(s,'wood');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
       }
 
       // storage (granaries): reduces spoilage, makes stockpiling meaningful
       if (a === 'BuildGranary') {
-        if (pf === 'Storage') { score += 22; reasons.push('project focus: Storage → +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Industry'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
+        if (pf === 'Storage') { score += 22; reasons.push('project focus: Storage â†’ +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Industry'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
         const g = s.res.granaries ?? 0;
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
         const want = Math.max(1, Math.floor(s.kittens.length / 6) + 1);
         // Only really matters once you have surplus food to protect.
         const surplus = s.res.food - targets.foodPerKitten * Math.max(1, s.kittens.length) * 1.35;
@@ -2499,36 +2499,36 @@ import { initUI } from './ui.js';
           const remain = Math.max(0, 22 - prog);
           const add = remain <= 6 ? 30 : 12;
           score += add;
-          reasons.push(`continue granary (${prog.toFixed(1)}/22) → +${add}`);
+          reasons.push(`continue granary (${prog.toFixed(1)}/22) â†’ +${add}`);
         }
 
         if (g < want && surplus > 0) {
           const deficit = (want - g) / Math.max(1, want);
           const add = clamp01(deficit) * 55;
           score += add;
-          reasons.push(`granaries ${g}<${want} w/ surplus → +${add.toFixed(1)}`);
+          reasons.push(`granaries ${g}<${want} w/ surplus â†’ +${add.toFixed(1)}`);
         }
-        if (season.name === 'Winter') { score += 6; reasons.push('winter stockpile value → +6'); }
-        if (s.res.wood < 18) { score -= 18; reasons.push('need wood buffer → -18'); }
+        if (season.name === 'Winter') { score += 6; reasons.push('winter stockpile value â†’ +6'); }
+        if (s.res.wood < 18) { score -= 18; reasons.push('need wood buffer â†’ -18'); }
         const woodRes = getReserve(s,'wood');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
       }
 
       // Workshops: persistent industry building that amplifies crafting + global productivity.
       if (a === 'BuildWorkshop') {
-        if (pf === 'Industry') { score += 22; reasons.push('project focus: Industry → +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
+        if (pf === 'Industry') { score += 22; reasons.push('project focus: Industry â†’ +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
         const w = s.res.workshops ?? 0;
         const want = Math.max(1, Math.floor(s.kittens.length / 5));
 
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
 
         // Only push workshops when we have enough science to not stall unlocks completely.
         const nextUnlockAt = unlockDefs.find(u => !s.seenUnlocks[u.id])?.at ?? Infinity;
         if (s.res.science < Math.min(120, nextUnlockAt * 0.35)) {
           score -= 18;
-          reasons.push('science too low to divert to workshop → -18');
+          reasons.push('science too low to divert to workshop â†’ -18');
         }
 
         // Project focus: if you're already building one, finish it.
@@ -2537,36 +2537,36 @@ import { initUI } from './ui.js';
           const remain = Math.max(0, 26 - prog);
           const add = remain <= 7 ? 32 : 14;
           score += add;
-          reasons.push(`continue workshop (${prog.toFixed(1)}/26) → +${add}`);
+          reasons.push(`continue workshop (${prog.toFixed(1)}/26) â†’ +${add}`);
         }
 
         if (w < want && s.res.wood > 18 && s.res.science > 35) {
           const deficit = (want - w) / Math.max(1, want);
           const add = clamp01(deficit) * 60;
           score += add;
-          reasons.push(`workshops ${w}<${want} → +${add.toFixed(1)}`);
+          reasons.push(`workshops ${w}<${want} â†’ +${add.toFixed(1)}`);
         }
 
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
 
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
 
-        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science → -35'); }
+        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science â†’ -35'); }
       }
 
       // Libraries: persistent research building that amplifies science output.
       if (a === 'BuildLibrary') {
-        if (pf === 'Knowledge') { score += 22; reasons.push('project focus: Knowledge → +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
+        if (pf === 'Knowledge') { score += 22; reasons.push('project focus: Knowledge â†’ +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
 
         const l = s.res.libraries ?? 0;
         const want = Math.max(1, Math.floor(s.kittens.length / 7));
 
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
 
         // Project focus: if you're already building one, finish it.
         const prog = Number(s._libProgress ?? 0);
@@ -2574,36 +2574,36 @@ import { initUI } from './ui.js';
           const remain = Math.max(0, 30 - prog);
           const add = remain <= 8 ? 34 : 14;
           score += add;
-          reasons.push(`continue library (${prog.toFixed(1)}/30) → +${add}`);
+          reasons.push(`continue library (${prog.toFixed(1)}/30) â†’ +${add}`);
         }
 
         // Only consider libraries when science is healthy (otherwise we should just Research).
         if (s.res.science < 200) {
           score -= 18;
-          reasons.push('science too low to divert to library → -18');
+          reasons.push('science too low to divert to library â†’ -18');
         }
 
         if (l < want && s.res.wood > 22 && s.res.science > 140 && (s.res.tools ?? 0) > 8) {
           const deficit = (want - l) / Math.max(1, want);
           const add = clamp01(deficit) * 58;
           score += add;
-          reasons.push(`libraries ${l}<${want} → +${add.toFixed(1)}`);
+          reasons.push(`libraries ${l}<${want} â†’ +${add.toFixed(1)}`);
         }
 
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
         const toolsRes = getReserve(s,'tools');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
 
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
 
-        if (toolsRes > 0 && toolsAvail <= 0.05) { score -= 65; reasons.push(`blocked by tools reserve (avail ${toolsAvail.toFixed(1)}) → -65`); }
-        else if (toolsRes > 0 && (s.res.tools ?? 0) < toolsRes) { score -= 55; reasons.push(`tools reserve ${(s.res.tools ?? 0).toFixed(1)}<${toolsRes} → -55`); }
+        if (toolsRes > 0 && toolsAvail <= 0.05) { score -= 65; reasons.push(`blocked by tools reserve (avail ${toolsAvail.toFixed(1)}) â†’ -65`); }
+        else if (toolsRes > 0 && (s.res.tools ?? 0) < toolsRes) { score -= 55; reasons.push(`tools reserve ${(s.res.tools ?? 0).toFixed(1)}<${toolsRes} â†’ -55`); }
 
-        if ((s.res.tools ?? 0) < 3) { score -= 35; reasons.push('missing tools → -35'); }
-        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science → -35'); }
+        if ((s.res.tools ?? 0) < 3) { score -= 35; reasons.push('missing tools â†’ -35'); }
+        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science â†’ -35'); }
       }
 
       // Mentoring: spend science to accelerate skill growth (long-run compounding).
@@ -2612,7 +2612,7 @@ import { initUI } from './ui.js';
         const sciRes = getReserve(s,'science');
         if (sciRes > 0 && sciAvail <= 0.05) {
           score -= 65;
-          reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`);
+          reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`);
         }
 
         const stableFood = foodPerKitten >= targets.foodPerKitten * 1.02;
@@ -2622,58 +2622,58 @@ import { initUI } from './ui.js';
         // Only do it when you have spare science above reserve.
         if (s.res.science < (sciRes + 40)) {
           score -= 22;
-          reasons.push('science buffer too low for mentoring → -22');
+          reasons.push('science buffer too low for mentoring â†’ -22');
         }
 
         if (mode === 'Advance' && stableFood && stableWarmth && stableThreat) {
           score += 38;
-          reasons.push('stable basics + Advance → +38');
+          reasons.push('stable basics + Advance â†’ +38');
         } else if (stableFood && stableWarmth && stableThreat) {
           score += 18;
-          reasons.push('stable basics → +18');
+          reasons.push('stable basics â†’ +18');
         } else {
           score -= 18;
-          reasons.push('not stable enough to mentor → -18');
+          reasons.push('not stable enough to mentor â†’ -18');
         }
 
         // Winter: mentoring is indoor and safe, but still avoid it if warmth is low.
-        if (season.name === 'Winter' && s.res.warmth >= 45) { score += 8; reasons.push('winter indoor work → +8'); }
+        if (season.name === 'Winter' && s.res.warmth >= 45) { score += 8; reasons.push('winter indoor work â†’ +8'); }
       }
 
       // tools pressure (new midgame sink)
       if (a === 'CraftTools') {
         const t = s.res.tools ?? 0;
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 25; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -25`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 25; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -25`); }
         const want = s.kittens.length * 10; // tools wear over time; keep a healthier buffer
         if (t < want) {
           const deficit = (want - t) / Math.max(1, want);
           const add = clamp01(deficit) * 65;
           score += add;
-          reasons.push(`tools ${t.toFixed(1)}<${want.toFixed(0)} → +${add.toFixed(1)}`);
+          reasons.push(`tools ${t.toFixed(1)}<${want.toFixed(0)} â†’ +${add.toFixed(1)}`);
         }
-        if (s.res.wood < 10) { score -= 18; reasons.push('low wood → -18'); }
-        if (s.res.science < 15) { score -= 18; reasons.push('low science → -18'); }
+        if (s.res.wood < 10) { score -= 18; reasons.push('low wood â†’ -18'); }
+        if (s.res.science < 15) { score -= 18; reasons.push('low science â†’ -18'); }
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
         // In winter, crafting is safer than over-foraging.
-        if (season.name === 'Winter') { score += 6; reasons.push('winter indoor work → +6'); }
+        if (season.name === 'Winter') { score += 6; reasons.push('winter indoor work â†’ +6'); }
       }
 
       // generic needs
       if (a === 'Eat') {
         score += k.hunger * 90;
-        reasons.push(`hunger ${k.hunger.toFixed(2)} → +${(k.hunger*90).toFixed(1)}`);
-        if (edibleFood(s) <= 0) { score -= 60; reasons.push('no edible food → -60'); }
+        reasons.push(`hunger ${k.hunger.toFixed(2)} â†’ +${(k.hunger*90).toFixed(1)}`);
+        if (edibleFood(s) <= 0) { score -= 60; reasons.push('no edible food â†’ -60'); }
       }
 
       if (a === 'Rest') {
         score += tired * 70;
-        reasons.push(`tired ${tired.toFixed(2)} → +${(tired*70).toFixed(1)}`);
-        if (season.name === 'Winter') { score += 6; reasons.push('winter rest bonus → +6'); }
+        reasons.push(`tired ${tired.toFixed(2)} â†’ +${(tired*70).toFixed(1)}`);
+        if (season.name === 'Winter') { score += 6; reasons.push('winter rest bonus â†’ +6'); }
       }
 
       if (a === 'ChopWood') {
@@ -2682,25 +2682,25 @@ import { initUI } from './ui.js';
         if (season.name === 'Winter' && s.res.warmth < s.targets.warmth + 10) want += 20;
         if (s.signals.BUILD) want += 15;
         if (s.unlocked.construction && (s.kittens.length >= housingCap(s))) want += 25;
-        if (want > 0) { score += want; reasons.push(`wood needed → +${want}`); }
-        if (s.res.wood > 80) { score -= 10; reasons.push('wood already high → -10'); }
+        if (want > 0) { score += want; reasons.push(`wood needed â†’ +${want}`); }
+        if (s.res.wood > 80) { score -= 10; reasons.push('wood already high â†’ -10'); }
       }
 
       if (a !== 'Eat') {
         const pen = Math.max(0, k.hunger - 0.78) * 55;
-        if (pen > 0) { score -= pen; reasons.push(`very hungry → -${pen.toFixed(1)}`); }
+        if (pen > 0) { score -= pen; reasons.push(`very hungry â†’ -${pen.toFixed(1)}`); }
       }
 
       // if winter & warmth low, deprioritize research
       if (season.name === 'Winter' && s.res.warmth < 40 && a === 'Research') {
         score -= 25;
-        reasons.push('winter + low warmth → -25');
+        reasons.push('winter + low warmth â†’ -25');
       }
 
       // food reserve: if we're below buffer, stop "nice to have" tasks
       if (foodRes > 0 && s.res.food < foodRes && (a === 'Research' || a === 'CraftTools')) {
         score -= 45;
-        reasons.push(`below food reserve → -45`);
+        reasons.push(`below food reserve â†’ -45`);
       }
 
       out.push({ action: a, score, reasons });
@@ -3017,12 +3017,12 @@ import { initUI } from './ui.js';
         const add0 = Math.min(26, 10 + need * 9);
         const add = add0 * comp;
         row.score += add;
-        row.reasons.push(`plan need ${have}/${want} → +${add.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
+        row.reasons.push(`plan need ${have}/${want} â†’ +${add.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       } else {
         const sub0 = Math.min(18, 6 + (-need) * 6);
         const sub = sub0 * comp;
         row.score -= sub;
-        row.reasons.push(`plan full ${have}/${want} → -${sub.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
+        row.reasons.push(`plan full ${have}/${want} â†’ -${sub.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       }
     }
   }
@@ -3047,7 +3047,7 @@ import { initUI } from './ui.js';
       if (state.res.science >= u.at) {
         state.seenUnlocks[u.id] = true;
         u.apply(state);
-        log(`UNLOCK: ${u.name} (science ≥ ${u.at})`);
+        log(`UNLOCK: ${u.name} (science â‰¥ ${u.at})`);
       }
     }
   }
@@ -3068,12 +3068,12 @@ import { initUI } from './ui.js';
       state._lastSeasonName = season.name;
 
       const msg = (season.name === 'Winter')
-        ? 'Season change → Winter. Warmth decays faster and Forage output drops; keep warmth ≥ target and consider PreserveFood (jerky) + Granaries.'
+        ? 'Season change â†’ Winter. Warmth decays faster and Forage output drops; keep warmth â‰¥ target and consider PreserveFood (jerky) + Granaries.'
         : (season.name === 'Spring')
-          ? 'Season change → Spring. Forage penalties ease; you can pivot back toward Research/Industry once stable.'
+          ? 'Season change â†’ Spring. Forage penalties ease; you can pivot back toward Research/Industry once stable.'
           : (season.name === 'Fall')
-            ? 'Season change → Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
-            : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
+            ? 'Season change â†’ Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
+            : 'Season change â†’ Summer. Best time to build up science and long-run infrastructure.';
 
       const yr = yearAt(state.t) + 1;
       const pop = Number(state.kittens?.length ?? 0);
@@ -3093,13 +3093,13 @@ import { initUI } from './ui.js';
       const demand = activeFactionDemand(state);
 
       const report = `Year ${yr} | pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}% | mood ${(avgMood*100).toFixed(0)}%`;
-      const targetLine = `Targets now: edible/kit ≥ ${targets.foodPerKitten}, warmth ≥ ${targets.warmth}, threat ≤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
+      const targetLine = `Targets now: edible/kit â‰¥ ${targets.foodPerKitten}, warmth â‰¥ ${targets.warmth}, threat â‰¤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
       const demandLine = demand ? `Faction demand active: ${demand.axis} bloc (${String(demand.what ?? 'concessions')})` : '';
 
       log(msg + (from ? ` (from ${from})` : '') + `\n${report}\n${targetLine}` + (demandLine ? `\n${demandLine}` : ''));
 
       // Civ-sim: faction demands often emerge at season boundaries when priorities naturally shift.
-      const fd = maybeStartFactionDemand(state, `season ${from}→${season.name}`);
+      const fd = maybeStartFactionDemand(state, `season ${from}â†’${season.name}`);
       if (fd) log(`Faction demand: the ${fd.axis} bloc wants concessions (accept or ignore in Factions).`);
     }
 
@@ -3224,7 +3224,7 @@ import { initUI } from './ui.js';
 
       const target = clamp01(desire);
       const cur = clamp01(Number(state.social.dissent ?? 0));
-      const next = cur + (target - cur) * 0.045; // smoothing (≈ 20-25s to swing hard)
+      const next = cur + (target - cur) * 0.045; // smoothing (â‰ˆ 20-25s to swing hard)
       state.social.dissent = clamp01(next);
 
       // Snapshot for Social Inspector (transient, not saved).
@@ -3406,7 +3406,7 @@ import { initUI } from './ui.js';
         // Respect food reserve (director won't "immigrate" below your buffer).
         const minFoodAfter = getReserve(state,'food');
         const needFood = cost + minFoodAfter;
-        if ((state.res.food ?? 0) < needFood) whyParts.push(`need food ≥ ${fmt(needFood)} (cost ${cost} + reserve)`);
+        if ((state.res.food ?? 0) < needFood) whyParts.push(`need food â‰¥ ${fmt(needFood)} (cost ${cost} + reserve)`);
 
         state.director.autoRecruitWhy = whyParts.length ? whyParts.slice(0,2).join('; ') : `ready (cost ${cost} food)`;
 
@@ -3449,12 +3449,12 @@ import { initUI } from './ui.js';
         // Only log when it actually changed meaningfully (avoid spam).
         const changed = (Math.abs(prev.food - recFood) >= 10) || (Math.abs(prev.wood - recWood) >= 2) || (Math.abs(prev.science - recSci) >= 5) || (Math.abs(prev.tools - recTools) >= 5);
         if (changed) {
-          log(`Auto Reserves: food≥${recFood}, wood≥${recWood}, science≥${recSci}, tools≥${recTools}`);
+          log(`Auto Reserves: foodâ‰¥${recFood}, woodâ‰¥${recWood}, scienceâ‰¥${recSci}, toolsâ‰¥${recTools}`);
         }
       }
     }
 
-    // Director automation: optional auto Policy tuning (targets → policy multipliers).
+    // Director automation: optional auto Policy tuning (targets â†’ policy multipliers).
     // Goal: create a more "civ governor" feel: you set Targets; the Director nudges policy quotas a little to hit them.
     // It makes small reversible changes, with a cooldown, and it pauses during Crisis Protocol.
     if (state.director.autoPolicy && !state.director.crisis) {
@@ -3597,7 +3597,7 @@ import { initUI } from './ui.js';
           const warmth = Number(state.res.warmth ?? 0);
           const threat = Number(state.res.threat ?? 0);
 
-          // Trend-based forecasts (smoothed) — keeps the pauses from being too hair-trigger.
+          // Trend-based forecasts (smoothed) â€” keeps the pauses from being too hair-trigger.
           ensureRateState(state);
           const r = state._rate ?? {};
           const foodRate = Number(r.food ?? 0);
@@ -3642,15 +3642,15 @@ import { initUI } from './ui.js';
             if (starving) {
               why = `starving risk (edible/kitten ${fmt(foodPerKitten)} < ${(targets.foodPerKitten * 0.55).toFixed(0)})`;
             } else if (starveSoon) {
-              why = `starving soon (edible ${fmt(edibleNow)} at ${fmtRate(edibleRate)} → 0 in ${fmtEtaSeconds(starveEta)})`;
+              why = `starving soon (edible ${fmt(edibleNow)} at ${fmtRate(edibleRate)} â†’ 0 in ${fmtEtaSeconds(starveEta)})`;
             } else if (freezing) {
               why = `freezing risk (winter warmth ${fmt(warmth)} < ${(targets.warmth - 18).toFixed(0)})`;
             } else if (freezeSoon) {
-              why = `freezing soon (warmth ${fmt(warmth)} at ${fmtRate(warmthRate)} → 0 in ${fmtEtaSeconds(freezeEta)})`;
+              why = `freezing soon (warmth ${fmt(warmth)} at ${fmtRate(warmthRate)} â†’ 0 in ${fmtEtaSeconds(freezeEta)})`;
             } else if (raidSoon) {
               why = `raid risk (threat ${fmt(threat)})`;
             } else {
-              why = `raid soon (threat ${fmt(threat)} at ${fmtRate(threatRate)} → raid in ${fmtEtaSeconds(raidEta)})`;
+              why = `raid soon (threat ${fmt(threat)} at ${fmtRate(threatRate)} â†’ raid in ${fmtEtaSeconds(raidEta)})`;
             }
 
             state.paused = true;
@@ -3721,8 +3721,8 @@ import { initUI } from './ui.js';
     const foodCap = foodStorageCap(state);
     const food = Number(state.res.food ?? 0);
     if (foodCap > 0 && food > foodCap) {
-      const over = (food - foodCap) / foodCap; // 0..∞
-      const mult = Math.min(4.0, 1 + over * 2.2); // up to 4× spoil
+      const over = (food - foodCap) / foodCap; // 0..âˆž
+      const mult = Math.min(4.0, 1 + over * 2.2); // up to 4Ã— spoil
       spoil *= mult;
       state._lastFoodOvercap = { cap: foodCap, food, mult };
     } else {
@@ -3822,7 +3822,7 @@ import { initUI } from './ui.js';
     // One-time warning when raiders are gathering; auto-raises ALARM only after Security is unlocked.
     if (state.res.threat >= 85 && !state._threatWarned) {
       state._threatWarned = true;
-      log('Scouts report raiders gathering nearby (threat ≥ 85).');
+      log('Scouts report raiders gathering nearby (threat â‰¥ 85).');
       if (state.unlocked.security) state.signals.ALARM = true;
     }
     if (state.res.threat < 60) state._threatWarned = false;
@@ -3844,7 +3844,7 @@ import { initUI } from './ui.js';
         const curfew = state.director?.curfew ? 1 : 0;
 
         const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
-        const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) → 0.25 (strong defense)
+        const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) â†’ 0.25 (strong defense)
         const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
 
         const repelled = Math.random() < repelChance;
@@ -4027,7 +4027,7 @@ import { initUI } from './ui.js';
   }
   function fmtPolicyChange(ch){
     const sign = ch.d >= 0 ? '+' : '';
-    return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
+    return `${ch.key} x${ch.from.toFixed(2)}â†’x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
   }
 
   // Governance log (explainability): record policy changes driven by automation/politics.
@@ -4068,7 +4068,7 @@ import { initUI } from './ui.js';
 
     const arr = (s.director.govLog ?? []).slice().reverse();
     if (!arr.length) {
-      govLogEl.textContent = '— No governance events yet. Turn on Auto Policy or negotiate with a faction to see entries.';
+      govLogEl.textContent = 'â€” No governance events yet. Turn on Auto Policy or negotiate with a faction to see entries.';
       return;
     }
 
@@ -4079,7 +4079,7 @@ import { initUI } from './ui.js';
       const why = String(e.why ?? '').trim();
       const changes = Array.isArray(e.changes) ? e.changes : [];
 
-      lines.push(head + (why ? ` — ${why}` : ''));
+      lines.push(head + (why ? ` â€” ${why}` : ''));
       for (const ch of changes.slice(0, 6)) lines.push(`  - ${ch}`);
     }
 
@@ -4158,7 +4158,7 @@ import { initUI } from './ui.js';
     const diff = policyDiff(before, after);
     const diffMsg = diff.length ? diff.slice(0, 6).map(fmtPolicyChange).join('; ') : 'No policy changes.';
 
-    log(`Council accepted: ${rec.label} — ${diffMsg}`);
+    log(`Council accepted: ${rec.label} â€” ${diffMsg}`);
 
     // Remember last applied message for panel explainability.
     state.director = state.director ?? {};
@@ -4271,7 +4271,7 @@ import { initUI } from './ui.js';
         const focus = String(ub.dataset.focus || 'Auto');
         state.director = state.director ?? { projectFocus:'Auto' };
         state.director.projectFocus = focus;
-        log(`Unblocked project: lowered ${keys.join('+')} reserve; focus → ${focus}`);
+        log(`Unblocked project: lowered ${keys.join('+')} reserve; focus â†’ ${focus}`);
         save();
         render();
       }
@@ -4283,7 +4283,7 @@ import { initUI } from './ui.js';
     const focus = String(btn.dataset.focus || 'Auto');
     state.director = state.director ?? { projectFocus:'Auto' };
     state.director.projectFocus = focus;
-    log(`Project focus → ${focus}`);
+    log(`Project focus â†’ ${focus}`);
     save();
     render();
   });
@@ -4323,7 +4323,6 @@ import { initUI } from './ui.js';
     save();
     render();
   });
-
   // --- Patch notes modal (explainability)
   const patchModalEl = el('patchModal');
   const patchTitleEl = el('patchTitle');
@@ -4331,893 +4330,17 @@ import { initUI } from './ui.js';
   const patchBodyEl = el('patchBody');
   const btnPatchNotesEl = el('btnPatchNotes');
   const btnPatchCloseEl = el('btnPatchClose');
-  const uiPatch = { open:false, fromVersion:'' };
 
-  function verCmp(a,b){
-    const pa = String(a||'').split('.').map(x=>parseInt(x,10)).filter(n=>Number.isFinite(n));
-    const pb = String(b||'').split('.').map(x=>parseInt(x,10)).filter(n=>Number.isFinite(n));
-    for (let i=0;i<Math.max(pa.length,pb.length);i++) {
-      const da = pa[i] ?? 0;
-      const db = pb[i] ?? 0;
-      if (da !== db) return da < db ? -1 : 1;
-    }
-    return 0;
-  }
-
-  // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
-  // Keep this list small + player-facing.
-  const PATCH_HISTORY = [
-    {
-      v: '0.9.135',
-      notes: [
-        'QoL/Politics: added an optional confirmation prompt for Faction negotiations (prevents misclick drift).',
-        'New toggle in Director: “Confirm politics”. When ON, the prompt includes an exact preview of the policy deltas.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.134',
-      notes: [
-        'Explainability: added a Commitment stat card (coordination clarity).',
-        'Commitment exposes the hidden Discipline + Effective Autonomy → task lock tendency (helps diagnose thrash).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.133',
-      notes: [
-        'QoL: pinned projects ("Pin (finish 1)") now auto-clear immediately when the requested build completes.',
-        'This prevents the Director from staying stuck in a stale pin state after you successfully finish the pinned Hut/Palisade/Granary/Workshop/Library.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.132',
-      notes: [
-        'QoL/Explainability: Auto Pause (danger) now uses simple trend forecasts (resource rates) so it can pause BEFORE you hit 0 (starving/freezing/raid imminent).',
-        'The pause reason now includes an ETA when it is forecast-based (ex: “0 in 18s”).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.131',
-      notes: [
-        'QoL/Explainability: clickable stat cards now show an "INSPECT" tag and highlight on hover (Dissent/Compliance/Focus-fit, Storage, Threat).',
-        'Tip: click those stat cards to open the Social / Storage / Threat inspectors.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.130',
-      notes: [
-        'NEW Explainability: click the Threat stat card to open a Threat inspector (raid ETA, mitigation, repel chance, and defense breakdown).',
-        'Escape closes the Threat inspector like other modals.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.129',
-      notes: [
-        'FIX: Action scoring now uses the current sim state consistently (plan pressure, role pressure, and personality pressure are preview-safe).',
-        'This makes Advisor/Council previews and any cloned-state simulations more trustworthy (no hidden reads from the live global state).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.128',
-      notes: [
-        'Explainability/QoL: Top stat cards now show time-to-reserve (ETA until Food/Wood/Science/Tools hit your configured Reserves) when trends are negative.',
-        'Added a clear BELOW RES flag when you are already under a reserve buffer.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.127',
-      notes: [
-        'QoL: Added a "Pin project" selector + button in the Director panel so pinning builds is discoverable without scrolling to Projects.',
-        'Pinning still clears automatically after ONE unit completes, and it still sets Project focus to match.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.126',
-      notes: [
-        'QoL: Policy panel now has one-click bulk Policy Locks (Lock basics / Lock all / Unlock all) so Auto Policy can\'t fight your manual tuning.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.125',
-      notes: [
-        'QoL/Explainability: Sorting by Task now uses the effective executed task (shows fallback tasks when a sink is blocked by reserves/inputs).',
-        'QoL/Explainability: Like/Dislike tags now evaluate against the executed task (so blocked fallbacks don\'t mislabel preferences).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.124',
-      notes: [
-        'QoL/Stability: Event log is now capped (persisted) so long sessions don\'t bloat save size / localStorage.',
-        'Migration: old saves auto-trim oversized logs on load.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.123',
-      notes: [
-        'NEW: Bloc health panel (by values bloc) shows avg policy-fit, mood, and grievance so you can see who is unhappy at a glance.',
-        'Explainability: panel includes a simple nudge pointing at the current highest-pressure bloc (useful when dissent starts creeping).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.122',
-      notes: [
-        'Director priorities: added a Social priority slider that biases Socialize/Care decisions (and shows in scoring reasons).',
-        'Politics: Social bloc negotiations now steer prioSocial (with undo support + governance log deltas).',
-        'No save-breaking changes (defaults to 100% if missing).'
-      ]
-    },
-    {
-      v: '0.9.121',
-      notes: [
-        'FIX/QoL: Directive selector in the Decision Inspector can now be changed repeatedly (it no longer only works once).',
-        'Persistence: changing/clearing a kitten\'s Directive now saves immediately and writes a clear Event log line (so you can audit who you specialized).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.120',
-      notes: [
-        'Combat sim: Raids are now mitigated by your defenses (Palisade + Guards on duty + Security/Drills/Curfew). Strong defenses can fully repel a raid.',
-        'Explainability: Raid log now reports mitigation factor + your defense snapshot (guards/palisade).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.119',
-      notes: [
-        'QoL/Clarity: Added an Edible stat (Food+Jerky) so you can see true starvation buffer at a glance (many systems use edible, not just fresh food).',
-        'Explainability: Food stat subtitle now focuses on fresh-food trend + time-to-zero; Edible stat shows total edible trend + time-to-zero.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.118',
-      notes: [
-        'FIX: Accepting a Faction Demand now always applies the intended policy concession (it no longer fails due to the normal negotiation cooldown).',
-        'Explainability: demand outcomes (Accepted / Ignored / Expired) now write clear entries into the Governance log with the concrete consequences.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.117',
-      notes: [
-        'QoL: Role Quotas panel now includes one-click presets (Stable / Advance) to quickly steer colony specialization without micromanaging each quota.',
-        'Explainability: presets are population- and unlock-aware (won\'t assign Farmers before Farming, Toolsmith before Workshop, etc.).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.116',
-      notes: [
-        'NEW: Directive tools (batch): “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social).',
-        'QoL: Director panel now shows an “active directives X/Y” hint so you can see how many kittens you’ve specialized at a glance.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.115',
-      notes: [
-        'QoL/Explainability: Season-change log now includes a compact Season Report (key stats + current season targets + active faction demand if any).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.114',
-      notes: [
-        'Explainability: Storage inspector now shows Edible (Food+Jerky) totals and clarifies that Jerky does not spoil and does not count toward the fresh-food storage cap.',
-        'QoL: Storage inspector now surfaces Edible/Kitten and a quick “what is over-cap?” explanation so winter-prep decisions are less confusing.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.113',
-      notes: [
-        'NEW: Per-kitten Directive. Click a kitten row → set Directive (Food/Safety/Progress/Social/Rest) to bias their scoring persistently (not a hard lock).',
-        'UI: Pref column now shows “Dir X” when a kitten has a non-Auto directive, so you can spot your specialists at a glance.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.111',
-      notes: [
-        'Explainability: the Social inspector now lists the most misaligned kittens (low focus-fit) so you can see who is grumbling without opening each inspector.',
-        'QoL: click the Focus-fit (or Grievance) stat card to open the Social inspector directly.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.110',
-      notes: [
-        'QoL: Kitten Council now pops a “NEW” badge and a single Event log line when a fresh council suggestion appears (so you don\'t miss bottom-up nudges while zoomed in elsewhere).',
-        'Explainability: the log line includes the spokeskitten id + suggestion labels.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.109',
-      notes: [
-        'QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).',
-        'Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as “blocked” (pairs with the Unblock button).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.108',
-      notes: [
-        'QoL: slider-driven policy logs are now debounced (Discipline / Work pace / Priorities) to prevent Event log spam while you drag.',
-        'Explainability: log entries still fire after you stop dragging, so you can audit what you changed without noise.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.107',
-      notes: [
-        'AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to actively organize (Socialize/Care) instead of everyone loafing.',
-        'Explainability: Decision Inspector now shows “strike recovery” scoring lines when this kicks in.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.106',
-      notes: [
-        'NEW: Governance log panel: records policy/priorities changes caused by Auto Policy and Faction negotiations.',
-        'Explainability: Auto Policy entries include the top policy multiplier diffs so you can audit what changed (and why).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.104',
-      notes: [
-        'Fix: Auto Recruit no longer errors when enabled (season reference bug).',
-        'Explainability: Season panel now shows why Auto Recruit is not triggering (housing / season window / stability / food+reserve cost).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.101',
-      notes: [
-        'QoL: Project pinning is now surfaced next to Project focus (shows what is pinned + a one-click Clear pin button).',
-        'Explainability: Season panel also shows the active pinned project so you remember why focus is being forced.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.98',
-      notes: [
-        'NEW: Auto Council checkbox. When enabled, the Director will automatically hold Council when dissent is high and you can afford it (food+science above reserves).',
-        'Fix: Director automation blocks are now correctly scoped again (Auto Drills no longer accidentally gated other automations).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.97',
-      notes: [
-        'NEW: Auto Pause (danger) checkbox. When enabled, the Director will auto-pause the sim during clear immediate danger (starving/freezing/raid risk).',
-        'Explainability: Season panel shows the last auto-pause reason so you can diagnose the spiral.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.96',
-      notes: [
-        'UI/Explainability: Buddy column now shows buddy name + id + need% (instead of only id), making relationship pressure easier to read at a glance.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.95',
-      notes: [
-        'Advisor: now surfaces active Faction Demands (with a one-click Accept/Ignore suggestion) so politics doesn\'t get missed while you\'re fighting fires.',
-        'Explainability: the Advisor recommendation explicitly keys off “basics stable?” (food/warmth/threat) and time remaining.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.94',
-      notes: [
-        'QoL: added keyboard shortcut D to run Defense Drills (same behavior as the button; only triggers if drills are not already active).',
-        'UI: Run Drills button tooltip now includes the shortcut.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.93',
-      notes: [
-        'Safety Rules: added condition “edible < X” (counts Food + Jerky) so you can trigger overrides based on total edible stores, not just fresh food.',
-        'Explainability: the Safety Rules “Available conditions” list now calls out that edible includes jerky.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.92',
-      notes: [
-        'Civ-sim pressure: Overcrowding (pop > housing cap) now slowly increases Dissent and Grievance until you build more huts.',
-        'Explainability: the event log pings once when overcrowding begins and once when it ends.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.91',
-      notes: [
-        'QoL: new Policy Undo button (2 minute window) restores your last manual Policy multiplier and Role quota change.',
-        'Undo snapshot is recorded for: +/- tweaks, presets, policy reset, and role quota reset.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.90',
-      notes: [
-        'Civ-sim flavor: kittens now have deterministic names (save-safe). Names show in the colony table and the Decision Inspector.',
-        'Explainability: buddy + faction behavior is easier to track when you can recognize individuals at a glance.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.89',
-      notes: [
-        'UI/Explainability: Colony table now shows a dedicated “Fit” column (policy focus-fit %) so you can quickly spot which kittens are misaligned with your current Mode + priority sliders.',
-        'The Fit tag is color-coded (green/yellow/red) and has a tooltip explaining why low fit can drag mood and raise dissent under strong central planning.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.88',
-      notes: [
-        'Civ-sim: Kittens now slowly drift their Values (Food/Safety/Progress/Social) toward what they actually do each second. Specialization becomes "sticky" over minutes, creating emergent faction shifts.',
-        'Explainability: Inspect + table tooltips show a short "drift → AXIS" note when it happens, so policy changes feel traceable.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.87',
-      notes: [
-        'UI/Explainability: Faction negotiations now create an Undo snapshot (2 minute window) so you can experiment without permanent policy drift.',
-        'Negotiation undo restores Director priorities (Food/Safety/Progress), Work pace, Discipline, and Policy multipliers.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.86',
-      notes: [
-        'Civ-sim pressure: Faction Demands now have teeth even if you ignore them by accident — when a Demand expires, it resolves as an automatic soft ignore (small dissent + grievance hit).',
-        'Explainability: the event log explicitly calls out when a demand expires, so you can connect the mood/dissent drift to politics.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.85',
-      notes: [
-        'UI/Explainability: When a kitten’s chosen task is BLOCKED by reserves/inputs and it executes a fallback (e.g. BuildHut → ChopWood), the Task cell is now highlighted and tagged BLOCKED.',
-        'This makes it easier to spot "why builders are stalling" moments and tune Reserves/Policy accordingly.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.84',
-      notes: [
-        'UI/Explainability: Food Cap and Spoilage stat cards are now clickable and open a Storage Inspector with the full cap breakdown and guidance.',
-        'This makes the overcap/spoilage system easier to reason about (why you are bleeding food, and what levers to pull).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.83',
-      notes: [
-        'UI/Explainability: Colony table now shows each kitten\'s values bloc (Food/Safety/Progress/Social) as a first-class column.',
-        'This makes Factions/Demands more legible: you can see who is in which bloc without opening the inspector.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.82',
-      notes: [
-        'NEW: Spoilage warning in the event log when food exceeds your storage cap by a meaningful margin.',
-        'Explainability: the warning includes your current cap and spoilage multiplier, and suggests Granary / PreserveFood (jerky).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.81',
-      notes: [
-        'NEW: Faction Demands. On some season changes (when dissent is meaningful and the dominant values bloc feels misaligned), a bloc will issue a demand.',
-        'You can Accept (small policy concession + stronger cohesion boost) or Ignore (dissent spikes + grievance for that bloc).',
-        'Explainability: Demand shows its trigger reason + expiry timer in the Factions panel.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.80',
-      notes: [
-        'UI/Explainability: Policy panel now shows per-action plan impact (without policy → with policy) next to each multiplier.',
-        'This makes it easier to see which quotas actually change the colony plan (vs what is being overridden by needs/autonomy).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.79',
-      notes: [
-        'NEW: Auto Policy (Director checkbox). The Director gently nudges policy multipliers toward your Targets (food/kitten, warmth, threat).',
-        'It makes small reversible changes with a cooldown, and it pauses during Crisis Protocol.',
-        'Explainability: Season panel shows the last Auto Policy reason (what it was responding to).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.78',
-      notes: [
-        'UI/Explainability: Colony table now has a dedicated Buddy column that shows buddy id + buddy-need % (relationship pressure).',
-        'High buddy-need highlights in yellow/red, giving an early warning for upcoming mood/grievance/dissent drift.',
-        'No behavior changes; purely visibility (save-safe).'
-      ]
-    },
-    {
-      v: '0.9.77',
-      notes: [
-        'NEW: Auto Drills (Director checkbox). When enabled, the Director automatically runs Defense Drills when threat is getting high and basics are stable.',
-        'Safety: won\'t spend below your reserves; uses a cooldown to avoid spammy re-firing.',
-        'Explainability: Season panel shows the last auto-drill trigger (or why it\'s waiting).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.76',
-      notes: [
-        'NEW: Defense Drills (Director button). Spend food+wood for ~40s of improved security.',
-        'Effect: threat grows slower while drills are running, and Guard training is more effective (faster threat reduction + more Combat XP).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.75',
-      notes: [
-        'UI/Explainability: starvation forecast now uses *edible* stores (food + jerky) instead of only fresh food.',
-        'Director stats: Food stat subline now shows fresh rate vs edible rate, plus time-to-zero for edible stores (more accurate when preserving food).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.74',
-      notes: [
-        'FIX/QoL: Save files now strip more transient runtime/debug fields (decision history, dissent driver snapshots, per-second timers).',
-        'Result: smaller saves and less chance of save bloat over long sessions; behavior is unchanged.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.73',
-      notes: [
-        'Factions: negotiating now has a short cooldown and the UI shows a preview of the policy concession before you click.',
-        'Explainability: negotiation log now includes the exact policy/priority deltas that were applied.',
-        'Result: the civ-sim politics lever is clearer and less spammy (fewer accidental priority drifts).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.72',
-      notes: [
-        'Buddy bonds upgraded: kittens now track Buddy-need (rises when separated; falls when spending time together).',
-        'Behavior: high Buddy-need nudges Socialize choices and adds mild mood/grievance pressure (especially under strong central planning).',
-        'Explainability: Decision Inspector header now shows buddy-need % when a buddy exists.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.71',
-      notes: [
-        'Director: Discipline/Autonomy now (transparently) affect task commitment length via a Coordination multiplier.',
-        'Result: fewer 1s task flaps when Discipline is high; more emergent switching/wandering when Autonomy is high.',
-        'Explainability: COMMIT decisions now display the current coord multiplier, and the Discipline hint shows "commitment x…".',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.70',
-      notes: [
-        'NEW: Factions (values blocs). Kittens now group into simple values blocs (Food/Safety/Progress/Social) based on their dominant Values axis.',
-        'You can "Negotiate" with a bloc to apply a small, bounded policy concession (priority sliders / social levers). This eases dissent slightly (being heard) but can drift your plan.',
-        'This adds a civ-sim governance loop: manage policy *and* politics, not just optimization.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.69',
-      notes: [
-        'NEW: Auto Build Push (Director checkbox). When enabled, BUILD PUSH toggles ON automatically while you are housing-capped, and OFF once housing is available again.',
-        'This reduces micro: you can keep your huts moving without babysitting the BUILD signal.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.68',
-      notes: [
-        'NEW: Curfew (Director button + Q hotkey). Curfew slows threat growth (fewer raids) but steadily lowers morale and slightly increases dissent pressure while active.',
-        'Explainability: Social inspector now includes Curfew as a dissent driver when enabled.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.67',
-      notes: [
-        'NEW: Grievance (per-kitten + colony avg) — a slow-burn resentment meter that rises when kittens are pushed into disliked/misaligned work under strong central planning.',
-        'Dissent pressure now also includes Grievance (visible in Social inspector).',
-        'Hold Council now also reduces Grievance (represents being heard).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.66',
-      notes: [
-        'FIX: Food stability/pressure now treats Jerky as edible food (food/kitten heuristics, auto-crisis, auto-recruit, advisor warnings, etc).',
-        'FIX: Starvation now only triggers when *no edible food remains* (food + jerky).',
-        'UI: added Edible/Kitten + Fresh/Kitten stats so preservation is visible and not confusing.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.65',
-      notes: [
-        'Explainability: Decision Inspector now shows a short-lived "Execution" line when a sink action was blocked by reserves/inputs and the kitten immediately fell back to a different task.',
-        'Task tooltip also includes the short block reason for a few seconds (helps diagnose "why won\'t they build/craft" without digging through plan debug).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.64',
-      notes: [
-        'Explainability: Social inspector now shows colony average Values vs your current focus (Mode + priorities), plus the biggest mismatch axis.',
-        'Helps you diagnose mood/dissent drift as a governance problem ("we want Food, you are pushing Progress") instead of a mystery.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.63',
-      notes: [
-        'Explainability: season transitions now log a clear one-line reminder of what just changed (Winter penalties, Spring relief, Fall prep window).',
-        'Helps connect sudden output shifts to the seasonal model without needing to open panels.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.62',
-      notes: [
-        'NEW: Director priority preset "Consensus" sets Food/Safety/Progress priorities based on the colony\'s average kitten Values (bottom-up governance).',
-        'This reduces value mismatch (often a precursor to mood/dissent issues) and lightly lowers dissent immediately to represent being listened to.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.61',
-      notes: [
-        'Explainability: Plan debug now includes a "Decision mix" section (rules vs emergencies vs commitment vs normal scoring).',
-        'This makes it easier to tell whether the colony is off-plan because of hard safety overrides, personal needs, or just autonomy sampling.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.60',
-      notes: [
-        'Explainability: Plan debug now includes an "Activity" section (rolling last ~30s task shares).',
-        'This makes it easier to see when autonomy/needs/dissent are pulling behavior off-plan, without clicking through every kitten.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.59',
-      notes: [
-        'QoL/Explainability: the Compliance stat card is now clickable (like Dissent) to open the Social inspector.',
-        'This makes it faster to answer: "why are kittens ignoring the plan right now?" (compliance is the plan-strength multiplier).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.58',
-      notes: [
-        'Explainability/QoL: added Director policy stats to the top panel (Autonomy, Effective autonomy, Discipline, Work pace).',
-        'These numbers make it easier to understand why kittens sometimes ignore the central plan (effective autonomy rises with dissent and falls with discipline).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.57',
-      notes: [
-        'QoL/Explainability: Reserves panel now shows a live "Recommended" line (season + population aware) so the buffer system is less guessy.',
-        'NEW: "Apply recommended" sets your current reserves to those suggested values without enabling Auto Reserves (manual but guided).',
-        'Auto Reserves uses the same shared recommendation logic (no behavior change, just consistency).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.56',
-      notes: [
-        'QoL/Explainability: the Food stat now shows your storage cap and (when relevant) current spoilage multiplier in its trend line.',
-        'Food stat tooltip now explains the soft-cap → spoilage mechanic in one place.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.55',
-      notes: [
-        'Explainability: added a Focus-fit stat (avg values alignment) so you can see at a glance when colony policy is mismatched with kitten values (often a precursor to mood/dissent issues).',
-        'The stat also shows min fit + how many kittens are in the "low alignment" zone.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.54',
-      notes: [
-        'Explainability: Plan debug now shows when sink actions were blocked by reserves/inputs ("Blocked sinks"), so "desired vs assigned" mismatches are actionable.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.53',
-      notes: [
-        'Explainability: Threat stat now shows ETA to your Max threat target (when threat is rising), in addition to raid ETA.',
-        'This makes it clearer when you are drifting into danger *before* an actual raid timer appears.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.52',
-      notes: [
-        'QoL: Stats cards now show tiny per-second trends + a few key ETAs (starve/freeze/raid/next unlock).',
-        'Explainability: makes it easier to catch spirals early without opening the Advisor/Inspect panels.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.51',
-      notes: [
-        'FIX: Advisor now reads food storage over-cap/spoilage from the *current* state (was accidentally using the global state object).',
-        'FIX: Winter Prep / Crisis Protocol toggles are now preview-safe for Council/Advisor simulations (no more accidental global mutations during preview).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.50',
-      notes: [
-        'QoL: keyboard shortcuts (when not typing): Space = Pause/Resume, 1–4 = Modes (Survive/Expand/Defend/Advance).',
-        'QoL: W toggles Winter Prep, C toggles Crisis Protocol.',
-        'QoL: F = Hold Festival, V = Hold Council (only when not already active).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.49',
-      notes: [
-        'NEW: Mentoring is now need-aware: mentors will preferentially teach skills that fill role quota shortfalls or current plan deficits (instead of always teaching their own specialty).',
-        'Explainability: Mentor task tooltip now shows why that teaching skill was chosen (quota vs plan vs mentor specialty).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.48',
-      notes: [
-        'Explainability: Policy panel now includes a Plan preview (desired worker counts) shown both WITH and WITHOUT your policy multipliers.',
-        'This makes it easier to see what your quota sliders are doing to the colony plan before Autonomy/traits/needs add variance.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.47',
-      notes: [
-        'FIX/NEW: StokeFire is now a real skill path (Cooking). Firekeepers gain Cooking XP while stoking the fire, and aptitude/traits can now bias toward hearth work.',
-        'This makes winter warmth management feel more incremental: repeated firekeeping creates a specialist instead of a perpetual generalist.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.46',
-      notes: [
-        'FIX: Kitten Council once again reads real kitten likes/dislikes (personality); it was accidentally wired to an old k.prefs field.',
-        'NEW: Council can now make Values-driven suggestions (nudge Food/Safety/Progress priority sliders, or raise Autonomy) when focus-fit is poor under strong central planning.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.45',
-      notes: [
-        'NEW: Kitten Values (Food/Safety/Progress/Social). When central planning is strong (low effective autonomy), value mismatch slowly reduces mood.',
-        'Explainability: kitten table + inspector now show value vector and focus-fit % so you can see who is vibing with your current Mode + Priorities.',
-        'No save-breaking changes (values are generated deterministically for older saves).'
-      ]
-    },
-    {
-      v: '0.9.44',
-      notes: [
-        'Kitten Council: added an "Undo last" button for a short window after accepting a council suggestion (restores previous policy multipliers).',
-        'Explainability: council panel now shows what can be undone and for how long.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.43',
-      notes: [
-        'Kitten Council: council suggestion tooltips now include a preview of the exact policy multiplier changes (diff) before you accept.',
-        'This makes bottom-up policy nudges more legible and safer to click.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.42',
-      notes: [
-        'Advisor: new quick action to toggle Winter Prep when Winter is near (late Fall).',
-        'This makes the seasonal stockpile overlay more discoverable without auto-enabling it.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.41',
-      notes: [
-        'NEW: Priority presets (Balanced / Food / Safety / Progress) next to the Priority sliders.',
-        'This makes it easier to quickly steer individual kitten behavior without touching detailed policy multipliers.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.39',
-      notes: [
-        'NEW: Kitten Council — occasional bottom-up policy suggestions from individual kittens (based on likes/traits + colony status).',
-        'Accepting a council suggestion applies a small policy multiplier nudge (no hard locks).',
-        'Explainability: the council panel shows who is speaking and why (mood/dissent/traits).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.38',
-      notes: [
-        'NEW: Director Priorities sliders (Food / Safety / Progress) — high-level policy weights that bias individual kitten scoring (not just the colony plan).',
-        'Explainability: the action score breakdown now includes the priority line when it applies (look in the Decision Inspector).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.37',
-      notes: [
-        'QoL: Auto-pause when the tab is hidden; automatically resumes when you come back (does not override manual Pause).',
-        'This reduces background CPU usage and avoids "oops I left it running" resource spirals.'
-      ]
-    },
-    {
-      v: '0.9.36',
-      notes: [
-        'NEW: Buddy bonds — each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
-        'When a kitten and their buddy Socialize at the same time, dissent drops a bit faster and their mood recovers slightly faster.',
-        'Explainability: Buddy is shown in the Decision Inspector header.'
-      ]
-    },
-    {
-      v: '0.9.35',
-      notes: [
-        'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
-        'Explainability: makes the "colony is grumbling" fix path more discoverable without adding hidden automation.'
-      ]
-    },
-    {
-      v: '0.9.34',
-      notes: [
-        'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
-        'Explainability: Season panel shows Auto rations status + the last reason.'
-      ]
-    },
-    {
-      v: '0.9.33',
-      notes: [
-        'Explainability: kitten Task cells now show an override badge when a RULE / EMERG / COMMIT decision forced the action (so you can instantly see why the plan wasn\'t followed).',
-        'Task tooltip also mentions if autonomy sampled a non-#1 action ("top score was X").'
-      ]
-    },
-    {
-      v: '0.9.32',
-      notes: [
-        'Projects panel: new Unblock button appears when an in-progress project is stalled by reserve-protected inputs (wood/science/tools).',
-        'Clicking Unblock lowers only the blocking reserve(s) by a small, safe step and sets Project focus to that track.',
-        'This mirrors the Advisor\'s unblock behavior but puts it right where you\'re watching build progress.'
-      ]
-    },
-    {
-      v: '0.9.31',
-      notes: [
-        'Advisor: detects when an in-progress build (hut/palisade/granary/workshop/library) is stalled by reserves (wood/science/tools).',
-        'New quick action: Loosen reserve (drops only the blocking reserve(s) by a small step and focuses that project).',
-        'Explainability: reduces the "why won\'t they build?" confusion without removing the reserve system.'
-      ]
-    },
-    {
-      v: '0.9.30',
-      notes: [
-        'New: kitten Traits (Brave/Studious/Builder/Caretaker/Forager). Traits add a steady bias to scoring (separate from Autonomy likes/dislikes).',
-        'Explainability: trait bonuses show directly in the Decision Inspector scoring reasons.',
-        'UI: Traits column now shows trait tags; tooltip includes trait descriptions + prefs.'
-      ]
-    },
-    {
-      v: '0.9.29',
-      notes: [
-        'FIX: Safety Rules can now choose the Care action (previously missing from the rule action dropdown).',
-        'Explainability: rule-created Care actions still respect reserves and will fall back to Socialize if blocked.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.28',
-      notes: [
-        'Explainability: food storage over-cap now shows Spoilage multiplier (x1..x4) in stats.',
-        'Advisor: warns when you are bleeding food to over-cap spoilage, with a one-click Storage response.',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.27',
-      notes: [
-        'Patch notes: now cumulative (shows everything since your last seen version).',
-        'Explainability: Projects panel now states which reserves are blocking a build (wood/science/tools).',
-        'No save-breaking changes.'
-      ]
-    },
-    {
-      v: '0.9.26',
-      notes: [
-        'QoL: +Kitten button shows pop/cap and disables itself when you are housing-capped or can\'t afford the food cost.',
-        'Explainability: hover the button to see the exact reason (need food vs build huts).'
-      ]
-    }
-  ];
-
-  function closePatchNotes(){
-    uiPatch.open = false;
-    if (patchModalEl) patchModalEl.classList.add('hidden');
-  }
-
-  function openPatchNotes(){
-    uiPatch.open = true;
-    if (patchModalEl) patchModalEl.classList.remove('hidden');
-    renderPatchNotes();
-  }
-
-  function renderPatchNotes(){
-    if (!patchModalEl || !patchTitleEl || !patchSubEl || !patchBodyEl) return;
-    if (!uiPatch.open) return;
-
-    const from = String(uiPatch.fromVersion || '');
-    const items = PATCH_HISTORY
-      .slice()
-      .sort((a,b) => verCmp(a.v, b.v))
-      .filter(e => (from ? (verCmp(e.v, from) > 0) : (e.v === GAME_VERSION)) && verCmp(e.v, GAME_VERSION) <= 0);
-
-    patchTitleEl.textContent = `v${GAME_VERSION} - Patch notes`;
-    patchSubEl.textContent = from
-      ? `Changes since v${from} (you can always reopen this from the header).`
-      : 'Changes in this version.';
-
-    const lines = [];
-    for (const entry of items.length ? items : PATCH_HISTORY.filter(e => e.v === GAME_VERSION)) {
-      lines.push(`v${entry.v}`);
-      for (const n of (entry.notes ?? [])) lines.push(`• ${n}`);
-      lines.push('');
-    }
-
-    patchBodyEl.textContent = lines.join('\n').trim();
-  }
-
-  if (btnPatchNotesEl) btnPatchNotesEl.addEventListener('click', openPatchNotes);
-  if (btnPatchCloseEl) btnPatchCloseEl.addEventListener('click', closePatchNotes);
-  if (patchModalEl) patchModalEl.addEventListener('click', (e) => {
-    if (e.target === patchModalEl) closePatchNotes();
+  const patchNotesUI = initPatchNotes({
+    gameVersion: GAME_VERSION,
+    patchHistory: PATCH_HISTORY,
+    patchModalEl,
+    patchTitleEl,
+    patchSubEl,
+    patchBodyEl,
+    btnPatchNotesEl,
+    btnPatchCloseEl,
   });
-
   // --- Inspect modal (explainability)
   const inspectModalEl = el('inspectModal');
   const inspectTitleEl = el('inspectTitle');
@@ -5312,7 +4435,7 @@ import { initUI } from './ui.js';
           k.why = String(k.why ?? '');
 
           // Persist change + keep it legible (updates the "Bias" label + Clear button state).
-          if (next !== prev) log(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) → ${next}`);
+          if (next !== prev) log(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) â†’ ${next}`);
           save();
           renderInspect();
           render();
@@ -5347,32 +4470,32 @@ import { initUI } from './ui.js';
       const ageNote = (age !== null && Number.isFinite(age)) ? ` (age ${fmt(age)}s)` : '';
 
       if (d.kind === 'rule') {
-        lines.push(`Decision: RULE → ${task}${ageNote}`);
+        lines.push(`Decision: RULE â†’ ${task}${ageNote}`);
         lines.push(`  - rule #${d.ruleIndex ?? '?'}: ${d.rule ?? '-'}`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else if (d.kind === 'emergency') {
-        lines.push(`Decision: EMERGENCY → ${task}${ageNote}`);
+        lines.push(`Decision: EMERGENCY â†’ ${task}${ageNote}`);
         lines.push(`  - note: ${d.note ?? '-'}`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else if (d.kind === 'commit') {
-        lines.push(`Decision: COMMIT → ${task}${ageNote}`);
+        lines.push(`Decision: COMMIT â†’ ${task}${ageNote}`);
         lines.push(`  - remaining lock: ${Number(d.lock ?? 0).toFixed(0)}s`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else {
-        lines.push(`Decision: SCORE → ${task}${ageNote}`);
+        lines.push(`Decision: SCORE â†’ ${task}${ageNote}`);
         if (d.best && d.best !== task) lines.push(`  - top score was ${d.best} (autonomy sampled)`);
         if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`);
       }
       lines.push('');
     }
 
-    // Execution explainability: show the last blocked sink → fallback (if it happened very recently).
+    // Execution explainability: show the last blocked sink â†’ fallback (if it happened very recently).
     const lb = k._lastBlocked;
     if (lb && typeof lb === 'object') {
       const age = (typeof lb.at === 'number') ? (state.t - lb.at) : null;
       if (age !== null && Number.isFinite(age) && age <= 6) {
         const msg = String(lb.msg ?? '').replace(/\s+/g,' ').trim();
-        lines.push(`Execution: ${String(lb.action ?? '')} blocked → ${String(lb.to ?? '')} (age ${fmt(age)}s)`);
+        lines.push(`Execution: ${String(lb.action ?? '')} blocked â†’ ${String(lb.to ?? '')} (age ${fmt(age)}s)`);
         if (msg) lines.push(`  - ${msg}`);
         lines.push('');
       }
@@ -5408,7 +4531,7 @@ import { initUI } from './ui.js';
     const comp = compliance01(state);
     const drivers = state._dissentDrivers ?? null;
 
-    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) — Compliance x${comp.toFixed(2)}`;
+    socialTitleEl.textContent = `Dissent: ${Math.round(dis*100)}% (${band}) â€” Compliance x${comp.toFixed(2)}`;
 
     const season = seasonAt(state.t);
     const rat = getRations(state);
@@ -5420,24 +4543,24 @@ import { initUI } from './ui.js';
 
     const lines = [];
     lines.push('How dissent works (1s cadence):');
-    lines.push('• We compute a "desire" value from stressors (mood, overwork, rations, hunger, grievance, alarm).');
-    lines.push('• Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
-    lines.push('• Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
-    lines.push('• Dissent is then smoothed toward that desire (~20–25s to swing hard).');
+    lines.push('â€¢ We compute a "desire" value from stressors (mood, overwork, rations, hunger, grievance, alarm).');
+    lines.push('â€¢ Discipline reduces how fast desire forms (but adds a small morale cost elsewhere).');
+    lines.push('â€¢ Doctrine nudges it: Rotate lowers buildup a bit; Specialize raises it a bit.');
+    lines.push('â€¢ Dissent is then smoothed toward that desire (~20â€“25s to swing hard).');
     lines.push('');
 
     if (drivers && typeof drivers === 'object') {
       lines.push('Current inputs (last computed):');
-      lines.push(`• avg mood: ${(drivers.avgMood*100).toFixed(0)}%  (mood pressure: +${drivers.moodPressure.toFixed(3)})`);
-      lines.push(`• work pace: ${(drivers.workPace*100).toFixed(0)}%  (overwork pressure: +${drivers.workPressure.toFixed(3)})`);
-      lines.push(`• rations: ${drivers.rationsLabel}  (ration pressure: ${drivers.rationPressure>=0?'+':''}${drivers.rationPressure.toFixed(3)})`);
-      lines.push(`• avg hunger: ${(drivers.hungerStress*100).toFixed(0)}%  (hunger pressure: +${drivers.hungerPressure.toFixed(3)})`);
-      if (typeof drivers.avgGriev === 'number') lines.push(`• avg grievance: ${(drivers.avgGriev*100).toFixed(0)}%  (grievance pressure: +${Number(drivers.grievancePressure ?? 0).toFixed(3)})`);
-      lines.push(`• alarm: ${drivers.alarmStress ? 'ON' : 'OFF'}  (alarm pressure: +${drivers.alarmPressure.toFixed(3)})`);
+      lines.push(`â€¢ avg mood: ${(drivers.avgMood*100).toFixed(0)}%  (mood pressure: +${drivers.moodPressure.toFixed(3)})`);
+      lines.push(`â€¢ work pace: ${(drivers.workPace*100).toFixed(0)}%  (overwork pressure: +${drivers.workPressure.toFixed(3)})`);
+      lines.push(`â€¢ rations: ${drivers.rationsLabel}  (ration pressure: ${drivers.rationPressure>=0?'+':''}${drivers.rationPressure.toFixed(3)})`);
+      lines.push(`â€¢ avg hunger: ${(drivers.hungerStress*100).toFixed(0)}%  (hunger pressure: +${drivers.hungerPressure.toFixed(3)})`);
+      if (typeof drivers.avgGriev === 'number') lines.push(`â€¢ avg grievance: ${(drivers.avgGriev*100).toFixed(0)}%  (grievance pressure: +${Number(drivers.grievancePressure ?? 0).toFixed(3)})`);
+      lines.push(`â€¢ alarm: ${drivers.alarmStress ? 'ON' : 'OFF'}  (alarm pressure: +${drivers.alarmPressure.toFixed(3)})`);
       lines.push('');
       lines.push(`Raw desire (pre-discipline/doctrine): ${drivers.rawDesire.toFixed(3)}`);
       lines.push(`After discipline/doctrine: ${drivers.desireAfterPolicy.toFixed(3)} (target)`);
-      lines.push(`Current dissent: ${drivers.cur.toFixed(3)} → next ${drivers.next.toFixed(3)}`);
+      lines.push(`Current dissent: ${drivers.cur.toFixed(3)} â†’ next ${drivers.next.toFixed(3)}`);
       lines.push('');
     } else {
       lines.push('No driver snapshot yet (tick once).');
@@ -5473,15 +4596,15 @@ import { initUI } from './ui.js';
 
       lines.push('');
       lines.push('Governance: Values vs Focus (bottom-up vs top-down):');
-      lines.push(`• avg kitten Values:  ${vecLine(avg)}`);
-      lines.push(`• your current Focus: ${vecLine(focus)}   (avg focus-fit: ${Math.round(avgAlign*100)}%)`);
-      lines.push(`• biggest mismatch: ${mm.ax} (${Math.abs(pp)}pp ${dir} colony preference)`);
+      lines.push(`â€¢ avg kitten Values:  ${vecLine(avg)}`);
+      lines.push(`â€¢ your current Focus: ${vecLine(focus)}   (avg focus-fit: ${Math.round(avgAlign*100)}%)`);
+      lines.push(`â€¢ biggest mismatch: ${mm.ax} (${Math.abs(pp)}pp ${dir} colony preference)`);
 
       if (Math.abs(pp) >= 8) {
         const hint = (pp > 0)
           ? `You are pushing ${mm.ax} harder than the colony wants. Expect mood drag (esp. with low autonomy).`
           : `You are under-investing in ${mm.ax} vs what the colony wants. Expect grumbling if stressors appear.`;
-        lines.push(`• note: ${hint}`);
+        lines.push(`â€¢ note: ${hint}`);
       }
       lines.push('');
     } catch (e) {
@@ -5507,7 +4630,7 @@ import { initUI } from './ui.js';
         lines.push('Lowest focus-fit kittens (who may grumble first):');
         for (let i=0;i<n;i++) {
           const r = rows[i];
-          lines.push(`• #${r.id} ${r.nm} — fit ${Math.round(r.align*100)}% | grievance ${Math.round(r.g*100)}% | bloc ${r.bloc} | ${r.role} (${r.task})`);
+          lines.push(`â€¢ #${r.id} ${r.nm} â€” fit ${Math.round(r.align*100)}% | grievance ${Math.round(r.g*100)}% | bloc ${r.bloc} | ${r.role} (${r.task})`);
         }
         lines.push('');
         lines.push('Tip: if many low-fit kittens share a bloc, try nudging Priorities/Mode toward it (or raise Autonomy to accept diversity).');
@@ -5518,10 +4641,10 @@ import { initUI } from './ui.js';
     }
 
     lines.push('What to do (policy knobs):');
-    lines.push('• If mood is low: Feast rations, hold Festival, lower Work pace, or let Socialize/Care run.');
-    lines.push('• If overwork is high: lower Work pace or switch doctrine to Rotate temporarily.');
-    lines.push('• If hunger stress is high: stabilize food/kitten first (dissent will follow).');
-    lines.push('• If you need obedience NOW: raise Discipline (but expect small morale drift down).');
+    lines.push('â€¢ If mood is low: Feast rations, hold Festival, lower Work pace, or let Socialize/Care run.');
+    lines.push('â€¢ If overwork is high: lower Work pace or switch doctrine to Rotate temporarily.');
+    lines.push('â€¢ If hunger stress is high: stabilize food/kitten first (dissent will follow).');
+    lines.push('â€¢ If you need obedience NOW: raise Discipline (but expect small morale drift down).');
 
     socialBodyEl.textContent = lines.join('\n');
   }
@@ -5567,24 +4690,24 @@ import { initUI } from './ui.js';
 
     const lines = [];
     lines.push('What this is:');
-    lines.push('• Fresh Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
-    lines.push('• Jerky does NOT spoil and does NOT count toward the fresh-food cap (it is your winter bank).');
-    lines.push('• Spoilage multiplier is capped at x4 to keep it a pressure, not a wipeout.');
+    lines.push('â€¢ Fresh Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
+    lines.push('â€¢ Jerky does NOT spoil and does NOT count toward the fresh-food cap (it is your winter bank).');
+    lines.push('â€¢ Spoilage multiplier is capped at x4 to keep it a pressure, not a wipeout.');
     lines.push('');
     lines.push('Quick read (right now):');
-    lines.push(`• edible total = food + jerky = ${fmt(food)} + ${fmt(jerky)} = ${fmt(edible)} (${fmt(ediblePk)}/kitten)`);
-    lines.push(`• over-cap (fresh food only) = max(0, food - cap) = ${fmt(over)} → spoilage x${Number(spoilMult).toFixed(2)}`);
+    lines.push(`â€¢ edible total = food + jerky = ${fmt(food)} + ${fmt(jerky)} = ${fmt(edible)} (${fmt(ediblePk)}/kitten)`);
+    lines.push(`â€¢ over-cap (fresh food only) = max(0, food - cap) = ${fmt(over)} â†’ spoilage x${Number(spoilMult).toFixed(2)}`);
     lines.push('');
     lines.push('Cap breakdown (current):');
-    lines.push(`• base: ${fmt(base)}`);
-    lines.push(`• huts: +${fmt(hutBonus)}  (${huts} × 28)`);
-    lines.push(`• granaries: +${fmt(granBonus)}  (${gran} × 120)`);
+    lines.push(`â€¢ base: ${fmt(base)}`);
+    lines.push(`â€¢ huts: +${fmt(hutBonus)}  (${huts} Ã— 28)`);
+    lines.push(`â€¢ granaries: +${fmt(granBonus)}  (${gran} Ã— 120)`);
     lines.push(`= total cap: ${fmt(base + hutBonus + granBonus)}`);
     lines.push('');
     lines.push('How to respond (management levers):');
-    lines.push('• If spoilage is high: build Granary (Project focus → Storage) and/or PreserveFood into Jerky.');
-    lines.push('• If you are stable: don’t over-forage; redirect labor into wood/science/industry.');
-    lines.push('• If Winter is soon: a *little* over-cap is fine, but prefer banking surplus as Jerky.');
+    lines.push('â€¢ If spoilage is high: build Granary (Project focus â†’ Storage) and/or PreserveFood into Jerky.');
+    lines.push('â€¢ If you are stable: donâ€™t over-forage; redirect labor into wood/science/industry.');
+    lines.push('â€¢ If Winter is soon: a *little* over-cap is fine, but prefer banking surplus as Jerky.');
 
     storageBodyEl.textContent = lines.join('\n');
   }
@@ -5635,24 +4758,24 @@ import { initUI } from './ui.js';
 
     const lines = [];
     lines.push('What threat is:');
-    lines.push('• A rising pressure that triggers raids at 100 threat.');
-    lines.push('• Threat rises over time; winter slows it a bit.');
-    lines.push('• Your defenses do NOT stop raids from happening; they reduce raid damage and can repel raids outright.');
+    lines.push('â€¢ A rising pressure that triggers raids at 100 threat.');
+    lines.push('â€¢ Threat rises over time; winter slows it a bit.');
+    lines.push('â€¢ Your defenses do NOT stop raids from happening; they reduce raid damage and can repel raids outright.');
     lines.push('');
 
     lines.push('Defense model (current):');
-    lines.push(`• palisade: ${pal}`);
-    lines.push(`• guards (assigned now): ${guards} / pop ${pop}`);
-    lines.push(`• security tech: ${sec ? 'yes' : 'no'} | drills active: ${drill ? 'yes' : 'no'} | curfew: ${curfew ? 'yes' : 'no'}`);
-    lines.push(`• defense score = pal*0.7 + guards*1.4 + security*2 + drills*3 + curfew*1.5 = ${fmt(defScore)}`);
-    lines.push(`• damage multiplier (mitigation) = max(0.25, 1 - 0.035*defScore) = x${mitigate.toFixed(2)} (lower is better)`);
-    lines.push(`• repel chance = min(0.65, 0.04*guards + 0.012*pal + 0.10*drills + 0.06*security) = ${(repelChance*100).toFixed(0)}%`);
+    lines.push(`â€¢ palisade: ${pal}`);
+    lines.push(`â€¢ guards (assigned now): ${guards} / pop ${pop}`);
+    lines.push(`â€¢ security tech: ${sec ? 'yes' : 'no'} | drills active: ${drill ? 'yes' : 'no'} | curfew: ${curfew ? 'yes' : 'no'}`);
+    lines.push(`â€¢ defense score = pal*0.7 + guards*1.4 + security*2 + drills*3 + curfew*1.5 = ${fmt(defScore)}`);
+    lines.push(`â€¢ damage multiplier (mitigation) = max(0.25, 1 - 0.035*defScore) = x${mitigate.toFixed(2)} (lower is better)`);
+    lines.push(`â€¢ repel chance = min(0.65, 0.04*guards + 0.012*pal + 0.10*drills + 0.06*security) = ${(repelChance*100).toFixed(0)}%`);
     lines.push('');
 
     lines.push('How to manage threat (levers):');
-    lines.push('• Short term: assign more Guard, run Drills, toggle Curfew.');
-    lines.push('• Medium term: build Palisade, unlock Security tech (science).');
-    lines.push('• Policy: in Defend mode or when threat is rising, raise Guard and Palisade multipliers; lower non-essential spending.');
+    lines.push('â€¢ Short term: assign more Guard, run Drills, toggle Curfew.');
+    lines.push('â€¢ Medium term: build Palisade, unlock Security tech (science).');
+    lines.push('â€¢ Policy: in Defend mode or when threat is rising, raise Guard and Palisade multipliers; lower non-essential spending.');
 
     threatBodyEl.textContent = lines.join('\n');
   }
@@ -5700,7 +4823,7 @@ import { initUI } from './ui.js';
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeInspect();
-      closePatchNotes();
+      patchNotesUI.close();
       closeSocial();
       closeStorage();
       closeThreat();
@@ -5788,7 +4911,7 @@ import { initUI } from './ui.js';
   }
 
   // Auto Policy: a tiny "governor" that nudges policy multipliers toward the player's Targets.
-  // Design: small reversible adjustments (±0.05), bounded, and explainable.
+  // Design: small reversible adjustments (Â±0.05), bounded, and explainable.
   function autoTunePolicyTowardTargets(s){
     s.director = s.director ?? {};
     s.director.policyLocks = s.director.policyLocks ?? {};
@@ -5830,7 +4953,7 @@ import { initUI } from './ui.js';
       }
     };
 
-    // 1) Basics pressure → push the relevant levers.
+    // 1) Basics pressure â†’ push the relevant levers.
     const foodBad = foodPerKitten < targets.foodPerKitten * 0.95;
     const foodGreat = foodPerKitten >= targets.foodPerKitten * 1.10;
 
@@ -5897,14 +5020,14 @@ import { initUI } from './ui.js';
 
     // 4) Explainability string.
     const parts = [];
-    if (foodBad) parts.push(`food/kitten ${foodPerKitten.toFixed(1)}<${(targets.foodPerKitten*0.95).toFixed(0)} → +food`);
-    else if (foodGreat) parts.push(`food surplus → ease food labor`);
+    if (foodBad) parts.push(`food/kitten ${foodPerKitten.toFixed(1)}<${(targets.foodPerKitten*0.95).toFixed(0)} â†’ +food`);
+    else if (foodGreat) parts.push(`food surplus â†’ ease food labor`);
 
-    if (warmBad) parts.push(`warmth ${fmt(warmth)}<${fmt(warmTarget)} → +fire/wood`);
-    else if (warmGreat) parts.push(`warmth surplus → ease stoke`);
+    if (warmBad) parts.push(`warmth ${fmt(warmth)}<${fmt(warmTarget)} â†’ +fire/wood`);
+    else if (warmGreat) parts.push(`warmth surplus â†’ ease stoke`);
 
-    if (threatBad) parts.push(`threat ${fmt(threat)}>${fmt(targets.maxThreat)} → +guard/defense`);
-    else if (threatGreat) parts.push(`threat low → ease guard`);
+    if (threatBad) parts.push(`threat ${fmt(threat)}>${fmt(targets.maxThreat)} â†’ +guard/defense`);
+    else if (threatGreat) parts.push(`threat low â†’ ease guard`);
 
     const why = parts.length ? parts.join(' | ') : 'stable: drifting policy toward neutral';
 
@@ -5964,7 +5087,7 @@ import { initUI } from './ui.js';
     const demand = activeFactionDemand(s);
     if (demand) {
       const left = Math.max(0, Math.ceil((Number(demand.expiresAt ?? 0) - Number(s.t ?? 0))));
-      lines.push(`• FACTION DEMAND: ${demand.axis} bloc (expires ~${left}s)`);
+      lines.push(`â€¢ FACTION DEMAND: ${demand.axis} bloc (expires ~${left}s)`);
 
       // Recommendation: accept only if the colony is not actively collapsing.
       const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.92) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10);
@@ -5992,13 +5115,13 @@ import { initUI } from './ui.js';
     const spoilMult = Number(overcap.mult ?? 1);
     const storageBad = Number.isFinite(spoilMult) && spoilMult > 1.05;
     if (storageBad) {
-      lines.push(`• storage over-cap: spoilage x${spoilMult.toFixed(2)} (cap ${fmt(overcap.cap)}; food ${fmt(overcap.food)})`);
+      lines.push(`â€¢ storage over-cap: spoilage x${spoilMult.toFixed(2)} (cap ${fmt(overcap.cap)}; food ${fmt(overcap.food)})`);
       lines.push(`  - Nudge: build Granary / preserve surplus into Jerky (PreserveFood) / stop overstocking`);
 
       recs.push({
         id: 'storage',
         label: 'Storage fix',
-        tip: 'Set Project focus → Storage, boost BuildGranary + PreserveFood, and raise wood reserve a bit so granary builds don\'t stall.',
+        tip: 'Set Project focus â†’ Storage, boost BuildGranary + PreserveFood, and raise wood reserve a bit so granary builds don\'t stall.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = (st.unlocked?.granary ? 'Storage' : 'Auto');
@@ -6015,13 +5138,13 @@ import { initUI } from './ui.js';
     const houseCap = housingCap(s);
     const over = Math.max(0, pop - houseCap);
     if (over > 0) {
-      lines.push(`• overcrowding: pop ${pop}/${houseCap} (+${over} over cap)`);
+      lines.push(`â€¢ overcrowding: pop ${pop}/${houseCap} (+${over} over cap)`);
       lines.push(`  - Nudge: focus Housing (BuildHut) + keep wood flowing; overcrowding slowly raises dissent + grievance`);
 
       recs.push({
         id: 'housing',
         label: 'Fix housing',
-        tip: 'Set Project focus → Housing, enable BUILD PUSH, and bias policy toward Hut building + wood income.',
+        tip: 'Set Project focus â†’ Housing, enable BUILD PUSH, and bias policy toward Hut building + wood income.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = 'Housing';
@@ -6038,7 +5161,7 @@ import { initUI } from './ui.js';
     }
 
     // 0.5) Build progress blocked by reserves
-    // Common early confusion: "why won't they finish the workshop/library?" → reserves are protecting inputs.
+    // Common early confusion: "why won't they finish the workshop/library?" â†’ reserves are protecting inputs.
     const avail = {
       food: availableAboveReserve(s,'food'),
       wood: availableAboveReserve(s,'wood'),
@@ -6066,7 +5189,7 @@ import { initUI } from './ui.js';
     }
 
     if (blockedProj) {
-      lines.push(`• ${blockedProj.name} progress stalled: ${blockedProj.prog.toFixed(1)}/${blockedProj.req} (blocked by ${blockedProj.blockedBy.join('+')} reserve)`);
+      lines.push(`â€¢ ${blockedProj.name} progress stalled: ${blockedProj.prog.toFixed(1)}/${blockedProj.req} (blocked by ${blockedProj.blockedBy.join('+')} reserve)`);
       lines.push(`  - Nudge: lower that reserve slightly or produce more ${blockedProj.blockedBy.join('+')}`);
 
       recs.push({
@@ -6091,7 +5214,7 @@ import { initUI } from './ui.js';
     const canPrep = !s.director?.winterPrep && (lateFall || (winterSoon > 0 && winterSoon <= 45));
     if (canPrep) {
       const eta = fmtEtaSeconds(winterSoon);
-      lines.push(`• Winter soon (${eta}) — consider Winter Prep (stockpile food/wood/warmth; raise reserves)`);
+      lines.push(`â€¢ Winter soon (${eta}) â€” consider Winter Prep (stockpile food/wood/warmth; raise reserves)`);
 
       recs.push({
         id: 'winterprep',
@@ -6108,7 +5231,7 @@ import { initUI } from './ui.js';
     const foodBad = (foodPerKitten < (targets.foodPerKitten - 5)) || (foodRate < -0.15);
     if (foodBad) {
       const howBad = (foodRate < -0.15) ? `food trending down (${fmtRate(foodRate)})` : `food/kitten low (${fmt(foodPerKitten)} < ${targets.foodPerKitten})`;
-      lines.push(`• ${howBad}`);
+      lines.push(`â€¢ ${howBad}`);
       lines.push(`  - Nudge: +Forage / +Farm / +PreserveFood (policy) or toggle FOOD signal`);
       if (secondsToNextWinter(s) < 40 && season.name !== 'Winter') lines.push(`  - Winter soon: consider Winter Prep or raise Food reserve`);
 
@@ -6130,8 +5253,8 @@ import { initUI } from './ui.js';
     // 2) Warmth
     const warmthBad = (Number(s.res.warmth ?? 0) < (targets.warmth - 6)) || (season.name === 'Winter' && warmthRate < -0.08);
     if (warmthBad) {
-      lines.push(`• warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
-      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10-20`);
+      lines.push(`â€¢ warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
+      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve â‰¥ 10-20`);
 
       recs.push({
         id: 'warmth',
@@ -6148,7 +5271,7 @@ import { initUI } from './ui.js';
     const threat = Number(s.res.threat ?? 0);
     const threatBad = (threat > targets.maxThreat + 5) || (threatRate > 0.10 && threat > 70);
     if (threatBad) {
-      lines.push(`• raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
+      lines.push(`â€¢ raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
       lines.push(`  - Nudge: +Guard / +BuildPalisade (policy) or toggle ALARM (requires Security)`);
 
       recs.push({
@@ -6168,7 +5291,7 @@ import { initUI } from './ui.js';
     // If dissent is high and you can afford it, Council is the cleanest "push the colony back into compliance" lever.
     const disNow = dissent01(s);
     if (disNow > 0.55 && !councilActive(s) && canHoldCouncil(s)) {
-      lines.push(`• high dissent (${Math.round(disNow*100)}%) — Council can reduce grumbling quickly`);
+      lines.push(`â€¢ high dissent (${Math.round(disNow*100)}%) â€” Council can reduce grumbling quickly`);
       recs.push({
         id: 'council',
         label: 'Hold Council',
@@ -6182,7 +5305,7 @@ import { initUI } from './ui.js';
 
     // If mood is low and you can afford it, Festival is the fastest morale lever.
     if (avgMood < 0.48 && !festivalActive(s) && canHoldFestival(s)) {
-      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) — Festival can boost morale + output`);
+      lines.push(`â€¢ low mood (avg ${(avgMood*100).toFixed(0)}%) â€” Festival can boost morale + output`);
       recs.push({
         id: 'festival',
         label: 'Hold Festival',
@@ -6197,13 +5320,13 @@ import { initUI } from './ui.js';
     // 4) Overcrowding / growth
     const cap = housingCap(s);
     if ((s.kittens?.length ?? 0) >= cap) {
-      lines.push(`• overcrowded (${s.kittens.length}/${cap})`);
-      lines.push(`  - Nudge: +BuildHut (policy) or set Project focus → Housing`);
+      lines.push(`â€¢ overcrowded (${s.kittens.length}/${cap})`);
+      lines.push(`  - Nudge: +BuildHut (policy) or set Project focus â†’ Housing`);
 
       recs.push({
         id: 'housing',
         label: 'Housing build',
-        tip: 'Set Project focus → Housing and boost BuildHut.',
+        tip: 'Set Project focus â†’ Housing and boost BuildHut.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = 'Housing';
@@ -6219,7 +5342,7 @@ import { initUI } from './ui.js';
     if (basicsOk) {
       const wantsIndustry = (s.unlocked?.workshop && (Number(s.res.tools ?? 0) < pop * 10));
       if (wantsIndustry) {
-        lines.push(`• tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
+        lines.push(`â€¢ tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
         lines.push(`  - Nudge: +CraftTools (policy); if blocked, prioritize Workshop inputs (wood+science)`);
 
         recs.push({
@@ -6232,7 +5355,7 @@ import { initUI } from './ui.js';
           }
         });
       } else if (scienceRate < 0.25) {
-        lines.push(`• slow science (trend ${fmtRate(scienceRate)})`);
+        lines.push(`â€¢ slow science (trend ${fmtRate(scienceRate)})`);
         lines.push(`  - Nudge: +Research (policy); consider Library focus once unlocked`);
 
         recs.push({
@@ -6250,7 +5373,7 @@ import { initUI } from './ui.js';
 
     if (!lines.length) {
       return {
-        text: 'All green. Now you can push growth/tech:\n• Try Preset: Expand or Advance\n• Or set Project focus → (Auto) and watch the plan debug',
+        text: 'All green. Now you can push growth/tech:\nâ€¢ Try Preset: Expand or Advance\nâ€¢ Or set Project focus â†’ (Auto) and watch the plan debug',
         recs: []
       };
     }
@@ -6342,7 +5465,7 @@ import { initUI } from './ui.js';
         id: `threat-${k.id}`,
         label: `+Security`,
         effects: `Guard +0.30, BuildPalisade +0.20`,
-        tip: `Threat is rising (now ${fmt(threat)} / target ≤${targets.maxThreat}).`,
+        tip: `Threat is rising (now ${fmt(threat)} / target â‰¤${targets.maxThreat}).`,
         apply: (st) => { nudgePolicyMult(st, 'Guard', 0.30); nudgePolicyMult(st, 'BuildPalisade', 0.20); }
       });
     }
@@ -6449,7 +5572,7 @@ import { initUI } from './ui.js';
     const out = recs.slice(0, 3);
 
     if (!out.length) {
-      // No strong opinions/situations → small cooldown anyway.
+      // No strong opinions/situations â†’ small cooldown anyway.
       s.director.council.nextAt = s.t + 45;
       return { text: 'Council is quiet (no urgent pushes).', recs: [] };
     }
@@ -6648,7 +5771,7 @@ import { initUI } from './ui.js';
       const d = db - da;
       if (Math.abs(d) < 0.0001) return '';
       const sign = d >= 0 ? '+' : '';
-      return `${label} ${da.toFixed(digits)}→${db.toFixed(digits)} (${sign}${d.toFixed(digits)})`;
+      return `${label} ${da.toFixed(digits)}â†’${db.toFixed(digits)} (${sign}${d.toFixed(digits)})`;
     };
 
     const polDiff = [];
@@ -6659,7 +5782,7 @@ import { initUI } from './ui.js';
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
       if (Math.abs(b - a) > 0.0005) {
         const sign = (b - a) >= 0 ? '+' : '';
-        polDiff.push(`${k} x${a.toFixed(2)}→x${b.toFixed(2)} (${sign}${(b-a).toFixed(2)})`);
+        polDiff.push(`${k} x${a.toFixed(2)}â†’x${b.toFixed(2)} (${sign}${(b-a).toFixed(2)})`);
       }
     }
 
@@ -6673,7 +5796,7 @@ import { initUI } from './ui.js';
       ...polDiff,
     ].filter(Boolean);
 
-    const dissMsg = `${Math.round(before.dissent*100)}%→${Math.round(after.dissent*100)}%`;
+    const dissMsg = `${Math.round(before.dissent*100)}%â†’${Math.round(after.dissent*100)}%`;
     const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
 
     // Explainability: mirror to Governance log.
@@ -6747,11 +5870,11 @@ import { initUI } from './ui.js';
     const n = Number(s?.kittens?.length ?? 0) || 0;
     if (n < 4) return { ok:false, why:'pop too low' };
 
-    // Don’t spam: at most once per ~2 seasons.
+    // Donâ€™t spam: at most once per ~2 seasons.
     const last = Number(s?.director?.factionDemandLastAt ?? 0) || 0;
     if ((Number(s?.t ?? 0) || 0) - last < 120) return { ok:false, why:'cooldown' };
 
-    // Only when there’s meaningful political tension.
+    // Only when thereâ€™s meaningful political tension.
     const dis = clamp01(Number(s?.social?.dissent ?? 0));
     if (dis < 0.38) return { ok:false, why:'dissent low' };
 
@@ -6919,7 +6042,7 @@ import { initUI } from './ui.js';
       const title = `Make a small policy concession to this bloc (reduces dissent slightly). ${tip}${cd}`.trim();
 
       const btn = `<button class="btn" data-faction="${g.axis}" ${can ? '' : 'disabled'} title="${title}">Negotiate</button>`;
-      const sub = `<div class="small" style="opacity:.78; margin-top:2px">${tip}${can ? '' : ` — cooldown ${Math.ceil(left)}s`}</div>`;
+      const sub = `<div class="small" style="opacity:.78; margin-top:2px">${tip}${can ? '' : ` â€” cooldown ${Math.ceil(left)}s`}</div>`;
 
       return `<div style="padding:4px 0">` +
         `<div class="row" style="justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap">` +
@@ -6964,7 +6087,7 @@ import { initUI } from './ui.js';
                   `<span class="small" style="opacity:.9">Last negotiation snapshot</span>` +
                   `<span class="small" style="opacity:.75">(expires ~${Math.ceil(undo.left)}s)</span>` +
                 `</div>` +
-                `<div class="small" style="margin-top:4px; opacity:.85">Politics drift is real — but this is a prototype, so you get one quick undo.</div>` +
+                `<div class="small" style="margin-top:4px; opacity:.85">Politics drift is real â€” but this is a prototype, so you get one quick undo.</div>` +
               `</div>` +
               `<div class="row" style="gap:8px">` +
                 `<button class="btn" data-faction-undo="1" title="${title}">Undo</button>` +
@@ -7426,7 +6549,7 @@ import { initUI } from './ui.js';
         const cm = coordinationMul(state);
         const build = commitSecondsForTask(state,'BuildHut');
         const work = commitSecondsForTask(state,'Forage');
-        return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1–6s)`;
+        return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1â€“6s)`;
       }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
       return '';
@@ -7488,13 +6611,13 @@ import { initUI } from './ui.js';
         d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure. Click to inspect the social model.';
       }
       if (k === 'Autonomy') {
-        d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
+        d.title = 'Director Autonomy policy (0â€“100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
       }
       if (k === 'Eff Auto') {
         d.title = 'Effective autonomy (felt autonomy). Starts from Autonomy, then shifts with Discipline (down) and Dissent (up). Higher effective autonomy = more individual variation and less plan obedience.';
       }
       if (k === 'Discipline') {
-        d.title = 'Director Discipline policy (0–100%). Higher discipline increases compliance and reduces dissent formation, but has a small steady mood cost.';
+        d.title = 'Director Discipline policy (0â€“100%). Higher discipline increases compliance and reduces dissent formation, but has a small steady mood cost.';
       }
       if (k === 'Work pace') {
         d.title = 'Director Work pace policy. Higher pace increases output but increases fatigue/hunger and slowly drags mood; lower pace is steadier but slower.';
@@ -7596,7 +6719,7 @@ import { initUI } from './ui.js';
             <div class="row" style="gap:6px">
               ${pinBtn}
               ${blockedBy.length ? `<button class=\"btn\" data-unblock=\"${blockedBy.join(',')}\" data-focus=\"${pd.focus}\" title=\"Lowers only the reserve(s) currently blocking this project (safe small steps), then sets focus\">Unblock</button>` : ''}
-              <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
+              <button class="btn" data-focus="${pd.focus}" title="Sets Project focus â†’ ${pd.focus} (a build-order nudge)">Focus</button>
             </div>
           </div>
           <div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>
@@ -7614,7 +6737,7 @@ import { initUI } from './ui.js';
 
     const nextSeasonEta = fmtEtaSeconds(secondsToNextSeason(state));
     const winterEta = fmtEtaSeconds(secondsToNextWinter(state));
-    const seasonalNote = (targets.why !== 'baseline') ? `Seasonal targets: food/kitten=${targets.foodPerKitten}, warmth=${targets.warmth}, threat≤${targets.maxThreat} (${targets.why})\n` : '';
+    const seasonalNote = (targets.why !== 'baseline') ? `Seasonal targets: food/kitten=${targets.foodPerKitten}, warmth=${targets.warmth}, threatâ‰¤${targets.maxThreat} (${targets.why})\n` : '';
 
     const pfSet = String(state.director?.projectFocus ?? 'Auto');
     const pfEff = getEffectiveProjectFocus(state);
@@ -7716,7 +6839,7 @@ import { initUI } from './ui.js';
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       forecastLine +
-      `Danger forecast: edible→0 in ${starveEtaEdible} | warmth→0 in ${freezeEta}\n` +
+      `Danger forecast: edibleâ†’0 in ${starveEtaEdible} | warmthâ†’0 in ${freezeEta}\n` +
       `Preserved: jerky ${fmt(state.res.jerky ?? 0)} (no spoilage)\n` +
       (() => {
         const oc = state._lastFoodOvercap ?? { cap: foodStorageCap(state), food: state.res.food, mult: 1 };
@@ -7727,19 +6850,19 @@ import { initUI } from './ui.js';
       `ETAs: to warmth target ${warmthToTargetEta} | to threat target ${threatTargetEta} | to RAID (100) ${raidEta}\n` +
       (nextUnlock ? `Next unlock: ${nextUnlock.name} @ ${nextUnlock.at} science (ETA ${nextUnlockEta})\n` : 'All unlocks achieved.\n') +
       projLine +
-      `Reserves: food≥${getReserve(state,'food')} | wood≥${getReserve(state,'wood')} | science≥${getReserve(state,'science')} | tools≥${getReserve(state,'tools')} (AI avoids spending below)\n` +
+      `Reserves: foodâ‰¥${getReserve(state,'food')} | woodâ‰¥${getReserve(state,'wood')} | scienceâ‰¥${getReserve(state,'science')} | toolsâ‰¥${getReserve(state,'tools')} (AI avoids spending below)\n` +
       `Housing cap: ${housingCap(state)} | Palisade reduces threat growth.\n` +
-      `Raid at threat ≥ 100.` + planLine;
+      `Raid at threat â‰¥ 100.` + planLine;
 
     // Goals that actually matter
     const goals = [
-      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
-      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
-      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
+      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten â‰¥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
+      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth â‰¥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
+      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat â‰¤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
       { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
       { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
-      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
-      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
+      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools â‰¥ 10Ã—pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
+      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky â‰¥ 20Ã—pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
       { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
       { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
       { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
@@ -7798,7 +6921,7 @@ import { initUI } from './ui.js';
     if (wpEl) wpEl.value = String(Math.round(wpPct/5)*5);
     const wph = el('workPaceHint');
     if (wph) {
-      const moodDrift = wpMul > 1.02 ? `mood drift ↓` : (wpMul < 0.98 ? `mood drift ↑` : `mood steady`);
+      const moodDrift = wpMul > 1.02 ? `mood drift â†“` : (wpMul < 0.98 ? `mood drift â†‘` : `mood steady`);
       wph.textContent = `${wpPct}% | output x${wpMul.toFixed(2)} | fatigue x${wpMul.toFixed(2)} | ${moodDrift}`;
     }
 
@@ -7840,7 +6963,7 @@ import { initUI } from './ui.js';
     if (docSel) docSel.value = doc;
     const docHint = el('doctrineHint');
     if (docHint) {
-      const roleMul = (doc === 'Specialize') ? '↑ role pressure, ↓ boredom' : (doc === 'Rotate') ? '↓ role pressure, ↑ boredom, ↓ dissent' : 'baseline';
+      const roleMul = (doc === 'Specialize') ? 'â†‘ role pressure, â†“ boredom' : (doc === 'Rotate') ? 'â†“ role pressure, â†‘ boredom, â†“ dissent' : 'baseline';
       docHint.textContent = roleMul;
     }
 
@@ -7867,7 +6990,7 @@ import { initUI } from './ui.js';
     const rrEl = el('reserveRecHint');
     if (rrEl) {
       const sn = String(rr?.season?.name ?? '');
-      rrEl.textContent = `Recommended (${sn}): food≥${rr.food} | wood≥${rr.wood} | science≥${rr.science} | tools≥${rr.tools}`;
+      rrEl.textContent = `Recommended (${sn}): foodâ‰¥${rr.food} | woodâ‰¥${rr.wood} | scienceâ‰¥${rr.science} | toolsâ‰¥${rr.tools}`;
     }
 
     // Directive tools hint: make "who is directed" visible without opening the table.
@@ -7910,7 +7033,7 @@ import { initUI } from './ui.js';
             const ct = blocked[a] ?? 0;
             const msg = String(blockedMsg?.[a] ?? '').trim();
             const short = msg ? msg.replace(/\s+/g,' ').slice(0, 64) : '';
-            lines.push(`- ${a} x${ct}${short ? ` — ${short}` : ''}`);
+            lines.push(`- ${a} x${ct}${short ? ` â€” ${short}` : ''}`);
           }
           if (bKeys.length > top.length) lines.push(`- (+${bKeys.length - top.length} more)`);
         }
@@ -7980,8 +7103,8 @@ import { initUI } from './ui.js';
         const arrow = th.querySelector('.arrow');
         const active = (uiSort.key && key === uiSort.key);
         th.classList.toggle('active', !!active);
-        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? '▲' : '▼') : '';
-        th.title = 'Click to sort (desc → asc → off)';
+        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? 'â–²' : 'â–¼') : '';
+        th.title = 'Click to sort (desc â†’ asc â†’ off)';
       });
     }
 
@@ -8116,7 +7239,7 @@ import { initUI } from './ui.js';
 
       const taskTitleParts = [];
       if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
-      if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
+      if (k._fallbackTo) taskTitleParts.push(`fallback â†’ ${k._fallbackTo}`);
       // If we have a recent blocked snapshot, include the short reason in tooltip.
       const lb = k._lastBlocked;
       if (lb && typeof lb === 'object' && (state.t - Number(lb.at ?? -9999)) <= 6) {
@@ -8137,7 +7260,7 @@ import { initUI } from './ui.js';
       tr.innerHTML = `
         <td title="Kitten id #${k.id}">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag">#${k.id}</span></td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' â†’ #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' â†’ ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
@@ -8168,8 +7291,8 @@ import { initUI } from './ui.js';
             <span class="tag">#${idx+1}</span>
           </div>
           <div class="row">
-            <button class="btn" data-act="up" data-i="${idx}">↑</button>
-            <button class="btn" data-act="down" data-i="${idx}">↓</button>
+            <button class="btn" data-act="up" data-i="${idx}">â†‘</button>
+            <button class="btn" data-act="down" data-i="${idx}">â†“</button>
             <button class="btn bad" data-act="del" data-i="${idx}">Delete</button>
           </div>
         </div>
@@ -8190,7 +7313,7 @@ import { initUI } from './ui.js';
 
     // Keep inspectors in sync with latest snapshots.
     renderInspect();
-    renderPatchNotes();
+    patchNotesUI.render();
     renderSocial();
     renderStorage();
   }
@@ -8226,7 +7349,7 @@ import { initUI } from './ui.js';
     return order
       .map(a => ({ a, n: desired[a] ?? 0 }))
       .filter(x => x.n > 0)
-      .map(x => `${x.a}×${x.n}`)
+      .map(x => `${x.a}Ã—${x.n}`)
       .join('  ');
   }
 
@@ -8279,16 +7402,16 @@ import { initUI } from './ui.js';
       const b = (plan && plan.desiredBase && (a in plan.desiredBase)) ? Number(plan.desiredBase[a] ?? 0) : null;
       const w = (plan && plan.desired && (a in plan.desired)) ? Number(plan.desired[a] ?? 0) : null;
       const planNote = (b !== null || w !== null)
-        ? `<span class=\"small\" style=\"opacity:.75; margin-left:6px\" title=\"Plan preview for this action (without policy → with policy).\">plan ${b===null?'-':b}→${w===null?'-':w}</span>`
+        ? `<span class=\"small\" style=\"opacity:.75; margin-left:6px\" title=\"Plan preview for this action (without policy â†’ with policy).\">plan ${b===null?'-':b}â†’${w===null?'-':w}</span>`
         : '';
 
       return `
         <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:6px">
           <span class="small" style="min-width:110px">${label}${planNote}</span>
           <div class="row" style="gap:6px">
-            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">-</button>
-            <span class="small" style="display:inline-block; width:44px; text-align:center" title="Multiplier for ${a}. Tip: Shift=0.50 steps, Alt=1.00 steps, Ctrl/⌘ sets to min/max.">${val.toFixed(2)}</span>
-            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">+</button>
+            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=Â±0.50, Alt=Â±1.00, Ctrl/âŒ˜=min/max.">-</button>
+            <span class="small" style="display:inline-block; width:44px; text-align:center" title="Multiplier for ${a}. Tip: Shift=0.50 steps, Alt=1.00 steps, Ctrl/âŒ˜ sets to min/max.">${val.toFixed(2)}</span>
+            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=Â±0.50, Alt=Â±1.00, Ctrl/âŒ˜=min/max.">+</button>
             <button class="btn mode ${isLocked?'active':''}" data-pol="lock" data-a="${a}" title="Auto Policy will not modify this multiplier while locked.">${isLocked?'Locked':'Lock'}</button>
             <span class="small" style="opacity:.85">(0..2)</span>
           </div>
@@ -8304,7 +7427,7 @@ import { initUI } from './ui.js';
         </div>
         <div class="row" style="gap:8px">
           <button class="btn" data-policy-undo="1" ${undo.ok?'':'disabled'} title="Restores the last manual policy/role-quota change for ~2 minutes.">Undo</button>
-          <span class="small" style="opacity:.8">${undo.ok ? `~${Math.ceil(undo.left)}s left${undo.reason?` • ${escapeHtml(undo.reason)}`:''}` : '—'}</span>
+          <span class="small" style="opacity:.8">${undo.ok ? `~${Math.ceil(undo.left)}s left${undo.reason?` â€¢ ${escapeHtml(undo.reason)}`:''}` : 'â€”'}</span>
         </div>
       </div>
     `;
@@ -8459,7 +7582,7 @@ import { initUI } from './ui.js';
     }
 
     s.roleQuota = next;
-    log(`Role quota preset → ${name} (${Object.entries(next).filter(([,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ') || 'all 0'})`);
+    log(`Role quota preset â†’ ${name} (${Object.entries(next).filter(([,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ') || 'all 0'})`);
     save();
     render();
   }
@@ -8795,7 +7918,7 @@ import { initUI } from './ui.js';
     const prev = !!st.director.curfew;
     st.director.curfew = !!on;
     if (isGlobal && prev !== !!on) {
-      log(`Curfew → ${on ? 'ON' : 'OFF'} (${on ? 'threat grows slower, morale drifts down' : 'normal civic life resumes'})`);
+      log(`Curfew â†’ ${on ? 'ON' : 'OFF'} (${on ? 'threat grows slower, morale drifts down' : 'normal civic life resumes'})`);
       save();
       render();
     }
@@ -8848,7 +7971,7 @@ import { initUI } from './ui.js';
   if (autoWpEl) autoWpEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoWinterPrep = !!e.target.checked;
-    log(`Auto Winter Prep → ${state.director.autoWinterPrep ? 'ON' : 'OFF'}`);
+    log(`Auto Winter Prep â†’ ${state.director.autoWinterPrep ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8857,7 +7980,7 @@ import { initUI } from './ui.js';
   if (autoFoodEl) autoFoodEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoFoodCrisis = !!e.target.checked;
-    log(`Auto Food Crisis → ${state.director.autoFoodCrisis ? 'ON' : 'OFF'}`);
+    log(`Auto Food Crisis â†’ ${state.director.autoFoodCrisis ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8866,7 +7989,7 @@ import { initUI } from './ui.js';
   if (autoResEl) autoResEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoReserves = !!e.target.checked;
-    log(`Auto Reserves → ${state.director.autoReserves ? 'ON' : 'OFF'}`);
+    log(`Auto Reserves â†’ ${state.director.autoReserves ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8877,7 +8000,7 @@ import { initUI } from './ui.js';
     state.director.autoPolicy = !!e.target.checked;
     if (state.director.autoPolicy) state.director.autoPolicyNextAt = 0;
     state.director.autoPolicyWhy = '';
-    log(`Auto Policy → ${state.director.autoPolicy ? 'ON' : 'OFF'}`);
+    log(`Auto Policy â†’ ${state.director.autoPolicy ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8886,7 +8009,7 @@ import { initUI } from './ui.js';
   if (autoBuildEl) autoBuildEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.autoBuildPush = !!e.target.checked;
-    log(`Auto Build Push → ${state.director.autoBuildPush ? 'ON' : 'OFF'}`);
+    log(`Auto Build Push â†’ ${state.director.autoBuildPush ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8897,7 +8020,7 @@ import { initUI } from './ui.js';
     state.director.autoMode = !!e.target.checked;
     // Allow an immediate switch when toggled on.
     if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
-    log(`Auto Mode → ${state.director.autoMode ? 'ON' : 'OFF'}`);
+    log(`Auto Mode â†’ ${state.director.autoMode ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8908,7 +8031,7 @@ import { initUI } from './ui.js';
     state.director.autoDoctrine = !!e.target.checked;
     // Allow an immediate switch when toggled on.
     if (state.director.autoDoctrine) state.director.autoDoctrineNextChangeAt = 0;
-    log(`Auto Doctrine → ${state.director.autoDoctrine ? 'ON' : 'OFF'}`);
+    log(`Auto Doctrine â†’ ${state.director.autoDoctrine ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8920,7 +8043,7 @@ import { initUI } from './ui.js';
     // Allow an immediate change when toggled on.
     if (state.director.autoRations) state.director.autoRationsNextChangeAt = 0;
     if (!state.director.autoRations) state.director.autoRationsWhy = '';
-    log(`Auto Rations → ${state.director.autoRations ? 'ON' : 'OFF'}`);
+    log(`Auto Rations â†’ ${state.director.autoRations ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8929,7 +8052,7 @@ import { initUI } from './ui.js';
   if (autoRecruitEl) autoRecruitEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoRecruit:false, recruitYear:-1, projectFocus:'Auto', autonomy: 0.60, workPace: 1.00 };
     state.director.autoRecruit = !!e.target.checked;
-    log(`Auto Recruit → ${state.director.autoRecruit ? 'ON' : 'OFF'}`);
+    log(`Auto Recruit â†’ ${state.director.autoRecruit ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8943,7 +8066,7 @@ import { initUI } from './ui.js';
       state.director.autoCrisisTriggered = false;
       state.director.autoCrisisWhy = '';
     }
-    log(`Auto Crisis → ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
+    log(`Auto Crisis â†’ ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8954,7 +8077,7 @@ import { initUI } from './ui.js';
     state.director.autoDrills = !!e.target.checked;
     if (state.director.autoDrills) state.director.autoDrillsNextAt = 0;
     state.director.autoDrillsWhy = '';
-    log(`Auto Drills → ${state.director.autoDrills ? 'ON' : 'OFF'}`);
+    log(`Auto Drills â†’ ${state.director.autoDrills ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8965,7 +8088,7 @@ import { initUI } from './ui.js';
     state.director.autoCouncil = !!e.target.checked;
     if (state.director.autoCouncil) state.director.autoCouncilNextAt = 0;
     state.director.autoCouncilWhy = '';
-    log(`Auto Council → ${state.director.autoCouncil ? 'ON' : 'OFF'}`);
+    log(`Auto Council â†’ ${state.director.autoCouncil ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8976,7 +8099,7 @@ import { initUI } from './ui.js';
     state.director.autoDangerPause = !!e.target.checked;
     if (state.director.autoDangerPause) state.director.autoDangerPauseNextAt = 0;
     state.director.autoDangerPauseWhy = '';
-    log(`Auto Pause (danger) → ${state.director.autoDangerPause ? 'ON' : 'OFF'}`);
+    log(`Auto Pause (danger) â†’ ${state.director.autoDangerPause ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8985,7 +8108,7 @@ import { initUI } from './ui.js';
   if (confirmFactionsEl) confirmFactionsEl.addEventListener('change', (e) => {
     state.director = state.director ?? { confirmFactions:true };
     state.director.confirmFactions = !!e.target.checked;
-    log(`Confirm politics → ${state.director.confirmFactions ? 'ON' : 'OFF'}`);
+    log(`Confirm politics â†’ ${state.director.confirmFactions ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -8994,7 +8117,7 @@ import { initUI } from './ui.js';
   if (pfEl) pfEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.projectFocus = String(e.target.value || 'Auto');
-    log(`Project focus → ${state.director.projectFocus}`);
+    log(`Project focus â†’ ${state.director.projectFocus}`);
     save();
     render();
   });
@@ -9089,7 +8212,7 @@ import { initUI } from './ui.js';
       if (s.unlocked?.workshop && (Number(s.res?.tools ?? 0) < n * 8) && (Number(s.res?.science ?? 0) > 120)) {
         return { mode: 'Advance', why: `stable + tools behind (${fmt(s.res.tools ?? 0)}/${(n*8).toFixed(0)})` };
       }
-      return { mode: 'Advance', why: 'stable basics → push tech' };
+      return { mode: 'Advance', why: 'stable basics â†’ push tech' };
     }
 
     // Default: Survive (keeps buffers healthy without overcommitting).
@@ -9151,12 +8274,12 @@ import { initUI } from './ui.js';
     // Security gate
     if (!state.unlocked.security) state.signals.ALARM = false;
 
-    log(note || `Mode → ${m}`);
+    log(note || `Mode â†’ ${m}`);
     save();
   }
 
   function setMode(m){
-    setModeCore(m, `Mode → ${m}`);
+    setModeCore(m, `Mode â†’ ${m}`);
     render();
   }
 
@@ -9172,7 +8295,7 @@ import { initUI } from './ui.js';
 
   document.getElementById('rations').addEventListener('change', (e)=>{
     state.rations = e.target.value;
-    log(`Rations → ${state.rations}`);
+    log(`Rations â†’ ${state.rations}`);
     save();
     render();
   });
@@ -9192,7 +8315,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     state.director.discipline = clamp01(pct / 100);
-    uiDebouncedLog('discipline', `Discipline → ${Math.round(state.director.discipline * 100)}%`);
+    uiDebouncedLog('discipline', `Discipline â†’ ${Math.round(state.director.discipline * 100)}%`);
     save();
     render();
   });
@@ -9204,7 +8327,7 @@ import { initUI } from './ui.js';
     if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
-    uiDebouncedLog('workPace', `Work pace → ${Math.round(state.director.workPace * 100)}%`);
+    uiDebouncedLog('workPace', `Work pace â†’ ${Math.round(state.director.workPace * 100)}%`);
     save();
     render();
   });
@@ -9215,7 +8338,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioFood', `Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
+    uiDebouncedLog('prioFood', `Priority (Food) â†’ ${Math.round(state.director.prioFood * 100)}%`);
     save();
     render();
   });
@@ -9225,7 +8348,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioSafety', `Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
+    uiDebouncedLog('prioSafety', `Priority (Safety) â†’ ${Math.round(state.director.prioSafety * 100)}%`);
     save();
     render();
   });
@@ -9235,7 +8358,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioProgress', `Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
+    uiDebouncedLog('prioProgress', `Priority (Progress) â†’ ${Math.round(state.director.prioProgress * 100)}%`);
     save();
     render();
   });
@@ -9245,7 +8368,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSocial = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioSocial', `Priority (Social) → ${Math.round(state.director.prioSocial * 100)}%`);
+    uiDebouncedLog('prioSocial', `Priority (Social) â†’ ${Math.round(state.director.prioSocial * 100)}%`);
     save();
     render();
   });
@@ -9256,7 +8379,7 @@ import { initUI } from './ui.js';
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(pSafety) || 1.00));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(pProg) || 1.00));
     state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(pSoc) || 1.00));
-    log(`Priority preset → ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}% | Social ${(state.director.prioSocial*100).toFixed(0)}%`);
+    log(`Priority preset â†’ ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}% | Social ${(state.director.prioSocial*100).toFixed(0)}%`);
     save();
     render();
   }
@@ -9334,13 +8457,13 @@ import { initUI } from './ui.js';
       if (dir !== 'Auto') counts[dir] = (counts[dir] ?? 0) + 1;
     }
     const parts = Object.entries(counts).filter(([,n])=>n>0).map(([k,n])=>`${k}:${n}`);
-    log(`Directive tools → Match blocs (${parts.join(' | ') || 'none'})`);
+    log(`Directive tools â†’ Match blocs (${parts.join(' | ') || 'none'})`);
   }
 
   function clearAllDirectives(s){
     const ks = Array.isArray(s?.kittens) ? s.kittens : [];
     for (const k of ks) k.directive = 'Auto';
-    log('Directive tools → Clear all (Directives reset to Auto).');
+    log('Directive tools â†’ Clear all (Directives reset to Auto).');
   }
 
   const btnDirBloc = document.getElementById('btnDirBloc');
@@ -9362,7 +8485,7 @@ import { initUI } from './ui.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
     const v = String(e.target.value || 'Balanced');
     state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
-    log(`Labor doctrine → ${state.director.doctrine}`);
+    log(`Labor doctrine â†’ ${state.director.doctrine}`);
     save();
     render();
   });
@@ -9384,7 +8507,7 @@ import { initUI } from './ui.js';
     state.reserve.wood = rr.wood;
     state.reserve.science = rr.science;
     state.reserve.tools = rr.tools;
-    log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): food≥${rr.food}, wood≥${rr.wood}, science≥${rr.science}, tools≥${rr.tools}`);
+    log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): foodâ‰¥${rr.food}, woodâ‰¥${rr.wood}, scienceâ‰¥${rr.science}, toolsâ‰¥${rr.tools}`);
     save();
     render();
   });
@@ -9453,7 +8576,7 @@ import { initUI } from './ui.js';
     // - default: 0.25 steps
     // - Shift:   0.50 steps
     // - Alt:     1.00 steps
-    // - Ctrl/⌘:  snap to 0 (dec) or 2 (inc)
+    // - Ctrl/âŒ˜:  snap to 0 (dec) or 2 (inc)
     const snap = !!(e.ctrlKey || e.metaKey);
     const step = e.altKey ? 1.00 : e.shiftKey ? 0.50 : 0.25;
 
@@ -9487,7 +8610,7 @@ import { initUI } from './ui.js';
     const cur = Number(state.roleQuota[role] ?? 0);
     const next = (rq === 'inc') ? (cur + 1) : (cur - 1);
     state.roleQuota[role] = Math.max(0, Math.min(99, next|0));
-    log(`Role quota → ${role}=${state.roleQuota[role]}`);
+    log(`Role quota â†’ ${role}=${state.roleQuota[role]}`);
     save();
     render();
   });
@@ -9523,13 +8646,13 @@ import { initUI } from './ui.js';
   function applyPolicyPreset(name){
     // Presets are *nudges*; safety rules still override and scoring still matters.
     if (name === 'Survive') {
-      setPolicy({ Socialize:1.05, Care:0.95, Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Mentor:0.80, Research:0.85 }, 'Policy preset → Survive (food + warmth first).');
+      setPolicy({ Socialize:1.05, Care:0.95, Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Mentor:0.80, Research:0.85 }, 'Policy preset â†’ Survive (food + warmth first).');
     } else if (name === 'Expand') {
-      setPolicy({ Socialize:0.90, Care:0.85, Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Mentor:0.90, Research:0.85 }, 'Policy preset → Expand (wood + building).');
+      setPolicy({ Socialize:0.90, Care:0.85, Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Mentor:0.90, Research:0.85 }, 'Policy preset â†’ Expand (wood + building).');
     } else if (name === 'Defend') {
-      setPolicy({ Socialize:0.85, Care:0.70, Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Mentor:0.70, Research:0.75 }, 'Policy preset → Defend (guard + palisade).');
+      setPolicy({ Socialize:0.85, Care:0.70, Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Mentor:0.70, Research:0.75 }, 'Policy preset â†’ Defend (guard + palisade).');
     } else if (name === 'Advance') {
-      setPolicy({ Socialize:0.95, Care:0.90, Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Mentor:1.35, Research:1.60 }, 'Policy preset → Advance (research + tools).');
+      setPolicy({ Socialize:0.95, Care:0.90, Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Mentor:1.35, Research:1.60 }, 'Policy preset â†’ Advance (research + tools).');
     }
   }
 
@@ -9639,24 +8762,7 @@ import { initUI } from './ui.js';
     if (!state.paused) step(dt);
     render();
     requestAnimationFrame(frame);
-  }
-
-  function maybeShowPatchNotes(){
-    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0 };
-    const seen = String(state.meta.seenVersion ?? '');
-    if (seen === GAME_VERSION) return;
-
-    // Capture "from" version so patch notes can be cumulative.
-    uiPatch.fromVersion = seen;
-
-    // Mark seen FIRST so a refresh won't loop-pop the modal.
-    state.meta.seenVersion = GAME_VERSION;
-    save();
-
-    // Then show UI.
-    openPatchNotes();
-  }
-
+  }\r\n  function maybeShowPatchNotes(){\r\n    const seen = String(state?.meta?.seenVersion ?? '');\r\n    if (!seen) {\r\n      // first run; do not auto-open\r\n      state.meta = state.meta ?? {};\r\n      state.meta.seenVersion = GAME_VERSION;\r\n      save();\r\n      return;\r\n    }\r\n    if (seen === GAME_VERSION) return;\r\n\r\n    patchNotesUI.setFromVersion(seen);\r\n    state.meta = state.meta ?? {};\r\n    state.meta.seenVersion = GAME_VERSION;\r\n    save();\r\n    patchNotesUI.open();\r\n  }\r\n
   function applyOfflineProgressOnBoot(){
     const pending = Number(state?._offlinePending ?? 0) || 0;
     if (pending < 3) { state._offlinePending = 0; return; }
@@ -9705,9 +8811,9 @@ import { initUI } from './ui.js';
 
     log(
       `Offline progress: simulated ${sim}s${capped}. ` +
-      `Δfood ${fmt(d('food'))}, Δjerky ${fmt(d('jerky'))}, Δwood ${fmt(d('wood'))}, ` +
-      `Δwarmth ${fmt(d('warmth'))}, Δthreat ${fmt(d('threat'))}, ` +
-      `Δscience ${fmt(d('science'))}, Δtools ${fmt(d('tools'))}` +
+      `Î”food ${fmt(d('food'))}, Î”jerky ${fmt(d('jerky'))}, Î”wood ${fmt(d('wood'))}, ` +
+      `Î”warmth ${fmt(d('warmth'))}, Î”threat ${fmt(d('threat'))}, ` +
+      `Î”science ${fmt(d('science'))}, Î”tools ${fmt(d('tools'))}` +
       (suppressed ? ` (suppressed ${suppressed} log lines)` : '')
     );
 
@@ -9725,3 +8831,7 @@ import { initUI } from './ui.js';
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
 })();
+
+
+
+
