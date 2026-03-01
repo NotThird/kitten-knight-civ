@@ -1,5 +1,6 @@
 (() => {
-  const GAME_VERSION = '0.9.123';
+  const GAME_VERSION = '0.9.124';
+  const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4546,6 +4547,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.124',
+      notes: [
+        'QoL/Stability: Event log is now capped (persisted) so long sessions don\'t bloat save size / localStorage.',
+        'Migration: old saves auto-trim oversized logs on load.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.123',
       notes: [
         'NEW: Bloc health panel (by values bloc) shows avg policy-fit, mood, and grievance so you can see who is unhappy at a glance.',
@@ -8147,7 +8156,14 @@
       state._suppressedLogCount = (state._suppressedLogCount ?? 0) + 1;
       return;
     }
+
+    state.log = Array.isArray(state.log) ? state.log : [];
     state.log.push(`[${fmt(state.t)}] ${msg}`);
+
+    // Keep saves small + rendering fast (localStorage has tight limits).
+    if (state.log.length > LOG_MAX) {
+      state.log.splice(0, state.log.length - LOG_MAX);
+    }
   }
 
   function summarizePlan(desired){
@@ -9495,6 +9511,10 @@
       const s = JSON.parse(raw);
       if (!s.res || !s.kittens || !s.rules) return null;
       s.mode = s.mode ?? 'Survive';
+
+      // Migration: cap persisted event log so old saves don't balloon localStorage.
+      s.log = Array.isArray(s.log) ? s.log : [];
+      if (s.log.length > LOG_MAX) s.log = s.log.slice(-LOG_MAX);
       s.rations = s.rations ?? 'Normal';
       s.targets = s.targets ?? { foodPerKitten: 120, warmth: 60, maxThreat: 70 };
       s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };

@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 21:29 CST - v0.9.124 Save stability: cap persisted Event log
+
+Summary
+- QoL/Stability: persisted **Event log** is now capped to the last **260** lines (prevents localStorage/save bloat on long runs).
+- Migration: older saves auto-trim oversized logs on load.
+- Safety: log() now self-heals if the log array is missing/corrupt.
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/js/main.js`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Let the game run for a while (or spam actions), then Export/Import: the save string should stay a sane size and the game should still load instantly.
+
+---
+
 ## 2026-02-28 21:14 CST - v0.9.123 Bloc health panel (values blocs at a glance)
 
 Summary
