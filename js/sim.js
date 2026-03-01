@@ -2,6 +2,8 @@
 // Phase 0 modularization: extracted from main.js to isolate deterministic sim utilities.
 
 import { clamp01 } from './util.js';
+import { makeCoreTaskDefs } from './tasks_core.js';
+import { efficiencyLite, minimalTaskDefs, decideTaskLite } from './tasks_lite.js';
 
 export const SEASON_LEN = 90; // seconds per season
 export const seasons = ['Spring','Summer','Fall','Winter'];
@@ -382,7 +384,30 @@ export function tickPressuresCore(s, dt, deps = {}){
   if (typeof deps.onPressures === 'function') deps.onPressures(s, stepDt, season);
 }
 
-export { efficiencyLite, minimalTaskDefs, decideTaskLite } from './tasks_lite.js';
+// Re-export lite helpers for harnesses.
+export { efficiencyLite, minimalTaskDefs, decideTaskLite };
+
+// P0.2 follow-up: a single import surface for headless harnesses.
+// Returns the lite task bundle but swaps in the shared "core" implementations
+// for Forage/StokeFire/Guard/Research (built from makeCoreTaskDefs).
+//
+// NOTE: uses efficiencyLite + simple stubs (no tools/library economy) so it stays
+// deterministic and doesn't require main.js-only helpers.
+export function coreTaskDefs(){
+  const defs = minimalTaskDefs();
+  Object.assign(defs, makeCoreTaskDefs({
+    clamp01,
+    seasonAt,
+    efficiency: efficiencyLite,
+    momentumMul: () => 1,
+    workPaceMul: () => 1,
+    toolsBonus: () => 1,
+    libraryBonus: () => 1,
+    drillActive: () => 0,
+    gainXP: () => {},
+  }));
+  return defs;
+}
 
 // --- Headless-friendly sim step (for replay/offline harnesses)
 // Mirrors main.js's step(dt) orchestration but keeps all dependencies injected.
