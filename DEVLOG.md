@@ -1,4 +1,4 @@
-﻿# DEVLOG - Kitten Knight (Civ)
+# DEVLOG - Kitten Knight (Civ)
 
 Human-readable change log for iterative runs.
 
@@ -72,7 +72,7 @@ Summary
 - QoL: added a **Pin project** selector + **Pin (finish 1)** button directly in the Director panel (no need to scroll to Projects).
 - Pinning still auto-clears after **ONE** unit completes.
 - Pinning still sets **Project focus** to the matching track (so the AI immediately leans into it).
-- UI: pin selector disables projects you havenâ€™t unlocked yet (e.g., Granary before Granaries tech).
+- UI: pin selector disables projects you haven’t unlocked yet (e.g., Granary before Granaries tech).
 - Patch notes updated.
 - No save-breaking changes.
 
@@ -92,7 +92,7 @@ What to try
 
 Summary
 - QoL/Explainability: sorting by **Task** now uses the *effective executed* task (shows fallback tasks when a sink is blocked by reserves/inputs).
-- QoL/Clarity: Like/Dislike tags in the Colony table now evaluate against the executed task (so blocked sink attempts donâ€™t mislabel a kittenâ€™s preferences).
+- QoL/Clarity: Like/Dislike tags in the Colony table now evaluate against the executed task (so blocked sink attempts don’t mislabel a kitten’s preferences).
 - Patch notes updated.
 - No save-breaking changes.
 
@@ -102,7 +102,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Sort the Colony table by **Task** during a reserve-constrained build (e.g., high wood reserve + BUILD PUSH) and confirm blocked builders cluster under the fallback task youâ€™re actually getting.
+- Sort the Colony table by **Task** during a reserve-constrained build (e.g., high wood reserve + BUILD PUSH) and confirm blocked builders cluster under the fallback task you’re actually getting.
 
 ---
 
@@ -129,8 +129,8 @@ What to try
 ## 2026-02-28 21:14 CST - v0.9.123 Bloc health panel (values blocs at a glance)
 
 Summary
-- NEW: Added a **Bloc health** panel showing each values blocâ€™s **size + avg fit + avg mood + avg grievance**.
-- Explainability: includes a simple â€œhighest-pressure blocâ€ nudge so you can quickly tell *who* is driving dissent.
+- NEW: Added a **Bloc health** panel showing each values bloc’s **size + avg fit + avg mood + avg grievance**.
+- Explainability: includes a simple “highest-pressure bloc” nudge so you can quickly tell *who* is driving dissent.
 - UI-only: no simulation/balance changes; helps policy management feel more like a civ-sim.
 - Patch notes updated.
 
@@ -142,15 +142,15 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let dissent climb a bit, then open **Bloc health** and compare the â€œpressureâ€ hint with what you see in **Factions** (try negotiating that bloc and watch fit/grievance shift).
+- Let dissent climb a bit, then open **Bloc health** and compare the “pressure” hint with what you see in **Factions** (try negotiating that bloc and watch fit/grievance shift).
 
 ---
 
 ## 2026-02-28 20:59 CST - v0.9.122 Director: Social priority (mood + cohesion steering)
 
 Summary
-- Added a **Social** Director priority slider (50â€“150%) that biases Socialize/Care choices.
-- Explainability: Social priority shows up in the Decision Inspector scoring reasons (prio Social xâ€¦).
+- Added a **Social** Director priority slider (50–150%) that biases Socialize/Care choices.
+- Explainability: Social priority shows up in the Decision Inspector scoring reasons (prio Social x…).
 - Colony focus/values alignment now incorporates Social priority (affects focus-fit + bloc alignment).
 - Politics: negotiating with the **Social** bloc now nudges prioSocial (plus the existing cohesion-policy tweaks), and the undo snapshot restores it.
 - Patch notes updated.
@@ -170,8 +170,8 @@ What to try
 ## 2026-02-28 20:44 CST - v0.9.121 Inspector Directives: persistent + repeatable
 
 Summary
-- FIX: Decision Inspector Directive dropdown no longer â€œworks onceâ€ (change it as many times as you want).
-- Persistence: Changing/clearing a Directive now saves immediately (so refreshes wonâ€™t revert it).
+- FIX: Decision Inspector Directive dropdown no longer “works once” (change it as many times as you want).
+- Persistence: Changing/clearing a Directive now saves immediately (so refreshes won’t revert it).
 - Explainability: Directive changes now write a clear Event log line (who changed to what).
 - Patch notes updated.
 
@@ -181,7 +181,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Click a kitten row â†’ change Directive a few times (Foodâ†’Progressâ†’Auto) and verify it persists after refresh.
+- Click a kitten row → change Directive a few times (Food→Progress→Auto) and verify it persists after refresh.
 
 ---
 
@@ -190,7 +190,7 @@ What to try
 Summary
 - Combat sim: Raid losses/injuries now scale down based on **Palisade** and **Guards on duty**, with small bonuses from **Security**, **Drills**, and **Curfew**.
 - New outcome: strong defenses can fully **repel** a raid (threat knocked back; small morale bump).
-- Explainability: Raid log now prints the mitigation factor and the defense snapshot (guards + palisade) so you can see *why* it hurt (or didnâ€™t).
+- Explainability: Raid log now prints the mitigation factor and the defense snapshot (guards + palisade) so you can see *why* it hurt (or didn’t).
 - Version bump + JS parse sanity check.
 
 Files touched
@@ -217,7 +217,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Deliberately build up Jerky, then watch how **Edible** stays healthy even if **Food** dips â€” and compare the two â€œ0 in â€¦â€ forecasts.
+- Deliberately build up Jerky, then watch how **Edible** stays healthy even if **Food** dips — and compare the two “0 in …” forecasts.
 
 ---
 
@@ -237,7 +237,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let **Dissent** climb until a **Faction Demand** appears, then spam a normal **Negotiate** right before clicking **Accept** â€” it should still apply the concession and log the result in Governance log.
+- Let **Dissent** climb until a **Faction Demand** appears, then spam a normal **Negotiate** right before clicking **Accept** — it should still apply the concession and log the result in Governance log.
 
 ---
 
@@ -246,7 +246,7 @@ What to try
 Summary
 - Explainability: Storage inspector now shows Edible = Food + Jerky (and Edible/Kitten) to match starvation logic.
 - Explainability: Clarified that only fresh Food counts toward the storage cap/spoilage; Jerky does not spoil and is your winter bank.
-- QoL: Storage inspector now prints a quick â€œover-capâ€ formula so players understand why spoilage spiked.
+- QoL: Storage inspector now prints a quick “over-cap” formula so players understand why spoilage spiked.
 - Version bump + dist rebuild.
 - No save-breaking changes.
 
@@ -266,7 +266,7 @@ What to try
 
 Summary
 - QoL: Policy +/- buttons now support modifier keys for faster tuning.
-- Shift-click changes by Â±0.50, Alt-click changes by Â±1.00, Ctrl/âŒ˜-click snaps to min/max (0 or 2).
+- Shift-click changes by ±0.50, Alt-click changes by ±1.00, Ctrl/⌘-click snaps to min/max (0 or 2).
 - Added tooltips to make the shortcuts discoverable.
 - Version bump + dist rebuild.
 - No save-breaking changes.
@@ -286,8 +286,8 @@ What to try
 
 Summary
 - Fix: Auto Recruit no longer errors when enabled (missing `season` reference in the automation block).
-- Explainability: Auto Recruit now writes a short â€œwhyâ€ string (housing / season window / stability / food+reserve requirement).
-- UI: Season panel shows that Auto Recruit â€œwhyâ€ line when Auto Recruit is enabled.
+- Explainability: Auto Recruit now writes a short “why” string (housing / season window / stability / food+reserve requirement).
+- UI: Season panel shows that Auto Recruit “why” line when Auto Recruit is enabled.
 - Patch notes updated.
 - No save-breaking changes.
 
@@ -299,7 +299,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Enable **Auto Recruit**, then watch the Season panel: it should tell you what condition is blocking recruitment (and it should successfully recruit once youâ€™re stable mid-Spring with spare housing + enough food above reserves).
+- Enable **Auto Recruit**, then watch the Season panel: it should tell you what condition is blocking recruitment (and it should successfully recruit once you’re stable mid-Spring with spare housing + enough food above reserves).
 
 ---
 
@@ -389,8 +389,8 @@ What to try
 ## 2026-02-28 11:27 CST - v0.9.85 Blocked fallback highlight (reserve thrash visibility)
 
 Summary
-- UI/Explainability: when a kittenâ€™s chosen task is **BLOCKED** (usually by reserves/inputs) and it executes a fallback (e.g. **BuildHut â†’ ChopWood**), the **Task** cell is now highlighted + tagged.
-- Makes it much easier to spot â€œbuilders/researchers are stallingâ€ moments and adjust **Reserves / Policy / Project Focus**.
+- UI/Explainability: when a kitten’s chosen task is **BLOCKED** (usually by reserves/inputs) and it executes a fallback (e.g. **BuildHut → ChopWood**), the **Task** cell is now highlighted + tagged.
+- Makes it much easier to spot “builders/researchers are stalling” moments and adjust **Reserves / Policy / Project Focus**.
 - No save-breaking changes.
 
 Files touched
@@ -407,9 +407,9 @@ What to try
 ## 2026-02-28 10:57 CST - v0.9.83 Values bloc column (Faction legibility)
 
 Summary
-- UI/Explainability: Colony table now shows each kittenâ€™s **values bloc** (Food/Safety/Progress/Social) as a dedicated column.
-- Makes the **Factions/Demands** civ-sim layer more readable at-a-glance (no need to open the inspector to see whoâ€™s in which bloc).
-- Inspector subheader also now includes the kittenâ€™s bloc.
+- UI/Explainability: Colony table now shows each kitten’s **values bloc** (Food/Safety/Progress/Social) as a dedicated column.
+- Makes the **Factions/Demands** civ-sim layer more readable at-a-glance (no need to open the inspector to see who’s in which bloc).
+- Inspector subheader also now includes the kitten’s bloc.
 - No save-breaking changes.
 
 Files touched
@@ -420,7 +420,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- In the Colony table, sort mentally by **Bloc** and then hit the **Factions** panel: negotiate with the largest bloc and watch which kittens are â€œrepresented.â€
+- In the Colony table, sort mentally by **Bloc** and then hit the **Factions** panel: negotiate with the largest bloc and watch which kittens are “represented.”
 
 ---
 
@@ -456,14 +456,14 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Get dissent into the ~40â€“70% range, then hit a season change and choose **Accept vs Ignore** to see how quickly cohesion recovers (and which bloc gets mad).
+- Get dissent into the ~40–70% range, then hit a season change and choose **Accept vs Ignore** to see how quickly cohesion recovers (and which bloc gets mad).
 
 ---
 
 ## 2026-02-28 10:11 CST - v0.9.80 Policy per-action plan impact (explainability)
 
 Summary
-- UI/Explainability: Policy panel now shows per-action plan impact next to each multiplier (**without policy â†’ with policy**).
+- UI/Explainability: Policy panel now shows per-action plan impact next to each multiplier (**without policy → with policy**).
 - Makes it obvious when a quota is changing the colony-level plan vs when behavior is being overridden by needs/autonomy/safety rules.
 - Patch notes updated.
 - No save-breaking changes.
@@ -493,7 +493,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let Autonomy be low + Discipline high for a bit, then watch which kittensâ€™ **buddy-need** climbs first and how it correlates with Mood/Griev.
+- Let Autonomy be low + Discipline high for a bit, then watch which kittens’ **buddy-need** climbs first and how it correlates with Mood/Griev.
 
 ---
 
@@ -502,7 +502,7 @@ What to try
 Summary
 - NEW: **Auto Drills** checkbox (Director): automatically runs Defense Drills when threat is getting high.
 - Guardrails: only triggers when basics are stable (food/kitten + warmth) and you can afford the cost **above reserves**.
-- Explainability: Season panel shows the last auto-drill trigger (or why itâ€™s waiting).
+- Explainability: Season panel shows the last auto-drill trigger (or why it’s waiting).
 - Patch notes updated.
 
 Files touched
@@ -538,7 +538,7 @@ What to try
 
 Summary
 - UI/Explainability: **Food** stat now shows both **fresh** and **edible** (food+jerky) rates, and the time-to-zero forecast uses **edible stores**.
-- FIX: the â€œDanger forecastâ€ line in inspectors now reports **edibleâ†’0 ETA** (avoids false panic when youâ€™re living off jerky).
+- FIX: the “Danger forecast” line in inspectors now reports **edible→0 ETA** (avoids false panic when you’re living off jerky).
 - Patch notes updated.
 
 Files touched
@@ -547,11 +547,11 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Build some jerky (PreserveFood), then intentionally run fresh food down: watch **edible** rate + **edibleâ†’0 ETA** stay truthful while fresh goes negative.
+- Build some jerky (PreserveFood), then intentionally run fresh food down: watch **edible** rate + **edible→0 ETA** stay truthful while fresh goes negative.
 
 ---
 
-## 2026-02-28 07:11 CST - v0.9.68 Curfew: safety â†” morale governance lever
+## 2026-02-28 07:11 CST - v0.9.68 Curfew: safety ↔ morale governance lever
 
 Summary
 - NEW: **Curfew** toggle (Director button + **Q** hotkey): slows **threat growth** (fewer raids), but steadily **drains mood** and adds a small **dissent pressure** while active.
@@ -566,7 +566,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- When threat is climbing toward your max target, toggle **Curfew ON** and watch threatâ€™s +/s drop; keep an eye on Mood/Dissent and turn it OFF once stable.
+- When threat is climbing toward your max target, toggle **Curfew ON** and watch threat’s +/s drop; keep an eye on Mood/Dissent and turn it OFF once stable.
 
 ---
 
@@ -574,7 +574,7 @@ What to try
 
 Summary
 - FIX: all **food/kitten** stability heuristics now treat **Jerky as edible food** (advisor warnings, auto-food-crisis, auto-crisis, auto-recruit, auto-mode/rations decisions).
-- FIX: starvation + the harsh hungerâ†’health spiral now only apply when **no edible food remains** (food + jerky).
+- FIX: starvation + the harsh hunger→health spiral now only apply when **no edible food remains** (food + jerky).
 - UI: stats now show **Edible/Kitten** (food+jerky) plus **Fresh/Kitten** (food only) so preservation is legible.
 - Patch notes updated for v0.9.66.
 - Save-safe: no schema changes (just smarter reads).
@@ -589,12 +589,12 @@ What to try
 
 ---
 
-## 2026-02-28 06:26 CST - v0.9.65 Inspector: show blocked sink â†’ fallback execution
+## 2026-02-28 06:26 CST - v0.9.65 Inspector: show blocked sink → fallback execution
 
 Summary
 - NEW: Decision Inspector now shows an **Execution** line when a sink task was blocked by reserves/inputs and immediately fell back (includes the block reason).
 - Task tooltip now includes a short **blocked reason** for a few seconds after it happens.
-- Improves explainability for the common "why wonâ€™t they build/craft?" moment without changing AI behavior.
+- Improves explainability for the common "why won’t they build/craft?" moment without changing AI behavior.
 - Patch notes updated for v0.9.65.
 - Save-safe: new `_lastBlocked` field is transient and stripped on save.
 
@@ -606,7 +606,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set **wood reserve** high, enable **BUILD PUSH**, then open a kittenâ€™s **Decision Inspector** and watch it report the blocked build â†’ fallback.
+- Set **wood reserve** high, enable **BUILD PUSH**, then open a kitten’s **Decision Inspector** and watch it report the blocked build → fallback.
 
 ---
 
@@ -614,7 +614,7 @@ What to try
 
 Summary
 - NEW: Social inspector now shows **avg kitten Values** vs your current **Focus** (Mode + Director priorities), plus an **avg focus-fit** percentage.
-- Highlights the **biggest mismatch axis** (e.g. â€œProgress 12pp over colony preferenceâ€) to make mood/dissent drift feel like a governance tradeoff.
+- Highlights the **biggest mismatch axis** (e.g. “Progress 12pp over colony preference”) to make mood/dissent drift feel like a governance tradeoff.
 - Adds a short note when the mismatch is large (expect mood drag under low autonomy / tight planning).
 - Patch notes updated for v0.9.64.
 - Save-safe: uses existing deterministic values generation; no schema changes.
@@ -627,7 +627,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Click the **Dissent** or **Compliance** stat â†’ compare Values vs Focus, then flip Mode (Survive/Advance) or tweak priorities and watch the mismatch axis change.
+- Click the **Dissent** or **Compliance** stat → compare Values vs Focus, then flip Mode (Survive/Advance) or tweak priorities and watch the mismatch axis change.
 
 ---
 
@@ -636,7 +636,7 @@ What to try
 Summary
 - NEW: log a one-line **Season change** message when the season flips (Spring/Summer/Fall/Winter).
 - Message calls out the key mechanical shifts (Winter warmth decay + Forage penalty; Spring relief; Fall prep window).
-- Goal: reduce â€œwhy did my outputs suddenly change?â€ confusion without adding hidden automation.
+- Goal: reduce “why did my outputs suddenly change?” confusion without adding hidden automation.
 - Patch notes updated for v0.9.63.
 - Save-safe: uses a transient `state._lastSeasonName` field (not persisted).
 
@@ -648,16 +648,16 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let the sim run across a season boundary and watch the event log for the new **Season change â†’ ...** ping.
+- Let the sim run across a season boundary and watch the event log for the new **Season change → ...** ping.
 
 ---
 
 ## 2026-02-28 05:41 CST - v0.9.62 Director: Consensus priority preset (values-driven)
 
 Summary
-- NEW: added a **Consensus** priority preset that sets Food/Safety/Progress priorities based on the colonyâ€™s average kitten Values (bottom-up governance).
+- NEW: added a **Consensus** priority preset that sets Food/Safety/Progress priorities based on the colony’s average kitten Values (bottom-up governance).
 - Clicking Consensus lightly reduces **Dissent** immediately (represents the Director listening), helping stabilize compliance without hiding mechanics.
-- Keeps the effect conservative (a steer, not a hard lock): values are mapped into the existing 50â€“150% priority range.
+- Keeps the effect conservative (a steer, not a hard lock): values are mapped into the existing 50–150% priority range.
 - Patch notes updated for v0.9.62.
 - Save-safe: uses existing saved fields; older saves generate values deterministically as before.
 
@@ -706,7 +706,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let the colony run 20â€“30s, then open **Plan debug** and compare desired/assigned vs the new **Activity** block (try toggling Autonomy to see divergence).
+- Let the colony run 20–30s, then open **Plan debug** and compare desired/assigned vs the new **Activity** block (try toggling Autonomy to see divergence).
 
 ---
 
@@ -714,7 +714,7 @@ What to try
 
 Summary
 - QoL/Explainability: the **Compliance** stat card is now clickable (same as Dissent) to open the Social inspector modal.
-- Makes it faster to debug â€œwhy arenâ€™t they following the plan?â€ since compliance is the plan-strength multiplier.
+- Makes it faster to debug “why aren’t they following the plan?” since compliance is the plan-strength multiplier.
 - Patch notes updated for v0.9.59.
 - Save-safe: UI-only change.
 
@@ -769,9 +769,9 @@ What to try
 ## 2026-02-28 04:10 CST - v0.9.56 Food stat surfaces storage cap + spoilage (faster spiral diagnosis)
 
 Summary
-- QoL/Explainability: Food statâ€™s trend line now includes your current **Food Cap** and (when relevant) the **Spoilage x** multiplier.
-- Added a Food stat tooltip that explains the soft-cap â†’ accelerated spoilage mechanic in one place.
-- This makes â€œwhy is food bleeding out?â€ diagnosable without cross-referencing separate stat cards.
+- QoL/Explainability: Food stat’s trend line now includes your current **Food Cap** and (when relevant) the **Spoilage x** multiplier.
+- Added a Food stat tooltip that explains the soft-cap → accelerated spoilage mechanic in one place.
+- This makes “why is food bleeding out?” diagnosable without cross-referencing separate stat cards.
 - Save-safe: UI-only change.
 
 Files touched
@@ -780,7 +780,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Overcap food (push Food above Food Cap) and verify the Food stat subline shows `spoil xâ€¦ | cap â€¦` while your Food rate drops.
+- Overcap food (push Food above Food Cap) and verify the Food stat subline shows `spoil x… | cap …` while your Food rate drops.
 
 ---
 
@@ -789,7 +789,7 @@ What to try
 Summary
 - Explainability: added a new top stat, **Focus-fit**, showing average values-alignment between kittens and the colony focus (Mode + priority sliders).
 - The stat includes a mini breakdown: minimum alignment in the colony + how many kittens are in the low-alignment zone.
-- Makes â€œpolicy mismatch â†’ mood drift â†’ dissentâ€ more legible without opening the inspector.
+- Makes “policy mismatch → mood drift → dissent” more legible without opening the inspector.
 - Save-safe: no schema changes (pure UI/explainability).
 
 Files touched
@@ -807,7 +807,7 @@ What to try
 Summary
 - Explainability: Plan debug now reports which sink actions were actually *blocked* by reserves/inputs in the last second (and why), so desired/assigned mismatches are actionable.
 - Captures execution-layer stalls (the same ones that trigger fallback work) without spamming the event log.
-- Helps diagnose â€œwhy wonâ€™t they build/research?â€ moments: usually protected reserves or missing inputs.
+- Helps diagnose “why won’t they build/research?” moments: usually protected reserves or missing inputs.
 - Save-safe: no schema changes (blocked counters are ephemeral).
 
 Files touched
@@ -817,7 +817,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Crank Food/Wood/Science reserves high, set a build focus (e.g., Industry), and watch Plan debug surface â€œBlocked sinksâ€ when builders fall back due to reserves.
+- Crank Food/Wood/Science reserves high, set a build focus (e.g., Industry), and watch Plan debug surface “Blocked sinks” when builders fall back due to reserves.
 
 ---
 
@@ -825,7 +825,7 @@ What to try
 
 Summary
 - Explainability: Threat stat now shows ETA to your **Max threat** target (when threat is rising), not just the raid ETA.
-- This makes â€œweâ€™re drifting into dangerâ€ visible earlier, so Defend/Guard nudges feel more proactive.
+- This makes “we’re drifting into danger” visible earlier, so Defend/Guard nudges feel more proactive.
 - Small UX polish: hides the ETAs when threat is falling or already above target (avoids confusing negative timers).
 - Save-safe: no schema changes.
 
@@ -836,7 +836,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let threat climb slowly and watch the Threat stat show â€œtgt in â€¦â€ before â€œraid in â€¦â€, then switch to Defend and see the ETAs disappear as threat falls.
+- Let threat climb slowly and watch the Threat stat show “tgt in …” before “raid in …”, then switch to Defend and see the ETAs disappear as threat falls.
 
 ---
 
@@ -844,8 +844,8 @@ What to try
 
 Summary
 - QoL: Stats cards now show small resource trends (per-second deltas) for key resources.
-- Explainability: added a few â€œdanger/goalâ€ ETAs inline (starve/freeze/raid/next unlock) so spirals are visible without opening panels.
-- Uses existing rate smoothing (EMA) so the numbers donâ€™t jitter.
+- Explainability: added a few “danger/goal” ETAs inline (starve/freeze/raid/next unlock) so spirals are visible without opening panels.
+- Uses existing rate smoothing (EMA) so the numbers don’t jitter.
 - Save-safe: no schema changes.
 
 Files touched
@@ -862,9 +862,9 @@ What to try
 ## 2026-02-28 02:55 CST - v0.9.51 Preview-safe Winter Prep + correct Advisor overcap
 
 Summary
-- FIX: Advisor â€œstorage over-cap / spoilage xâ€¦â€ now reads from the current sim state (was accidentally reading the global `state`, which breaks Council/preview sims).
+- FIX: Advisor “storage over-cap / spoilage x…” now reads from the current sim state (was accidentally reading the global `state`, which breaks Council/preview sims).
 - FIX: Winter Prep and Crisis Protocol are now **preview-safe** (they can be applied to cloned states for Council/Advisor previews without mutating the live game).
-- Explainability: Council/Advisor previews are now trustworthy when they show â€œwhat would happen if you click thisâ€.
+- Explainability: Council/Advisor previews are now trustworthy when they show “what would happen if you click this”.
 - Save-safe: no schema changes.
 
 Files touched
@@ -873,7 +873,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Open **Kitten Council**, hover a suggestion, and confirm the preview no longer causes any live toggles/log spam; then try **Advisor â†’ Winter Prep** and verify it applies cleanly.
+- Open **Kitten Council**, hover a suggestion, and confirm the preview no longer causes any live toggles/log spam; then try **Advisor → Winter Prep** and verify it applies cleanly.
 
 ---
 
@@ -881,7 +881,7 @@ What to try
 
 Summary
 - NEW: Keyboard shortcuts (ignored while typing in inputs): **Space** toggles Pause/Resume.
-- NEW: **1â€“4** switch Modes quickly (Survive / Expand / Defend / Advance).
+- NEW: **1–4** switch Modes quickly (Survive / Expand / Defend / Advance).
 - NEW: **W** toggles Winter Prep; **C** toggles Crisis Protocol.
 - NEW: **F** triggers Hold Festival; **V** triggers Hold Council (only when not already active).
 - UI: added button tooltips for Pause + Mode buttons to make shortcuts discoverable.
@@ -901,9 +901,9 @@ What to try
 ## 2026-02-28 02:25 CST - v0.9.49 Need-aware mentoring (quota/plan driven)
 
 Summary
-- NEW: **Mentor** now teaches what the colony needs: it prioritizes skills that fill **role quota shortfalls**, then **current plan deficits**, before falling back to the mentorâ€™s own specialty.
-- This makes â€œpolicy managementâ€ feel more civ-sim: your quotas/plans shape the colonyâ€™s long-run specialization instead of just todayâ€™s task picks.
-- Explainability: Mentorâ€™s task tooltip now shows *why* that teaching skill was chosen (quota vs plan vs mentor top skill).
+- NEW: **Mentor** now teaches what the colony needs: it prioritizes skills that fill **role quota shortfalls**, then **current plan deficits**, before falling back to the mentor’s own specialty.
+- This makes “policy management” feel more civ-sim: your quotas/plans shape the colony’s long-run specialization instead of just today’s task picks.
+- Explainability: Mentor’s task tooltip now shows *why* that teaching skill was chosen (quota vs plan vs mentor top skill).
 - Save-safe: adds only a tiny `_mentor.why` note in runtime state; existing saves keep working.
 
 Files touched
@@ -921,9 +921,9 @@ What to try
 ## 2026-02-28 02:10 CST - v0.9.48 Policy panel plan preview
 
 Summary
-- NEW (explainability): Policy panel now shows a **Plan preview** of the colonyâ€™s desired worker counts.
+- NEW (explainability): Policy panel now shows a **Plan preview** of the colony’s desired worker counts.
 - Shows both **with policy multipliers** (your current quotas) and **without policy multipliers** (baseline), so you can see what your nudges are actually doing.
-- Clarifies the "policy â†’ plan â†’ kitten scoring" pipeline: plan is advisory; Autonomy/traits/needs can still diverge.
+- Clarifies the "policy → plan → kitten scoring" pipeline: plan is advisory; Autonomy/traits/needs can still diverge.
 - Save-safe: preview uses transient `_lastPlan` data only.
 
 Files touched
@@ -934,16 +934,16 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set Mode=Advance, bump **CraftTools** and **Research** multipliers, then check the Policy panelâ€™s plan preview to confirm the desired worker counts changed before watching the kittens execute.
+- Set Mode=Advance, bump **CraftTools** and **Research** multipliers, then check the Policy panel’s plan preview to confirm the desired worker counts changed before watching the kittens execute.
 
 ---
 
 ## 2026-02-28 01:55 CST - v0.9.47 Firekeeping now levels (Cooking)
 
 Summary
-- FIX/NEW: **StokeFire** is now tied to the **Cooking** skill (so aptitude bias + value fit can naturally create a â€œFirekeeperâ€ specialist).
+- FIX/NEW: **StokeFire** is now tied to the **Cooking** skill (so aptitude bias + value fit can naturally create a “Firekeeper” specialist).
 - NEW: Kittens gain **Cooking XP** while stoking the fire, so repeated winter hearth duty becomes an incremental advantage instead of a perpetual generalist task.
-- Explainability: the Decision Inspector/score breakdown can now surface Cooking skill bonuses for StokeFire (since itâ€™s a real skill action).
+- Explainability: the Decision Inspector/score breakdown can now surface Cooking skill bonuses for StokeFire (since it’s a real skill action).
 - Save-safe: no schema changes; existing kittens simply start accruing Cooking XP when doing StokeFire.
 
 Files touched
@@ -953,7 +953,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- In Winter (or with low warmth), set a **Firekeeper** role quota to 1 and watch that kittenâ€™s **Cooking** skill start climbing as they keep the hearth going.
+- In Winter (or with low warmth), set a **Firekeeper** role quota to 1 and watch that kitten’s **Cooking** skill start climbing as they keep the hearth going.
 
 ---
 
@@ -997,8 +997,8 @@ What to try
 
 Summary
 - Kitten Council suggestion tooltips now include a **preview diff** of the exact policy multiplier changes that will be applied.
-- Council rows also show a short inline preview (first 1â€“2 changes) so you can scan without hovering.
-- Improves explainability + reduces â€œmystery nudgesâ€ while keeping council influence soft (small multiplier steps).
+- Council rows also show a short inline preview (first 1–2 changes) so you can scan without hovering.
+- Improves explainability + reduces “mystery nudges” while keeping council influence soft (small multiplier steps).
 
 Files touched
 - `prototype/index.html`
@@ -1006,7 +1006,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Hover a council suggestion and confirm the tooltip shows the full `xAâ†’xB` preview before you accept.
+- Hover a council suggestion and confirm the tooltip shows the full `xA→xB` preview before you accept.
 
 ---
 
@@ -1032,8 +1032,8 @@ What to try
 
 Summary
 - Council buttons now show a **plain-English effects preview** (e.g. `Guard +0.30, BuildPalisade +0.20`) so you can accept/decline with intent.
-- Accepting a council suggestion now logs the **exact before â†’ after** multiplier changes (e.g. `Forage x1.00â†’x1.25`).
-- Council panel briefly shows the **last accepted** policy diff (~2 minutes) to reinforce cause â†’ effect without opening any inspectors.
+- Accepting a council suggestion now logs the **exact before → after** multiplier changes (e.g. `Forage x1.00→x1.25`).
+- Council panel briefly shows the **last accepted** policy diff (~2 minutes) to reinforce cause → effect without opening any inspectors.
 
 Files touched
 - `prototype/index.html`
@@ -1041,7 +1041,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Wait for a council suggestion, accept it, then immediately open a kittenâ€™s **Decision Inspector** and confirm the nudged actionâ€™s score line matches the new multiplier.
+- Wait for a council suggestion, accept it, then immediately open a kitten’s **Decision Inspector** and confirm the nudged action’s score line matches the new multiplier.
 
 ---
 
@@ -1066,8 +1066,8 @@ What to try
 ## 2026-02-27 23:39 CST - v0.9.38 Director: Priorities sliders (policy weights)
 
 Summary
-- Added **Director Priorities** sliders: **Food / Safety / Progress** (50%â€“150%).
-- These priorities bias **individual kitten action scoring** (not just the colony plan), creating a clearer "policy â†’ behavior" loop.
+- Added **Director Priorities** sliders: **Food / Safety / Progress** (50%–150%).
+- These priorities bias **individual kitten action scoring** (not just the colony plan), creating a clearer "policy → behavior" loop.
 - Explainability: affected actions include a `prio ...` line in the **Decision Inspector** score breakdown.
 - Priorities are saved + included in Director profiles (save-safe; defaults to 100% for old saves).
 
@@ -1136,7 +1136,7 @@ What to try
 ## 2026-02-27 22:39 CST - v0.9.34 Director: Auto Rations
 
 Summary
-- NEW: **Auto Rations** toggle â€” the Director can automatically switch **Tight / Normal / Feast** based on food stability + dissent (with a cooldown to avoid flapping).
+- NEW: **Auto Rations** toggle — the Director can automatically switch **Tight / Normal / Feast** based on food stability + dissent (with a cooldown to avoid flapping).
 - Tight triggers when food/kitten is genuinely low; Feast triggers when food is stable but cohesion is failing (high dissent).
 - Explainability: Season panel shows **Auto rations** status + the last reason.
 
@@ -1153,7 +1153,7 @@ What to try
 ## 2026-02-27 22:24 CST - v0.9.33 Explainability: decision override badges in Task
 
 Summary
-- Kittens now show a small badge in the **Task** cell when their action was forced by a **RULE / EMERG / COMMIT** decision (so you can instantly tell why the plan wasnâ€™t followed).
+- Kittens now show a small badge in the **Task** cell when their action was forced by a **RULE / EMERG / COMMIT** decision (so you can instantly tell why the plan wasn’t followed).
 - Task tooltip now includes extra context when autonomy sampled a non-#1 choice ("top score was X").
 - No sim/balance changes; pure UI explainability.
 
@@ -1163,7 +1163,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Create a Safety Rule (e.g. warmth < 35 â†’ StokeFire) and watch the Task badge flip to **RULE** when it triggers.
+- Create a Safety Rule (e.g. warmth < 35 → StokeFire) and watch the Task badge flip to **RULE** when it triggers.
 
 ---
 
@@ -1172,7 +1172,7 @@ What to try
 Summary
 - Projects panel now shows an **Unblock** button when a project has progress but is stalled because **reserves are protecting required inputs** (wood/science/tools).
 - Clicking **Unblock** lowers only the blocking reserve(s) by a small, safe step and sets **Project focus** to that track.
-- Makes the â€œwhy wonâ€™t they finish this build?â€ loop fixable directly from the build progress UI (no hunting for the Advisor).
+- Makes the “why won’t they finish this build?” loop fixable directly from the build progress UI (no hunting for the Advisor).
 
 Files touched
 - `prototype/index.html`
@@ -1206,8 +1206,8 @@ What to try
 Summary
 - NEW: Each kitten now rolls a simple **Trait** (Brave / Studious / Builder / Caretaker / Forager).
 - Traits apply a steady, explainable scoring bias (separate from Autonomy-driven likes/dislikes), pushing more distinct specialization patterns.
-- Explainability: trait bonuses show directly in the Decision Inspector reason list (e.g. `trait Builder â†’ +8`).
-- UI: Traits column now shows trait tags; tooltip includes trait descriptions + the kittenâ€™s prefs.
+- Explainability: trait bonuses show directly in the Decision Inspector reason list (e.g. `trait Builder → +8`).
+- UI: Traits column now shows trait tags; tooltip includes trait descriptions + the kitten’s prefs.
 - Save-safe: old saves auto-generate traits for existing kittens.
 
 Files touched
@@ -1216,7 +1216,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Open the Decision Inspector on a kitten and confirm you see `trait X â†’ +Y` in the scoring breakdown; then toggle Autonomy to compare trait-vs-preference behavior.
+- Open the Decision Inspector on a kitten and confirm you see `trait X → +Y` in the scoring breakdown; then toggle Autonomy to compare trait-vs-preference behavior.
 
 ---
 
@@ -1234,16 +1234,16 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Add a Safety Rule: `always â†’ Care`, set food/wood reserves high, and confirm the kitten transparently falls back to **Socialize** (and the Task cell shows the fallback).
+- Add a Safety Rule: `always → Care`, set food/wood reserves high, and confirm the kitten transparently falls back to **Socialize** (and the Task cell shows the fallback).
 
 ---
 
 ## 2026-02-27 20:54 CST - v0.9.27 Cumulative patch notes (since last seen version)
 
 Summary
-- NEW: Patch notes are now **cumulative** â€” when you update, the modal shows everything since your last seen version.
+- NEW: Patch notes are now **cumulative** — when you update, the modal shows everything since your last seen version.
 - Explainability: patch notes now include version headers (e.g., `v0.9.27`, `v0.9.26`) so changes are easier to scan.
-- QoL: patch notes modal still auto-opens once per version, but now remembers the â€œfrom versionâ€ for the session.
+- QoL: patch notes modal still auto-opens once per version, but now remembers the “from version” for the session.
 - Updated the on-screen patch note text for v0.9.27 (previous text was stale).
 
 Files touched
@@ -1253,14 +1253,14 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Import an older save (or clear localStorage), reload, and confirm Patch Notes shows the correct â€œChanges since vX.Y.Zâ€ list.
+- Import an older save (or clear localStorage), reload, and confirm Patch Notes shows the correct “Changes since vX.Y.Z” list.
 
 ---
 
 ## 2026-02-27 20:24 CST - v0.9.25 Social Inspector (dissent driver breakdown)
 
 Summary
-- NEW: **Social Inspector** modal â€” click the **Dissent** stat to see whatâ€™s driving dissent (mood, work pace, rations, hunger, alarm).
+- NEW: **Social Inspector** modal — click the **Dissent** stat to see what’s driving dissent (mood, work pace, rations, hunger, alarm).
 - Explainability: inspector shows the exact per-tick **dissent desire** inputs and how they smooth into the current dissent value.
 - UX: adds actionable guidance on which Director knobs to turn (Festival/Council/Discipline/Work pace/rations/food stability).
 - Save-safe: driver snapshot is transient (`state._dissentDrivers`) and not persisted.
@@ -1282,7 +1282,7 @@ What to try
 Summary
 - FIX: **Care** policy multiplier now properly migrates into older saves (prevents undefined/NaN multipliers and weird planner bias).
 - FIX: `effects.councilUntil` now migrates for older saves, keeping Council timers consistent across refresh/import.
-- FIX: corrected a JavaScript string in Winter Prep preset text that could break parsing ("don\'t" â†’ "do not").
+- FIX: corrected a JavaScript string in Winter Prep preset text that could break parsing ("don\'t" → "do not").
 - Updated patch notes for the new version.
 
 Files touched
@@ -1298,7 +1298,7 @@ What to try
 ## 2026-02-27 19:53 CST - v0.9.23 Care action (paid stability lever)
 
 Summary
-- Added a new action: **Care** â€” spend **food + wood** (above reserves) to reduce **Dissent** faster and raise **Mood** (direct â€œwelfareâ€ policy lever).
+- Added a new action: **Care** — spend **food + wood** (above reserves) to reduce **Dissent** faster and raise **Mood** (direct “welfare” policy lever).
 - Care is **resource-gated + reserve-safe**: if buffers are tight, it automatically falls back to **Socialize** instead of burning critical supplies.
 - Director **Policy multipliers** now expose **Socialize** + **Care**, so you can explicitly trade output for cohesion/stability.
 - Planner will sometimes allocate 1 kitten to Care during high dissent *when surplus exists* (keeps strikes from becoming a slow death spiral).
@@ -1334,12 +1334,12 @@ What to try
 
 ---
 
-## 2026-02-27 19:23 CST - v0.9.21 Socialize action (labor â†’ cohesion lever)
+## 2026-02-27 19:23 CST - v0.9.21 Socialize action (labor → cohesion lever)
 
 Summary
-- Added a new action: **Socialize** â€” kittens can spend time organizing/chatting to **reduce Dissent** (improves Compliance) and gently lift Mood.
+- Added a new action: **Socialize** — kittens can spend time organizing/chatting to **reduce Dissent** (improves Compliance) and gently lift Mood.
 - AI scoring now treats Socialize as attractive when Dissent is high, but heavily deprioritizes it during **food/warmth/threat** emergencies.
-- Planner will reserve **1 kitten** for Socialize when Dissent > ~50% *and* basics are stable, making â€œslow-motion strikesâ€ self-correcting.
+- Planner will reserve **1 kitten** for Socialize when Dissent > ~50% *and* basics are stable, making “slow-motion strikes” self-correcting.
 - Policy multipliers now include **Socialize** so the Director can explicitly trade throughput for cohesion.
 - Migration-safe: older saves auto-add the new policy key (defaults to 1.0).
 
@@ -1350,7 +1350,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Push Dissent into **murmur/strike** (Tight rations + high Work pace), then set **Socialize mult â†’ 2.0** and watch Dissent trend down + Compliance recover.
+- Push Dissent into **murmur/strike** (Tight rations + high Work pace), then set **Socialize mult → 2.0** and watch Dissent trend down + Compliance recover.
 
 ---
 
@@ -1369,7 +1369,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Trigger a safety rule (e.g., hunger/tired), then click that kitten row and confirm the inspector reads **Decision: RULE/EMERGENCY** instead of looking like the score picker â€œchanged its mindâ€.
+- Trigger a safety rule (e.g., hunger/tired), then click that kitten row and confirm the inspector reads **Decision: RULE/EMERGENCY** instead of looking like the score picker “changed its mind”.
 
 ---
 
@@ -1378,7 +1378,7 @@ What to try
 Summary
 - Added **Hold Council** button: spend **food + science** to reduce colony **Dissent** and temporarily boost **Compliance**.
 - Council is a timed, transparent effect (`councilUntil`) shown in the **Season** panel; while active, dissent decays faster.
-- Slight immediate mood bump on council to reinforce â€œcohesion restoredâ€ feel.
+- Slight immediate mood bump on council to reinforce “cohesion restored” feel.
 - Compliance formula now includes a small temporary bonus while Council is active (kept bounded + explainable).
 - Migration-safe: old saves default `effects.councilUntil = 0` (no save break).
 
@@ -1419,7 +1419,7 @@ Summary
 - Added **Mentor** to the **Policy multipliers** panel (0..2), letting you explicitly throttle or boost colony-wide skill training.
 - Mentor now shows up (and is editable) once **Libraries** are unlocked; it stays disabled/hidden behind the tech gate before that.
 - Updated all **Policy presets** to include Mentor (Advance boosts it; Defend/Survive de-emphasize it).
-- Plan summary now includes Mentor, and over-budget shaving now considers Mentor earlier (so it wonâ€™t â€œcrowd outâ€ critical work when population is small).
+- Plan summary now includes Mentor, and over-budget shaving now considers Mentor earlier (so it won’t “crowd out” critical work when population is small).
 
 Files touched
 - `prototype/index.html`
@@ -1428,7 +1428,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- In **Advance** mode with **Libraries** unlocked, crank **Mentor mult â†’ 2.0** and watch low-skill kittens catch up faster (then set it to 0.0 to stockpile science).
+- In **Advance** mode with **Libraries** unlocked, crank **Mentor mult → 2.0** and watch low-skill kittens catch up faster (then set it to 0.0 to stockpile science).
 
 ---
 
@@ -1436,7 +1436,7 @@ What to try
 
 Summary
 - Fixed a logic inversion in the **Dissent** model: **Tight rations** (lower food use) now *increase* dissent pressure, while **Feast** rations now *reduce* it slightly.
-- This makes the social layer behave intuitively: starving them â€œpolitelyâ€ causes murmurs/slowdowns faster; feeding well buys cohesion.
+- This makes the social layer behave intuitively: starving them “politely” causes murmurs/slowdowns faster; feeding well buys cohesion.
 - No save-breaking changes; just a corrected driver in the 1s dissent update.
 
 Files touched
@@ -1445,17 +1445,17 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Flip rations **Tight â†’ Feast** for ~30â€“60s and watch **Dissent%** trend reverse (especially if Work pace is high).
+- Flip rations **Tight → Feast** for ~30–60s and watch **Dissent%** trend reverse (especially if Work pace is high).
 
 ---
 
-## 2026-02-27 17:08 CST - v0.9.12 Social slowdown: new Loaf action (dissent â†’ visible productivity drag)
+## 2026-02-27 17:08 CST - v0.9.12 Social slowdown: new Loaf action (dissent → visible productivity drag)
 
 Summary
-- Added a new personal task: **Loaf** â€” a morale-recovery action that becomes more attractive when **Mood is low** and especially when **Dissent is high**.
+- Added a new personal task: **Loaf** — a morale-recovery action that becomes more attractive when **Mood is low** and especially when **Dissent is high**.
 - This turns the Dissent system into a more *legible* civ-sim effect: high dissent now shows up as a real **soft strike / idle time** (instead of only abstract plan-compliance drift).
 - Loaf is intentionally self-limiting: it is heavily penalized during **food emergencies** and when **Winter is cold**, so the colony still fights to survive.
-- Updated safety-rule action picker + action list to include Loaf (you can force it with a rule if you want, but itâ€™s mainly emergent).
+- Updated safety-rule action picker + action list to include Loaf (you can force it with a rule if you want, but it’s mainly emergent).
 
 Files touched
 - `prototype/index.html`
@@ -1474,7 +1474,7 @@ What to try
 
 Summary
 - Projects panel now shows **which reserve-protected inputs** are blocking progress (wood/science/tools), per project.
-- Workshops and libraries are now much easier to debug (e.g., â€œblocked by science reserveâ€ vs looking like AI is just idling).
+- Workshops and libraries are now much easier to debug (e.g., “blocked by science reserve” vs looking like AI is just idling).
 - Keeps the system incremental + explainable: this is purely UI feedback, no new hidden rules.
 
 Files touched
@@ -1492,10 +1492,10 @@ What to try
 ## 2026-02-27 16:38 CST - v0.9.10 Social layer: Dissent + Discipline (plan compliance becomes emergent)
 
 Summary
-- Added a **Dissent** meter (0â€“100%) that rises when mood is low + policies are harsh (high work pace, tight rations, prolonged hunger, alarms).
+- Added a **Dissent** meter (0–100%) that rises when mood is low + policies are harsh (high work pace, tight rations, prolonged hunger, alarms).
 - Dissent directly reduces **plan + role pressure** via a new *Compliance* multiplier; high dissent means more wandering/rotation and less perfect central planning.
-- Added a new Director slider: **Discipline** â€” restores compliance and reduces effective autonomy sampling, but has a small steady **morale cost**.
-- Added explainability: Season panel shows Autonomy (base + effective), Discipline, Dissent, and current **compliance xâ€¦**.
+- Added a new Director slider: **Discipline** — restores compliance and reduces effective autonomy sampling, but has a small steady **morale cost**.
+- Added explainability: Season panel shows Autonomy (base + effective), Discipline, Dissent, and current **compliance x…**.
 - Save-safe: new fields default in (director.discipline, social.dissent). Old saves auto-initialize.
 
 Files touched
@@ -1515,7 +1515,7 @@ What to try
 Summary
 - Advisor now generates **clickable quick actions** when it detects a problem (food, warmth, defense, housing, tools, science).
 - Each action applies a **small, explainable nudge**: bumps relevant policy multipliers, toggles the right signal (FOOD/BUILD/ALARM where allowed), and may raise a matching reserve to reduce overspend thrash.
-- Keeps the "policy management" vibe: youâ€™re still steering, but now the advisor can be acted on in 1 click instead of manual slider hunting.
+- Keeps the "policy management" vibe: you’re still steering, but now the advisor can be acted on in 1 click instead of manual slider hunting.
 - Save-safe: no schema changes required; it only edits existing policy/signal/reserve fields.
 
 Files touched
@@ -1533,7 +1533,7 @@ What to try
 Summary
 - Added **Season forecast** lines: projects food/kitten + warmth at **end of season** and **at Winter start** using the smoothed trend rates.
 - Forecast is explicitly *best-effort*: it assumes the last few seconds of rates continue (good for spotting spirals early).
-- Makes Director policy more legible: you can see whether youâ€™re safe to push growth or should toggle Winter Prep / Crisis.
+- Makes Director policy more legible: you can see whether you’re safe to push growth or should toggle Winter Prep / Crisis.
 
 Files touched
 - `prototype/index.html`
@@ -1560,7 +1560,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Enable **Auto Recruit**, stabilize food/kitten above target in Spring, and watch for the â€œstray kitten joinedâ€ log event.
+- Enable **Auto Recruit**, stabilize food/kitten above target in Spring, and watch for the “stray kitten joined” log event.
 
 ---
 
@@ -1602,7 +1602,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Load the local build and confirm the game still runs; then open DevTools â†’ Network and ensure `css/app.css` + `js/main.js` load (no 404s).
+- Load the local build and confirm the game still runs; then open DevTools → Network and ensure `css/app.css` + `js/main.js` load (no 404s).
 
 ---
 
@@ -1706,7 +1706,7 @@ What to try
 
 ---
 
-## 2026-02-27 13:37 CST â€” v0.8.9 Aptitude bias (skills influence AI + mood)
+## 2026-02-27 13:37 CST — v0.8.9 Aptitude bias (skills influence AI + mood)
 
 Summary
 - Added an **Aptitude bias** in action scoring: kittens now gently prefer tasks they have higher skill in (emergent specialization).
@@ -1725,10 +1725,10 @@ What to try
 
 ---
 
-## 2026-02-27 13:52 CST ï¿½ v0.9.0 Mentoring (science ? skills)
+## 2026-02-27 13:52 CST � v0.9.0 Mentoring (science ? skills)
 
 Summary
-- Added a new **Mentor** task (unlocks with **Libraries**): spend science to train a lagging kitten in the mentorï¿½s top skill.
+- Added a new **Mentor** task (unlocks with **Libraries**): spend science to train a lagging kitten in the mentor�s top skill.
 - Mentor respects **science reserves**; if science is protected/scarce, it immediately falls back to **Research** (no wasted ticks).
 - AI now considers Mentor during **stable** periods (especially in **Advance** mode) as a long-run compounding choice.
 - UI: when a kitten is Mentoring, the Task column shows the **target kitten #** and **skill** for explainability.
@@ -1750,7 +1750,7 @@ What to try
 ## 2026-02-27 14:07 CST - v0.9.1 Autonomy slider (central planning vs individuality)
 
 Summary
-- Added **Autonomy** slider (0ï¿½100%) to tune how strongly kittens follow their personality likes/dislikes.
+- Added **Autonomy** slider (0�100%) to tune how strongly kittens follow their personality likes/dislikes.
 - Autonomy now scales **personality scoring** (likes/dislikes) and **boredom/rotation** pressure.
 - Autonomy inversely scales **role pressure**, so low autonomy feels more "central planning" (stronger specialization push).
 - Mood alignment (likes/dislikes) now scales with Autonomy, making emergent behavior more noticeable.
@@ -1783,7 +1783,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- In Winter, set Work pace to **120%** for ~20â€“30s to stabilize warmth/threat, then drop to **90%** and watch mood/efficiency recover.
+- In Winter, set Work pace to **120%** for ~20–30s to stabilize warmth/threat, then drop to **90%** and watch mood/efficiency recover.
 
 ---
 
@@ -1791,7 +1791,7 @@ What to try
 
 Summary
 - Autonomy no longer just weights likes/dislikes/roles: at higher autonomy, kittens will occasionally choose a **near-top alternative** instead of always taking the single best score.
-- This makes the colony feel more ï¿½civ simï¿½: same policy can produce different individual behaviors (without turning into pure randomness).
+- This makes the colony feel more �civ sim�: same policy can produce different individual behaviors (without turning into pure randomness).
 - Kept explainable: the **Why** line now shows when autonomy caused a non-top pick (e.g. `autonomy picked #2/3`).
 - Inspector still shows the full top scoring list so you can see what they *could* have done.
 
@@ -1801,7 +1801,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens ï¿½freestyleï¿½ into research/industry even while the plan biases food/wood.
+- Set **Autonomy = 80%** and **Mode = Advance**, then watch if different kittens �freestyle� into research/industry even while the plan biases food/wood.
 
 ---
 
@@ -1811,7 +1811,7 @@ Summary
 - Added a **Projects** panel under Plan debug: shows live progress bars for Hut/Palisade/Granary/Workshop/Library.
 - Each project includes a 1-click **Focus** button that sets Project focus (a build-order nudge) without hunting the dropdown.
 - Explicitly surfaces when building is **blocked by your Wood reserve**, so "stalled" progress is explainable (buffers did it).
-- Kept Season panelï¿½s compact "Projects:" summary line for quick scanning.
+- Kept Season panel�s compact "Projects:" summary line for quick scanning.
 
 Files touched
 - `prototype/index.html`
@@ -1839,7 +1839,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1ï¿½2 decision ticks.
+- Save a stable setup in **A**, then intentionally wreck your policy (e.g., set Forage=0). Load **A** and watch the plan + assignments snap back within 1�2 decision ticks.
 
 ---
 
@@ -1858,7 +1858,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Set **Autonomy** to 80ï¿½100%, then click kittens and look for ï¿½autonomy picked #2/3ï¿½ in the inspector + **Autonomy** tags in Pref.
+- Set **Autonomy** to 80�100%, then click kittens and look for �autonomy picked #2/3� in the inspector + **Autonomy** tags in Pref.
 
 ---
 
@@ -1866,7 +1866,7 @@ What to try
 
 Summary
 - Added **Dissent** and **Compliance** to the top stat cards so the social layer is visible at-a-glance.
-- Dissent now shows its current band (**calm / murmur / strike**) right in the main stats, reducing the ï¿½why are they loafing / ignoring plan?ï¿½ confusion moment.
+- Dissent now shows its current band (**calm / murmur / strike**) right in the main stats, reducing the �why are they loafing / ignoring plan?� confusion moment.
 - Compliance is shown as a multiplier (x0.45..x1.15) so players can immediately see how hard the plan/roles will actually push.
 - Updated patch notes + bumped version to **0.9.14**.
 
@@ -1885,7 +1885,7 @@ What to try
 Summary
 - Added **Labor doctrine** selector: **Balanced**, **Specialize**, **Rotate**.
 - Doctrine tunes emergent behavior: **Specialize** increases role pressure + reduces boredom rotation; **Rotate** reduces role pressure + increases boredom rotation.
-- Doctrine also slightly affects **Dissent** buildup (Rotate reduces it a bit; Specialize increases it a bit) to reinforce the civ-sim ï¿½social textureï¿½.
+- Doctrine also slightly affects **Dissent** buildup (Rotate reduces it a bit; Specialize increases it a bit) to reinforce the civ-sim �social texture�.
 - Updated autonomy hint to show doctrine-aware **role pressure**.
 - Patch notes updated; migration-safe (missing doctrine defaults to Balanced).
 
@@ -1922,7 +1922,7 @@ What to try
 
 Summary
 - QoL: **+Kitten** button now shows **pop/cap** inline so the housing constraint is always visible.
-- UX: **+Kitten** auto-disables when youï¿½re **housing-capped** or **canï¿½t afford** the current food cost.
+- UX: **+Kitten** auto-disables when you�re **housing-capped** or **can�t afford** the current food cost.
 - Explainability: hover the button to see the exact block reason ("need food" vs "build huts").
 - Patch notes updated to reflect the change.
 
@@ -1940,7 +1940,7 @@ What to try
 ## 2026-02-27 21:09 CST - v0.9.28 Spoilage multiplier + storage overcap advisor
 
 Summary
-- Explainability: top stats now show **Spoilage xï¿½** (x1.00..x4.00) so food over-cap loss is visible at a glance.
+- Explainability: top stats now show **Spoilage x�** (x1.00..x4.00) so food over-cap loss is visible at a glance.
 - Advisor: detects **storage over-cap** and offers a 1-click **Storage fix** (Project focus ? Storage when available, +BuildGranary, +PreserveFood, and a small wood reserve nudge).
 - Patch notes updated for v0.9.28.
 
@@ -1959,7 +1959,7 @@ What to try
 
 Summary
 - Advisor now explicitly warns when **Winter is near** (late Fall / =45s to Winter) and offers a 1-click **Winter Prep** action.
-- Winter Prep remains a manual, reversible overlay (no hidden auto-enable) ï¿½ this just makes the tool discoverable.
+- Winter Prep remains a manual, reversible overlay (no hidden auto-enable) � this just makes the tool discoverable.
 - Keeps the loop incremental: you feel the seasonal pressure, then choose whether to spend policy authority to stockpile.
 - Patch notes updated.
 
@@ -1994,7 +1994,7 @@ What to try
 ## 2026-02-28 06:56 CST - v0.9.67 Grievance: slow-burn resentment ? dissent pressure
 
 Summary
-- Added per-kitten **Grievance** (0ï¿½100%) that rises when kittens are pushed into disliked/misaligned work under strong central planning, and cools down with comfort work.
+- Added per-kitten **Grievance** (0�100%) that rises when kittens are pushed into disliked/misaligned work under strong central planning, and cools down with comfort work.
 - Colony-level **Grievance** average is now visible as a stat card.
 - **Dissent desire** now includes a grievance pressure term (visible in Social inspector driver breakdown).
 - **Hold Council** now also reduces grievance (represents being heard), helping you recover from rigid policy pushes.
@@ -2054,7 +2054,7 @@ What to try
 Summary
 - Director levers now affect **task commitment length**: higher **Discipline** increases coordination (less 1s flapping), higher **Autonomy** reduces it (more emergent switching).
 - Commitment duration remains short (clamped), and Safety Rules/emergencies still override immediately.
-- Explainability: COMMIT decisions now show the live **coord multiplier**, and the Discipline hint shows `commitment xï¿½`.
+- Explainability: COMMIT decisions now show the live **coord multiplier**, and the Discipline hint shows `commitment x�`.
 - Patch notes updated.
 
 Files touched
@@ -2090,8 +2090,8 @@ What to try
 ## 2026-02-28 08:26 CST - v0.9.73 Factions: negotiation preview + cooldown + delta logging
 
 Summary
-- Factions: **Negotiate** now has a short **cooldown (~45s)** so itï¿½s a deliberate politics lever (not a spam click).
-- UI: each faction row now shows a **preview** of the policy concession youï¿½ll make before clicking.
+- Factions: **Negotiate** now has a short **cooldown (~45s)** so it�s a deliberate politics lever (not a spam click).
+- UI: each faction row now shows a **preview** of the policy concession you�ll make before clicking.
 - Explainability: negotiation log now includes the **exact deltas** applied (priority sliders / policy multipliers) plus the dissent reduction.
 - Save-safe: adds optional `director.factionsNextAt` / `director.factionsLast` fields.
 
@@ -2121,13 +2121,13 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesnï¿½t creep as fast.
+- Play for a few minutes, refresh the page, and confirm the save restores correctly while LocalStorage usage doesn�t creep as fast.
 
 ## 2026-02-28 10:02 CST - v0.9.79 Auto Policy (targets ? policy nudges)
 
 Summary
-- NEW: **Auto Policy** checkbox (Director): a small ï¿½governorï¿½ that nudges policy multipliers toward your Targets (food/kitten, warmth, threat).
-- Makes tiny, reversible changes (ï¿½0.05 steps) with cooldowns; logs sparingly to avoid spam.
+- NEW: **Auto Policy** checkbox (Director): a small �governor� that nudges policy multipliers toward your Targets (food/kitten, warmth, threat).
+- Makes tiny, reversible changes (�0.05 steps) with cooldowns; logs sparingly to avoid spam.
 - Pauses automatically during **Crisis Protocol** so emergency overlays remain authoritative.
 - Explainability: Season panel shows the last Auto Policy reason (what deficit it reacted to).
 - Patch notes updated.
@@ -2149,7 +2149,7 @@ What to try
 Summary
 - UI/Explainability: **Food Cap** and **Spoilage** stat cards are now clickable.
 - NEW: Storage Inspector modal explains the **soft cap ? spoilage** system, shows the **cap breakdown** (base + huts + granaries), and prints your current overcap + season context.
-- Gives clear ï¿½what to doï¿½ levers (Granary focus / PreserveFood ? Jerky / stop over-foraging) without changing simulation balance.
+- Gives clear �what to do� levers (Granary focus / PreserveFood ? Jerky / stop over-foraging) without changing simulation balance.
 - No save-breaking changes.
 
 Files touched
@@ -2166,10 +2166,10 @@ What to try
 ## 2026-02-28 12:12 CST - v0.9.88 Values drift (kittens learn from work)
 
 Summary
-- NEW (civ-sim): each kittenâ€™s **Values** (Food/Safety/Progress/Social) now slowly drift toward what they actually do each second.
+- NEW (civ-sim): each kitten’s **Values** (Food/Safety/Progress/Social) now slowly drift toward what they actually do each second.
 - Higher **effective autonomy** (Autonomy + Dissent, reduced by Discipline) makes drift faster; central planning makes it slower.
 - Emergent behavior: specializing a colony changes *who your kittens become* over minutes, which can cascade into **Faction** makeup and demands.
-- Explainability: table + Inspect tooltips show a short, recent **"drift â†’ AXIS"** note.
+- Explainability: table + Inspect tooltips show a short, recent **"drift → AXIS"** note.
 - No save-breaking changes.
 
 Files touched
@@ -2186,8 +2186,8 @@ What to try
 ## 2026-02-28 12:27 CST - v0.9.89 Colony table: Fit column (policy alignment)
 
 Summary
-- NEW: Added a dedicated **Fit** column in the Colony table showing each kittenï¿½s policy focus-fit (% alignment to current Mode + priority sliders).
-- Fit is color-coded (green/yellow/red) to make ï¿½who is misalignedï¿½ instantly scannable.
+- NEW: Added a dedicated **Fit** column in the Colony table showing each kitten�s policy focus-fit (% alignment to current Mode + priority sliders).
+- Fit is color-coded (green/yellow/red) to make �who is misaligned� instantly scannable.
 - Tooltip explains the civ-sim loop: low fit under strong planning (low effective autonomy) tends to drag mood and increase dissent pressure.
 - Patch notes updated.
 - No save-breaking changes.
@@ -2210,8 +2210,8 @@ What to try
 
 Summary
 - Civ-sim readability: kittens now have **deterministic names** based on id (save-safe; no RNG/state needed).
-- UI: colony table ï¿½#ï¿½ column renamed to **Kitten** and now shows **Name + #id**.
-- Explainability: Decision Inspector title now includes the kittenï¿½s name so you can track individuals across seasons, factions, and buddy stress.
+- UI: colony table �#� column renamed to **Kitten** and now shows **Name + #id**.
+- Explainability: Decision Inspector title now includes the kitten�s name so you can track individuals across seasons, factions, and buddy stress.
 - Save compatibility: older saves are migrated by assigning missing names on load.
 
 Files touched
@@ -2221,7 +2221,7 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Start/continue a run and watch how named individuals drift into blocs/roles (itï¿½s much easier to spot the "Brave guard" vs the "Studious scholar").
+- Start/continue a run and watch how named individuals drift into blocs/roles (it�s much easier to spot the "Brave guard" vs the "Studious scholar").
 
 ---
 
@@ -2231,7 +2231,7 @@ Summary
 - QoL: added a **Policy Undo** button (2 minute window) in the Policy panel.
 - Undo snapshot captures your last manual change to **Policy multipliers** (including presets/reset and +/- tweaks).
 - Undo snapshot also captures **Role Quotas** changes (including quota reset).
-- Explainability: Undo shows time-left + the reason label (e.g., ï¿½tweak Forageï¿½, ï¿½Policy preset ? Surviveï¿½).
+- Explainability: Undo shows time-left + the reason label (e.g., �tweak Forage�, �Policy preset ? Survive�).
 - No save-breaking changes.
 
 Files touched
@@ -2250,7 +2250,7 @@ What to try
 
 Summary
 - Civ-sim pressure: when **population exceeds housing cap**, overcrowding now adds a slow-burn **Dissent** increase (reduced by Discipline) and raises kitten **Grievance**.
-- Overcrowding also applies a tiny colony-wide **Mood** penalty, making ï¿½build hutsï¿½ a clearer, legible stability goal.
+- Overcrowding also applies a tiny colony-wide **Mood** penalty, making �build huts� a clearer, legible stability goal.
 - Explainability: event log pings once when overcrowding begins and once when it resolves.
 - No save-breaking changes.
 
@@ -2319,7 +2319,7 @@ What to try
 
 Summary
 - UI/Explainability: Buddy column now shows **buddy name + id + need%** (instead of just id), making relationship pressure readable at a glance.
-- Tooltips now include the buddyï¿½s full name as well.
+- Tooltips now include the buddy�s full name as well.
 - No save-breaking changes.
 
 Files touched
@@ -2331,7 +2331,7 @@ What to try
 - Let buddy-need climb (avoid Socialize), then watch the Buddy column color + need% spike to flag brewing social stress.
 
 ---
-## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesnï¿½t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n
+## 2026-02-28 14:27 CST - v0.9.97 Auto Pause (danger)\n\nSummary\n- NEW Director checkbox: **Auto Pause (danger)** to pause the sim during clear imminent collapse (starving/freezing/raid risk).\n- Adds a short cooldown so resuming doesn�t immediately re-pause.\n- Season panel now shows the last auto-pause reason for quick diagnosis.\n- No save-breaking changes.\n\nFiles touched\n- prototype/index.html\n- dist/index.html\n- dist/css/app.css\n- dist/js/main.js\n- DEVLOG.md\n\nWhat to try\n- Enable Auto Pause (danger), then intentionally run low on food/warmth or let threat spike; confirm it pauses and the Season panel shows why.\n\n---\n
 
 
 ---
@@ -2340,7 +2340,7 @@ What to try
 Summary
 - NEW Projects panel action: **Pin** a Hut / Palisade / Granary / Workshop / Library to temporarily force Project focus until **one** completes.
 - Pin automatically clears itself on completion (logs a message), so it behaves like a small build-order command, not a permanent policy change.
-- Explainability: pinned projects show a **PINNED** tag in the Projects list; focus line shows the reason ("pinned project: â€¦").
+- Explainability: pinned projects show a **PINNED** tag in the Projects list; focus line shows the reason ("pinned project: …").
 - Save-safe: stored in `director.pinnedProject` (sanitized on load).
 
 Files touched
@@ -2355,7 +2355,7 @@ What to try
 ## 2026-02-28 15:12 CST - v0.9.99 Offline progress (capped) + clean summary log
 
 Summary
-- NEW: **Offline progress** ï¿½ on load, the sim now advances up to **5 minutes** since your last save.
+- NEW: **Offline progress** � on load, the sim now advances up to **5 minutes** since your last save.
 - Explainability: adds a single compact log line showing offline deltas (food/jerky/wood/warmth/threat/science/tools).
 - Safety: offline sim suppresses spammy logs (season warnings, etc.) and reports how many were suppressed.
 - Save-safe: uses existing meta.lastTs stamping; no schema changes required.
@@ -2368,7 +2368,7 @@ Files touched
 - DEVLOG.md
 
 What to try
-- Close the tab for ~60ï¿½180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
+- Close the tab for ~60�180s, reopen, and check the Event log for the offline summary + whether your colony survived the gap.
 
 
 ## 2026-02-28 15:27 CST - v0.9.100 Policy locks (Auto Policy guardrails)
@@ -2394,7 +2394,7 @@ What to try
 
 Summary
 - UI: Pause button now turns red when the Director **auto-pauses on danger**, and shows the danger reason in its tooltip.
-- QoL: Manual pause/resume clears the auto-danger reason so the UI doesnï¿½t stay ï¿½alarm redï¿½ forever.
+- QoL: Manual pause/resume clears the auto-danger reason so the UI doesn�t stay �alarm red� forever.
 - Explainability: Makes slow spirals (starvation/freezing/raid risk) more visible at a glance, without changing sim balance.
 
 Files touched
@@ -2430,7 +2430,7 @@ What to try
 ## 2026-02-28 16:57 CST - v0.9.106 Governance log (audit trail)
 
 Summary
-- NEW: added a ï¿½Governance logï¿½ panel that records Director-driven policy shifts.
+- NEW: added a �Governance log� panel that records Director-driven policy shifts.
 - Auto Policy now writes an audit entry when it nudges multipliers (includes top diffs + the reason string).
 - Faction negotiations also write to the Governance log (so politics-driven drift is traceable).
 - Coalesces rapid Auto Policy nudges into a single recent entry to avoid spam.
@@ -2452,8 +2452,8 @@ What to try
 
 Summary
 - AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to pick Socialize/Care to actively restore cohesion (instead of everyone defaulting to Loaf).
-- Balance: Loaf gets a small penalty in ï¿½strike but stableï¿½ states to prevent passive stall loops.
-- Explainability: Decision Inspector scoring now includes explicit ï¿½strike recoveryï¿½ reasons (Socialize/Care) and a matching Loaf reason when it is deprioritized.
+- Balance: Loaf gets a small penalty in �strike but stable� states to prevent passive stall loops.
+- Explainability: Decision Inspector scoring now includes explicit �strike recovery� reasons (Socialize/Care) and a matching Loaf reason when it is deprioritized.
 - Version bump + dist rebuild.
 - No save-breaking changes.
 
@@ -2464,7 +2464,7 @@ Files touched
 - `dist/js/main.js`
 
 What to try
-- Intentionally let dissent climb into strike, then stabilize food/warmth and watch for one kitten to become an organizer via Socialize/Care (click them to inspect ï¿½strike recoveryï¿½).
+- Intentionally let dissent climb into strike, then stabilize food/warmth and watch for one kitten to become an organizer via Socialize/Care (click them to inspect �strike recovery�).
 
 ---
 
@@ -2472,7 +2472,7 @@ What to try
 
 Summary
 - QoL: dragging **Discipline / Work pace / Priorities** sliders no longer spams the Event log.
-- Logs are now debounced: you still get a clear â€œX â†’ Y%â€ entry shortly after you stop dragging.
+- Logs are now debounced: you still get a clear “X → Y%” entry shortly after you stop dragging.
 - Patch notes updated + version bump.
 - No save-breaking changes.
 
@@ -2480,7 +2480,7 @@ Files touched
 - `prototype/index.html`
 
 What to try
-- Drag Work pace from 80%â†’120% back and forth: you should only see 1â€“2 log lines total (not dozens).
+- Drag Work pace from 80%→120% back and forth: you should only see 1–2 log lines total (not dozens).
 
 
 ---
@@ -2489,7 +2489,7 @@ What to try
 
 Summary
 - QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).
-- Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as ï¿½blockedï¿½ (pairs with the Unblock button).
+- Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as �blocked� (pairs with the Unblock button).
 - Under the hood: added a transient per-project EMA rate tracker (no save data changes).
 - Version bump + dist rebuild.
 - No save-breaking changes.
@@ -2552,9 +2552,9 @@ What to try
 ## 2026-02-28 18:28 CST - v0.9.112 Colony table sorting (click headers)
 
 Summary
-- QoL: the Colony table can now be sorted by clicking column headers (desc â†’ asc â†’ off).
+- QoL: the Colony table can now be sorted by clicking column headers (desc → asc → off).
 - Added sorting for key civ-sim debugging signals: Fit, Eff, Mood, Griev, Buddy-need, etc.
-- Visual indicator: active sort header shows â–²/â–¼.
+- Visual indicator: active sort header shows ▲/▼.
 - Sorting is transient UI state only (does not affect sim; not saved).
 - Version bump + dist rebuild.
 
@@ -2565,14 +2565,14 @@ Files touched
 - dist/js/main.js
 
 What to try
-- Click **Fit** to find the most misaligned kittens, then open the Social inspector to see why theyâ€™re unhappy.
+- Click **Fit** to find the most misaligned kittens, then open the Social inspector to see why they’re unhappy.
 
 ---
 
 ## 2026-02-28 18:43 CST - v0.9.113 Per-kitten Directive (persistent scoring bias)
 
 Summary
-- NEW: Per-kitten **Directive** (Auto/Food/Safety/Progress/Social/Rest) to bias that kittenï¿½s scoring persistently (not a hard lock; rules/emergencies still override).
+- NEW: Per-kitten **Directive** (Auto/Food/Safety/Progress/Social/Rest) to bias that kitten�s scoring persistently (not a hard lock; rules/emergencies still override).
 - UI: Directive can be set in the Decision Inspector (click a kitten row), with a one-click Clear button.
 - UI: Colony table Pref column now shows **Dir X** when a kitten has a non-Auto directive.
 - Patch notes updated + version bump.
@@ -2587,7 +2587,7 @@ Files touched
 - DEVLOG.md
 
 What to try
-- Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when itï¿½s safe.
+- Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when it�s safe.
 
 ---
 
@@ -2616,8 +2616,8 @@ What to try
 
 Summary
 - NEW: Director panel now includes **Directive tools**.
-- ï¿½Match blocsï¿½ sets each kittenï¿½s Directive to match their dominant Values bloc (Food/Safety/Progress/Social) for quick bottom-up specialization.
-- ï¿½Clear allï¿½ resets all Directives back to Auto.
+- �Match blocs� sets each kitten�s Directive to match their dominant Values bloc (Food/Safety/Progress/Social) for quick bottom-up specialization.
+- �Clear all� resets all Directives back to Auto.
 - QoL: Director panel shows an **active directives X/Y** hint.
 - Version bump + dist rebuild.
 - No save-breaking changes.
@@ -2657,7 +2657,7 @@ What to try
 
 Summary
 - QoL: Added **bulk Policy Locks** controls in the Policy panel (Lock basics / Lock all / Unlock all).
-- This makes it easy to freeze your chosen multipliers so **Auto Policy** canï¿½t fight your manual tuning during a run.
+- This makes it easy to freeze your chosen multipliers so **Auto Policy** can�t fight your manual tuning during a run.
 - Bulk actions are save-safe and only affect the existing per-action lock flags.
 - Patch notes updated.
 
@@ -2708,14 +2708,14 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspectorï¿½s mitigation + repel chance update in real time.
+- Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspector�s mitigation + repel chance update in real time.
 ---
 
 ## 2026-02-28 23:30 CST - v0.9.132 Auto Pause (danger) now forecasts spirals
 
 Summary
 - Upgraded **Auto Pause (danger)** to use smoothed resource rates to forecast near-term collapse instead of only hard thresholds.
-- The director can now pause *before* you hit 0 edible food / 0 warmth / raid-at-100 threat when the trend says itï¿½s imminent.
+- The director can now pause *before* you hit 0 edible food / 0 warmth / raid-at-100 threat when the trend says it�s imminent.
 - Pause reasons now include a compact ETA for forecast-triggered pauses (ex: "0 in 18s").
 - Patch notes updated.
 
@@ -2875,7 +2875,7 @@ What to try
 ## 2026-03-01 05:23 CST - P0.1 Modularization: extract 1s decision/planning tick into sim.js
 
 Summary
-- Phase 0 modularization slice: extracted the 1-second ï¿½decision cadenceï¿½ block (plan creation + per-kitten task selection + decision/act history bookkeeping) out of `js/main.js` into `js/sim.js` as `runDecisionSecond(s, deps)`.
+- Phase 0 modularization slice: extracted the 1-second �decision cadence� block (plan creation + per-kitten task selection + decision/act history bookkeeping) out of `js/main.js` into `js/sim.js` as `runDecisionSecond(s, deps)`.
 - `main.js` now calls `runDecisionSecond(...)` and passes the needed deterministic helpers via dependency injection (matching the `runKittensTick(...)` pattern).
 - No behavior changes intended; this is a boundary cleanup to prep for a deterministic replay harness.
 
@@ -3230,3 +3230,23 @@ Files touched
 
 What to try
 - In Director, switch **Project focus** between Auto and a manual value (Housing/Defense/etc) and confirm the hint line updates correctly (including the auto "why" text).
+
+
+---
+
+## 2026-03-01 17:26 CST - P0.1 Modularization: extract Directive tools hint rendering into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director Directive tools hint + enable/disable rendering out of main.js into a pure UI helper: renderDirectiveTools(...) in js/ui.js.
+- main.js now delegates rendering and injects countActiveDirectives (keeps state logic in main).
+- Small QoL: the Match blocs / Clear all buttons now disable when there are zero kittens.
+- No behavior changes intended for the sim (UI-only).
+
+Files touched
+- js/ui.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- In Director, confirm the "active directives: X/Y" hint still updates.
+- Start a fresh run (0 kittens) and confirm Directive tools buttons are disabled until you recruit.

@@ -414,6 +414,33 @@ export function renderPinnedProjectControls(deps){
 }
 
 /**
+ * Render Directive tools hint + basic enable/disable state.
+ *
+ * Pure render helper: does NOT mutate state.
+ *
+ * @param {object} deps
+ * @param {any} deps.state
+ * @param {HTMLElement|null} deps.dirHintEl
+ * @param {HTMLButtonElement|null} deps.btnMatchEl
+ * @param {HTMLButtonElement|null} deps.btnClearEl
+ * @param {(s:any)=>{active:number,total:number}} deps.countActiveDirectives
+ */
+export function renderDirectiveTools(deps){
+  const { state, dirHintEl, btnMatchEl, btnClearEl, countActiveDirectives } = deps || {};
+
+  const ks = Array.isArray(state?.kittens) ? state.kittens : [];
+  const disabled = ks.length <= 0;
+
+  if (btnMatchEl) btnMatchEl.disabled = disabled;
+  if (btnClearEl) btnClearEl.disabled = disabled;
+
+  if (dirHintEl) {
+    const c = countActiveDirectives?.(state) ?? { active:0, total:ks.length };
+    dirHintEl.textContent = (c.total > 0) ? `active directives: ${c.active}/${c.total}` : '';
+  }
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

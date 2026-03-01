@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -6682,12 +6682,13 @@ import { PATCH_HISTORY } from './content.js';
       rrEl.textContent = `Recommended (${sn}): foodâ‰¥${rr.food} | woodâ‰¥${rr.wood} | scienceâ‰¥${rr.science} | toolsâ‰¥${rr.tools}`;
     }
 
-    // Directive tools hint: make "who is directed" visible without opening the table.
-    const dirHintEl = el('dirToolsHint');
-    if (dirHintEl) {
-      const c = countActiveDirectives(state);
-      dirHintEl.textContent = c.total ? `active directives: ${c.active}/${c.total}` : '';
-    }
+    renderDirectiveTools({
+      state,
+      dirHintEl: el('dirToolsHint'),
+      btnMatchEl: el('btnDirBloc'),
+      btnClearEl: el('btnDirClearAll'),
+      countActiveDirectives,
+    });
 
     renderPolicy();
     renderRoleQuotas();
