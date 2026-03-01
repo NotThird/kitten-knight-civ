@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.131';
+  const GAME_VERSION = '0.9.132';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -3714,6 +3714,7 @@
     // Director automation: optional auto PAUSE on danger.
     // Goal: make slow spirals (starvation/freezing/raid buildup) more visible by stopping the sim when things are clearly about to go bad.
     // It will NOT auto-resume.
+    // Upgrade: uses simple trend forecasts (resource rates) so it can pause *before* you hit zero.
     if (state.director.autoDangerPause) {
       state._autoDPauseTimer = (state._autoDPauseTimer ?? 0) + dt;
       if (state._autoDPauseTimer >= 1) {
@@ -3727,16 +3728,61 @@
           const warmth = Number(state.res.warmth ?? 0);
           const threat = Number(state.res.threat ?? 0);
 
-          const starving = (edibleFood(state) <= 0) || (foodPerKitten < targets.foodPerKitten * 0.55);
+          // Trend-based forecasts (smoothed) — keeps the pauses from being too hair-trigger.
+          ensureRateState(state);
+          const r = state._rate ?? {};
+          const foodRate = Number(r.food ?? 0);
+          const jerkyRate = Number(r.jerky ?? 0);
+          const warmthRate = Number(r.warmth ?? 0);
+          const threatRate = Number(r.threat ?? 0);
+
+          const edibleNow = edibleFood(state);
+          const edibleRate = foodRate + jerkyRate;
+
+          const etaZero = (cur, rate) => {
+            const c = Number(cur ?? 0);
+            const rr = Number(rate ?? 0);
+            if (!Number.isFinite(c) || !Number.isFinite(rr)) return Infinity;
+            if (c <= 0.0001) return 0;
+            if (rr >= -0.02) return Infinity; // not dropping meaningfully
+            return c / (-rr);
+          };
+
+          const etaRaid = () => {
+            if (!Number.isFinite(threatRate) || threatRate <= 0.02) return Infinity;
+            if (threat >= 100) return 0;
+            return (100 - threat) / threatRate;
+          };
+
+          const starveEta = etaZero(edibleNow, edibleRate);
+          const freezeEta = etaZero(warmth, warmthRate);
+          const raidEta = etaRaid();
+
+          // Hard thresholds (immediate danger)
+          const starving = (edibleNow <= 0) || (foodPerKitten < targets.foodPerKitten * 0.55);
           const freezing = (season.name === 'Winter') && (warmth < (targets.warmth - 18));
           const raidSoon = (threat >= 95) || (state.signals?.ALARM && threat >= 80) || (threat > targets.maxThreat * 1.35);
 
-          if (starving || freezing || raidSoon) {
-            const why = starving
-              ? `starving risk (edible/kitten ${fmt(foodPerKitten)} < ${(targets.foodPerKitten * 0.55).toFixed(0)})`
-              : freezing
-                ? `freezing risk (winter warmth ${fmt(warmth)} < ${(targets.warmth - 18).toFixed(0)})`
-                : `raid risk (threat ${fmt(threat)})`;
+          // Forecast thresholds ("we are trending into the wall")
+          const starveSoon = (starveEta <= 22);
+          const freezeSoon = (season.name === 'Winter') && (freezeEta <= 22);
+          const raidEtaSoon = (raidEta <= 20);
+
+          if (starving || freezing || raidSoon || starveSoon || freezeSoon || raidEtaSoon) {
+            let why = '';
+            if (starving) {
+              why = `starving risk (edible/kitten ${fmt(foodPerKitten)} < ${(targets.foodPerKitten * 0.55).toFixed(0)})`;
+            } else if (starveSoon) {
+              why = `starving soon (edible ${fmt(edibleNow)} at ${fmtRate(edibleRate)} → 0 in ${fmtEtaSeconds(starveEta)})`;
+            } else if (freezing) {
+              why = `freezing risk (winter warmth ${fmt(warmth)} < ${(targets.warmth - 18).toFixed(0)})`;
+            } else if (freezeSoon) {
+              why = `freezing soon (warmth ${fmt(warmth)} at ${fmtRate(warmthRate)} → 0 in ${fmtEtaSeconds(freezeEta)})`;
+            } else if (raidSoon) {
+              why = `raid risk (threat ${fmt(threat)})`;
+            } else {
+              why = `raid soon (threat ${fmt(threat)} at ${fmtRate(threatRate)} → raid in ${fmtEtaSeconds(raidEta)})`;
+            }
 
             state.paused = true;
             state.director.autoDangerPauseWhy = why;
@@ -4547,6 +4593,14 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.132',
+      notes: [
+        'QoL/Explainability: Auto Pause (danger) now uses simple trend forecasts (resource rates) so it can pause BEFORE you hit 0 (starving/freezing/raid imminent).',
+        'The pause reason now includes an ETA when it is forecast-based (ex: “0 in 18s”).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.131',
       notes: [

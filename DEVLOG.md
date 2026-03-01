@@ -2688,3 +2688,22 @@ Files touched
 
 What to try
 - Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspectorï¿½s mitigation + repel chance update in real time.
+---
+
+## 2026-02-28 23:30 CST - v0.9.132 Auto Pause (danger) now forecasts spirals
+
+Summary
+- Upgraded **Auto Pause (danger)** to use smoothed resource rates to forecast near-term collapse instead of only hard thresholds.
+- The director can now pause *before* you hit 0 edible food / 0 warmth / raid-at-100 threat when the trend says it’s imminent.
+- Pause reasons now include a compact ETA for forecast-triggered pauses (ex: "0 in 18s").
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `dist/index.html`
+- `dist/css/app.css`
+- `DEVLOG.md`
+
+What to try
+- Enable **Auto Pause (danger)**, then intentionally run a negative food trend (raise Work pace + Tight rations) and watch it pause before edible hits zero.
