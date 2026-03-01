@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 20:44 CST - v0.9.121 Inspector Directives: persistent + repeatable
+
+Summary
+- FIX: Decision Inspector Directive dropdown no longer “works once” (change it as many times as you want).
+- Persistence: Changing/clearing a Directive now saves immediately (so refreshes won’t revert it).
+- Explainability: Directive changes now write a clear Event log line (who changed to what).
+- Patch notes updated.
+
+Files touched
+- `prototype/index.html`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Click a kitten row → change Directive a few times (Food→Progress→Auto) and verify it persists after refresh.
+
+---
+
 ## 2026-02-28 20:29 CST - v0.9.120 Raids now respect defenses (palisade + guards)
 
 Summary

@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.120';
+  const GAME_VERSION = '0.9.121';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4537,6 +4537,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.121',
+      notes: [
+        'FIX/QoL: Directive selector in the Decision Inspector can now be changed repeatedly (it no longer only works once).',
+        'Persistence: changing/clearing a kitten\'s Directive now saves immediately and writes a clear Event log line (so you can audit who you specialized).',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.120',
       notes: [
         'Combat sim: Raids are now mitigated by your defenses (Palisade + Guards on duty + Security/Drills/Curfew). Strong defenses can fully repel a raid.',
@@ -5368,18 +5376,30 @@
       if (sel) {
         sel.addEventListener('change', () => {
           const v = String(sel.value || 'Auto');
-          k.directive = opts.includes(v) ? v : 'Auto';
+          const next = opts.includes(v) ? v : 'Auto';
+          const prev = String(k.directive ?? 'Auto');
+          k.directive = next;
+
           // Make it immediately visible in-table.
           k.why = String(k.why ?? '');
+
+          // Persist change + keep it legible (updates the "Bias" label + Clear button state).
+          if (next !== prev) log(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) → ${next}`);
+          save();
+          renderInspect();
           render();
-        }, { once:true });
+        });
       }
       const btn = inspectControlsEl.querySelector('#btnDirectiveClear');
       if (btn) {
         btn.addEventListener('click', () => {
+          const prev = String(k.directive ?? 'Auto');
           k.directive = 'Auto';
+          if (prev !== 'Auto') log(`Directive cleared: ${String(k.name ?? 'Kitten')} (#${k.id})`);
+          save();
+          renderInspect();
           render();
-        }, { once:true });
+        });
       }
     }
 
