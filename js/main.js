@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.113';
+  const GAME_VERSION = '0.9.114';
   const SAVE_KEY = 'kittenKnightCiv';
 
   const fmt = (n) => (Math.abs(n) >= 1000 ? n.toFixed(0) : n.toFixed(1)).replace(/\.0$/, '');
@@ -4484,6 +4484,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.114',
+      notes: [
+        'Explainability: Storage inspector now shows Edible (Food+Jerky) totals and clarifies that Jerky does not spoil and does not count toward the fresh-food storage cap.',
+        'QoL: Storage inspector now surfaces Edible/Kitten and a quick “what is over-cap?” explanation so winter-prep decisions are less confusing.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.113',
       notes: [
         'NEW: Per-kitten Directive. Click a kitten row → set Directive (Food/Safety/Progress/Social/Rest) to bias their scoring persistently (not a hard lock).',
@@ -5487,6 +5495,12 @@
 
     const cap = foodStorageCap(state);
     const food = Number(state.res.food ?? 0) || 0;
+    const jerky = Number(state.res.jerky ?? 0) || 0;
+    const edible = Math.max(0, food + jerky);
+    const n = Math.max(1, Number(state.kittens?.length ?? 1) || 1);
+    const ediblePk = edible / n;
+
+    // IMPORTANT: storage cap + spoilage only apply to fresh food (food), not preserved rations (jerky).
     const oc = state._lastFoodOvercap ?? { cap, food, mult: 1 };
     const spoilMult = clamp01((Number(oc.mult ?? 1) - 1) / 3) * 3 + 1; // sanitize to [1..4]
 
@@ -5500,13 +5514,18 @@
     const over = Math.max(0, food - cap);
     const overPct = cap > 0 ? (over / cap) : 0;
 
-    storageTitleEl.textContent = `Food cap: ${fmt(cap)} | Spoilage x${Number(spoilMult).toFixed(2)}`;
-    storageSubEl.textContent = `Season: ${season.name} | Food stored: ${fmt(food)} (${over > 0 ? `over by ${fmt(over)} / ${(overPct*100).toFixed(0)}%` : 'under cap'})`;
+    storageTitleEl.textContent = `Fresh food cap: ${fmt(cap)} | Spoilage x${Number(spoilMult).toFixed(2)}`;
+    storageSubEl.textContent = `Season: ${season.name} | Fresh food: ${fmt(food)}${jerky > 0 ? ` | Jerky: ${fmt(jerky)}` : ''} | Edible total: ${fmt(edible)} (${fmt(ediblePk)}/kitten)${over > 0 ? ` | over-cap by ${fmt(over)} (${(overPct*100).toFixed(0)}%)` : ''}`;
 
     const lines = [];
     lines.push('What this is:');
-    lines.push('• Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
+    lines.push('• Fresh Food has a soft storage cap. If you stockpile above it, spoilage accelerates.');
+    lines.push('• Jerky does NOT spoil and does NOT count toward the fresh-food cap (it is your winter bank).');
     lines.push('• Spoilage multiplier is capped at x4 to keep it a pressure, not a wipeout.');
+    lines.push('');
+    lines.push('Quick read (right now):');
+    lines.push(`• edible total = food + jerky = ${fmt(food)} + ${fmt(jerky)} = ${fmt(edible)} (${fmt(ediblePk)}/kitten)`);
+    lines.push(`• over-cap (fresh food only) = max(0, food - cap) = ${fmt(over)} → spoilage x${Number(spoilMult).toFixed(2)}`);
     lines.push('');
     lines.push('Cap breakdown (current):');
     lines.push(`• base: ${fmt(base)}`);
@@ -5517,7 +5536,7 @@
     lines.push('How to respond (management levers):');
     lines.push('• If spoilage is high: build Granary (Project focus → Storage) and/or PreserveFood into Jerky.');
     lines.push('• If you are stable: don’t over-forage; redirect labor into wood/science/industry.');
-    lines.push('• If Winter is soon: a *little* overcap is fine, but watch spoilage and edible/kitten.');
+    lines.push('• If Winter is soon: a *little* over-cap is fine, but prefer banking surplus as Jerky.');
 
     storageBodyEl.textContent = lines.join('\n');
   }

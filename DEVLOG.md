@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 18:58 CST - v0.9.114 Storage inspector: edible breakdown
+
+Summary
+- Explainability: Storage inspector now shows Edible = Food + Jerky (and Edible/Kitten) to match starvation logic.
+- Explainability: Clarified that only fresh Food counts toward the storage cap/spoilage; Jerky does not spoil and is your winter bank.
+- QoL: Storage inspector now prints a quick ‚Äúover-cap‚Äù formula so players understand why spoilage spiked.
+- Version bump + dist rebuild.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Stockpile with PreserveFood: push fresh Food slightly over-cap, convert surplus to Jerky, and confirm spoilage only reacts to fresh Food.
+
+---
+
 ## 2026-02-28 16:42 CST - v0.9.105 Policy quick-tune modifiers
 
 Summary
@@ -2314,7 +2335,7 @@ What to try
 ## 2026-02-28 18:43 CST - v0.9.113 Per-kitten Directive (persistent scoring bias)
 
 Summary
-- NEW: Per-kitten **Directive** (Auto/Food/Safety/Progress/Social/Rest) to bias that kittenís scoring persistently (not a hard lock; rules/emergencies still override).
+- NEW: Per-kitten **Directive** (Auto/Food/Safety/Progress/Social/Rest) to bias that kittenÔøΩs scoring persistently (not a hard lock; rules/emergencies still override).
 - UI: Directive can be set in the Decision Inspector (click a kitten row), with a one-click Clear button.
 - UI: Colony table Pref column now shows **Dir X** when a kitten has a non-Auto directive.
 - Patch notes updated + version bump.
@@ -2329,4 +2350,4 @@ Files touched
 - DEVLOG.md
 
 What to try
-- Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when itís safe.
+- Click a kitten ? set Directive=Progress, then sort by Task/Fit and watch that kitten  lean into research/crafting when itÔøΩs safe.
