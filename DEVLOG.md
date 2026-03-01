@@ -2998,3 +2998,19 @@ Files touched
 
 What to try
 - Run `node scripts/replay_test.js` and confirm it prints a `replay_test: summary` block before `replay_test: OK`.
+---
+
+## 2026-03-01 10:54 CST - P0.2 Replay harness: decision mix snapshot (AI triage)
+
+Summary
+- Expanded replay harness output with a deterministic **decisionMix** line.
+- decisionMix reports counts/percentages for **rule / emergency / commit / score** decisions over the 60s window.
+- Pairs with taskMix to make planner/execution regressions diagnosable from CI logs.
+
+Files touched
+- scripts/replay_test.js
+- DEVLOG.md
+
+What to try
+- Run 
+ode scripts/replay_test.js and confirm the summary includes decisionMix: (and remains deterministic run-to-run).

@@ -103,6 +103,11 @@ async function main(){
   // This is a cheap-but-useful regression signal: if planner/execution changes, this mix shifts.
   const taskMix = Object.create(null);
 
+  // Decision mix snapshot (counts by decision kind across the replay window).
+  // Mirrors in-game explainability kinds: rule/emergency/commit/score.
+  const decisionMix = { rule:0, emergency:0, commit:0, score:0 };
+  let lastDecHistLen = (s._decHist ?? []).length;
+
   const startRes = { ...(s.res ?? {}) };
   const startPop = (s.kittens ?? []).length;
   const startVitals = (s.kittens ?? []).map(k => ({
@@ -139,6 +144,20 @@ async function main(){
       // Task mix accumulation: count per-kitten-seconds on each task.
       const tk = String(k.task ?? 'Rest');
       taskMix[tk] = (taskMix[tk] ?? 0) + dt;
+    }
+
+    // Decision mix accumulation: runDecisionSecond pushes to s._decHist once per second.
+    const nowLen = (s._decHist ?? []).length;
+    if (nowLen > lastDecHistLen) {
+      for (let j = lastDecHistLen; j < nowLen; j++) {
+        const kinds = (s._decHist?.[j]?.kinds) ?? null;
+        if (!kinds) continue;
+        decisionMix.rule += Number(kinds.rule ?? 0) || 0;
+        decisionMix.emergency += Number(kinds.emergency ?? 0) || 0;
+        decisionMix.commit += Number(kinds.commit ?? 0) || 0;
+        decisionMix.score += Number(kinds.score ?? 0) || 0;
+      }
+      lastDecHistLen = nowLen;
     }
   }
 
@@ -229,6 +248,20 @@ async function main(){
     .join(' | ');
 
   console.log('  taskMix:', mixStr || '(none)');
+
+  // Deterministic decision mix snapshot
+  const decTotal = Object.values(decisionMix).reduce((a, b) => a + (Number(b ?? 0) || 0), 0);
+  function fmtPct(n){
+    const x = Number(n ?? 0) || 0;
+    return fmt1((x / Math.max(1e-9, decTotal)) * 100);
+  }
+  console.log(
+    '  decisionMix:',
+    `rule:${decisionMix.rule} (${fmtPct(decisionMix.rule)}%) | ` +
+    `emergency:${decisionMix.emergency} (${fmtPct(decisionMix.emergency)}%) | ` +
+    `commit:${decisionMix.commit} (${fmtPct(decisionMix.commit)}%) | ` +
+    `score:${decisionMix.score} (${fmtPct(decisionMix.score)}%)`
+  );
 
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
