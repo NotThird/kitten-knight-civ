@@ -98,6 +98,16 @@ async function main(){
   const dt = 0.25;
   const seconds = 60;
   const steps = Math.floor(seconds / dt);
+
+  const startRes = { ...(s.res ?? {}) };
+  const startPop = (s.kittens ?? []).length;
+  const startVitals = (s.kittens ?? []).map(k => ({
+    id: k.id,
+    hunger: Number(k.hunger ?? 0),
+    energy: Number(k.energy ?? 0),
+    health: Number(k.health ?? 1),
+  }));
+
   for (let i = 0; i < steps; i++) {
     sim.stepSim(s, dt, deps);
 
@@ -123,6 +133,39 @@ async function main(){
       assert(k.health >= -EPS && k.health <= 1 + EPS, `kitten.health out of [0,1] at i=${i}: ${k.health}`);
     }
   }
+
+  // --- Compact deterministic delta summary (helps debugging without a debugger)
+  const endRes = { ...(s.res ?? {}) };
+  const endPop = (s.kittens ?? []).length;
+  const keyRes = ['food','jerky','wood','warmth','threat','science','tools','huts','palisade','granaries'];
+  const deltas = keyRes
+    .filter(k => k in startRes || k in endRes)
+    .map(k => ({ k, d: (Number(endRes[k] ?? 0) || 0) - (Number(startRes[k] ?? 0) || 0) }));
+
+  function fmtDelta(n){
+    const x = Number(n ?? 0);
+    const r = Math.round(x * 1000) / 1000;
+    return (r >= 0 ? '+' : '') + String(r);
+  }
+
+  const vitNow = (s.kittens ?? []).map(k => ({
+    hunger: Number(k.hunger ?? 0),
+    energy: Number(k.energy ?? 0),
+    health: Number(k.health ?? 1),
+  }));
+
+  function avg(arr, key){
+    if (!arr.length) return 0;
+    let sum = 0;
+    for (const o of arr) sum += Number(o[key] ?? 0) || 0;
+    return sum / arr.length;
+  }
+
+  console.log('replay_test: summary');
+  console.log(`  sim: +${seconds}s @ dt=${dt}s (steps=${steps})`);
+  console.log(`  pop: ${startPop} -> ${endPop}`);
+  console.log('  resΔ:', deltas.map(x => `${x.k}:${fmtDelta(x.d)}`).join(' | '));
+  console.log(`  vitals(avg): hunger=${(Math.round(avg(vitNow,'hunger')*1000)/1000)} energy=${(Math.round(avg(vitNow,'energy')*1000)/1000)} health=${(Math.round(avg(vitNow,'health')*1000)/1000)}`);
 
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
