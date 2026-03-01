@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.134';
+  const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -301,7 +301,7 @@
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -4487,6 +4487,31 @@
     const btn = e.target?.closest?.('button[data-faction]');
     if (!btn) return;
     const axis = String(btn.dataset.faction || '');
+
+    // Optional confirmation: politics is a drift lever, and undo has a timer.
+    // This reduces "oops" clicks without slowing down players who want fast iteration.
+    state.director = state.director ?? {};
+    if (!('confirmFactions' in state.director)) state.director.confirmFactions = true;
+
+    if (state.director.confirmFactions) {
+      try {
+        const preview = {
+          t: Number(state.t ?? 0) || 0,
+          director: structuredClone(state.director ?? {}),
+          policyMult: structuredClone(state.policyMult ?? {}),
+          social: structuredClone(state.social ?? {}),
+        };
+        const p = negotiateWithFaction(preview, axis, { ignoreCooldown:true, govKind:'Preview', govWhy:'', reason:`preview ${axis}` });
+        const msg = (p && p.msg) ? String(p.msg) : `Negotiate with ${axis} bloc?`;
+        const ok = confirm(`Confirm faction negotiation?\n\n${msg}\n\nThis will drift priorities/policy. You can Undo once for ~120s.`);
+        if (!ok) return;
+      } catch (e) {
+        // If preview fails for any reason, fall back to a simple confirm.
+        const ok = confirm(`Confirm faction negotiation with the ${axis} bloc? (This drifts priorities/policy; Undo is available briefly.)`);
+        if (!ok) return;
+      }
+    }
+
     const res = negotiateWithFaction(state, axis);
     if (res?.msg) log(res.msg);
     save();
@@ -4609,6 +4634,22 @@
   // Patch notes are cumulative: when you open them after an update, you see everything since your last seen version.
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
+    {
+      v: '0.9.135',
+      notes: [
+        'QoL/Politics: added an optional confirmation prompt for Faction negotiations (prevents misclick drift).',
+        'New toggle in Director: “Confirm politics”. When ON, the prompt includes an exact preview of the policy deltas.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
+      v: '0.9.134',
+      notes: [
+        'Explainability: added a Commitment stat card (coordination clarity).',
+        'Commitment exposes the hidden Discipline + Effective Autonomy → task lock tendency (helps diagnose thrash).',
+        'No save-breaking changes.'
+      ]
+    },
     {
       v: '0.9.133',
       notes: [
@@ -7411,6 +7452,11 @@
     if (autoCouncil) autoCouncil.checked = !!state.director.autoCouncil;
     const autoDP = el('autoDangerPause');
     if (autoDP) autoDP.checked = !!state.director.autoDangerPause;
+    const cf = el('confirmFactions');
+    if (cf) {
+      if (!('confirmFactions' in state.director)) state.director.confirmFactions = true;
+      cf.checked = !!state.director.confirmFactions;
+    }
 
     // Timed effects (for old saves)
     state.effects = state.effects ?? { festivalUntil: 0, councilUntil: 0, drillUntil: 0 };
@@ -9222,6 +9268,15 @@
     render();
   });
 
+  const confirmFactionsEl = document.getElementById('confirmFactions');
+  if (confirmFactionsEl) confirmFactionsEl.addEventListener('change', (e) => {
+    state.director = state.director ?? { confirmFactions:true };
+    state.director.confirmFactions = !!e.target.checked;
+    log(`Confirm politics → ${state.director.confirmFactions ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+
   const pfEl = document.getElementById('projectFocus');
   if (pfEl) pfEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
@@ -9925,6 +9980,7 @@
       if (!('autoDangerPause' in s.director)) s.director.autoDangerPause = false;
       if (!('autoDangerPauseNextAt' in s.director)) s.director.autoDangerPauseNextAt = 0;
       if (!('autoDangerPauseWhy' in s.director)) s.director.autoDangerPauseWhy = '';
+      if (!('confirmFactions' in s.director)) s.director.confirmFactions = true;
       if (!('projectFocus' in s.director)) s.director.projectFocus = 'Auto';
       if (!('pinnedProject' in s.director)) s.director.pinnedProject = null;
       // Migration: sanitize pinned project payload (keep it small + safe)

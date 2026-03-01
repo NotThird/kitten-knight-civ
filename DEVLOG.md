@@ -2747,3 +2747,21 @@ Files touched
 
 What to try
 - Crank **Autonomy** high (and/or trigger dissent) vs crank **Discipline** high, then watch **Commitment** and the colony's task-switching behavior change.
+
+---
+
+## 2026-03-01 00:15 CST - v0.9.135 QoL/Politics: confirm faction negotiations
+
+Summary
+- QoL: added an optional confirmation prompt before applying **Faction negotiations** (prevents accidental policy drift).
+- NEW Director toggle: **Confirm politics** (defaults ON). If ON, the prompt includes a preview of the exact deltas that will be applied.
+- Keeps the existing **Undo** window intact (still ~120s).
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `DEVLOG.md`
+
+What to try
+- Click **Negotiate** on any faction bloc and verify you get a preview + confirm; toggle Confirm politics OFF and verify it applies immediately.
