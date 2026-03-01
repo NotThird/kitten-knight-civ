@@ -99,6 +99,10 @@ async function main(){
   const seconds = 60;
   const steps = Math.floor(seconds / dt);
 
+  // Task mix snapshot (per-kitten-seconds spent on each task over the replay window).
+  // This is a cheap-but-useful regression signal: if planner/execution changes, this mix shifts.
+  const taskMix = Object.create(null);
+
   const startRes = { ...(s.res ?? {}) };
   const startPop = (s.kittens ?? []).length;
   const startVitals = (s.kittens ?? []).map(k => ({
@@ -131,6 +135,10 @@ async function main(){
       assert(k.hunger >= -EPS && k.hunger <= 1 + EPS, `kitten.hunger out of [0,1] at i=${i}: ${k.hunger}`);
       assert(k.energy >= -EPS && k.energy <= 1 + EPS, `kitten.energy out of [0,1] at i=${i}: ${k.energy}`);
       assert(k.health >= -EPS && k.health <= 1 + EPS, `kitten.health out of [0,1] at i=${i}: ${k.health}`);
+
+      // Task mix accumulation: count per-kitten-seconds on each task.
+      const tk = String(k.task ?? 'Rest');
+      taskMix[tk] = (taskMix[tk] ?? 0) + dt;
     }
   }
 
@@ -202,6 +210,25 @@ async function main(){
   console.log(`              energy ${fmt3(avgStart.energy)} -> ${fmt3(avgEnd.energy)} (${fmtDelta(avgEnd.energy - avgStart.energy)})`);
   console.log(`              health ${fmt3(avgStart.health)} -> ${fmt3(avgEnd.health)} (${fmtDelta(avgEnd.health - avgStart.health)})`);
   console.log(`  vitals(end min..max): hunger ${fmt3(mm.hunger.min)}..${fmt3(mm.hunger.max)} | energy ${fmt3(mm.energy.min)}..${fmt3(mm.energy.max)} | health ${fmt3(mm.health.min)}..${fmt3(mm.health.max)}`);
+
+  // Deterministic task mix snapshot
+  const mixRows = Object.entries(taskMix)
+    .map(([task, secs]) => ({ task, secs: Number(secs ?? 0) || 0 }))
+    .filter(r => r.secs > 1e-6)
+    .sort((a, b) => (b.secs - a.secs) || a.task.localeCompare(b.task));
+
+  function fmt1(n){
+    return Math.round((Number(n ?? 0) || 0) * 10) / 10;
+  }
+
+  // total "kitten-seconds"; roughly seconds * avgPop, but computed from mix
+  const mixTotal = mixRows.reduce((acc, r) => acc + r.secs, 0);
+  const mixStr = mixRows
+    .slice(0, 12)
+    .map(r => `${r.task}:${fmt1(r.secs)}s (${fmt1((r.secs / Math.max(1e-9, mixTotal)) * 100)}%)`)
+    .join(' | ');
+
+  console.log('  taskMix:', mixStr || '(none)');
 
   // --- EMA/rate smoothing invariants (existing coverage)
   const toy = {
