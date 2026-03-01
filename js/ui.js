@@ -268,6 +268,44 @@ export function initDirectorProfiles(deps){
 }
 
 /**
+ * Render Director Profiles (A/B/C) UI (slot buttons + hint text).
+ *
+ * Pure render helper: does NOT mutate state.
+ *
+ * @param {object} deps
+ * @param {HTMLElement|null} deps.profilesEl
+ * @param {HTMLElement|null} deps.profilesHintEl
+ * @param {object|null} deps.profiles             - state.director.profiles
+ */
+export function renderDirectorProfiles(deps){
+  const { profilesEl, profilesHintEl, profiles } = deps || {};
+  if (!profilesEl) return;
+
+  const fmtTime = (ts) => {
+    if (!ts) return '';
+    try { return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); } catch { return ''; }
+  };
+
+  const slotBtn = (slot) => {
+    const p = profiles?.[slot];
+    const has = !!(p && p.snap);
+    const when = has ? fmtTime(p.savedAt) : '';
+    const label = has ? `saved ${when}` : 'empty';
+    return `
+      <div class="row" style="gap:6px; margin-right:10px">
+        <span class="tag">${slot}</span>
+        <button class="btn" data-prof="${slot}" data-pact="load" ${has ? '' : 'disabled'}>Load</button>
+        <button class="btn" data-prof="${slot}" data-pact="save">Save</button>
+        <button class="btn bad" data-prof="${slot}" data-pact="clear" ${has ? '' : 'disabled'}>Clear</button>
+        <span class="small" style="opacity:.8">${label}</span>
+      </div>`;
+  };
+
+  profilesEl.innerHTML = ['A','B','C'].map(slotBtn).join('');
+  if (profilesHintEl) profilesHintEl.textContent = 'Tip: save a Winter Prep setup in A, an Expand setup in B, and an Advance setup in C.';
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

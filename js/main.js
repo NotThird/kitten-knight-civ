@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -6167,30 +6167,11 @@ import { PATCH_HISTORY } from './content.js';
     // Director profiles UI
     if (profilesEl) {
       ensureProfiles(state);
-      const fmtTime = (ts) => {
-        if (!ts) return '';
-        try {
-          return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-        } catch { return ''; }
-      };
-
-      const slotBtn = (slot) => {
-        const p = state.director.profiles?.[slot];
-        const has = !!(p && p.snap);
-        const when = has ? fmtTime(p.savedAt) : '';
-        const label = has ? `saved ${when}` : 'empty';
-        return `
-          <div class="row" style="gap:6px; margin-right:10px">
-            <span class="tag">${slot}</span>
-            <button class="btn" data-prof="${slot}" data-pact="load" ${has?'':'disabled'}>Load</button>
-            <button class="btn" data-prof="${slot}" data-pact="save">Save</button>
-            <button class="btn bad" data-prof="${slot}" data-pact="clear" ${has?'':'disabled'}>Clear</button>
-            <span class="small" style="opacity:.8">${label}</span>
-          </div>`;
-      };
-
-      profilesEl.innerHTML = ['A','B','C'].map(slotBtn).join('');
-      if (profilesHintEl) profilesHintEl.textContent = 'Tip: save a Winter Prep setup in A, an Expand setup in B, and an Advance setup in C.';
+      renderDirectorProfiles({
+        profilesEl,
+        profilesHintEl,
+        profiles: state.director?.profiles ?? null,
+      });
     }
 
     const freshPerKitten = (Number(state.res.food ?? 0) / Math.max(1, state.kittens.length));

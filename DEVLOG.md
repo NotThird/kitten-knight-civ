@@ -3175,3 +3175,21 @@ Files touched
 
 What to try
 - In Director Profiles, Save a slot, change some policy sliders, then Load that slot and confirm everything snaps back.
+
+---
+
+## 2026-03-01 15:56 CST - P0.1 Modularization: extract Director Profiles rendering into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the **Director Profiles (A/B/C)** UI rendering (slot rows + saved-at hint text) out of main.js into a pure render helper: enderDirectorProfiles(...) in js/ui.js.
+- main.js now just ensures profile data exists and delegates rendering to the UI module boundary.
+- No behavior changes intended (same buttons, same enable/disable logic).
+
+Files touched
+- js/ui.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- Open Director Profiles: confirm slots show **empty/saved HH:MM**.
+- Save a slot, refresh, and confirm the saved timestamp label persists.
