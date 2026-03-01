@@ -17,6 +17,23 @@
     .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
     .stat .k { font-size:12px; color:var(--muted); }
     .stat .v { font-size:18px; font-weight:700; margin-top:2px; }
+
+    /* Discoverability: some stat cards are clickable (inspectors). */
+    .stat.inspectable { cursor:pointer; position:relative; border-color: rgba(125,211,252,.20); }
+    .stat.inspectable:hover { background: rgba(125,211,252,.06); border-color: rgba(125,211,252,.35); }
+    .stat.inspectable::after {
+      content: 'inspect';
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 10px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      color: rgba(125,211,252,.85);
+      opacity: .85;
+      pointer-events: none;
+    }
+
     .small { font-size:12px; color:var(--muted); }
 
     .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }

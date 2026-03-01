@@ -1,5 +1,5 @@
 (() => {
-  const GAME_VERSION = '0.9.130';
+  const GAME_VERSION = '0.9.131';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -4548,6 +4548,14 @@
   // Keep this list small + player-facing.
   const PATCH_HISTORY = [
     {
+      v: '0.9.131',
+      notes: [
+        'QoL/Explainability: clickable stat cards now show an "INSPECT" tag and highlight on hover (Dissent/Compliance/Focus-fit, Storage, Threat).',
+        'Tip: click those stat cards to open the Social / Storage / Threat inspectors.',
+        'No save-breaking changes.'
+      ]
+    },
+    {
       v: '0.9.130',
       notes: [
         'NEW Explainability: click the Threat stat card to open a Threat inspector (raid ETA, mitigation, repel chance, and defense breakdown).',
@@ -7617,23 +7625,23 @@
       d.className = 'stat';
       if (k === 'Dissent') {
         d.dataset.stat = 'dissent';
+        d.classList.add('inspectable');
         d.title = 'Click to inspect what is driving dissent/compliance';
-        d.style.cursor = 'pointer';
       }
       if (k === 'Compliance') {
         d.dataset.stat = 'compliance';
+        d.classList.add('inspectable');
         d.title = 'Click to inspect what is driving dissent/compliance (compliance scales how strongly the colony follows the plan)';
-        d.style.cursor = 'pointer';
       }
       if (k === 'Food Cap' || k === 'Spoilage') {
         d.dataset.stat = 'storage';
+        d.classList.add('inspectable');
         d.title = 'Click to inspect food storage cap + spoilage mechanics';
-        d.style.cursor = 'pointer';
       }
       if (k === 'Grievance') {
         d.dataset.stat = 'grievance';
+        d.classList.add('inspectable');
         d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure. Click to inspect the social model.';
-        d.style.cursor = 'pointer';
       }
       if (k === 'Autonomy') {
         d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
@@ -7649,8 +7657,8 @@
       }
       if (k === 'Focus-fit') {
         d.dataset.stat = 'focusfit';
+        d.classList.add('inspectable');
         d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline. Click to inspect the social model.';
-        d.style.cursor = 'pointer';
       }
       if (k === 'Food') {
         const oc = state._lastFoodOvercap ?? { cap: foodCapNow, food: Number(state.res.food ?? 0), mult: 1 };
@@ -7663,8 +7671,8 @@
       }
       if (k === 'Threat') {
         d.dataset.stat = 'threat';
+        d.classList.add('inspectable');
         d.title = 'Threat rises over time and triggers raids at 100. Click to inspect the raid/defense model (mitigation + repel chance).';
-        d.style.cursor = 'pointer';
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';

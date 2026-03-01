@@ -4,6 +4,27 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-02-28 23:15 CST - v0.9.131 QoL: Inspectable stat cards now visibly "clickable"
+
+Summary
+- QoL/Explainability: added an **INSPECT** tag + hover highlight to all clickable stat cards (Social, Storage, Threat inspectors).
+- Makes the inspector modals discoverable without reading tooltips (click Dissent/Compliance/Focus-fit, Food Cap/Spoilage, or Threat).
+- No logic changes to the underlying inspectors; pure UI/UX clarity.
+- Patch notes updated.
+- No save-breaking changes.
+
+Files touched
+- `prototype/index.html`
+- `dist/index.html`
+- `dist/css/app.css`
+- `dist/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Hover the Dissent / Food Cap / Threat stat cards and click them to confirm each opens the correct inspector modal.
+
+---
+
 ## 2026-02-28 22:30 CST - v0.9.128 Explainability: Reserve hit ETA in top stats
 
 Summary
@@ -2666,4 +2687,4 @@ Files touched
 - `DEVLOG.md`
 
 What to try
-- Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspector’s mitigation + repel chance update in real time.
+- Let threat climb, then toggle **Curfew** / **Run Drills** and watch the inspectorï¿½s mitigation + repel chance update in real time.
