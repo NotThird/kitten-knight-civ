@@ -3408,4 +3408,24 @@ Files touched
 What to try
 - In Director, toggle **Auto Reserves** ON/OFF and confirm:
   - it logs a single "Auto Reserves → ON/OFF" line
+  - it persists after refresh\n
+---
+
+## 2026-03-01 21:57 CST - P0.1 Modularization: extract Auto Policy toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Policy** checkbox change wiring out of main.js into a new UI helper: `initAutoPolicyControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoPolicy(...)` mutator (resets `autoPolicyNextAt` and clears `autoPolicyWhy` when toggled) plus log/save/render into the UI module.
+- Removed the old inline DOM listener to avoid double-wiring.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Policy** ON/OFF and confirm:
+  - it logs a single "Auto Policy ? ON/OFF" line
   - it persists after refresh
+  - turning it ON lets policy automation run immediately (no waiting)

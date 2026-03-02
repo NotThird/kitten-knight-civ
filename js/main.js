@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7594,17 +7594,6 @@ import { PATCH_HISTORY } from './content.js';
   });
 
 
-  const autoPolicyEl = document.getElementById('autoPolicy');
-  if (autoPolicyEl) autoPolicyEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
-    state.director.autoPolicy = !!e.target.checked;
-    if (state.director.autoPolicy) state.director.autoPolicyNextAt = 0;
-    state.director.autoPolicyWhy = '';
-    log(`Auto Policy â†’ ${state.director.autoPolicy ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
-
   const autoBuildEl = document.getElementById('autoBuildPush');
   if (autoBuildEl) autoBuildEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
@@ -8097,6 +8086,22 @@ import { PATCH_HISTORY } from './content.js';
   initAutoReservesControls({
     autoReservesEl: document.getElementById('autoReserves'),
     setAutoReserves,
+    log,
+    save,
+    render,
+  });
+
+  function setAutoPolicy(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', projectFocus:'Auto', autonomy: 0.60 };
+    state.director.autoPolicy = !!on;
+    if (state.director.autoPolicy) state.director.autoPolicyNextAt = 0;
+    state.director.autoPolicyWhy = '';
+    return !!state.director.autoPolicy;
+  }
+
+  initAutoPolicyControls({
+    autoPolicyEl: document.getElementById('autoPolicy'),
+    setAutoPolicy,
     log,
     save,
     render,

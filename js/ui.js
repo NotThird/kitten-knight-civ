@@ -707,6 +707,38 @@ export function initAutoReservesControls(deps){
 }
 
 /**
+ * Auto Policy toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoPolicyEl
+ * @param {(on:boolean)=>boolean} deps.setAutoPolicy
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoPolicyControls(deps){
+  const {
+    autoPolicyEl,
+    setAutoPolicy,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoPolicyEl) return;
+
+  autoPolicyEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoPolicy?.(on));
+    log?.(`Auto Policy → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
