@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 03:33 CST - Aquarium: Coterie feud→truce status arcs (rivalry memory)
+
+Summary
+- Aquarium depth: coterie rivalry is now an actual **relationship arc**:
+  - a clash sets a short-lived **FEUD** status between the two circles
+  - when the timer expires, it automatically cools into a brief **TRUCE** and then fades out
+- Observability: emits a **Society feed** truce line + drops **Trends** markers (`kind:'feud'` / `kind:'truce'`).
+- UI: **Factions → Coteries** shows inline **FEUD/TRUCE** timer tags so you can see ongoing micro-politics without scrolling the feed.
+
+Files touched
+- `js/main.js`
+
+What to try
+- Run Curator hands-off with **6+ kittens** until you get an aid-vs-strict rivalry.
+- Open **Factions → Coteries** and confirm the **FEUD** tag counts down; then wait for the **TRUCE** flip.
+
+---
+
 ## 2026-03-02 03:18 CST - Aquarium: Coterie rivalry beat (aid vs strict)
 
 Summary

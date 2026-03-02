@@ -1024,6 +1024,36 @@ import { PATCH_HISTORY } from './content.js';
       s._coteriePressureGate = nowT + 15;
     }
 
+
+    // Coterie relationship arcs (tiny status memory)
+    // Rivalry now leaves a short-lived status tag so the aquarium feels like it has "ongoing politics"
+    // rather than one-off pings.
+    // Stored transiently and stripped on save.
+    s._coterieRelations = (s._coterieRelations && typeof s._coterieRelations === 'object') ? s._coterieRelations : {};
+    for (const [key, vRaw] of Object.entries(s._coterieRelations)) {
+      const v = (vRaw && typeof vRaw === 'object') ? vRaw : null;
+      if (!v) { delete s._coterieRelations[key]; continue; }
+      const until = Number(v.until ?? 0) || 0;
+      if (nowT < until) continue;
+
+      const status = String(v.status ?? '');
+      if (status === 'feud') {
+        // Feud cools into a short truce (a readable arc, no player input).
+        s._coterieRelations[key] = { status:'truce', until: nowT + 90 };
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        s.feed.push(`[${fmt(s.t)}] Truce: rival circles cool their tempers for a while.`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'truce', label:'cooling', color:'rgba(147,197,253,.14)' });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+      } else {
+        // Truce fades back to neutral.
+        delete s._coterieRelations[key];
+      }
+    }
+
     // Coterie rivalry beat (tiny politics texture)
     // Highest-leverage "aquarium" depth: circles with opposing ethos sometimes snub each other,
     // nudging mood/grievance and leaving a visible marker in the feed + trends.
@@ -1039,6 +1069,15 @@ import { PATCH_HISTORY } from './content.js';
       const strict = pickBest('strict');
       if (aid && strict && String(aid.id) !== String(strict.id)) {
         const pairKey = `${aid.id}|${strict.id}`;
+
+        // If they're currently in a truce, don't immediately re-trigger a clash.
+        const rel = s._coterieRelations && typeof s._coterieRelations === 'object' ? s._coterieRelations : {};
+        const rs = rel[pairKey];
+        if (rs && String(rs.status ?? '') === 'truce' && nowT < Number(rs.until ?? 0)) {
+          s._coterieRivalry.nextAt = nowT + 45;
+          return;
+        }
+
         // Prevent the exact same rivalry from repeating back-to-back.
         if (String(s._coterieRivalry.lastPair ?? '') !== pairKey) {
           const clampPct = (x) => Math.max(0, Math.min(100, Number(x ?? 0) || 0));
@@ -1065,6 +1104,12 @@ import { PATCH_HISTORY } from './content.js';
 
           s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
           s._trendEvents.push({ t: nowT, kind:'rival', label:'aid vs strict', color:'rgba(148,163,184,.14)' });
+          if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+          // Relationship memory: they carry a short feud status that later cools into a truce.
+          s._coterieRelations = (s._coterieRelations && typeof s._coterieRelations === 'object') ? s._coterieRelations : {};
+          s._coterieRelations[pairKey] = { status:'feud', until: nowT + 75 };
+          s._trendEvents.push({ t: nowT, kind:'feud', label:'hot', color:'rgba(251,113,133,.10)' });
           if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
 
           // Next time: 2–3 minutes, deterministic jitter based on time.
@@ -6884,10 +6929,36 @@ import { PATCH_HISTORY } from './content.js';
               }
             }
 
+            // Aquarium depth: surface ongoing feud/truce arcs per circle.
+            let relTag = '';
+            const rels = (s && s._coterieRelations && typeof s._coterieRelations === 'object') ? s._coterieRelations : null;
+            if (rels) {
+              let best = null;
+              for (const [key, vRaw] of Object.entries(rels)) {
+                const v = (vRaw && typeof vRaw === 'object') ? vRaw : null;
+                if (!v) continue;
+                if (nowT >= Number(v.until ?? 0)) continue;
+                if (!key.includes('|')) continue;
+                const parts = key.split('|');
+                if (parts.length !== 2) continue;
+                const a = parts[0], b = parts[1];
+                if (String(a) !== String(c.id) && String(b) !== String(c.id)) continue;
+                const st = String(v.status ?? '');
+                // Prefer showing FEUD over TRUCE if both exist.
+                if (st === 'feud') { best = { st:'feud', left: Number(v.until ?? 0) - nowT }; break; }
+                if (!best && st === 'truce') best = { st:'truce', left: Number(v.until ?? 0) - nowT };
+              }
+              if (best && best.left > 0.5) {
+                if (best.st === 'feud') relTag = `<span class="tag" style="border-color: rgba(251,113,133,.45); background: rgba(251,113,133,.06)">FEUD ${Math.ceil(best.left)}s</span> `;
+                if (best.st === 'truce') relTag = `<span class="tag" style="border-color: rgba(147,197,253,.45); background: rgba(147,197,253,.06)">TRUCE ${Math.ceil(best.left)}s</span> `;
+              }
+            }
+
             const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}${ethosLabel ? ` Ethos: ${ethosLabel} (${Math.round(ethos*100)}%).` : ''}`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
               `<span class="tag">Coterie</span> <span class="tag">${ax}</span> ` +
               pressTag +
+              relTag +
               `<span class="small">x${sz}</span> ` +
               (trad ? `<span class="small" style="opacity:.72">${trad}</span> ` : '') +
               (ethosLabel ? `<span class="small" style="opacity:.72">${ethosLabel}</span> ` : '') +
