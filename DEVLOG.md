@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 07:23 CST - Observability: Culture modal shows active ritual timer
+
+Summary
+- Observability: the **Culture** modal now surfaces the currently active **Culture ritual** (Story-circle / Work-oath) with a simple **time remaining** line.
+- Aquarium readability: when available, it also shows which influential coterie sparked it (axis/tradition/ethos/reputation tags), so "why did behavior just shift?" is visible without hunting the feed.
+- No new interaction: purely UI surfacing.
+
+Files touched
+- `kitten-knight-civ/js/ui.js`
+- `dist/js/ui.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Run Curator hands-off until a ritual triggers (watch the Society feed for a **Ritual:** line).
+- Click the **Culture** stat card and confirm you see `Active ritual: ... (Xs left)` with coterie tags.
+
+---
+
 ## 2026-03-02 05:53 CST - Observability: Dedicated Culture modal + clickable stat card
 
 Summary

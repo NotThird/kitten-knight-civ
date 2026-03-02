@@ -1522,6 +1522,37 @@ export function initSocietyInspectors(deps){
     lines.push(`• Punitive tolerance: ${pct(pun)} — ${punBand}`);
     lines.push('');
 
+    // Active culture ritual (short-lived atmosphere window)
+    try {
+      const r = (state && state._cultureRitual && typeof state._cultureRitual === 'object') ? state._cultureRitual : null;
+      const kind = (r && Number(state?.t ?? 0) < Number(r.until ?? 0)) ? String(r.kind || '') : '';
+      if (kind) {
+        const rem = Math.max(0, Number(r.until ?? 0) - Number(state?.t ?? 0));
+        const sfx = rem >= 120 ? `${Math.round(rem/60)}m` : `${Math.round(rem)}s`;
+        const label = (kind === 'story') ? 'Story-circle' : (kind === 'oath') ? 'Work-oath' : kind;
+
+        // Best-effort: show which influential coterie sparked it.
+        const cid = (r && r.cid !== null && r.cid !== undefined) ? Number(r.cid) : null;
+        const coteries = Array.isArray(state?.social?.coteries) ? state.social.coteries : [];
+        const c = (cid !== null) ? coteries.find(x => Number(x?.id ?? -1) === cid) : null;
+        const bits = [];
+        const ax = String(c?.domAx ?? '').trim();
+        const trad = String(c?.trad ?? '').trim();
+        const ethos = String(c?.ethosLabel ?? '').trim();
+        const rep = String(c?.repLabel ?? '').trim();
+        if (ax) bits.push(ax);
+        if (trad) bits.push(trad);
+        if (ethos) bits.push(ethos);
+        if (rep) bits.push(rep);
+        const who = bits.length ? bits.join(' • ') : (cid !== null ? `Coterie #${cid}` : '');
+
+        lines.push(`Active ritual: ${label} (${sfx} left)${who ? ` — ${who}` : ''}`);
+        lines.push('');
+      }
+    } catch (e) {
+      // Never break the inspector.
+    }
+
     // Last 8 norm transitions (pulled from trend markers)
     const ev = Array.isArray(state?._trendEvents) ? state._trendEvents : [];
     const normEv = ev.filter(e => String(e?.kind ?? '') === 'norm');
