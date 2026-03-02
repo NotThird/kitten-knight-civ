@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7593,14 +7593,6 @@ import { PATCH_HISTORY } from './content.js';
     render();
   });
 
-  const autoResEl = document.getElementById('autoReserves');
-  if (autoResEl) autoResEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
-    state.director.autoReserves = !!e.target.checked;
-    log(`Auto Reserves â†’ ${state.director.autoReserves ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
 
   const autoPolicyEl = document.getElementById('autoPolicy');
   if (autoPolicyEl) autoPolicyEl.addEventListener('change', (e) => {
@@ -8091,6 +8083,20 @@ import { PATCH_HISTORY } from './content.js';
   initAutoFoodCrisisControls({
     autoFoodCrisisEl: document.getElementById('autoFoodCrisis'),
     setAutoFoodCrisis,
+    log,
+    save,
+    render,
+  });
+
+  function setAutoReserves(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director.autoReserves = !!on;
+    return !!state.director.autoReserves;
+  }
+
+  initAutoReservesControls({
+    autoReservesEl: document.getElementById('autoReserves'),
+    setAutoReserves,
     log,
     save,
     render,

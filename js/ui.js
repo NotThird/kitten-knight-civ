@@ -675,6 +675,38 @@ export function initAutoFoodCrisisControls(deps){
 }
 
 /**
+ * Auto Reserves toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoReservesEl
+ * @param {(on:boolean)=>boolean} deps.setAutoReserves
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoReservesControls(deps){
+  const {
+    autoReservesEl,
+    setAutoReserves,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoReservesEl) return;
+
+  autoReservesEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoReserves?.(on));
+    log?.(`Auto Reserves → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

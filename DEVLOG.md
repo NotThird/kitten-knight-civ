@@ -3390,3 +3390,22 @@ What to try
 - In Director, toggle **Auto Food Crisis** ON/OFF and confirm:
   - it logs a single "Auto Food Crisis ? ON/OFF" line
   - it persists after refresh
+
+---
+
+## 2026-03-01 21:27 CST - P0.1 Modularization: extract Auto Reserves toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Reserves** checkbox change wiring out of main.js into a new UI helper: `initAutoReservesControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoReserves(...)` mutator plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Reserves** ON/OFF and confirm:
+  - it logs a single "Auto Reserves → ON/OFF" line
+  - it persists after refresh
