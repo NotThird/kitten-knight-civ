@@ -195,10 +195,10 @@ import { PATCH_HISTORY } from './content.js';
     // Reserves prevent "sink" tasks (building/crafting) from consuming critical buffers.
     // The AI treats these as soft constraints via scoring + plan shaping.
     reserve: { food: 0, wood: 18, science: 25, tools: 0 },
-    res: { food: 120, jerky: 0, wood: 0, warmth: 55, threat: 10, huts: 0, palisade: 0, granaries: 0, workshops: 0, libraries: 0, science: 0, tools: 0 },
+    res: { food: 220, jerky: 0, wood: 35, warmth: 70, threat: 8, huts: 0, palisade: 0, granaries: 0, workshops: 0, libraries: 0, science: 0, tools: 0 },
     unlocked: { construction:false, workshop:false, farm:false, security:false, granary:false, library:false },
     seenUnlocks: {},
-    kittens: [ makeKitten(1), makeKitten(2), makeKitten(3) ],
+    kittens: [ makeKitten(1), makeKitten(2), makeKitten(3), makeKitten(4), makeKitten(5), makeKitten(6) ],
     // Player policy: biases the colony-level plan (not hard locks; rules still override).
     policyMult: { Socialize:1, Care:1, Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, PreserveFood:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 },
     // Optional role quotas: "try to keep N kittens in this role" (0 = no quota).
@@ -230,6 +230,12 @@ import { PATCH_HISTORY } from './content.js';
 
   // --- Personality / micro-emergence
   // Kittens have soft preferences (likes/dislikes). This does NOT hard-lock actions; it just nudges.
+  function rand01At(t, salt=0){
+    // Deterministic pseudo-random in [0,1). No Math.random.
+    const x = Math.sin((Number(t||0) + 0.1234 + Number(salt||0)) * 9999.123) * 10000;
+    return x - Math.floor(x);
+  }
+
   function seededRng(seed){
     // xorshift32-ish, deterministic
     let x = (seed | 0) || 123456789;
@@ -4024,7 +4030,11 @@ import { PATCH_HISTORY } from './content.js';
   }
 
   function housingCap(s){
-    return 3 + s.res.huts * 2;
+    // Aquarium pacing: start with breathing room so growth systems can actually kick in.
+    // Huts still matter, but the base cap shouldn't trap the sim at pop=3.
+    const huts = Math.max(0, Number(s.res?.huts ?? 0));
+    const base = 8;
+    return base + huts * 3;
   }
 
   function foodStorageCap(s){
@@ -4508,6 +4518,74 @@ import { PATCH_HISTORY } from './content.js';
             state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
             state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'kitten+', color:'rgba(52,211,153,.18)' });
             if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+          }
+        }
+      }
+    }
+
+    // Aquarium: births + wandering arrivals (continuous growth, not 1/year).
+    // Goal: reach dozens+ kittens quickly when stable.
+    state._popFlowTimer = (state._popFlowTimer ?? 0) + dt;
+    if (state._popFlowTimer >= 1) {
+      state._popFlowTimer = 0;
+      const cap = housingCap(state);
+      const pop = Math.max(0, state.kittens.length);
+      const space = Math.max(0, cap - pop);
+      if (space > 0 && pop > 0) {
+        const season = seasonAt(state.t);
+        const targets = seasonTargets(state);
+        const ediblePk = ediblePerKitten(state);
+        const avgMood = pop ? (state.kittens.reduce((a,k)=>a + clamp01(Number(k.mood ?? 0.55)),0) / pop) : 0.55;
+        const avgGriev = pop ? (state.kittens.reduce((a,k)=>a + clamp01(Number(k.grievance ?? 0)),0) / pop) : 0;
+        const threat = Number(state.res?.threat ?? 0);
+
+        const surplus = clamp01((ediblePk / Math.max(1, targets.foodPerKitten) - 1.05) / 0.8);
+        const cozy = clamp01((Number(state.res?.warmth ?? 0) - targets.warmth) / Math.max(1, targets.warmth));
+        const safe = clamp01((targets.maxThreat - threat) / Math.max(1, targets.maxThreat));
+        const happy = clamp01((avgMood - 0.52) / 0.30);
+        const calm = clamp01(1 - avgGriev);
+
+        // Desired pace: if stable, add kittens frequently. Rates are capped and deterministic.
+        let birthRate = 0.02 + 0.22 * surplus * happy * safe;  // up to ~0.24 / sec
+        let wanderRate = 0.03 + 0.26 * surplus * safe * clamp01(0.4 + 0.6 * calm); // up to ~0.29 / sec
+
+        // Seasonal spice
+        if (season.name === 'Spring') { birthRate *= 1.15; wanderRate *= 1.10; }
+        if (season.name === 'Winter') { birthRate *= 0.75; wanderRate *= 0.80; }
+        if (cozy < 0) { birthRate *= 0.85; }
+
+        const minFoodAfter = getReserve(state,'food');
+        const canAfford = (state.res.food ?? 0) >= (minFoodAfter + 24);
+
+        const tInt = Math.floor(Number(state.t ?? 0));
+        const rollA = rand01At(tInt, 101);
+        const rollB = rand01At(tInt, 202);
+
+        // Births consume a small amount of food (pregnancy/baby care), but are otherwise free.
+        if (canAfford && rollA < birthRate) {
+          const cost = Math.max(8, Math.round(10 + pop * 0.03));
+          if ((state.res.food - cost) >= minFoodAfter) {
+            state.res.food -= cost;
+            const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
+            state.kittens.push(makeKitten(id));
+            feed(`Birth: a kitten was born (pop ${state.kittens.length}/${cap}).`);
+            state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+            state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'birth', color:'rgba(52,211,153,.22)' });
+            if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
+          }
+        }
+
+        // Wanderers (immigration) — cheaper than spring event, can happen any season if stable.
+        if (canAfford && rollB < wanderRate) {
+          const cost = Math.max(6, Math.round(8 + pop * 0.02));
+          if ((state.res.food - cost) >= minFoodAfter) {
+            state.res.food -= cost;
+            const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
+            state.kittens.push(makeKitten(id));
+            feed(`Wanderer: a kitten joined from the wilds (pop ${state.kittens.length}/${cap}).`);
+            state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+            state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'wander', color:'rgba(52,211,153,.16)' });
+            if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
           }
         }
       }
@@ -9021,7 +9099,8 @@ import { PATCH_HISTORY } from './content.js';
 
     for (const z of zones) {
       const arr = byZone[z.id] ?? [];
-      for (let i=0;i<arr.length;i++) {
+      const showN = Math.min(arr.length, 12);
+      for (let i=0;i<showN;i++) {
         const k = arr[i];
         const nx = (i % 4);
         const ny = Math.floor(i / 4);
@@ -9035,6 +9114,10 @@ import { PATCH_HISTORY } from './content.js';
         const name = String(k?.name ?? `#${k.id}`);
         const short = name.split(/\s+/).slice(-1)[0] || name;
         ctx.fillText(short, px + 6, py - 6);
+      }
+      if (arr.length > showN) {
+        ctx.fillStyle = 'rgba(148,163,184,.85)';
+        ctx.fillText(`+${arr.length - showN}`, z.x + z.w - 34, z.y + 6);
       }
     }
   }

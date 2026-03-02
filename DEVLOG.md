@@ -4055,3 +4055,4 @@ What to try
   - during **story-circle**, expect slightly more Socialize/Care picks and fewer Loaf picks,
   - during **work-oath**, expect slightly more productive picks and fewer Socialize/Care picks.
 - Hover the Trends canvas near the new marker line to see `Ritual: story` / `Ritual: oath`.
+\n\n## 2026-03-02 11:58 CST — Population boom (births + wanderers) + tank crowd UI\n- Increased starting population to 6 and raised base housing cap to 8 (huts now +3 each).\n- Added deterministic population flow: frequent **Birth** and **Wanderer** arrivals when stable (food surplus + low threat + decent mood), with small food costs + reserve respect.\n- Added Society feed beats + Trends pop markers for birth/wander; Tank view now shows +N when zones are crowded (draws first 12 dots).\n
