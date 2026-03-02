@@ -3077,6 +3077,34 @@ import { PATCH_HISTORY } from './content.js';
       const thr = Number(state.res?.threat ?? 0);
       const diss = dissent01(state);
       feed(`Year ${yr}: pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}%`);
+
+      // Aquarium: politics drift marker — when the dominant values bloc changes, mark it in the feed + trends.
+      // Keeps "emergent society" visible without needing to open Factions.
+      if (pop >= 4) {
+        const dom = dominantFactionAxis(state);
+        const lastAx = String(state._lastDomBlocAxis ?? '');
+        const lastN = Number(state._lastDomBlocN ?? -1);
+        const canFlipAt = Number(state._lastDomBlocNextAt ?? 0);
+        if (dom && dom.axis && dom.axis !== lastAx && Number(state.t ?? 0) >= canFlipAt) {
+          // Basic anti-flap: only accept a flip if the new bloc is not *smaller* than the old cached count.
+          // (This makes 1-kitten ties less spammy while staying deterministic.)
+          if (lastN < 0 || dom.n >= lastN) {
+            state._lastDomBlocAxis = dom.axis;
+            state._lastDomBlocN = dom.n;
+            state._lastDomBlocNextAt = Number(state.t ?? 0) + 36;
+            feed(`Politics shift: the ${dom.axis} bloc is now dominant (${dom.n}/${pop}).`);
+            state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+            state._trendEvents.push({ t: Number(state.t ?? 0), kind:'bloc', label:`dominant:${dom.axis}`, color:'rgba(167,139,250,.18)' });
+            if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+          }
+        }
+        // Initialize cache for old saves (or first run) without logging.
+        if (!lastAx) {
+          state._lastDomBlocAxis = dom.axis;
+          state._lastDomBlocN = dom.n;
+          state._lastDomBlocNextAt = Number(state.t ?? 0) + 36;
+        }
+      }
     }
 
     // Politics pressure: demands expire into consequences (instead of silently vanishing).

@@ -3499,3 +3499,21 @@ What to try
 \n\n## 2026-03-02 00:41 CST — Safety Rules made read-only (Curator)\n- Safety Rules panel remains visible for transparency, but editing is disabled unless **Developer Mode** is enabled.\n- Disabled rule reorder/delete/toggle and hid Add/Restore buttons in Curator mode; attempts to edit produce a feed notice.\n
 \n\n## 2026-03-02 00:56 CST — Adaptive Safety v1 (ML tunes thresholds)\n- Safety Rules remain player read-only in Curator mode, but ML can now tune a bounded subset of numeric thresholds: hungry/tired/warmth/threat.\n- Updates every ~8s with capped ranges + feed logs like \Learned safety: hungry>0.75?0.71 …\ plus a short reason (food deficit / cold risk / threat pressure / fatigue).\n- ML hint line now includes the current learned safety thresholds.\n
 \n\n## 2026-03-02 01:00 CST — Easier population growth\n- Manual kitten cost curve reduced (cheaper base + gentler exponent).\n- Auto Recruit Spring immigration cost reduced (starts at ~18 food, slower scaling).\n- Immigration now posts to Society feed + adds a chart event marker.\n
+
+
+---
+
+## 2026-03-02 01:15 CST - Aquarium: Dominant bloc shift markers (feed + trends)
+
+Summary
+- Aquarium/Observability: when the **dominant values bloc** (Food/Safety/Progress/Social) changes, the sim now posts a one-line **Politics shift** message to the Society feed.
+- Trends: the same shift drops a purple-ish **event marker** into the Trends graph (`kind: bloc`) so you can correlate macro-politics changes with resource swings.
+- Anti-spam: includes a short cooldown + simple anti-flap rule so near-ties don't spam the feed.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+
+What to try
+- Let the colony run hands-off with Curator enabled; watch the Society feed for a "Politics shift" line and see a matching marker line in Trends.
