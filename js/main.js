@@ -2659,6 +2659,18 @@ import { PATCH_HISTORY } from './content.js';
     // Council: cohesion boost (less grumbling while it lasts).
     if (councilActive(s)) m += 0.006;
 
+    // Culture rituals: short-lived "mood of the town" drift (tiny, bounded, deterministic).
+    // This is separate from action scoring so rituals feel like atmosphere, not just AI bias.
+    const ritual = (s && s._cultureRitual && typeof s._cultureRitual === 'object') ? s._cultureRitual : null;
+    const ritualKind = (ritual && (Number(s.t ?? 0) < Number(ritual.until ?? 0))) ? String(ritual.kind || '') : '';
+    if (ritualKind === 'story') {
+      // Story-circle: spirits lift a bit faster (noticeable over ~1 minute).
+      m += 0.0012;
+    } else if (ritualKind === 'oath') {
+      // Work-oath: a subtle chill in leisure/comfort.
+      m -= 0.0008;
+    }
+
     // Background stress.
     if ((k.hunger ?? 0) > 0.85) m -= 0.010;
     const season = seasonAt(s.t);
@@ -2781,6 +2793,17 @@ import { PATCH_HISTORY } from './content.js';
 
     // Comfort + relationship actions cool things down.
     if (task === 'Eat' || task === 'Rest' || task === 'Loaf' || task === 'Socialize' || task === 'Care') delta -= 0.010;
+
+    // Culture ritual atmosphere: tiny, explicit "town mood" drift.
+    // Story-circles make resentments soften; work-oaths make resentment stick a bit more under planning pressure.
+    const ritual = (s && s._cultureRitual && typeof s._cultureRitual === 'object') ? s._cultureRitual : null;
+    const ritualKind = (ritual && (Number(s.t ?? 0) < Number(ritual.until ?? 0))) ? String(ritual.kind || '') : '';
+    if (ritualKind === 'story') {
+      delta -= 0.0022;
+    } else if (ritualKind === 'oath') {
+      delta += 0.0015 * planPressure;
+      if (delta > 0) delta *= 1.03;
+    }
 
     // Timed colony-wide relief.
     if (festivalActive(s)) delta *= 0.70;

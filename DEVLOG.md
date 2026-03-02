@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 07:38 CST - Aquarium/Emergence: Rituals create a tiny "town mood" drift (mood + grievance)
+
+Summary
+- Aquarium depth: active **Culture rituals** now have an explicit, tiny, deterministic **society atmosphere** effect (not just scoring bias).
+  - **Story-circle**: very small **mood recovery** boost + a gentle **grievance cooling** drift.
+  - **Work-oath**: subtle **mood chill** + slightly **stickier grievance** under strong central planning.
+- Conservative + bounded: tuned to be noticeable over ~1 minute without destabilizing balance.
+- Save-safe: uses the existing transient `state._cultureRitual` window (no schema changes).
+
+Files touched
+- `js/main.js`
+
+What to try
+- Run Curator hands-off until you get a **Ritual:** feed beat.
+- During the 60s window, watch **avg Mood** and **avg Grievance** drift a hair in the ritual’s direction.
+
+---
+
 ## 2026-03-02 07:23 CST - Observability: Culture modal shows active ritual timer
 
 Summary
