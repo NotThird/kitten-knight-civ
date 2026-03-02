@@ -3915,3 +3915,22 @@ What to try
 - Run Curator hands-off until at least one coterie becomes influential (you should already see a Coterie rising feed beat).
 - Click the **Culture** stat card: confirm you now see an **Influential coteries** list and that pressure windows (AID/STRICT) and FEUD/TRUCE timers appear when active.
  
+---
+
+## 2026-03-02 06:23 CST - Observability: Trends marker legend + culture-beats filter
+
+Summary
+- Observability: added a compact **Trends markers** legend row with toggles for society markers: `norm/cot/trad/eth/rep/press/rel`.
+- Aquarium readability: you can now hide/show culture beats to isolate the narrative layer without losing resource curves.
+- Minimal interaction: defaults to ON for all markers; changes persist in the save.
+
+Files touched
+- `kitten-knight-civ/index.html`
+- `kitten-knight-civ/js/main.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Run Curator hands-off until you have a few culture beats (coterie rising, tradition shift, relationship drift, norms band flips).
+- Under **Trends**, toggle off `cot/trad/eth/rep/press` to isolate **norm** markers only (or hit **None** to see a clean resource-only view).

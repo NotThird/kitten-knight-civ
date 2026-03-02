@@ -5302,6 +5302,7 @@ import { PATCH_HISTORY } from './content.js';
   const feedEl = el('feed');
   const tankEl = el('tank');
   const trendsEl = el('trends');
+  const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
 
   function ensureCurator(s){
@@ -5473,6 +5474,67 @@ import { PATCH_HISTORY } from './content.js';
     openThreat,
     openCulture,
   });
+
+  // Trends: marker legend + filter (culture beats timeline)
+  function ensureTrendMarkerFilter(s){
+    s.ui = (s.ui && typeof s.ui === 'object') ? s.ui : {};
+    s.ui.trendMarkerFilter = (s.ui.trendMarkerFilter && typeof s.ui.trendMarkerFilter === 'object') ? s.ui.trendMarkerFilter : {};
+    const f = s.ui.trendMarkerFilter;
+    for (const k of ['norm','cot','trad','eth','rep','press','rel']) {
+      if (!(k in f)) f[k] = true;
+      f[k] = !!f[k];
+    }
+    return f;
+  }
+
+  function renderTrendsLegend(){
+    if (!trendsLegendEl) return;
+    const f = ensureTrendMarkerFilter(state);
+    const chip = (c) => `<span style="display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; border:1px solid rgba(255,255,255,.12); background:${c}"></span>`;
+    const item = (k, label, color, title) => {
+      const on = !!f[k];
+      return `<label class="small" style="display:inline-flex; align-items:center; gap:6px; margin-right:10px; cursor:pointer; opacity:${on?1:0.55}" title="${title||''}">` +
+        `<input type="checkbox" data-tmf="${k}" ${on?'checked':''} style="transform:translateY(1px)">` +
+        `${chip(color)}${label}</label>`;
+    };
+
+    const html = [
+      `<span class="small" style="opacity:.85; margin-right:10px">markers:</span>`,
+      item('norm','norm','rgba(34,197,94,.11)','Culture memory / norms band flips (vig/scar/aid/pun).'),
+      item('cot','cot','rgba(253,186,116,.18)','Coterie becomes influential.'),
+      item('trad','trad','rgba(56,189,248,.14)','Coterie tradition shift (shared work).'),
+      item('eth','eth','rgba(167,139,250,.14)','Coterie ethos drift (mutual aid ↔ strictness).'),
+      item('rep','rep','rgba(148,163,184,.10)','Coterie reputation (respected/resented).'),
+      item('press','press','rgba(251,113,133,.14)','Short-lived culture pressure window (aid/strict).'),
+      item('rel','rel','rgba(244,114,182,.14)','Buddy relationship beats (drift/reconnect).'),
+      `<button class="btn" data-tmf-all="1" style="padding:2px 8px; margin-left:6px">All</button>`,
+      `<button class="btn" data-tmf-none="1" style="padding:2px 8px">None</button>`,
+    ].join('');
+
+    trendsLegendEl.innerHTML = html;
+  }
+
+  if (trendsLegendEl) {
+    trendsLegendEl.addEventListener('change', (e) => {
+      const cb = e.target?.closest?.('input[data-tmf]');
+      if (!cb) return;
+      const k = String(cb.dataset.tmf || '');
+      const f = ensureTrendMarkerFilter(state);
+      if (!(k in f)) return;
+      f[k] = !!cb.checked;
+      save();
+      render();
+    });
+    trendsLegendEl.addEventListener('click', (e) => {
+      const allBtn = e.target?.closest?.('button[data-tmf-all]');
+      const noneBtn = e.target?.closest?.('button[data-tmf-none]');
+      if (!allBtn && !noneBtn) return;
+      const f = ensureTrendMarkerFilter(state);
+      for (const k of Object.keys(f)) f[k] = !!allBtn;
+      save();
+      render();
+    });
+  }
 
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
@@ -7499,6 +7561,7 @@ import { PATCH_HISTORY } from './content.js';
     // Curator summary: show what is currently steering the colony.
     if (steeringSummaryEl) steeringSummaryEl.textContent = getSteeringSummary(state);
     syncDevMode();
+    renderTrendsLegend();
 
     // Society feed
     if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
@@ -8775,7 +8838,11 @@ import { PATCH_HISTORY } from './content.js';
       }
 
       // event markers
+      const mf = ensureTrendMarkerFilter(state);
       for (const e of ev) {
+        const kind = String(e.kind ?? '');
+        // Culture beats filter: let players isolate society markers from the resource lines.
+        if ((kind === 'norm' || kind === 'cot' || kind === 'trad' || kind === 'eth' || kind === 'rep' || kind === 'press' || kind === 'rel') && !mf[kind]) continue;
         const tt = Number(e.t ?? NaN);
         if (!Number.isFinite(tt) || tt < tMin || tt > tMax) continue;
         const x = xForT(tt);
