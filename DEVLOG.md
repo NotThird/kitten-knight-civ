@@ -3429,3 +3429,24 @@ What to try
   - it logs a single "Auto Policy ? ON/OFF" line
   - it persists after refresh
   - turning it ON lets policy automation run immediately (no waiting)
+
+---
+
+## 2026-03-01 22:28 CST - P0.1 Modularization: extract Auto Build Push toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Build Push** checkbox change wiring out of main.js into a new UI helper: `initAutoBuildPushControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoBuildPush(...)` mutator plus log/save/render into the UI module.
+- Removed the old inline DOM listener to avoid double-wiring.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Build Push** ON/OFF and confirm:
+  - it logs a single "Auto Build Push → ON/OFF" line
+  - it persists after refresh
+

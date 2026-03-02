@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7594,15 +7594,6 @@ import { PATCH_HISTORY } from './content.js';
   });
 
 
-  const autoBuildEl = document.getElementById('autoBuildPush');
-  if (autoBuildEl) autoBuildEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
-    state.director.autoBuildPush = !!e.target.checked;
-    log(`Auto Build Push â†’ ${state.director.autoBuildPush ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
-
   const autoModeEl = document.getElementById('autoMode');
   if (autoModeEl) autoModeEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
@@ -8102,6 +8093,20 @@ import { PATCH_HISTORY } from './content.js';
   initAutoPolicyControls({
     autoPolicyEl: document.getElementById('autoPolicy'),
     setAutoPolicy,
+    log,
+    save,
+    render,
+  });
+
+  function setAutoBuildPush(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoBuildPush:false, projectFocus:'Auto', autonomy: 0.60 };
+    state.director.autoBuildPush = !!on;
+    return !!state.director.autoBuildPush;
+  }
+
+  initAutoBuildPushControls({
+    autoBuildPushEl: document.getElementById('autoBuildPush'),
+    setAutoBuildPush,
     log,
     save,
     render,

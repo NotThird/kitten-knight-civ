@@ -739,6 +739,36 @@ export function initAutoPolicyControls(deps){
 }
 
 /**
+ * Auto Build Push toggle wiring.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoBuildPushEl
+ * @param {(on:boolean)=>boolean} deps.setAutoBuildPush
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoBuildPushControls(deps){
+  const {
+    autoBuildPushEl,
+    setAutoBuildPush,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoBuildPushEl) return;
+
+  autoBuildPushEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoBuildPush?.(on));
+    log?.(`Auto Build Push → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
