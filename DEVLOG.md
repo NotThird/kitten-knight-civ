@@ -3974,3 +3974,27 @@ Files touched
 What to try
 - Hover near a dense cluster of markers in Trends: confirm you get a colored chip + wrapped label.
 - Hover where season/unlock overlaps a culture beat: confirm you see the culture label first and a +N more hint.
+---
+
+## 2026-03-02 07:08 CST - Aquarium/Emergence: Culture rituals (story-circle / work-oath)
+
+Summary
+- Aquarium depth: added short-lived **Culture rituals** (60s windows) triggered by influential coterie reputation:
+  - **Story-circle** (respected circles): gently boosts Socialize/Care and reduces passive Loafing.
+  - **Work-oath** (resented circles): gently boosts productive work and chills Socialize/Care.
+- Observability: each ritual posts a Society feed beat and drops a **Trends** marker (`kind:'rit'`) with tooltip support.
+- Minimal interaction: fully curator-driven; no new buttons.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Run Curator hands-off until you have an influential circle with clear **RESPECT** or **RESENT**.
+- Watch for a **Ritual:** line in the Society feed, then:
+  - during **story-circle**, expect slightly more Socialize/Care picks and fewer Loaf picks,
+  - during **work-oath**, expect slightly more productive picks and fewer Socialize/Care picks.
+- Hover the Trends canvas near the new marker line to see `Ritual: story` / `Ritual: oath`.

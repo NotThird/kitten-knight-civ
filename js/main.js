@@ -1160,6 +1160,66 @@ import { PATCH_HISTORY } from './content.js';
       s._coteriePressureGate = nowT + 15;
     }
 
+    // Culture rituals (short-lived society mood) — a higher-level beat than pressure windows.
+    // Triggered off influential coterie reputation (respected/resented), with tiny scoring biases.
+    // Goal: make the tank feel like it has "minutes-long" atmosphere shifts without player clicks.
+    s._cultureRitual = (s._cultureRitual && typeof s._cultureRitual === 'object') ? s._cultureRitual : { kind:'', cid:null, until:0, nextAt:0 };
+    if (nowT >= Number(s._cultureRitual.until ?? 0)) {
+      // Clear expired ritual.
+      if (s._cultureRitual.kind) s._cultureRitual.kind = '';
+      if (s._cultureRitual.cid) s._cultureRitual.cid = null;
+    }
+
+    const ritualActive = (nowT < Number(s._cultureRitual.until ?? 0)) && !!String(s._cultureRitual.kind || '');
+    if (!ritualActive && nowT >= Number(s._cultureRitual.nextAt ?? 0)) {
+      // Find the strongest influential respected/resented circle.
+      const repV = (c) => Number(s._coterieRep?.[String(c?.id ?? '')] ?? 0) || 0;
+      const scoreInf = (c) => (Number(c?.size ?? 0) * 1.35 + (Number(c?.coWork ?? 0) * 0.05)) * (0.6 + Math.abs(repV(c)));
+      const bestRep = (tag) => cots
+        .filter(c => isInfluential(c) && String(c.repTag ?? '') === tag)
+        .sort((a,b)=> (scoreInf(b) - scoreInf(a)))
+        [0] ?? null;
+
+      const respected = bestRep('pos');
+      const resented = bestRep('neg');
+
+      // If both exist, pick the stronger "signal" deterministically.
+      let pick = null;
+      let kind = '';
+      if (respected && resented) {
+        const a = scoreInf(respected);
+        const b = scoreInf(resented);
+        pick = (a >= b) ? respected : resented;
+        kind = (a >= b) ? 'story' : 'oath';
+      } else if (respected) {
+        pick = respected;
+        kind = 'story';
+      } else if (resented) {
+        pick = resented;
+        kind = 'oath';
+      }
+
+      if (pick && kind) {
+        const who = (pick.names ?? []).slice(0, 3).join(', ') + ((pick.names?.length ?? 0) > 3 ? '…' : '');
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        if (kind === 'story') s.feed.push(`[${fmt(s.t)}] Ritual: a story-circle spreads — warmth and care feel briefly easier. (${who})`);
+        if (kind === 'oath') s.feed.push(`[${fmt(s.t)}] Ritual: a work-oath takes hold — productivity tightens, leisure chills. (${who})`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        const color = (kind === 'story') ? 'rgba(34,197,94,.10)' : 'rgba(239,68,68,.11)';
+        s._trendEvents.push({ t: nowT, kind:'rit', label:kind, color });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        // ~1 minute window, with a cooldown so it reads as an occasional "beat".
+        s._cultureRitual = { kind, cid: pick.id, until: nowT + 60, nextAt: nowT + 170 };
+      } else {
+        // No candidates — check again later.
+        s._cultureRitual.nextAt = nowT + 35;
+      }
+    }
+
 
     // Coterie relationship arcs (tiny status memory)
     // Rivalry now leaves a short-lived status tag so the aquarium feels like it has "ongoing politics"
@@ -2943,6 +3003,11 @@ import { PATCH_HISTORY } from './content.js';
     const SOCIAL_ACT = new Set(['Socialize','Care']);
     // Builders are special: they are both "safety" (palisade/huts/granary) and "progress" (infrastructure).
 
+    // Culture rituals: transient 1-minute "atmosphere" that gently biases action choice.
+    // Implemented as a small, bounded additive bump so it stays explainable.
+    const ritual = (s && s._cultureRitual && typeof s._cultureRitual === 'object') ? s._cultureRitual : null;
+    const ritualKind = (ritual && (Number(s.t ?? 0) < Number(ritual.until ?? 0))) ? String(ritual.kind || '') : '';
+
     // Availability above reserves (execution layer hard-stops spending below reserve; scoring should reflect this)
     // ctx.shadowAvail is a 1s planning-time reservation system so multiple kittens don't all pick the same
     // wood/science sink and then bounce off reserves.
@@ -3018,6 +3083,20 @@ import { PATCH_HISTORY } from './content.js';
           const add = 6 + 0.10 * base(a);
           score += add;
           reasons.push(`directive ${dir} → +${add.toFixed(1)}`);
+        }
+      }
+
+      // Culture ritual atmosphere: tiny, bounded biases.
+      if (ritualKind === 'story') {
+        if (SOCIAL_ACT.has(a)) { score += 8; reasons.push('ritual story-circle → +8 (social easier)'); }
+        else if (a === 'Loaf') { score -= 4; reasons.push('ritual story-circle → -4 (less passive idling)'); }
+      }
+      if (ritualKind === 'oath') {
+        if (SOCIAL_ACT.has(a)) { score -= 6; reasons.push('ritual work-oath → -6 (leisure chills)'); }
+        // "Work" includes food/safety/progress + builders.
+        if (FOOD_ACT.has(a) || SAFETY_ACT.has(a) || PROG_ACT.has(a) || a.startsWith('Build') || a === 'CraftTools' || a === 'StokeFire') {
+          score += 5;
+          reasons.push('ritual work-oath → +5 (productivity tightens)');
         }
       }
 
@@ -5480,7 +5559,7 @@ import { PATCH_HISTORY } from './content.js';
     s.ui = (s.ui && typeof s.ui === 'object') ? s.ui : {};
     s.ui.trendMarkerFilter = (s.ui.trendMarkerFilter && typeof s.ui.trendMarkerFilter === 'object') ? s.ui.trendMarkerFilter : {};
     const f = s.ui.trendMarkerFilter;
-    for (const k of ['norm','cot','trad','eth','rep','press','rel']) {
+    for (const k of ['norm','cot','trad','eth','rep','press','rel','rit']) {
       if (!(k in f)) f[k] = true;
       f[k] = !!f[k];
     }
@@ -5506,6 +5585,7 @@ import { PATCH_HISTORY } from './content.js';
       item('eth','eth','rgba(167,139,250,.14)','Coterie ethos drift (mutual aid ↔ strictness).'),
       item('rep','rep','rgba(148,163,184,.10)','Coterie reputation (respected/resented).'),
       item('press','press','rgba(251,113,133,.14)','Short-lived culture pressure window (aid/strict).'),
+      item('rit','rit','rgba(99,102,241,.12)','Short-lived culture ritual window (story-circle / work-oath).'),
       item('rel','rel','rgba(244,114,182,.14)','Buddy relationship beats (drift/reconnect).'),
       `<button class="btn" data-tmf-all="1" style="padding:2px 8px; margin-left:6px">All</button>`,
       `<button class="btn" data-tmf-none="1" style="padding:2px 8px">None</button>`,
@@ -5572,6 +5652,7 @@ import { PATCH_HISTORY } from './content.js';
     if (k === 'eth') return 'Ethos';
     if (k === 'rep') return 'Reputation';
     if (k === 'press') return 'Pressure';
+    if (k === 'rit') return 'Ritual';
     if (k === 'rel') return 'Relationship';
     if (k === 'bloc') return 'Politics';
     if (k === 'raid') return 'Raid';
