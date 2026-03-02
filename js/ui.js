@@ -172,22 +172,6 @@ export function initCuratorControls(deps){
 
 /**
  * Save export/import/reset wiring.
-
- * This stays in ui.js so main.js can stay focused on sim/mechanics.
- *
- * @param {object} deps
- * @param {string} deps.saveKey
- * @param {()=>void} deps.save               - force a clean snapshot into localStorage
- * @param {()=>any} deps.load                - load state from localStorage
- * @param {()=>any} deps.defaultState
- * @param {()=>any} deps.getState
- * @param {(s:any)=>void} deps.setState
- * @param {(msg:string)=>void} deps.log
- * @param {()=>void} deps.render
- * @param {HTMLElement|null} deps.btnResetEl
- * @param {HTMLElement|null} deps.btnExportEl
- * @param {HTMLElement|null} deps.btnImportEl
- */
  *
  * This stays in ui.js so main.js can stay focused on sim/mechanics.
  *
