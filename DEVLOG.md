@@ -3580,7 +3580,7 @@ Files touched
 
 What to try
 - Run Curator hands-off with 4+ kittens.
-- Watch coteries in **Factions** as the workforce shifts (e.g., several kittens foraging together should start merging circles over ~10–20s).
+- Watch coteries in **Factions** as the workforce shifts (e.g., several kittens foraging together should start merging circles over ~10ï¿½20s).
 
 ---
 
@@ -3588,7 +3588,7 @@ What to try
 
 Summary
 - Aquarium depth: each **Coterie** now has a tiny **Tradition** label derived from what its members have mostly been *doing lately* (dominant productive task over a decayed ~2-minute window).
-- Observability: when a coterie’s tradition **meaningfully changes** (anti-tie + cooldown), the sim posts a one-line **Society feed** beat and drops a **Trends** event marker (`kind:'trad'`).
+- Observability: when a coterieï¿½s tradition **meaningfully changes** (anti-tie + cooldown), the sim posts a one-line **Society feed** beat and drops a **Trends** event marker (`kind:'trad'`).
 - Save-safety: per-kitten work memory + tradition trackers are transient and stripped on save.
 
 Files touched
@@ -3601,5 +3601,27 @@ Files touched
 
 What to try
 - Run Curator hands-off with 4+ kittens.
-- Open **Factions ? Coteries**: each coterie should show a tradition label (e.g., “builders’ circle”).
+- Open **Factions ? Coteries**: each coterie should show a tradition label (e.g., ï¿½buildersï¿½ circleï¿½).
 - Let labor shift (toggle goals / seasons): watch for **Tradition shift:** lines in the Society feed and matching `trad` markers in Trends.
+
+---
+
+## 2026-03-02 02:33 CST - Aquarium: Coterie norms (ethos) + grievance bias
+
+Summary
+- Aquarium depth: each **Coterie** now develops a tiny 0..1 **Ethos** axis (**mutual aid** â†” **strictness**) that slowly drifts from member Social values + the coterie's dominant tradition.
+- Observability: coteries now show their **Ethos label** in the Factions panel, and influential ethos shifts post a **Society feed** beat + a Trends event marker (`kind:'eth'`).
+- Emergence: when a coterie is **influential**, its ethos gently biases **Grievance** buildup for its members (mutual aid reduces resentment growth; strictness amplifies it slightly).
+- Save-safe: ethos trackers are transient (stored under `_coterie*` and stripped from saves).
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+- `PLAN_STATUS.md`
+
+What to try
+- Run Curator hands-off with 4+ kittens.
+- Open **Factions â†’ Coteries** and watch each coterie show an ethos label (mutual aid/balanced/strictness).
+- Let the colony drift between calm and stressful periods; watch for **Norms:** lines in the Society feed and see if grievance climbs slower/faster for members of influential circles.

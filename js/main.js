@@ -819,6 +819,31 @@ import { PATCH_HISTORY } from './content.js';
     return coteries;
   }
 
+  function coterieEthosLabel(v01){
+    const v = clamp01(Number(v01 ?? 0));
+    if (v >= 0.62) return { label:'mutual aid', tag:'aid' };
+    if (v <= 0.38) return { label:'strictness', tag:'strict' };
+    return { label:'balanced', tag:'bal' };
+  }
+
+  function estimateCoterieEthosTarget(c){
+    // Single tiny 0..1 axis: "mutual aid" (high) ↔ "strictness" (low).
+    // Drifts from member values + what the coterie has mostly been doing lately.
+    const domAx = String(c?.domAx ?? 'Food');
+    let base = 0.52;
+    if (domAx === 'Social') base = 0.72;
+    else if (domAx === 'Food') base = 0.58;
+    else if (domAx === 'Progress') base = 0.50;
+    else if (domAx === 'Safety') base = 0.40;
+
+    const t = String(c?.tradTask ?? '');
+    if (t === 'Guard' || t === 'BuildPalisade') base -= 0.10;
+    else if (t === 'StokeFire' || t === 'PreserveFood') base += 0.08;
+    else if (t.startsWith('Build')) base -= 0.04;
+
+    return clamp01(base);
+  }
+
   function updateCoteriesAquarium(s){
     s.social = (s.social && typeof s.social === 'object') ? s.social : {};
 
@@ -830,7 +855,45 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     const cots = computeCoteries(s);
-    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '' }));
+
+    // Coterie ethos (tiny norms axis): mutual aid (high) ↔ strictness (low).
+    // Stored transiently and surfaced in UI; when a coterie is influential it also slightly biases grievance dynamics.
+    const byId = new Map();
+    for (const k of (Array.isArray(s?.kittens) ? s.kittens : [])) {
+      const id = Number(k?.id ?? 0);
+      if (Number.isFinite(id) && id > 0) byId.set(id, k);
+    }
+
+    s._coterieEthos = (s._coterieEthos && typeof s._coterieEthos === 'object') ? s._coterieEthos : {};
+    s._coterieEthosBand = (s._coterieEthosBand && typeof s._coterieEthosBand === 'object') ? s._coterieEthosBand : {};
+    s._coterieEthosByKid = {};
+    s._coterieIdByKid = {};
+
+    for (const c of cots) {
+      const mem = (c.members ?? []).map(id => byId.get(id)).filter(Boolean);
+      let sumSocial = 0;
+      for (const k of mem) {
+        ensureValues(k);
+        sumSocial += clamp01(Number(k?.values?.Social ?? 0));
+      }
+      const avgSocial = mem.length ? (sumSocial / mem.length) : 0.5;
+      const target = clamp01(0.65 * avgSocial + 0.35 * estimateCoterieEthosTarget(c));
+
+      const prev = s._coterieEthos[c.id] ?? { v: target };
+      let v = clamp01(Number(prev.v ?? target));
+      // Slow drift so ethos feels "sticky".
+      v = clamp01(v * 0.98 + target * 0.02);
+      s._coterieEthos[c.id] = { v };
+
+      for (const id of (c.members ?? [])) { s._coterieEthosByKid[id] = v; s._coterieIdByKid[id] = c.id; }
+
+      const lab = coterieEthosLabel(v);
+      c.ethosV = v;
+      c.ethosLabel = lab.label;
+      c.ethosTag = lab.tag;
+    }
+
+    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '', ethos: Number(c.ethosV ?? 0), ethosLabel: String(c.ethosLabel ?? '') }));
 
     // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
     const isInfluential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
@@ -866,6 +929,27 @@ import { PATCH_HISTORY } from './content.js';
 
       const prev = s._coterieInfluence[c.id] ?? { inf:false, nextAt:0 };
       const inf = isInfluential(c);
+
+      // Ethos beats: when an influential circle's ethos crosses a band, log a norms beat.
+      const ep = s._coterieEthosBand[c.id] ?? { tag:'', nextAt:0 };
+      const curTag = String(c.ethosTag ?? '');
+      if (curTag && inf && curTag !== String(ep.tag ?? '') && nowT >= Number(ep.nextAt ?? 0)) {
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const txt = (curTag === 'aid') ? 'leans into mutual aid' : (curTag === 'strict' ? 'leans into strict norms' : 'settles into balance');
+        s.feed.push(`[${fmt(s.t)}] Norms: a coterie ${txt}. (${who})`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'eth', label:`${curTag}`, color:'rgba(34,197,94,.12)' });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        s._coterieEthosBand[c.id] = { tag: curTag, nextAt: nowT + 90 };
+      } else if (curTag && !ep.tag) {
+        // Initialize silently.
+        s._coterieEthosBand[c.id] = { tag: curTag, nextAt: Number(ep.nextAt ?? 0) || (nowT + 45) };
+      }
 
       // Rising edge only, cooldown-protected.
       if (inf && !prev.inf && nowT >= Number(prev.nextAt ?? 0)) {
@@ -2300,6 +2384,17 @@ import { PATCH_HISTORY } from './content.js';
     const need = clamp01(Number(k.buddyNeed ?? 0));
     if (need > 0.70) {
       delta += (need - 0.70) * (0.006 + 0.006 * planPressure) * (1 + 0.35 * disPol);
+    }
+
+    // Coterie norms: if a kitten belongs to an influential coterie, that circle's ethos gently biases resentment.
+    // Mutual aid reduces grievance buildup; strictness amplifies it a bit.
+    const kid = Number(k?.id ?? 0);
+    const cid = (s && s._coterieIdByKid && kid) ? s._coterieIdByKid[kid] : null;
+    const inf = cid && s && s._coterieInfluence && s._coterieInfluence[cid] ? !!s._coterieInfluence[cid].inf : false;
+    if (inf) {
+      const e = clamp01(Number(s?._coterieEthos?.[cid]?.v ?? s?._coterieEthosByKid?.[kid] ?? 0.5));
+      const mul = 1 - 0.22 * ((e - 0.5) * 2); // e=1 => ~0.78, e=0 => ~1.22
+      if (delta > 0) delta *= mul;
     }
 
     g = clamp01(g + delta);
@@ -6640,10 +6735,13 @@ import { PATCH_HISTORY } from './content.js';
             const sz = Number(c.size ?? 0);
             const cw = Number(c.coWork ?? 0);
             const trad = escapeHtml(String(c.trad ?? ''));
-            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}`;
+            const ethosLabel = escapeHtml(String(c.ethosLabel ?? ''));
+            const ethos = clamp01(Number(c.ethos ?? 0));
+            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}${ethosLabel ? ` Ethos: ${ethosLabel} (${Math.round(ethos*100)}%).` : ''}`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
               `<span class="tag">Coterie</span> <span class="tag">${ax}</span> <span class="small">x${sz}</span> ` +
               (trad ? `<span class="small" style="opacity:.72">${trad}</span> ` : '') +
+              (ethosLabel ? `<span class="small" style="opacity:.72">${ethosLabel}</span> ` : '') +
               `<span class="small" style="opacity:.7">cowork ${cw.toFixed(0)}</span> ` +
               `<span style="opacity:.9">${escapeHtml(who)}</span>` +
             `</div>`;
