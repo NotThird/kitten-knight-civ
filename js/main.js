@@ -826,6 +826,15 @@ import { PATCH_HISTORY } from './content.js';
     return { label:'balanced', tag:'bal' };
   }
 
+  // Tiny reputation ledger: transient, decays back to neutral.
+  // Goal: let recent macro outcomes (raids/winters) leave a readable "who is respected/resented" aura on coteries.
+  function coterieRepLabel(v){
+    const x = Math.max(-1, Math.min(1, Number(v ?? 0) || 0));
+    if (x >= 0.35) return { label:'respected', tag:'pos' };
+    if (x <= -0.35) return { label:'resented', tag:'neg' };
+    return { label:'neutral', tag:'neu' };
+  }
+
   function estimateCoterieEthosTarget(c){
     // Single tiny 0..1 axis: "mutual aid" (high) ↔ "strictness" (low).
     // Drifts from member values + what the coterie has mostly been doing lately.
@@ -869,6 +878,50 @@ import { PATCH_HISTORY } from './content.js';
     s._coterieEthosByKid = {};
     s._coterieIdByKid = {};
 
+    // Reputation ledger (transient): decays toward neutral, updated by a few macro outcomes.
+    s._coterieRep = (s._coterieRep && typeof s._coterieRep === 'object') ? s._coterieRep : {};
+    for (const [cid, vRaw] of Object.entries(s._coterieRep)) {
+      const v = Number(vRaw ?? 0);
+      if (!Number.isFinite(v)) { delete s._coterieRep[cid]; continue; }
+      const nv = v * 0.985;
+      if (Math.abs(nv) < 0.03) delete s._coterieRep[cid]; else s._coterieRep[cid] = nv;
+    }
+
+    // Apply recent macro outcomes once (raid outcome, end-of-winter stability) into the reputation ledger.
+    // These are intentionally tiny deltas; the point is ongoing texture, not permanent scores.
+    s._coterieRepApplied = (s._coterieRepApplied && typeof s._coterieRepApplied === 'object') ? s._coterieRepApplied : { raidT:0, winterT:0 };
+    const applyRepDelta = (c, d) => {
+      if (!c) return;
+      const id = String(c.id ?? '');
+      if (!id) return;
+      const cur = Number(s._coterieRep[id] ?? 0) || 0;
+      s._coterieRep[id] = Math.max(-1, Math.min(1, cur + d));
+    };
+
+    const raidOut = (s._lastRaidOutcome && typeof s._lastRaidOutcome === 'object') ? s._lastRaidOutcome : null;
+    if (raidOut && Number(raidOut.t ?? 0) > Number(s._coterieRepApplied.raidT ?? 0)) {
+      const t = Number(raidOut.t ?? 0);
+      const res = String(raidOut.result ?? '');
+      for (const c of cots) {
+        const isSafety = (String(c.domAx ?? '') === 'Safety');
+        if (res === 'repel') applyRepDelta(c, isSafety ? 0.18 : 0.08);
+        if (res === 'hit') applyRepDelta(c, isSafety ? -0.12 : -0.06);
+      }
+      s._coterieRepApplied.raidT = t;
+    }
+
+    const winOut = (s._lastWinterOutcome && typeof s._lastWinterOutcome === 'object') ? s._lastWinterOutcome : null;
+    if (winOut && Number(winOut.t ?? 0) > Number(s._coterieRepApplied.winterT ?? 0)) {
+      const t = Number(winOut.t ?? 0);
+      const res = String(winOut.result ?? '');
+      for (const c of cots) {
+        const isFood = (String(c.domAx ?? '') === 'Food');
+        if (res === 'good') applyRepDelta(c, isFood ? 0.15 : 0.08);
+        if (res === 'hard') applyRepDelta(c, -0.10);
+      }
+      s._coterieRepApplied.winterT = t;
+    }
+
     for (const c of cots) {
       const mem = (c.members ?? []).map(id => byId.get(id)).filter(Boolean);
       let sumSocial = 0;
@@ -893,7 +946,16 @@ import { PATCH_HISTORY } from './content.js';
       c.ethosTag = lab.tag;
     }
 
-    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '', ethos: Number(c.ethosV ?? 0), ethosLabel: String(c.ethosLabel ?? '') }));
+    // Attach reputation (transient) to each coterie for UI surfacing.
+    for (const c of cots) {
+      const rv = Number(s._coterieRep?.[String(c.id ?? '')] ?? 0) || 0;
+      const lab = coterieRepLabel(rv);
+      c.repV = rv;
+      c.repLabel = lab.label;
+      c.repTag = lab.tag;
+    }
+
+    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '', ethos: Number(c.ethosV ?? 0), ethosLabel: String(c.ethosLabel ?? ''), rep: Number(c.repV ?? 0), repLabel: String(c.repLabel ?? '') }));
 
     // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
     const isInfluential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
@@ -949,6 +1011,28 @@ import { PATCH_HISTORY } from './content.js';
       } else if (curTag && !ep.tag) {
         // Initialize silently.
         s._coterieEthosBand[c.id] = { tag: curTag, nextAt: Number(ep.nextAt ?? 0) || (nowT + 45) };
+      }
+
+      // Reputation beats: respected/resented is a simple, decaying aura derived from macro outcomes.
+      s._coterieRepBand = (s._coterieRepBand && typeof s._coterieRepBand === 'object') ? s._coterieRepBand : {};
+      const rp = s._coterieRepBand[c.id] ?? { tag:'', nextAt:0 };
+      const repTag = String(c.repTag ?? '');
+      if (repTag && inf && repTag !== String(rp.tag ?? '') && nowT >= Number(rp.nextAt ?? 0)) {
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const txt = (repTag === 'pos') ? 'is widely respected' : (repTag === 'neg') ? 'is widely resented' : 'returns to the background';
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        s.feed.push(`[${fmt(s.t)}] Reputation: a coterie ${txt}. (${who})`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        const col = (repTag === 'pos') ? 'rgba(34,197,94,.11)' : (repTag === 'neg') ? 'rgba(239,68,68,.12)' : 'rgba(148,163,184,.10)';
+        s._trendEvents.push({ t: nowT, kind:'rep', label:`${repTag}`, color: col });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        s._coterieRepBand[c.id] = { tag: repTag, nextAt: nowT + 110 };
+      } else if (repTag && !rp.tag) {
+        s._coterieRepBand[c.id] = { tag: repTag, nextAt: Number(rp.nextAt ?? 0) || (nowT + 55) };
       }
 
       // Rising edge only, cooldown-protected.
@@ -3760,6 +3844,23 @@ import { PATCH_HISTORY } from './content.js';
       const targets = seasonTargets(state);
       const demand = activeFactionDemand(state);
 
+      // Aquarium depth: end-of-Winter leaves a soft "reputation" imprint on coteries.
+      // We tag it once at the Winter→Spring boundary; the coterie ledger consumes it later.
+      if (String(from) === 'Winter' && String(season.name) === 'Spring') {
+        let avgHealth = 0;
+        if (pop > 0) {
+          for (const k of state.kittens) avgHealth += clamp01(Number(k.health ?? 1));
+          avgHealth /= pop;
+        } else {
+          avgHealth = 1;
+        }
+        const okFood = ediblePk >= targets.foodPerKitten * 0.90;
+        const okWarm = warm >= targets.warmth * 0.85;
+        const okHealth = avgHealth >= 0.70;
+        const res = (okFood && okWarm && okHealth) ? 'good' : 'hard';
+        state._lastWinterOutcome = { t: Number(state.t ?? 0), result: res };
+      }
+
       const report = `Year ${yr} | pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}% | mood ${(avgMood*100).toFixed(0)}%`;
       const targetLine = `Targets now: edible/kit â‰¥ ${targets.foodPerKitten}, warmth â‰¥ ${targets.warmth}, threat â‰¤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
       const demandLine = demand ? `Faction demand active: ${demand.axis} bloc (${String(demand.what ?? 'concessions')})` : '';
@@ -4544,6 +4645,7 @@ import { PATCH_HISTORY } from './content.js';
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'repel', color:'rgba(251,113,133,.18)' });
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 45;
+          state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'repel' };
         } else {
           state.res.threat = Math.max(20, state.res.threat - 35);
 
@@ -4565,6 +4667,7 @@ import { PATCH_HISTORY } from './content.js';
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'hit', color:'rgba(251,113,133,.26)' });
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 75;
+          state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'hit' };
           // Auto alarm (only once you know what "ALARM" means)
           state.signals.ALARM = state.unlocked.security ? true : false;
         }
@@ -6954,11 +7057,18 @@ import { PATCH_HISTORY } from './content.js';
               }
             }
 
-            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}${ethosLabel ? ` Ethos: ${ethosLabel} (${Math.round(ethos*100)}%).` : ''}`;
+            // Reputation surfacing: respected/resented aura (decays back to neutral).
+            let repTag = '';
+            const repLabel = String(c.repLabel ?? '');
+            if (repLabel === 'respected') repTag = `<span class="tag" style="border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.06)">RESPECT</span> `;
+            if (repLabel === 'resented') repTag = `<span class="tag" style="border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06)">RESENT</span> `;
+
+            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}${ethosLabel ? ` Ethos: ${ethosLabel} (${Math.round(ethos*100)}%).` : ''}${repLabel ? ` Reputation: ${repLabel}.` : ''}`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
               `<span class="tag">Coterie</span> <span class="tag">${ax}</span> ` +
               pressTag +
               relTag +
+              repTag +
               `<span class="small">x${sz}</span> ` +
               (trad ? `<span class="small" style="opacity:.72">${trad}</span> ` : '') +
               (ethosLabel ? `<span class="small" style="opacity:.72">${ethosLabel}</span> ` : '') +

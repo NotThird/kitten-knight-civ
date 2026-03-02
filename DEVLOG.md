@@ -4,6 +4,26 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 03:48 CST - Aquarium: Coterie reputation ledger (respected vs resented)
+
+Summary
+- Aquarium depth: coteries now carry a tiny, transient **Reputation** score that decays back to neutral.
+- Reputation is derived from recent macro outcomes (no player clicks required):
+  - **Raid repelled** nudges circles toward **respected** (especially Safety circles).
+  - **Raid hit** nudges circles toward **resented**.
+  - **Winter → Spring** transition records a coarse winter outcome (**good** vs **hard**) and nudges reputations accordingly.
+- Observability: influential circles can emit **Reputation:** Society feed beats and drop a `kind:'rep'` marker in Trends.
+- UI: **Factions → Coteries** shows inline **RESPECT / RESENT** tags when the aura is strong.
+
+Files touched
+- `js/main.js`
+
+What to try
+- Let a **raid** happen (either outcome), then watch the Society feed for a **Reputation:** line and check **Factions → Coteries** for RESPECT/RESENT tags.
+- Survive a **Winter → Spring** flip and see if circles gain/lose aura depending on how stable the colony was.
+
+---
+
 ## 2026-03-02 03:33 CST - Aquarium: Coterie feud→truce status arcs (rivalry memory)
 
 Summary
