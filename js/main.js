@@ -5536,6 +5536,109 @@ import { PATCH_HISTORY } from './content.js';
     });
   }
 
+  // Trends marker tooltips (hover: label + time)
+  // Goal: make culture-beat markers self-explanatory without clicks or feed scrolling.
+  const trendsTipEl = (() => {
+    if (!trendsEl) return null;
+    const d = document.createElement('div');
+    d.style.position = 'fixed';
+    d.style.zIndex = '9999';
+    d.style.pointerEvents = 'none';
+    d.style.padding = '4px 6px';
+    d.style.borderRadius = '8px';
+    d.style.border = '1px solid rgba(255,255,255,.14)';
+    d.style.background = 'rgba(2,6,23,.92)';
+    d.style.color = 'rgba(226,232,240,.98)';
+    d.style.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    d.style.whiteSpace = 'nowrap';
+    d.style.display = 'none';
+    document.body.appendChild(d);
+    return d;
+  })();
+
+  function hideTrendsTip(){
+    if (!trendsTipEl) return;
+    trendsTipEl.style.display = 'none';
+  }
+
+  function formatMarkerKind(kind){
+    const k = String(kind || '');
+    if (k === 'norm') return 'Norms';
+    if (k === 'cot') return 'Coterie';
+    if (k === 'trad') return 'Tradition';
+    if (k === 'eth') return 'Ethos';
+    if (k === 'rep') return 'Reputation';
+    if (k === 'press') return 'Pressure';
+    if (k === 'rel') return 'Relationship';
+    if (k === 'bloc') return 'Politics';
+    if (k === 'raid') return 'Raid';
+    if (k === 'unlock') return 'Unlock';
+    if (k === 'season') return 'Season';
+    if (k === 'curator') return 'Curator';
+    return k || 'Event';
+  }
+
+  function nearestTrendsMarkerAtCanvasX(xCanvas){
+    const tr = state._trend;
+    if (!tr || !tr.t || tr.t.length < 2) return null;
+    const n = tr.t.length;
+    const pad = 10;
+    const W = trendsEl?.width ?? 0;
+    const plotW = W - pad*2;
+    if (plotW <= 0) return null;
+
+    const ev = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+    const tMin = tr.t[0];
+    const tMax = tr.t[n-1];
+    const xForT = (t) => pad + ((t - tMin) / Math.max(1e-6, (tMax - tMin))) * plotW;
+
+    const mf = ensureTrendMarkerFilter(state);
+
+    let best = null;
+    let bestDx = Infinity;
+    for (const e of ev) {
+      const kind = String(e.kind ?? '');
+      if ((kind === 'norm' || kind === 'cot' || kind === 'trad' || kind === 'eth' || kind === 'rep' || kind === 'press' || kind === 'rel') && !mf[kind]) continue;
+      const tt = Number(e.t ?? NaN);
+      if (!Number.isFinite(tt) || tt < tMin || tt > tMax) continue;
+      const dx = Math.abs(xForT(tt) - xCanvas);
+      if (dx < bestDx) { bestDx = dx; best = e; }
+    }
+
+    // Threshold in canvas pixels.
+    if (!best || bestDx > 7) return null;
+    return best;
+  }
+
+  if (trendsEl && trendsTipEl) {
+    trendsEl.addEventListener('mouseleave', hideTrendsTip);
+    trendsEl.addEventListener('mousemove', (ev) => {
+      const rect = trendsEl.getBoundingClientRect();
+      const W = trendsEl.width;
+      const xCanvas = (ev.clientX - rect.left) * (W / Math.max(1, rect.width));
+
+      const m = nearestTrendsMarkerAtCanvasX(xCanvas);
+      if (!m) return hideTrendsTip();
+
+      const kind = formatMarkerKind(m.kind);
+      const label = String(m.label ?? '').trim();
+      const age = Math.max(0, Number(state.t ?? 0) - Number(m.t ?? 0));
+      const ageStr = (age < 120) ? `${Math.round(age)}s ago` : `${fmt(age)}s ago`;
+      const txt = label ? `${kind}: ${label} · ${ageStr}` : `${kind} · ${ageStr}`;
+
+      trendsTipEl.textContent = txt;
+      trendsTipEl.style.display = '';
+      // Position near cursor but keep on-screen.
+      const margin = 12;
+      const w = trendsTipEl.offsetWidth;
+      const h = trendsTipEl.offsetHeight;
+      const x = Math.min(window.innerWidth - w - 6, Math.max(6, ev.clientX + margin));
+      const y = Math.min(window.innerHeight - h - 6, Math.max(6, ev.clientY + margin));
+      trendsTipEl.style.left = x + 'px';
+      trendsTipEl.style.top = y + 'px';
+    });
+  }
+
   // Advisor: quick actions (wired via render-time recommendations)
   let advisorRecs = [];
   if (advisorEl) advisorEl.addEventListener('click', (e) => {

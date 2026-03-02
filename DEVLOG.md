@@ -3934,3 +3934,24 @@ Files touched
 What to try
 - Run Curator hands-off until you have a few culture beats (coterie rising, tradition shift, relationship drift, norms band flips).
 - Under **Trends**, toggle off `cot/trad/eth/rep/press` to isolate **norm** markers only (or hit **None** to see a clean resource-only view).
+
+---
+
+## 2026-03-02 06:38 CST - Observability: Trends marker tooltips (hover nearest beat)
+
+Summary
+- Observability: hovering the **Trends** canvas now shows a tiny tooltip for the nearest event marker (kind + label + �Xs ago�).
+- Respects the existing marker filter toggles (norm/cot/trad/eth/rep/press/rel), so you can isolate culture beats and still get readable labels.
+- No clicks required; keeps the aquarium vibe while making markers self-explanatory.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Let the sim run until you have a few culture markers in Trends.
+- Hover near a vertical marker line: confirm you see a tooltip like `Norms: vig:wary - 18s ago`.
+- Toggle marker filters (e.g. hide `cot/trad`) and confirm tooltips only appear for visible marker kinds.
