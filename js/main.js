@@ -971,6 +971,58 @@ import { PATCH_HISTORY } from './content.js';
         s._coterieInfluence[c.id] = { inf, nextAt: Number(prev.nextAt ?? 0) };
       }
     }
+
+    // Coterie pressure beats (tiny, short-lived society modifiers)
+    // Goal: a circle's norms sometimes "spill" into colony-wide atmosphere without player clicks.
+    // - mutual aid: grievances cool faster for members (and the air feels calmer)
+    // - strict norms: dissent desire rises slightly for a short window
+    s._coteriePressure = (s._coteriePressure && typeof s._coteriePressure === 'object') ? s._coteriePressure : {
+      aid: { cid:null, until:0, nextAt:0 },
+      strict: { cid:null, until:0, nextAt:0 },
+    };
+
+    const best = (tag) => cots
+      .filter(c => isInfluential(c) && String(c.ethosTag ?? '') === tag)
+      .sort((a,b)=> ((b.size*1.25 + (b.coWork ?? 0)) - (a.size*1.25 + (a.coWork ?? 0))))
+      [0] ?? null;
+
+    const aidC = best('aid');
+    const strictC = best('strict');
+
+    const trigger = (kind, c) => {
+      if (!c) return;
+      const slot = s._coteriePressure[kind] ?? { cid:null, until:0, nextAt:0 };
+      if (nowT < Number(slot.nextAt ?? 0)) return;
+      if (nowT < Number(slot.until ?? 0)) return; // already active
+
+      const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+      s.feed = Array.isArray(s.feed) ? s.feed : [];
+      if (kind === 'aid') s.feed.push(`[${fmt(s.t)}] Culture: mutual aid spreads through a coterie — resentments cool faster for a time. (${who})`);
+      if (kind === 'strict') s.feed.push(`[${fmt(s.t)}] Culture: strict norms tighten in a coterie — grumbling rises for a time. (${who})`);
+      const FEED_MAX = 220;
+      if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+      s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+      const label = (kind === 'aid') ? `aid:${c.size}` : `strict:${c.size}`;
+      const color = (kind === 'aid') ? 'rgba(52,211,153,.12)' : 'rgba(251,113,133,.14)';
+      s._trendEvents.push({ t: nowT, kind:'press', label, color });
+      if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+      s._coteriePressure[kind] = { cid: c.id, until: nowT + 60, nextAt: nowT + 140 };
+    };
+
+    // Don't spam: at most one trigger per ~15s.
+    s._coteriePressureGate = Number(s._coteriePressureGate ?? 0) || 0;
+    if (nowT >= s._coteriePressureGate) {
+      // If both exist, prefer the larger circle as the stronger "culture signal".
+      if (aidC && strictC) {
+        trigger((aidC.size >= strictC.size) ? 'aid' : 'strict', (aidC.size >= strictC.size) ? aidC : strictC);
+      } else {
+        trigger('aid', aidC);
+        trigger('strict', strictC);
+      }
+      s._coteriePressureGate = nowT + 15;
+    }
   }
 
   function defaultRules(){
@@ -2356,7 +2408,14 @@ import { PATCH_HISTORY } from './content.js';
     const disPol = discipline01(s);
 
     // Baseline natural decay (grievances fade if conditions improve).
-    g = Math.max(0, g - 0.004);
+    // Aquarium: during a "mutual aid" culture pressure, members cool down a bit faster.
+    const kid = Number(k?.id ?? 0);
+    const cid = (s && s._coterieIdByKid && kid) ? s._coterieIdByKid[kid] : null;
+    const press = (s && s._coteriePressure && typeof s._coteriePressure === 'object') ? s._coteriePressure : null;
+    const nowT = Number(s.t ?? 0);
+    const aidActive = !!(press && press.aid && Number(press.aid.until ?? 0) > nowT && cid && Number(press.aid.cid ?? 0) === Number(cid));
+    const strictActive = !!(press && press.strict && Number(press.strict.until ?? 0) > nowT && cid && Number(press.strict.cid ?? 0) === Number(cid));
+    g = Math.max(0, g - (aidActive ? 0.007 : 0.004));
 
     let delta = 0;
 
@@ -2388,13 +2447,17 @@ import { PATCH_HISTORY } from './content.js';
 
     // Coterie norms: if a kitten belongs to an influential coterie, that circle's ethos gently biases resentment.
     // Mutual aid reduces grievance buildup; strictness amplifies it a bit.
-    const kid = Number(k?.id ?? 0);
-    const cid = (s && s._coterieIdByKid && kid) ? s._coterieIdByKid[kid] : null;
     const inf = cid && s && s._coterieInfluence && s._coterieInfluence[cid] ? !!s._coterieInfluence[cid].inf : false;
     if (inf) {
       const e = clamp01(Number(s?._coterieEthos?.[cid]?.v ?? s?._coterieEthosByKid?.[kid] ?? 0.5));
       const mul = 1 - 0.22 * ((e - 0.5) * 2); // e=1 => ~0.78, e=0 => ~1.22
       if (delta > 0) delta *= mul;
+    }
+
+    // Culture pressure: "strict norms" makes resentment stickier for members during the window.
+    if (strictActive) {
+      if (delta > 0) delta *= 1.10;
+      delta += 0.0025 * planPressure;
     }
 
     g = clamp01(g + delta);
@@ -3704,6 +3767,13 @@ import { PATCH_HISTORY } from './content.js';
       const alarmPressure = alarmStress * 0.06;
       const curfewPressure = (state.director?.curfew ? 0.045 : 0);
 
+      // Aquarium: coterie culture "pressure" sometimes spills into macro politics.
+      // Strict norms -> a bit more grumbling; Mutual aid -> a bit calmer.
+      const cp = (state && state._coteriePressure && typeof state._coteriePressure === 'object') ? state._coteriePressure : null;
+      const aidPressure = (cp && cp.aid && Number(cp.aid.until ?? 0) > Number(state.t ?? 0)) ? -0.025 : 0;
+      const strictPressure = (cp && cp.strict && Number(cp.strict.until ?? 0) > Number(state.t ?? 0)) ? 0.035 : 0;
+      const coteriePressure = aidPressure + strictPressure;
+
       let desire = 0;
       desire += moodPressure;
       desire += workPressure;
@@ -3712,6 +3782,7 @@ import { PATCH_HISTORY } from './content.js';
       desire += grievancePressure;
       desire += alarmPressure;
       desire += curfewPressure;
+      desire += coteriePressure;
 
       const rawDesire = desire;
 
@@ -3740,6 +3811,7 @@ import { PATCH_HISTORY } from './content.js';
         alarmStress,
         curfew: !!state.director?.curfew,
         moodPressure, workPressure, rationPressure, hungerPressure, grievancePressure, alarmPressure, curfewPressure,
+        coteriePressure,
         rawDesire,
         desireAfterPolicy,
         cur, next,

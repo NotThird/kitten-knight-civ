@@ -31,6 +31,12 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
   delete s._sharedWorkEdges;
   delete s._coterieInfluence;
   delete s._coterieTraditions;
+  delete s._coterieEthos;
+  delete s._coterieEthosBand;
+  delete s._coterieEthosByKid;
+  delete s._coterieIdByKid;
+  delete s._coteriePressure;
+  delete s._coteriePressureGate;
 
   // Strip transient UI/debug keys (avoid save bloat)
   if (Array.isArray(s.kittens)) {

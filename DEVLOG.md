@@ -3625,3 +3625,27 @@ What to try
 - Run Curator hands-off with 4+ kittens.
 - Open **Factions â†’ Coteries** and watch each coterie show an ethos label (mutual aid/balanced/strictness).
 - Let the colony drift between calm and stressful periods; watch for **Norms:** lines in the Society feed and see if grievance climbs slower/faster for members of influential circles.
+
+---
+
+## 2026-03-02 02:48 CST - Aquarium: Coterie pressure beats (aid vs strictness)
+
+Summary
+- Aquarium depth: influential coteries can now occasionally emit a short-lived **culture pressure** window:
+  - **Mutual aid** ? members’ **Grievance cools faster** for ~60s.
+  - **Strict norms** ? colony **dissent desire** rises slightly for ~60s.
+- Observability: each pressure posts a clear **Society feed** line and drops a Trends event marker (kind:'press').
+- Save-safe: pressure state is transient (_coteriePressure*) and stripped from saves.
+
+Files touched
+- kitten-knight-civ/js/main.js
+- dist/js/main.js
+- kitten-knight-civ/js/state.js
+- dist/js/state.js
+- PLAN_STATUS.md
+
+What to try
+- Run Curator hands-off with **4+ kittens**.
+- Watch the Society feed for **Culture:** lines, then:
+  - during **mutual aid**, observe Grievance settle faster for members of the named circle
+  - during **strict norms**, watch Dissent drift upward a bit faster (especially under harsh policy)
