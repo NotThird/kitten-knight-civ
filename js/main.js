@@ -7266,22 +7266,27 @@ import { PATCH_HISTORY } from './content.js';
       kittensEl.appendChild(tr);
     }
 
-    // safety rules
+    // safety rules (read-only unless Developer Mode)
+    ensureCurator(state);
+    const rulesRO = !state.director?.curator?.devMode;
+    if (rulesControlsEl) rulesControlsEl.style.display = rulesRO ? 'none' : '';
+
     rulesEl.innerHTML = '';
     state.rules.forEach((r, idx) => {
       const box = document.createElement('div');
       box.className = 'rule';
+      const btns = rulesRO
+        ? `<span class="small" style="opacity:.7">(read-only)</span>`
+        : `<button class="btn" data-act="up" data-i="${idx}">â†‘</button>
+           <button class="btn" data-act="down" data-i="${idx}">â†“</button>
+           <button class="btn bad" data-act="del" data-i="${idx}">Delete</button>`;
       box.innerHTML = `
         <div class="top">
           <div class="row">
-            <label class="small"><input type="checkbox" data-act="toggle" data-i="${idx}"> enabled</label>
+            <label class="small"><input type="checkbox" data-act="toggle" data-i="${idx}" ${rulesRO?'disabled':''}> enabled</label>
             <span class="tag">#${idx+1}</span>
           </div>
-          <div class="row">
-            <button class="btn" data-act="up" data-i="${idx}">â†‘</button>
-            <button class="btn" data-act="down" data-i="${idx}">â†“</button>
-            <button class="btn bad" data-act="del" data-i="${idx}">Delete</button>
-          </div>
+          <div class="row">${btns}</div>
         </div>
         <div style="height:8px"></div>
         <div class="row">
@@ -7292,7 +7297,8 @@ import { PATCH_HISTORY } from './content.js';
         </div>
       `;
       rulesEl.appendChild(box);
-      box.querySelector('input[data-act="toggle"]').checked = !!r.enabled;
+      const cb = box.querySelector('input[data-act="toggle"]');
+      if (cb) cb.checked = !!r.enabled;
     });
 
     logEl.textContent = state.log.slice(-40).join('\n');
@@ -7779,6 +7785,8 @@ import { PATCH_HISTORY } from './content.js';
   }
 
   function condEditor(cond, idx){
+    ensureCurator(state);
+    const ro = !state.director?.curator?.devMode;
     const type = cond.type;
     const opts = [
       ['always','always'],
@@ -7794,15 +7802,17 @@ import { PATCH_HISTORY } from './content.js';
       ['signal','signal(...)'],
       ['threat_gt_or_alarm','threat> OR ALARM'],
     ];
-    const sel = `<select data-act="condType" data-i="${idx}">${opts.map(([v,l])=>`<option value="${v}" ${v===type?'selected':''}>${l}</option>`).join('')}</select>`;
+    const sel = `<select data-act="condType" data-i="${idx}" ${ro?'disabled':''}>${opts.map(([v,l])=>`<option value="${v}" ${v===type?'selected':''}>${l}</option>`).join('')}</select>`;
     let extra = '';
-    if (['hungry_gt','tired_gt','health_lt'].includes(type)) extra = `<input type="number" min="0" max="1" step="0.05" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px">`;
-    else if (['food_lt','edible_lt','wood_lt','warmth_lt','threat_gt','foodperkitten_lt'].includes(type)) extra = `<input type="number" min="0" step="1" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px">`;
-    else if (type === 'signal') extra = `<select data-act="condV" data-i="${idx}">${['BUILD','FOOD','ALARM'].map(s=>`<option value="${s}" ${String(cond.v)===s?'selected':''}>${s}</option>`).join('')}</select>`;
+    if (['hungry_gt','tired_gt','health_lt'].includes(type)) extra = `<input type="number" min="0" max="1" step="0.05" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px" ${ro?'disabled':''}>`;
+    else if (['food_lt','edible_lt','wood_lt','warmth_lt','threat_gt','foodperkitten_lt'].includes(type)) extra = `<input type="number" min="0" step="1" value="${cond.v}" data-act="condV" data-i="${idx}" style="width:90px" ${ro?'disabled':''}>`;
+    else if (type === 'signal') extra = `<select data-act="condV" data-i="${idx}" ${ro?'disabled':''}>${['BUILD','FOOD','ALARM'].map(s=>`<option value="${s}" ${String(cond.v)===s?'selected':''}>${s}</option>`).join('')}</select>`;
     return sel + extra;
   }
 
   function actEditor(act, idx){
+    ensureCurator(state);
+    const ro = !state.director?.curator?.devMode;
     const opts = ['Eat','Rest','Loaf','Socialize','Care','Forage','PreserveFood','ChopWood','StokeFire','Guard','Research'];
     if (state.unlocked.library) opts.push('Mentor');
     if (state.unlocked.workshop) opts.push('CraftTools');
@@ -7813,7 +7823,7 @@ import { PATCH_HISTORY } from './content.js';
       opts.push('BuildHut','BuildPalisade');
       if (state.unlocked.granary) opts.push('BuildGranary');
     }
-    return `<select data-act="actType" data-i="${idx}">${opts.map(v=>`<option value="${v}" ${act.type===v?'selected':''}>${v}</option>`).join('')}</select>`;
+    return `<select data-act="actType" data-i="${idx}" ${ro?'disabled':''}>${opts.map(v=>`<option value="${v}" ${act.type===v?'selected':''}>${v}</option>`).join('')}</select>`;
   }
 
   // --- Buttons / Inputs
@@ -8851,10 +8861,31 @@ import { PATCH_HISTORY } from './content.js';
     setPolicy({ Socialize:1, Care:1, Forage:1, Farm:1, ChopWood:1, StokeFire:1, Guard:1, BuildHut:1, BuildPalisade:1, BuildGranary:1, BuildWorkshop:1, BuildLibrary:1, CraftTools:1, Mentor:1, Research:1 }, 'Policy reset to defaults (all 1.0).');
   });
 
-  document.getElementById('btnAddRule').addEventListener('click', () => { state.rules.push(rule('New safety rule', {type:'always', v:0}, {type:'Rest'})); render(); });
-  document.getElementById('btnDefaultRules').addEventListener('click', () => { if (!confirm('Restore defaults?')) return; state.rules = defaultRules(); render(); });
+  const rulesControlsEl = document.getElementById('rulesControls');
+
+  // Safety rules are read-only in Curator mode.
+  // (Still visible for transparency, but only editable in Developer Mode.)
+  document.getElementById('btnAddRule').addEventListener('click', () => {
+    ensureCurator(state);
+    if (!state.director?.curator?.devMode) { feed('Safety rules are read-only. Enable Developer Mode to edit.'); return; }
+    state.rules.push(rule('New safety rule', {type:'always', v:0}, {type:'Rest'}));
+    save();
+    render();
+  });
+
+  document.getElementById('btnDefaultRules').addEventListener('click', () => {
+    ensureCurator(state);
+    if (!state.director?.curator?.devMode) { feed('Safety rules are read-only. Enable Developer Mode to edit.'); return; }
+    if (!confirm('Restore defaults?')) return;
+    state.rules = defaultRules();
+    save();
+    render();
+  });
 
   rulesEl.addEventListener('click', (e) => {
+    ensureCurator(state);
+    if (!state.director?.curator?.devMode) return;
+
     const btn = e.target.closest('button');
     if (!btn) return;
     const i = Number(btn.dataset.i);
@@ -8868,6 +8899,9 @@ import { PATCH_HISTORY } from './content.js';
   });
 
   rulesEl.addEventListener('change', (e) => {
+    ensureCurator(state);
+    if (!state.director?.curator?.devMode) { render(); return; }
+
     const t = e.target;
     const i = Number(t.dataset.i);
     const act = t.dataset.act;
