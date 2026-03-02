@@ -4,6 +4,24 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 04:03 CST - Aquarium: Reputation consequences (mood uplift + grievance sting)
+
+Summary
+- Aquarium depth: coterie **Reputation** now has a tiny *local* consequence (no player clicks required):
+  - **Respected** influential circles slightly **buoy mood recovery** for their members.
+  - **Resented** influential circles make **grievance gains** stickier for their members.
+- Observability: when the effect is actually relevant (low mood / high grievance), the sim emits a **Reputation:** Society feed beat and drops a `kind:'repfx'` marker in Trends.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+
+What to try
+- Let a circle become **RESPECT** (repel a raid / good winter) and then run into a stressful period (low mood): watch for the **Reputation:** "lift spirits" feed line + a `repfx/uplift` marker.
+- Let a circle become **RESENT**, then push harsh central planning (low autonomy / high discipline) and watch for the **Reputation:** "grievances rise" line + a `repfx/sting` marker.
+
+---
+
 ## 2026-03-02 03:48 CST - Aquarium: Coterie reputation ledger (respected vs resented)
 
 Summary

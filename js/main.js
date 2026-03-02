@@ -2576,6 +2576,44 @@ import { PATCH_HISTORY } from './content.js';
       m -= addStress;
     }
 
+    // Coterie reputation (aquarium consequence):
+    // If a kitten belongs to an influential coterie with a strong "respected" aura,
+    // their mood recovers a tiny bit faster (social prestige/validation).
+    // (Negative reputation consequences are modeled via grievance instead, to keep mood changes subtle.)
+    const kid = Number(k?.id ?? 0);
+    const cid = (s && s._coterieIdByKid && kid) ? s._coterieIdByKid[kid] : null;
+    const inf = cid && s && s._coterieInfluence && s._coterieInfluence[cid] ? !!s._coterieInfluence[cid].inf : false;
+    if (inf && s && s._coterieRep) {
+      const rv = Number(s._coterieRep[String(cid)] ?? 0) || 0;
+      if (rv >= 0.35) {
+        // +~0.0009..0.0021 / sec when respected (small but noticeable over ~1 minute).
+        const t = (rv - 0.35) / 0.65;
+        m += (0.0009 + 0.0012 * clamp01(t));
+
+        // Observability: when it actually matters (mood is low), emit a beat with cooldown.
+        const nowT = Number(s.t ?? 0);
+        if (m < 0.58) {
+          s._coterieRepFx = (s._coterieRepFx && typeof s._coterieRepFx === 'object') ? s._coterieRepFx : {};
+          const fx = s._coterieRepFx[cid] ?? { nextAt:0 };
+          if (nowT >= Number(fx.nextAt ?? 0)) {
+            const cots = Array.isArray(s?.social?.coteries) ? s.social.coteries : [];
+            const c = cots.find(x => Number(x?.id ?? 0) === Number(cid));
+            const who = c ? (Array.isArray(c.members) ? c.members.slice(0, 3).map(id => kittenName(s, id)).join(', ') : '') : '';
+            s.feed = Array.isArray(s.feed) ? s.feed : [];
+            s.feed.push(`[${fmt(s.t)}] Reputation: respected circles lift spirits in hard times.` + (who ? ` (${who}${(c?.members?.length ?? 0) > 3 ? '…' : ''})` : ''));
+            const FEED_MAX = 220;
+            if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+            s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+            s._trendEvents.push({ t: nowT, kind:'repfx', label:'uplift', color:'rgba(34,197,94,.10)' });
+            if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+            s._coterieRepFx[cid] = { nextAt: nowT + 140 };
+          }
+        }
+      }
+    }
+
     k.mood = clamp01(m);
   }
 
@@ -2637,6 +2675,32 @@ import { PATCH_HISTORY } from './content.js';
       const e = clamp01(Number(s?._coterieEthos?.[cid]?.v ?? s?._coterieEthosByKid?.[kid] ?? 0.5));
       const mul = 1 - 0.22 * ((e - 0.5) * 2); // e=1 => ~0.78, e=0 => ~1.22
       if (delta > 0) delta *= mul;
+
+      // Coterie reputation consequence: "resented" circles accumulate resentment a bit faster.
+      const rv = Number(s?._coterieRep?.[String(cid)] ?? 0) || 0;
+      if (rv <= -0.35) {
+        const t = (-rv - 0.35) / 0.65;
+        const mulR = 1 + 0.16 * clamp01(t); // up to +16% on grievance gains
+        if (delta > 0) delta *= mulR;
+
+        // Observability: if grievance is already high, emit a beat with cooldown.
+        if (g > 0.62) {
+          s._coterieRepFx = (s._coterieRepFx && typeof s._coterieRepFx === 'object') ? s._coterieRepFx : {};
+          const fx = s._coterieRepFx[`${cid}:neg`] ?? { nextAt:0 };
+          if (nowT >= Number(fx.nextAt ?? 0)) {
+            s.feed = Array.isArray(s.feed) ? s.feed : [];
+            s.feed.push(`[${fmt(s.t)}] Reputation: resentment clings to a disliked circle — grievances rise more easily.`);
+            const FEED_MAX = 220;
+            if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+            s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+            s._trendEvents.push({ t: nowT, kind:'repfx', label:'sting', color:'rgba(239,68,68,.10)' });
+            if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+            s._coterieRepFx[`${cid}:neg`] = { nextAt: nowT + 160 };
+          }
+        }
+      }
     }
 
     // Culture pressure: "strict norms" makes resentment stickier for members during the window.
