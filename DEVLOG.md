@@ -3371,3 +3371,22 @@ What to try
   - it logs a single "Auto Winter Prep â†’ ON/OFF" line
   - it persists after refresh
 
+
+---
+
+## 2026-03-01 20:57 CST - P0.1 Modularization: extract Auto Food Crisis toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Food Crisis** checkbox change wiring out of main.js into a new UI helper: `initAutoFoodCrisisControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoFoodCrisis(...)` mutator plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Food Crisis** ON/OFF and confirm:
+  - it logs a single "Auto Food Crisis ? ON/OFF" line
+  - it persists after refresh

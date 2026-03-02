@@ -643,6 +643,38 @@ export function initAutoWinterPrepControls(deps){
 }
 
 /**
+ * Auto Food Crisis toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoFoodCrisisEl
+ * @param {(on:boolean)=>boolean} deps.setAutoFoodCrisis
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoFoodCrisisControls(deps){
+  const {
+    autoFoodCrisisEl,
+    setAutoFoodCrisis,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoFoodCrisisEl) return;
+
+  autoFoodCrisisEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoFoodCrisis?.(on));
+    log?.(`Auto Food Crisis → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
