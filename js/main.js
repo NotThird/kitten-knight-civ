@@ -213,9 +213,11 @@ import { PATCH_HISTORY } from './content.js';
       band: 'calm',
       lastLogBand: '',
       lastLogAt: 0,
-      norms: { raidParanoia: 0 }, // 0..1: heightened vigilance after raids; slowly decays
+      norms: { raidParanoia: 0, scarcityMindset: 0 }, // 0..1: raid vigilance + scarcity memory; both slowly decay
       normsBand: 'calm',
       normsLastAt: 0,
+      scarcityBand: 'calm',
+      scarcityLastAt: 0,
     },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
@@ -3225,6 +3227,14 @@ import { PATCH_HISTORY } from './content.js';
         // Seasonal push: late Fall + Winter want preserved buffers.
         if (season.name === 'Fall' && season.phase >= 0.55) { score += 14; reasons.push('late-Fall stockpile â†’ +14'); }
         if (season.name === 'Winter') { score += 18; reasons.push('winter stability â†’ +18'); }
+
+        // Norm: sustained scarcity creates a cultural bias toward preservation (even when there is only a modest surplus).
+        const sm = clamp01(Number(s.social?.norms?.scarcityMindset ?? 0));
+        if (sm > 0.02) {
+          const add = 4 + sm * 18;
+          score += add;
+          reasons.push(`norm scarcity ${(sm*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+        }
         // Needs wood, so don't do it when wood is critically low.
         if (s.res.wood < 10) { score -= 22; reasons.push('low wood â†’ -22'); }
         const woodRes = getReserve(s,'wood');
@@ -4839,6 +4849,42 @@ import { PATCH_HISTORY } from './content.js';
       else feed('Norms: vigilance fades. The colony feels safe enough to relax.');
       state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
       state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`vig:${band}`, color:'rgba(96,165,250,.22)' });
+      if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+    }
+
+    // Norms: sustained scarcity creates "thrift" culture that pushes preservation even after the pantry recovers.
+    // This is NOT event-based; it emerges from living under the food target for extended periods.
+    state.social.norms.scarcityMindset = clamp01(Number(state.social.norms.scarcityMindset ?? 0));
+    state.social.scarcityBand = String(state.social.scarcityBand ?? 'calm');
+    state.social.scarcityLastAt = Number(state.social.scarcityLastAt ?? 0) || 0;
+
+    const edible = edibleFood(state);
+    const nPop = Math.max(1, state.kittens?.length ?? 1);
+    const wantEdible = Math.max(1, Number(seasonTargets(state)?.foodPerKitten ?? state.targets.foodPerKitten) * nPop);
+    const ratio = edible / wantEdible; // <1 = under target
+
+    const sm0 = clamp01(Number(state.social.norms.scarcityMindset ?? 0));
+    let sm = sm0;
+    // Mild natural decay so it eventually fades even if you hover around target.
+    sm = clamp01(sm - dt * 0.0012);
+    if (ratio < 0.90) {
+      const deficit = clamp01((0.90 - ratio) / 0.90);
+      sm = clamp01(sm + dt * (0.0038 + 0.0042 * deficit));
+    } else if (ratio > 1.20) {
+      const surplus = clamp01((ratio - 1.20) / 1.20);
+      sm = clamp01(sm - dt * (0.0035 + 0.0040 * surplus));
+    }
+    state.social.norms.scarcityMindset = sm;
+
+    const sBand = (sm < 0.25) ? 'calm' : (sm < 0.55) ? 'thrifty' : 'hoarding';
+    if (sBand !== state.social.scarcityBand && (Number(state.t ?? 0) - state.social.scarcityLastAt) > 25) {
+      state.social.scarcityBand = sBand;
+      state.social.scarcityLastAt = Number(state.t ?? 0);
+      if (sBand === 'thrifty') feed('Norms: lean times teach thrift. More food gets preserved for later.');
+      else if (sBand === 'hoarding') feed('Norms: scarcity mindset hardens. Preserving rations becomes a reflex.');
+      else feed('Norms: abundance returns. The colony relaxes its hoarding instinct.');
+      state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`scar:${sBand}`, color:'rgba(34,197,94,.18)' });
       if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
     }
 

@@ -4,6 +4,28 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 04:48 CST - Aquarium: Norms v2 (scarcity mindset → preservation bias)
+
+Summary
+- Aquarium depth: added a second persistent Norm (culture memory): `social.norms.scarcityMindset` (0..1).
+  - It rises during sustained edible-under-target conditions and decays during sustained abundance.
+  - It creates a small, bounded bias toward **PreserveFood** even after the pantry recovers.
+- Observability: scarcity band flips (**calm / thrifty / hoarding**) post a Society feed beat and drop a Trends marker (`kind:'norm'`, `scar:...`).
+- Save-safe: migrated with defaults for older saves.
+
+Files touched
+- `js/main.js`
+- `js/state.js`
+- `dist/js/main.js`
+- `dist/js/state.js`
+- `PLAN_STATUS.md`
+
+What to try
+- Run Curator hands-off and keep edible under target for a while; watch for **Norms:** scarcity lines + `scar:` markers.
+- Stabilize, then confirm PreserveFood stays slightly more common until the norm cools.
+
+---
+
 ## 2026-03-02 04:03 CST - Aquarium: Reputation consequences (mood uplift + grievance sting)
 
 Summary
