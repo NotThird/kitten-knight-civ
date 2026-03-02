@@ -25,7 +25,38 @@
     <div class="body">
       <div class="grid2" id="stats"></div>
 
+      <!-- Curator mode: minimal "aquarium" levers. Advanced controls are tucked away below. -->
       <div style="height:10px"></div>
+      <div class="row" style="align-items:flex-start; gap:10px; flex-wrap:wrap">
+        <div class="small" style="min-width:100%">Curator</div>
+        <label class="small">Culture goal
+          <select id="curatorGoal" title="High-level colony intent. This drives the Director automation (mode/priorities/doctrine) so you can mostly watch the society run.">
+            <option value="Thrive">Thrive</option>
+            <option value="Expand">Expand</option>
+            <option value="Defend">Defend</option>
+            <option value="Innovate">Innovate</option>
+            <option value="Harmonize">Harmonize</option>
+          </select>
+        </label>
+        <label class="small">Ethos
+          <select id="curatorEthos" title="Governance tone. Gentle = more autonomy; Strict = more discipline.">
+            <option value="Gentle">Gentle</option>
+            <option value="Balanced">Balanced</option>
+            <option value="Strict">Strict</option>
+          </select>
+        </label>
+        <label class="small" title="How often you should be asked to intervene (future). For now it’s a saved preference.">Intervention
+          <input type="range" id="curatorIntervention" min="0" max="100" step="10">
+        </label>
+        <span class="small" id="curatorInterventionHint" style="opacity:.85"></span>
+        <div class="small" style="min-width:100%; opacity:.9" id="steeringSummary"></div>
+      </div>
+
+      <div style="height:12px"></div>
+      <details id="advancedControls">
+        <summary class="small" style="cursor:pointer; user-select:none">Advanced controls (optional)</summary>
+        <div style="height:10px"></div>
+
       <div class="row">
         <span class="small">Mode</span>
         <button class="btn mode" id="modeSurvive" title="Shortcut: 1">Survive</button>
@@ -288,6 +319,7 @@
       <div style="height:10px"></div>
       <div class="small">Event log</div>
       <div class="log" id="log"></div>
+      </details>
     </div>
   </section>
 

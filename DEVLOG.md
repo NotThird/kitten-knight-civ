@@ -3493,3 +3493,4 @@ What to try
   - it logs a single "Auto Mode â†’ ON/OFF" line
   - turning it ON allows an immediate mode switch (no waiting)
   - it persists after refresh
+\n\n## 2026-03-01 23:36 CST — Curator mode UI purge (aquarium pivot)\n- Added new **Curator** controls (Culture goal / Ethos / Intervention) and tucked the old Director cockpit into a collapsed **Advanced controls** <details>.\n- Curator goal auto-enables core automation and sets sensible defaults for mode/priorities/doctrine; ethos maps to autonomy/discipline.\n- Added a live **Steering** summary line (shows what automation is currently doing + why).\n- Save-safe: added director.curator defaults + migration (goal/ethos/intervention/enabled/appliedOnce).\n

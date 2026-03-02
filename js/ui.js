@@ -84,7 +84,110 @@ export function initUI(deps){
 }
 
 /**
+ * Curator controls ("aquarium mode"): minimal levers that drive the Director automation.
+ *
+ * @param {object} deps
+ * @param {HTMLSelectElement|null} deps.goalEl
+ * @param {HTMLSelectElement|null} deps.ethosEl
+ * @param {HTMLInputElement|null} deps.interventionEl
+ * @param {HTMLElement|null} deps.interventionHintEl
+ * @param {HTMLElement|null} deps.steeringSummaryEl
+ * @param {()=>any} deps.getState
+ * @param {(goal:string)=>void} deps.setGoal
+ * @param {(ethos:string)=>void} deps.setEthos
+ * @param {(v:number)=>void} deps.setIntervention
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ * @param {(s:any)=>string} deps.getSteeringSummary
+ */
+export function initCuratorControls(deps){
+  const {
+    goalEl,
+    ethosEl,
+    interventionEl,
+    interventionHintEl,
+    steeringSummaryEl,
+    getState,
+    setGoal,
+    setEthos,
+    setIntervention,
+    log,
+    save,
+    render,
+    getSteeringSummary,
+  } = deps || {};
+
+  function interventionLabel(v){
+    const n = Math.max(0, Math.min(100, Number(v) || 0));
+    if (n <= 10) return 'Hands-off';
+    if (n <= 40) return 'Light touch';
+    if (n <= 70) return 'Occasional';
+    return 'Hands-on';
+  }
+
+  function syncFromState(){
+    const s = getState?.();
+    const c = s?.director?.curator ?? {};
+    if (goalEl && c.goal) goalEl.value = String(c.goal);
+    if (ethosEl && c.ethos) ethosEl.value = String(c.ethos);
+    if (interventionEl) interventionEl.value = String(Math.max(0, Math.min(100, Number(c.intervention ?? 30) || 30)));
+    if (interventionHintEl && interventionEl) interventionHintEl.textContent = `(${interventionLabel(interventionEl.value)})`;
+    if (steeringSummaryEl && typeof getSteeringSummary === 'function') steeringSummaryEl.textContent = getSteeringSummary(s);
+  }
+
+  goalEl?.addEventListener('change', () => {
+    const v = String(goalEl.value || 'Thrive');
+    setGoal?.(v);
+    log?.(`Curator goal → ${v}`);
+    save?.();
+    render?.();
+    syncFromState();
+  });
+
+  ethosEl?.addEventListener('change', () => {
+    const v = String(ethosEl.value || 'Balanced');
+    setEthos?.(v);
+    log?.(`Curator ethos → ${v}`);
+    save?.();
+    render?.();
+    syncFromState();
+  });
+
+  interventionEl?.addEventListener('input', () => {
+    const v = Math.max(0, Math.min(100, Number(interventionEl.value) || 0));
+    if (interventionHintEl) interventionHintEl.textContent = `(${interventionLabel(v)})`;
+    setIntervention?.(v);
+    save?.();
+    // no log spam
+    render?.();
+    if (steeringSummaryEl && typeof getSteeringSummary === 'function') steeringSummaryEl.textContent = getSteeringSummary(getState?.());
+  });
+
+  // initial paint
+  syncFromState();
+
+  return { syncFromState };
+}
+
+/**
  * Save export/import/reset wiring.
+
+ * This stays in ui.js so main.js can stay focused on sim/mechanics.
+ *
+ * @param {object} deps
+ * @param {string} deps.saveKey
+ * @param {()=>void} deps.save               - force a clean snapshot into localStorage
+ * @param {()=>any} deps.load                - load state from localStorage
+ * @param {()=>any} deps.defaultState
+ * @param {()=>any} deps.getState
+ * @param {(s:any)=>void} deps.setState
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.render
+ * @param {HTMLElement|null} deps.btnResetEl
+ * @param {HTMLElement|null} deps.btnExportEl
+ * @param {HTMLElement|null} deps.btnImportEl
+ */
  *
  * This stays in ui.js so main.js can stay focused on sim/mechanics.
  *

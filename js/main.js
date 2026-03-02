@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoModeControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initCuratorControls, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoModeControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -205,7 +205,7 @@ import { PATCH_HISTORY } from './content.js';
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00, curator: { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true } },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
     // Lightweight timed colony-wide effects (kept simple + transparent)
@@ -3984,7 +3984,133 @@ import { PATCH_HISTORY } from './content.js';
   const profilesEl = el('profiles');
   const profilesHintEl = el('profilesHint');
 
+  // Curator controls (aquarium mode)
+  const curatorGoalEl = el('curatorGoal');
+  const curatorEthosEl = el('curatorEthos');
+  const curatorInterventionEl = el('curatorIntervention');
+  const curatorInterventionHintEl = el('curatorInterventionHint');
+  const steeringSummaryEl = el('steeringSummary');
+
+  function ensureCurator(s){
+    s.director = s.director ?? {};
+    if (!s.director.curator || typeof s.director.curator !== 'object') s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true };
+    const c = s.director.curator;
+    const goal = String(c.goal ?? 'Thrive');
+    c.goal = ['Thrive','Expand','Defend','Innovate','Harmonize'].includes(goal) ? goal : 'Thrive';
+    const ethos = String(c.ethos ?? 'Balanced');
+    c.ethos = ['Gentle','Balanced','Strict'].includes(ethos) ? ethos : 'Balanced';
+    c.intervention = Math.max(0, Math.min(100, Number(c.intervention ?? 30) || 30));
+    if (!('enabled' in c)) c.enabled = true;
+    if (!('appliedOnce' in c)) c.appliedOnce = false;
+  }
+
+  function applyCuratorEthos(s){
+    ensureCurator(s);
+    const ethos = String(s.director.curator.ethos);
+    if (ethos === 'Gentle') { s.director.discipline = 0.30; s.director.autonomy = 0.75; }
+    else if (ethos === 'Strict') { s.director.discipline = 0.65; s.director.autonomy = 0.45; }
+    else { s.director.discipline = 0.40; s.director.autonomy = 0.60; }
+  }
+
+  function applyCuratorGoal(s){
+    ensureCurator(s);
+    const g = String(s.director.curator.goal);
+
+    // Default: aquarium behavior = mostly self-sustaining
+    s.director.autoWinterPrep = true;
+    s.director.autoFoodCrisis = true;
+    s.director.autoReserves = true;
+    s.director.autoPolicy = true;
+    s.director.autoMode = true;
+    s.director.autoDoctrine = true;
+    s.director.autoRations = true;
+    s.director.autoRecruit = true;
+    s.director.autoCrisis = true;
+
+    if (g === 'Expand') {
+      s.mode = 'Expand';
+      s.director.prioFood = 1.05; s.director.prioSafety = 0.95; s.director.prioProgress = 1.10; s.director.prioSocial = 0.90;
+      s.director.doctrine = 'Specialize';
+    } else if (g === 'Defend') {
+      s.mode = 'Defend';
+      s.director.prioFood = 1.00; s.director.prioSafety = 1.25; s.director.prioProgress = 0.90; s.director.prioSocial = 0.85;
+      s.director.doctrine = 'Balanced';
+    } else if (g === 'Innovate') {
+      s.mode = 'Advance';
+      s.director.prioFood = 0.95; s.director.prioSafety = 1.00; s.director.prioProgress = 1.30; s.director.prioSocial = 0.90;
+      s.director.doctrine = 'Specialize';
+    } else if (g === 'Harmonize') {
+      s.mode = 'Survive';
+      s.director.prioFood = 1.05; s.director.prioSafety = 1.00; s.director.prioProgress = 0.85; s.director.prioSocial = 1.35;
+      s.director.doctrine = 'Rotate';
+    } else {
+      // Thrive
+      s.mode = 'Survive';
+      s.director.prioFood = 1.15; s.director.prioSafety = 1.05; s.director.prioProgress = 0.95; s.director.prioSocial = 1.15;
+      s.director.doctrine = 'Balanced';
+    }
+
+    applyCuratorEthos(s);
+  }
+
+  function setCuratorGoal(goal){
+    ensureCurator(state);
+    state.director.curator.goal = String(goal || 'Thrive');
+    state.director.curator.appliedOnce = true;
+    applyCuratorGoal(state);
+  }
+  function setCuratorEthos(ethos){
+    ensureCurator(state);
+    state.director.curator.ethos = String(ethos || 'Balanced');
+    state.director.curator.appliedOnce = true;
+    applyCuratorEthos(state);
+  }
+  function setCuratorIntervention(v){
+    ensureCurator(state);
+    state.director.curator.intervention = Math.max(0, Math.min(100, Number(v) || 0));
+  }
+
+  function getSteeringSummary(s){
+    if (!s) return '';
+    const c = s.director?.curator;
+    const curatorOn = !!(c && c.enabled);
+    const head = curatorOn ? `Steering: Curator (${String(c.goal ?? 'Thrive')} / ${String(c.ethos ?? 'Balanced')})` : 'Steering: manual';
+    const bits = [];
+    const push = (label, why) => { const w = String(why ?? '').trim(); if (w) bits.push(`${label}: ${w}`); };
+    push('Auto mode', s.director?.autoModeWhy);
+    push('Auto policy', s.director?.autoPolicyWhy);
+    push('Auto doctrine', s.director?.autoDoctrineWhy);
+    push('Auto rations', s.director?.autoRationsWhy);
+    push('Auto crisis', s.director?.autoCrisisWhy);
+    return head + (bits.length ? ` — ${bits.slice(0,2).join(' | ')}` : '');
+  }
+
+  // Ensure curator defaults exist; if this save hasn't seen curator mode yet, apply once.
+  ensureCurator(state);
+  if (state.director?.curator?.enabled && !state.director.curator.appliedOnce) {
+    applyCuratorGoal(state);
+    state.director.curator.appliedOnce = true;
+    save();
+  }
+
+  const curatorUI = initCuratorControls({
+    goalEl: curatorGoalEl,
+    ethosEl: curatorEthosEl,
+    interventionEl: curatorInterventionEl,
+    interventionHintEl: curatorInterventionHintEl,
+    steeringSummaryEl,
+    getState: () => state,
+    setGoal: setCuratorGoal,
+    setEthos: setCuratorEthos,
+    setIntervention: setCuratorIntervention,
+    log,
+    save,
+    render,
+    getSteeringSummary,
+  });
+
   // Inspector modals are initialized later once their DOM nodes exist.
+  // These wrappers let other UI (stat cards, Escape key) call them safely.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
   let societyUI = null;
   function openSocial(){ societyUI?.openSocial?.(); }
@@ -5926,6 +6052,9 @@ import { PATCH_HISTORY } from './content.js';
     const verEl = el('ver');
     if (verEl) verEl.textContent = `v${GAME_VERSION}`;
     el('clock').textContent = `t=${fmt(state.t)}s | pop=${state.kittens.length}/${housingCap(state)} | mode=${state.mode}`;
+
+    // Curator summary: show what is currently steering the colony.
+    if (steeringSummaryEl) steeringSummaryEl.textContent = getSteeringSummary(state);
 
     // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
     const pauseBtn = el('btnPause');

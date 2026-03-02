@@ -130,6 +130,19 @@ export function migrateState(s, {
   if (!('profiles' in s.director) || !s.director.profiles) s.director.profiles = { A:null, B:null, C:null };
   for (const k of ['A','B','C']) if (!(k in s.director.profiles)) s.director.profiles[k] = null;
 
+  // Curator (aquarium mode): minimal levers; safe default for old saves.
+  if (!('curator' in s.director) || !s.director.curator || typeof s.director.curator !== 'object') {
+    s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true, appliedOnce:false };
+  }
+  const c = s.director.curator;
+  const goal = String(c.goal ?? 'Thrive');
+  c.goal = ['Thrive','Expand','Defend','Innovate','Harmonize'].includes(goal) ? goal : 'Thrive';
+  const ethos = String(c.ethos ?? 'Balanced');
+  c.ethos = ['Gentle','Balanced','Strict'].includes(ethos) ? ethos : 'Balanced';
+  c.intervention = Math.max(0, Math.min(100, Number(c.intervention ?? 30) || 30));
+  if (!('enabled' in c)) c.enabled = true;
+  if (!('appliedOnce' in c)) c.appliedOnce = false;
+
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
   if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
