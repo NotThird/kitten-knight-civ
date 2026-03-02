@@ -171,11 +171,13 @@ export function migrateState(s, {
   if (!('band' in s.social)) s.social.band = 'calm';
   if (!('lastLogBand' in s.social)) s.social.lastLogBand = '';
   if (!('lastLogAt' in s.social)) s.social.lastLogAt = 0;
-  s.social.norms = (s.social.norms && typeof s.social.norms === 'object') ? s.social.norms : { raidParanoia: 0, scarcityMindset: 0 };
+  s.social.norms = (s.social.norms && typeof s.social.norms === 'object') ? s.social.norms : { raidParanoia: 0, scarcityMindset: 0, mutualAid: 0 };
   if (!('raidParanoia' in s.social.norms)) s.social.norms.raidParanoia = 0;
   if (!('scarcityMindset' in s.social.norms)) s.social.norms.scarcityMindset = 0;
+  if (!('mutualAid' in s.social.norms)) s.social.norms.mutualAid = 0;
   s.social.norms.raidParanoia = (typeof clamp01 === 'function') ? clamp01(Number(s.social.norms.raidParanoia ?? 0)) : Math.max(0, Math.min(1, Number(s.social.norms.raidParanoia ?? 0) || 0));
   s.social.norms.scarcityMindset = (typeof clamp01 === 'function') ? clamp01(Number(s.social.norms.scarcityMindset ?? 0)) : Math.max(0, Math.min(1, Number(s.social.norms.scarcityMindset ?? 0) || 0));
+  s.social.norms.mutualAid = (typeof clamp01 === 'function') ? clamp01(Number(s.social.norms.mutualAid ?? 0)) : Math.max(0, Math.min(1, Number(s.social.norms.mutualAid ?? 0) || 0));
   if (!('normsBand' in s.social)) s.social.normsBand = 'calm';
   if (!('normsLastAt' in s.social)) s.social.normsLastAt = 0;
   s.social.normsBand = String(s.social.normsBand ?? 'calm');
@@ -184,6 +186,11 @@ export function migrateState(s, {
   if (!('scarcityLastAt' in s.social)) s.social.scarcityLastAt = 0;
   s.social.scarcityBand = String(s.social.scarcityBand ?? 'calm');
   s.social.scarcityLastAt = Number(s.social.scarcityLastAt ?? 0) || 0;
+
+  if (!('mutualAidBand' in s.social)) s.social.mutualAidBand = 'atomized';
+  if (!('mutualAidLastAt' in s.social)) s.social.mutualAidLastAt = 0;
+  s.social.mutualAidBand = String(s.social.mutualAidBand ?? 'atomized');
+  s.social.mutualAidLastAt = Number(s.social.mutualAidLastAt ?? 0) || 0;
   if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
   if (!('councilUntil' in s.effects)) s.effects.councilUntil = 0;
   s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;

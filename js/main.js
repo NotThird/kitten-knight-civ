@@ -213,11 +213,13 @@ import { PATCH_HISTORY } from './content.js';
       band: 'calm',
       lastLogBand: '',
       lastLogAt: 0,
-      norms: { raidParanoia: 0, scarcityMindset: 0 }, // 0..1: raid vigilance + scarcity memory; both slowly decay
+      norms: { raidParanoia: 0, scarcityMindset: 0, mutualAid: 0 }, // 0..1: raid vigilance + scarcity memory + mutual-aid culture; all slowly decay
       normsBand: 'calm',
       normsLastAt: 0,
       scarcityBand: 'calm',
       scarcityLastAt: 0,
+      mutualAidBand: 'atomized',
+      mutualAidLastAt: 0,
     },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
@@ -3089,6 +3091,14 @@ import { PATCH_HISTORY } from './content.js';
           reasons.push(`misses buddy (${Math.round(need*100)}%) â†’ +${add.toFixed(1)}`);
         }
 
+        // Norm: mutual-aid culture makes organizing feel more "natural" when cohesion is shaky.
+        const ma = clamp01(Number(s.social?.norms?.mutualAid ?? 0));
+        if (ma > 0.02 && dis > 0.40) {
+          const add = 4 + ma * 14;
+          score += add;
+          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+        }
+
         // If we're in danger, don't chat.
         if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure â†’ -40'); }
         if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold â†’ -25'); }
@@ -3113,6 +3123,14 @@ import { PATCH_HISTORY } from './content.js';
         } else {
           score -= 10;
           reasons.push('low dissent â†’ -10');
+        }
+
+        // Norm: mutual aid makes "paid care" more politically acceptable when things are tense.
+        const ma = clamp01(Number(s.social?.norms?.mutualAid ?? 0));
+        if (ma > 0.02 && dis > 0.40) {
+          const add = 3 + ma * 16;
+          score += add;
+          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
         }
 
         // Strike recovery: if dissent is extreme but basics are stable, "Care" becomes a legitimate
@@ -4885,6 +4903,46 @@ import { PATCH_HISTORY } from './content.js';
       else feed('Norms: abundance returns. The colony relaxes its hoarding instinct.');
       state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
       state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`scar:${sBand}`, color:'rgba(34,197,94,.18)' });
+      if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+    }
+
+    // Norms: mutual aid (social culture) emerges from sustained social stress (dissent/grievance) and
+    // gently increases willingness to organize (Socialize/Care).
+    state.social.norms.mutualAid = clamp01(Number(state.social.norms.mutualAid ?? 0));
+    state.social.mutualAidBand = String(state.social.mutualAidBand ?? 'atomized');
+    state.social.mutualAidLastAt = Number(state.social.mutualAidLastAt ?? 0) || 0;
+
+    const dis01 = clamp01(Number(state.social?.dissent ?? 0) / 100);
+    let gAvg01 = 0;
+    const kk = Array.isArray(state.kittens) ? state.kittens : [];
+    if (kk.length) {
+      let sum = 0;
+      for (const k of kk) sum += clamp01(Number(k?.grievance ?? 0) / 100);
+      gAvg01 = sum / kk.length;
+    }
+    const stress = Math.max(0, Math.max(dis01 - 0.35, gAvg01 - 0.35)); // 0..~0.65
+
+    let ma = clamp01(Number(state.social.norms.mutualAid ?? 0));
+    // Natural decay: fades over ~6-8 minutes if society is calm.
+    ma = clamp01(ma - dt * 0.0018);
+    if (stress > 0) {
+      // Rises faster when society is clearly strained.
+      ma = clamp01(ma + dt * (0.0026 + 0.0060 * clamp01(stress / 0.65)));
+    } else if (dis01 < 0.22 && gAvg01 < 0.22) {
+      // Calm periods actively unwind mutual-aid mobilization.
+      ma = clamp01(ma - dt * 0.0022);
+    }
+    state.social.norms.mutualAid = ma;
+
+    const mBand = (ma < 0.25) ? 'atomized' : (ma < 0.55) ? 'neighborly' : 'communal';
+    if (mBand !== state.social.mutualAidBand && (Number(state.t ?? 0) - state.social.mutualAidLastAt) > 25) {
+      state.social.mutualAidBand = mBand;
+      state.social.mutualAidLastAt = Number(state.t ?? 0);
+      if (mBand === 'neighborly') feed('Norms: in hard times, neighbors start to look out for each other.');
+      else if (mBand === 'communal') feed('Norms: mutual aid becomes a default expectation. Organizers gain legitimacy.');
+      else feed('Norms: the mutual-aid surge fades. People drift back into their own routines.');
+      state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`aid:${mBand}`, color:'rgba(250,204,21,.18)' });
       if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
     }
 

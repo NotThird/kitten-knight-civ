@@ -4,6 +4,28 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 05:04 CST - Aquarium: Norms v3 (mutual aid culture → organizer legitimacy)
+
+Summary
+- Aquarium depth: added a third persistent Norm (culture memory): `social.norms.mutualAid` (0..1).
+  - It rises during sustained **social strain** (dissent + average grievance) and decays during calm.
+  - It creates a small, bounded bias toward **Socialize/Care** when dissent is meaningfully high (organizing becomes culturally easier).
+- Observability: when mutual aid crosses bands (**atomized / neighborly / communal**), the sim emits a **Norms:** Society feed beat and drops a Trends marker (`kind:'norm'`, `aid:...`).
+- Save-safe: migrated with defaults for older saves.
+
+Files touched
+- `js/main.js`
+- `js/state.js`
+- `dist/js/main.js`
+- `dist/js/state.js`
+- `PLAN_STATUS.md`
+
+What to try
+- Run Curator hands-off, then push a bit of social strain (low autonomy + higher discipline / tight rations) until Dissent + Grievance climb.
+- Watch the Society feed for **Norms:** mutual-aid lines and the Trends chart for `aid:` markers; during neighborly/communal, you should see slightly more Socialize/Care picks once dissent is elevated.
+
+---
+
 ## 2026-03-02 04:48 CST - Aquarium: Norms v2 (scarcity mindset → preservation bias)
 
 Summary
