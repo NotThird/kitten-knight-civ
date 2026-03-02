@@ -3890,6 +3890,7 @@ import { PATCH_HISTORY } from './content.js';
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'repel', color:'rgba(251,113,133,.18)' });
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+          state._recentRaidTimer = 45;
         } else {
           state.res.threat = Math.max(20, state.res.threat - 35);
 
@@ -3910,6 +3911,7 @@ import { PATCH_HISTORY } from './content.js';
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'hit', color:'rgba(251,113,133,.26)' });
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+          state._recentRaidTimer = 75;
           // Auto alarm (only once you know what "ALARM" means)
           state.signals.ALARM = state.unlocked.security ? true : false;
         }
@@ -3962,6 +3964,14 @@ import { PATCH_HISTORY } from './content.js';
       lastPred: { food:0, safety:0, progress:0, social:0 },
       lastLoss: 0,
     };
+    // Adaptive Safety (ML): tune ONLY numeric thresholds of a few safety rules (bounded).
+    state.director.mlSafety = state.director.mlSafety ?? {
+      enabled: true,
+      lr: 0.18,
+      last: { hungry:0.75, tired:0.88, warmth:35, threat:85 },
+      lastWhy: '',
+    };
+
     const ml = state.director.ml;
     if (ml.enabled && state.director?.curator?.enabled) {
       const season = seasonAt(state.t);
@@ -4024,6 +4034,86 @@ import { PATCH_HISTORY } from './content.js';
       state.director.prioSafety = clampPr(Number(base.safety) + pred.safety);
       state.director.prioProgress = clampPr(Number(base.progress) + pred.progress);
       state.director.prioSocial = clampPr(Number(base.social) + pred.social);
+
+      // Adaptive Safety: tune the numeric thresholds of a few rules.
+      const ms = state.director.mlSafety;
+      if (ms?.enabled) {
+        state._recentRaidTimer = Math.max(0, Number(state._recentRaidTimer ?? 0) - dt);
+
+        // locate the canonical rules (by cond.type)
+        const findRule = (type) => (state.rules || []).find(r => r?.cond?.type === type);
+        const rHungry = findRule('hungry_gt');
+        const rTired  = findRule('tired_gt');
+        const rWarmth = findRule('warmth_lt');
+        const rThreat = findRule('threat_gt_or_alarm');
+
+        // current values
+        const cur = {
+          hungry: Number(rHungry?.cond?.v ?? 0.75),
+          tired:  Number(rTired?.cond?.v ?? 0.88),
+          warmth: Number(rWarmth?.cond?.v ?? 35),
+          threat: Number(rThreat?.cond?.v ?? 85),
+        };
+
+        // context-derived desired values (bounded)
+        const avgEnergy = state.kittens.length ? (state.kittens.reduce((a,k)=>a + clamp01(Number(k.energy ?? 1)),0) / state.kittens.length) : 1;
+        const fatigue = clamp01(1 - avgEnergy);
+
+        const hungryDes = 0.75 - 0.18*edibleDef + 0.06*clamp01((ediblePk - targets.foodPerKitten) / Math.max(1, targets.foodPerKitten));
+        const tiredDes  = 0.88 - 0.14*fatigue;
+        const warmthDes = 35 + 7*warmthDef + 4*winter;
+        const raidBump  = (state._recentRaidTimer > 0) ? 0.6 : 0;
+        const threatDes = 85 - 18*clamp01(threatOver + raidBump);
+
+        const clampTo = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v)||0));
+        const des = {
+          hungry: clampTo(hungryDes, 0.55, 0.86),
+          tired:  clampTo(tiredDes,  0.72, 0.95),
+          warmth: clampTo(warmthDes, 28,   46),
+          threat: clampTo(threatDes, 60,   90),
+        };
+
+        // low-frequency update (every ~8s) to keep it legible
+        ms._t = Number(ms._t ?? 0) + dt;
+        if (ms._t >= 8) {
+          ms._t = 0;
+          const lrS = clampTo(ms.lr ?? 0.18, 0.02, 0.35);
+          const next = {
+            hungry: cur.hungry + (des.hungry - cur.hungry) * lrS,
+            tired:  cur.tired  + (des.tired  - cur.tired)  * lrS,
+            warmth: cur.warmth + (des.warmth - cur.warmth) * lrS,
+            threat: cur.threat + (des.threat - cur.threat) * lrS,
+          };
+
+          // apply if rules exist
+          const setIf = (ruleObj, val) => { if (ruleObj?.cond) ruleObj.cond.v = val; };
+          setIf(rHungry, clampTo(next.hungry, 0.55, 0.86));
+          setIf(rTired,  clampTo(next.tired,  0.72, 0.95));
+          setIf(rWarmth, clampTo(next.warmth, 28,   46));
+          setIf(rThreat, clampTo(next.threat, 60,   90));
+
+          // log only meaningful changes
+          const fmt2 = (v)=>Number(v).toFixed(2);
+          const changes = [];
+          const pushCh = (name, a, b) => { if (Math.abs(a-b) >= 0.02) changes.push(`${name} ${fmt2(a)}→${fmt2(b)}`); };
+          pushCh('hungry>', cur.hungry, rHungry?.cond?.v ?? cur.hungry);
+          pushCh('tired>',  cur.tired,  rTired?.cond?.v ?? cur.tired);
+          pushCh('warmth<', cur.warmth, rWarmth?.cond?.v ?? cur.warmth);
+          pushCh('threat>', cur.threat, rThreat?.cond?.v ?? cur.threat);
+          if (changes.length) {
+            const why = edibleDef > 0.35 ? 'food deficit' : threatOver > 0.25 ? 'threat pressure' : warmthDef > 0.25 ? 'cold risk' : fatigue > 0.55 ? 'fatigue' : 'stability tuning';
+            ms.lastWhy = why;
+            feed(`Learned safety: ${changes.slice(0,3).join(' | ')} (${why}).`);
+          }
+
+          ms.last = {
+            hungry: Number(rHungry?.cond?.v ?? cur.hungry),
+            tired:  Number(rTired?.cond?.v ?? cur.tired),
+            warmth: Number(rWarmth?.cond?.v ?? cur.warmth),
+            threat: Number(rThreat?.cond?.v ?? cur.threat),
+          };
+        }
+      }
     }
 
     state._decTimer = (state._decTimer ?? 0) + dt;
@@ -7505,7 +7595,11 @@ import { PATCH_HISTORY } from './content.js';
       const ml = state.director?.ml;
       if (ml?.enabled) {
         const p = ml.lastPred || { food:0, safety:0, progress:0, social:0 };
-        mlHintEl.textContent = `ML priorities Δ: food ${(p.food>=0?'+':'')+p.food.toFixed(2)} | safety ${(p.safety>=0?'+':'')+p.safety.toFixed(2)} | progress ${(p.progress>=0?'+':'')+p.progress.toFixed(2)} | social ${(p.social>=0?'+':'')+p.social.toFixed(2)} | loss ${Number(ml.lastLoss??0).toFixed(3)}`;
+        const ms = state.director?.mlSafety;
+        const sTxt = (ms?.enabled && ms.last)
+          ? ` | safety(hungry>${Number(ms.last.hungry).toFixed(2)}, tired>${Number(ms.last.tired).toFixed(2)}, warmth<${Number(ms.last.warmth).toFixed(0)}, threat>${Number(ms.last.threat).toFixed(0)})` + (ms.lastWhy ? ` (${ms.lastWhy})` : '')
+          : '';
+        mlHintEl.textContent = `ML priorities Δ: food ${(p.food>=0?'+':'')+p.food.toFixed(2)} | safety ${(p.safety>=0?'+':'')+p.safety.toFixed(2)} | progress ${(p.progress>=0?'+':'')+p.progress.toFixed(2)} | social ${(p.social>=0?'+':'')+p.social.toFixed(2)} | loss ${Number(ml.lastLoss??0).toFixed(3)}` + sTxt;
       } else {
         mlHintEl.textContent = '';
       }
