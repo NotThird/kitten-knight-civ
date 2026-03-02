@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7653,15 +7653,6 @@ import { PATCH_HISTORY } from './content.js';
     render();
   });
 
-  const confirmFactionsEl = document.getElementById('confirmFactions');
-  if (confirmFactionsEl) confirmFactionsEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { confirmFactions:true };
-    state.director.confirmFactions = !!e.target.checked;
-    log(`Confirm politics â†’ ${state.director.confirmFactions ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
-
   const pfEl = document.getElementById('projectFocus');
   if (pfEl) pfEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
@@ -8107,6 +8098,22 @@ import { PATCH_HISTORY } from './content.js';
   initAutoBuildPushControls({
     autoBuildPushEl: document.getElementById('autoBuildPush'),
     setAutoBuildPush,
+    log,
+    save,
+    render,
+  });
+
+  function setConfirmPolitics(on){
+    state.director = state.director ?? { confirmFactions:true };
+    // Default is "on"; allow user to opt-out.
+    if (!('confirmFactions' in state.director)) state.director.confirmFactions = true;
+    state.director.confirmFactions = !!on;
+    return !!state.director.confirmFactions;
+  }
+
+  initConfirmPoliticsControls({
+    confirmFactionsEl: document.getElementById('confirmFactions'),
+    setConfirmPolitics,
     log,
     save,
     render,

@@ -769,6 +769,36 @@ export function initAutoBuildPushControls(deps){
 }
 
 /**
+ * Confirm politics toggle wiring ("director.confirmFactions").
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.confirmFactionsEl
+ * @param {(on:boolean)=>boolean} deps.setConfirmPolitics
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initConfirmPoliticsControls(deps){
+  const {
+    confirmFactionsEl,
+    setConfirmPolitics,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!confirmFactionsEl) return;
+
+  confirmFactionsEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setConfirmPolitics?.(on));
+    log?.(`Confirm politics → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

@@ -3450,3 +3450,25 @@ What to try
   - it logs a single "Auto Build Push → ON/OFF" line
   - it persists after refresh
 
+
+---
+
+## 2026-03-01 22:58 CST - P0.1 Modularization: extract Confirm politics toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Confirm politics** checkbox (`director.confirmFactions`) change wiring out of main.js into a new UI helper: `initConfirmPoliticsControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setConfirmPolitics(...)` mutator plus log/save/render into the UI module.
+- Removed the old inline DOM listener to avoid double-wiring.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `dist/js/ui.js`
+- `dist/js/main.js`
+- `kitten-knight-civ/js/ui.js`
+- `kitten-knight-civ/js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Confirm politics** ON/OFF and confirm:
+  - it logs a single "Confirm politics ? ON/OFF" line
+  - it persists after refresh
