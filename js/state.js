@@ -27,6 +27,10 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
   delete s._blockedThisSecond;
   delete s._blockedMsgThisSecond;
   delete s._buddyBeatCooldown;
+  delete s._trendEvents;
+  delete s._sharedWorkEdges;
+  delete s._coterieInfluence;
+  delete s._coterieTraditions;
 
   // Strip transient UI/debug keys (avoid save bloat)
   if (Array.isArray(s.kittens)) {
@@ -38,6 +42,7 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
       delete k._lastDecision;
       delete k._lastBlocked;
       delete k._buddyBeatBand;
+      delete k._workMem;
     }
   }
 

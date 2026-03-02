@@ -3581,3 +3581,25 @@ Files touched
 What to try
 - Run Curator hands-off with 4+ kittens.
 - Watch coteries in **Factions** as the workforce shifts (e.g., several kittens foraging together should start merging circles over ~10–20s).
+
+---
+
+## 2026-03-02 02:18 CST - Aquarium: Coterie traditions (dominant co-work craft)
+
+Summary
+- Aquarium depth: each **Coterie** now has a tiny **Tradition** label derived from what its members have mostly been *doing lately* (dominant productive task over a decayed ~2-minute window).
+- Observability: when a coterie’s tradition **meaningfully changes** (anti-tie + cooldown), the sim posts a one-line **Society feed** beat and drops a **Trends** event marker (`kind:'trad'`).
+- Save-safety: per-kitten work memory + tradition trackers are transient and stripped on save.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `kitten-knight-civ/js/state.js`
+- `dist/js/state.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+
+What to try
+- Run Curator hands-off with 4+ kittens.
+- Open **Factions ? Coteries**: each coterie should show a tradition label (e.g., “builders’ circle”).
+- Let labor shift (toggle goals / seasons): watch for **Tradition shift:** lines in the Society feed and matching `trad` markers in Trends.

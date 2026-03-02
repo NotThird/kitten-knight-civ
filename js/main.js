@@ -655,6 +655,30 @@ import { PATCH_HISTORY } from './content.js';
     s._sharedWorkEdges = edges;
   }
 
+  // Track each kitten's recent productive work (exponential decay ~2 minutes).
+  // Used to derive a small coterie "tradition" label (dominant co-work craft) without extra player input.
+  function updateRecentWorkMemoryPerSecond(s){
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (!kittens.length) return;
+
+    const DECAY = 0.992; // ~1/(1-DECAY) ≈ 125s effective window
+    const MIN_W = 0.15;
+
+    for (const k of kittens) {
+      const mem = (k._workMem && typeof k._workMem === 'object') ? k._workMem : {};
+      // decay
+      for (const [task, wRaw] of Object.entries(mem)) {
+        const w = Number(wRaw ?? 0);
+        if (!Number.isFinite(w)) { delete mem[task]; continue; }
+        const nw = w * DECAY;
+        if (nw < MIN_W) delete mem[task]; else mem[task] = nw;
+      }
+      const task = String(k?.task ?? '');
+      if (COTERIE_COWORK_TASKS.has(task)) mem[task] = (Number(mem[task] ?? 0) || 0) + 1;
+      k._workMem = mem;
+    }
+  }
+
   function computeCoteries(s){
     ensureBuddies(s);
     const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
@@ -754,7 +778,40 @@ import { PATCH_HISTORY } from './content.js';
         }
       }
 
-      coteries.push({ id, members: memIds, size: memIds.length, domAx, domN: counts[domAx] ?? 0, coWork, names });
+      // Tiny culture/tradition label: what does this circle mostly *do* lately?
+      // Derived from the last ~2 minutes of executed work (decayed), so it shifts as labor shifts.
+      const tradCounts = Object.create(null);
+      for (const k of mem) {
+        const wm = (k._workMem && typeof k._workMem === 'object') ? k._workMem : null;
+        if (!wm) continue;
+        for (const [task, wRaw] of Object.entries(wm)) {
+          const w = Number(wRaw ?? 0);
+          if (!Number.isFinite(w) || w <= 0) continue;
+          tradCounts[task] = (Number(tradCounts[task] ?? 0) || 0) + w;
+        }
+      }
+      let tradTask = '';
+      let tradScore = 0;
+      let tradSecond = 0;
+      for (const [task, w] of Object.entries(tradCounts)) {
+        if (w > tradScore) { tradSecond = tradScore; tradScore = w; tradTask = task; }
+        else if (w > tradSecond) tradSecond = w;
+      }
+      const traditionLabelFor = (t) => {
+        if (!t) return '';
+        if (t.startsWith('Build')) return "builders' circle";
+        if (t === 'Forage' || t === 'Farm') return "gatherers' circle";
+        if (t === 'ChopWood') return "woodcutters' circle";
+        if (t === 'Research') return "scribes' circle";
+        if (t === 'Guard') return "watch circle";
+        if (t === 'CraftTools') return "tinker circle";
+        if (t === 'PreserveFood') return "smokehouse circle";
+        if (t === 'StokeFire') return "hearth circle";
+        return `${t.toLowerCase()} circle`;
+      };
+      const tradLabel = traditionLabelFor(tradTask);
+
+      coteries.push({ id, members: memIds, size: memIds.length, domAx, domN: counts[domAx] ?? 0, coWork, names, tradTask, tradLabel, tradScore, tradSecond });
     }
 
     // Stable ordering for UI: largest first, then id.
@@ -773,15 +830,40 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     const cots = computeCoteries(s);
-    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members }));
+    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '' }));
 
     // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
     const isInfluential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
 
     s._coterieInfluence = (s._coterieInfluence && typeof s._coterieInfluence === 'object') ? s._coterieInfluence : {};
+    s._coterieTraditions = (s._coterieTraditions && typeof s._coterieTraditions === 'object') ? s._coterieTraditions : {};
 
     const nowT = Number(s.t ?? 0);
     for (const c of cots) {
+      // Tradition shifts: when a circle's dominant co-work task changes (and it's not a near-tie), log a beat.
+      const tp = s._coterieTraditions[c.id] ?? { task:'', nextAt:0 };
+      const tradTask = String(c.tradTask ?? '');
+      const tradLabel = String(c.tradLabel ?? '');
+      const score = Number(c.tradScore ?? 0) || 0;
+      const second = Number(c.tradSecond ?? 0) || 0;
+      const meaningful = tradTask && score >= 12 && (score - second) >= 3;
+      if (meaningful && tradTask !== String(tp.task ?? '') && nowT >= Number(tp.nextAt ?? 0)) {
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        s.feed.push(`[${fmt(s.t)}] Tradition shift: a coterie becomes the ${tradLabel}. (${who})`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'trad', label:`${tradTask}`, color:'rgba(196,181,253,.16)' });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        s._coterieTraditions[c.id] = { task: tradTask, nextAt: nowT + 75 };
+      } else if (meaningful && !tp.task) {
+        // Initialize silently once it becomes meaningful.
+        s._coterieTraditions[c.id] = { task: tradTask, nextAt: Number(tp.nextAt ?? 0) || (nowT + 45) };
+      }
+
       const prev = s._coterieInfluence[c.id] ?? { inf:false, nextAt:0 };
       const inf = isInfluential(c);
 
@@ -4438,6 +4520,7 @@ import { PATCH_HISTORY } from './content.js';
 
       // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
       updateSharedWorkEdgesPerSecond(state);
+      updateRecentWorkMemoryPerSecond(state);
     }
 
     runKittensTick(state, dt, {
@@ -6556,9 +6639,11 @@ import { PATCH_HISTORY } from './content.js';
             const ax = escapeHtml(String(c.domAx ?? ''));
             const sz = Number(c.size ?? 0);
             const cw = Number(c.coWork ?? 0);
-            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.`;
+            const trad = escapeHtml(String(c.trad ?? ''));
+            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
               `<span class="tag">Coterie</span> <span class="tag">${ax}</span> <span class="small">x${sz}</span> ` +
+              (trad ? `<span class="small" style="opacity:.72">${trad}</span> ` : '') +
               `<span class="small" style="opacity:.7">cowork ${cw.toFixed(0)}</span> ` +
               `<span style="opacity:.9">${escapeHtml(who)}</span>` +
             `</div>`;
