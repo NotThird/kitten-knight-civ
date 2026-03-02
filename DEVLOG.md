@@ -3350,3 +3350,24 @@ What to try
   - it persists after refresh
   - the Season panel still shows the Auto Recruit why line when enabled
 
+
+
+---
+
+## 2026-03-01 20:27 CST - P0.1 Modularization: extract Auto Winter Prep toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Winter Prep** checkbox change wiring out of main.js into a new UI helper: `initAutoWinterPrepControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoWinterPrep(...)` mutator plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Winter Prep** ON/OFF and confirm:
+  - it logs a single "Auto Winter Prep â†’ ON/OFF" line
+  - it persists after refresh
+

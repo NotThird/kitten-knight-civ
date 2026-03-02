@@ -611,6 +611,38 @@ export function initAutoRecruitControls(deps){
 }
 
 /**
+ * Auto Winter Prep toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoWinterPrepEl
+ * @param {(on:boolean)=>boolean} deps.setAutoWinterPrep
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoWinterPrepControls(deps){
+  const {
+    autoWinterPrepEl,
+    setAutoWinterPrep,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoWinterPrepEl) return;
+
+  autoWinterPrepEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoWinterPrep?.(on));
+    log?.(`Auto Winter Prep → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
