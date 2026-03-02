@@ -8804,7 +8804,26 @@ import { PATCH_HISTORY } from './content.js';
     if (!state.paused) step(dt);
     render();
     requestAnimationFrame(frame);
-  }\r\n  function maybeShowPatchNotes(){\r\n    const seen = String(state?.meta?.seenVersion ?? '');\r\n    if (!seen) {\r\n      // first run; do not auto-open\r\n      state.meta = state.meta ?? {};\r\n      state.meta.seenVersion = GAME_VERSION;\r\n      save();\r\n      return;\r\n    }\r\n    if (seen === GAME_VERSION) return;\r\n\r\n    patchNotesUI.setFromVersion(seen);\r\n    state.meta = state.meta ?? {};\r\n    state.meta.seenVersion = GAME_VERSION;\r\n    save();\r\n    patchNotesUI.open();\r\n  }\r\n
+  }
+
+  function maybeShowPatchNotes(){
+    const seen = String(state?.meta?.seenVersion ?? '');
+    if (!seen) {
+      // first run; do not auto-open
+      state.meta = state.meta ?? {};
+      state.meta.seenVersion = GAME_VERSION;
+      save();
+      return;
+    }
+    if (seen === GAME_VERSION) return;
+
+    patchNotesUI.setFromVersion(seen);
+    state.meta = state.meta ?? {};
+    state.meta.seenVersion = GAME_VERSION;
+    save();
+    patchNotesUI.open();
+  }
+
   function applyOfflineProgressOnBoot(){
     const pending = Number(state?._offlinePending ?? 0) || 0;
     if (pending < 3) { state._offlinePending = 0; return; }
