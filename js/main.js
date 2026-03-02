@@ -955,6 +955,45 @@ import { PATCH_HISTORY } from './content.js';
       c.repTag = lab.tag;
     }
 
+    // Aquarium depth: "legitimacy" — during crises, respected circles slightly increase plan compliance,
+    // while resented circles slightly erode it. Kept tiny + bounded; fully observable.
+    const crisisOn = !!(s?.director?.crisis || s?.signals?.FOOD || s?.signals?.ALARM);
+    let repSum = 0;
+    let repW = 0;
+    const influential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
+    if (crisisOn) {
+      for (const c of cots) {
+        if (!influential(c)) continue;
+        const rv = Math.max(-1, Math.min(1, Number(c.repV ?? 0) || 0));
+        if (!rv) continue;
+        const w = (Number(c.size ?? 0) || 0);
+        repSum += rv * w;
+        repW += w;
+      }
+    }
+    const repAvg = repW > 0 ? (repSum / repW) : 0;
+    const compBonus = crisisOn ? Math.max(-0.04, Math.min(0.04, repAvg * 0.05)) : 0;
+    s._repLegit = { repAvg, compBonus, crisisOn: !!crisisOn };
+
+    // Observability: when it matters (non-trivial effect), emit a feed beat + Trends marker with cooldown.
+    if (crisisOn && Math.abs(compBonus) >= 0.009) {
+      const nowT = Number(s.t ?? 0);
+      s._repLegitBeat = (s._repLegitBeat && typeof s._repLegitBeat === 'object') ? s._repLegitBeat : { nextAt:0, last:'' };
+      if (nowT >= Number(s._repLegitBeat.nextAt ?? 0)) {
+        const txt = compBonus > 0 ? 'respected circles rally behind the curator — coordination steadies.' : 'resented circles undermine authority — coordination frays.';
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        s.feed.push(`[${fmt(s.t)}] Legitimacy: ${txt}`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'repfx', label: compBonus > 0 ? 'legit+' : 'legit-', color: compBonus > 0 ? 'rgba(34,197,94,.09)' : 'rgba(239,68,68,.09)' });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        s._repLegitBeat = { nextAt: nowT + 140, last: compBonus > 0 ? 'pos' : 'neg' };
+      }
+    }
+
     s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members, trad: c.tradLabel || '', tradTask: c.tradTask || '', ethos: Number(c.ethosV ?? 0), ethosLabel: String(c.ethosLabel ?? ''), rep: Number(c.repV ?? 0), repLabel: String(c.repLabel ?? '') }));
 
     // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
@@ -1197,8 +1236,13 @@ import { PATCH_HISTORY } from './content.js';
           if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
 
           // Next time: 2–3 minutes, deterministic jitter based on time.
+          // Reputation texture: if either circle is widely resented, clashes flare up sooner.
           const jitter = (Math.floor(nowT) % 61);
-          s._coterieRivalry = { nextAt: nowT + 120 + jitter, lastPair: pairKey };
+          const repA = Number(aid.repV ?? 0) || 0;
+          const repB = Number(strict.repV ?? 0) || 0;
+          const resent = (repA <= -0.35) || (repB <= -0.35);
+          const base = 120 + jitter + (resent ? -28 : 0);
+          s._coterieRivalry = { nextAt: nowT + Math.max(75, base), lastPair: pairKey };
         } else {
           // Same pair; wait a bit.
           s._coterieRivalry.nextAt = nowT + 60;
@@ -2250,8 +2294,15 @@ import { PATCH_HISTORY } from './content.js';
     const a = autonomy01(s);
     const d = discipline01(s);
     let c = 1 - dis * (0.35 + 0.35*a) + d * 0.35;
+
     // Council temporarily boosts cohesion (more compliance with the plan).
     if (councilActive(s)) c += 0.08;
+
+    // Aquarium depth: reputations can slightly affect "legitimacy" during crises.
+    // This is computed (and logged) in updateCoteriesAquarium(...) and stored as a small transient bonus.
+    const legit = (s && s._repLegit && typeof s._repLegit === 'object') ? Number(s._repLegit.compBonus ?? 0) : 0;
+    if (Number.isFinite(legit) && legit) c += legit;
+
     return Math.max(0.45, Math.min(1.20, c));
   }
 

@@ -3738,3 +3738,24 @@ What to try
 - Watch the Society feed for **Culture:** lines, then:
   - during **mutual aid**, observe Grievance settle faster for members of the named circle
   - during **strict norms**, watch Dissent drift upward a bit faster (especially under harsh policy)
+
+
+---
+
+## 2026-03-02 04:18 CST - Aquarium: Legitimacy (reputation → crisis compliance) + resented circles feud faster
+
+Summary
+- Aquarium depth: coterie **Reputation** now has a small *society-level* consequence during crises (no clicks):
+  - if influential circles are broadly **respected**, the colony’s **Compliance** ticks slightly upward (coordination steadies).
+  - if influential circles are broadly **resented**, **Compliance** ticks slightly downward (coordination frays).
+- Observability: during a crisis, when the effect is non-trivial the sim emits a **Legitimacy:** Society feed beat and drops a `kind:'repfx'` marker (`legit+`/`legit-`) in Trends.
+- Politics texture: if either rival circle is **widely resented**, the **aid↔strict rivalry** cadence shortens slightly (feuds flare sooner).
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+
+What to try
+- Get (or force) **Crisis Protocol** / **FOOD CRISIS** / **ALARM**, then watch for **Legitimacy:** feed lines and correlate with Compliance drifting a bit.
+- Make (or observe) a circle become **RESENT**; with both an aid and strict influential coterie present, rivalry beats should happen a bit sooner.
+
