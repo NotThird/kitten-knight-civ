@@ -5544,13 +5544,16 @@ import { PATCH_HISTORY } from './content.js';
     d.style.position = 'fixed';
     d.style.zIndex = '9999';
     d.style.pointerEvents = 'none';
-    d.style.padding = '4px 6px';
-    d.style.borderRadius = '8px';
+    d.style.padding = '5px 7px';
+    d.style.borderRadius = '10px';
     d.style.border = '1px solid rgba(255,255,255,.14)';
     d.style.background = 'rgba(2,6,23,.92)';
     d.style.color = 'rgba(226,232,240,.98)';
     d.style.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    d.style.whiteSpace = 'nowrap';
+    // Allow wrapping for long marker labels.
+    d.style.whiteSpace = 'normal';
+    d.style.maxWidth = '280px';
+    d.style.lineHeight = '1.25';
     d.style.display = 'none';
     document.body.appendChild(d);
     return d;
@@ -5578,7 +5581,7 @@ import { PATCH_HISTORY } from './content.js';
     return k || 'Event';
   }
 
-  function nearestTrendsMarkerAtCanvasX(xCanvas){
+  function pickTrendsMarkerAtCanvasX(xCanvas){
     const tr = state._trend;
     if (!tr || !tr.t || tr.t.length < 2) return null;
     const n = tr.t.length;
@@ -5594,20 +5597,39 @@ import { PATCH_HISTORY } from './content.js';
 
     const mf = ensureTrendMarkerFilter(state);
 
+    const cultureKinds = new Set(['norm','cot','trad','eth','rep','press','rel']);
+    // Priority: culture beats > everything else, so aquarium markers win ties.
+    const kindPriority = (kind) => cultureKinds.has(kind) ? 5 : 1;
+
     let best = null;
     let bestDx = Infinity;
+    let bestPri = -Infinity;
+    let near = [];
+
     for (const e of ev) {
       const kind = String(e.kind ?? '');
-      if ((kind === 'norm' || kind === 'cot' || kind === 'trad' || kind === 'eth' || kind === 'rep' || kind === 'press' || kind === 'rel') && !mf[kind]) continue;
+      if (cultureKinds.has(kind) && !mf[kind]) continue;
       const tt = Number(e.t ?? NaN);
       if (!Number.isFinite(tt) || tt < tMin || tt > tMax) continue;
       const dx = Math.abs(xForT(tt) - xCanvas);
-      if (dx < bestDx) { bestDx = dx; best = e; }
+      if (dx <= 7) near.push({ e, dx, pri: kindPriority(kind) });
+
+      // Primary selection favors priority first, then closeness.
+      const pri = kindPriority(kind);
+      if (pri > bestPri || (pri === bestPri && dx < bestDx)) {
+        bestPri = pri;
+        bestDx = dx;
+        best = e;
+      }
     }
 
-    // Threshold in canvas pixels.
     if (!best || bestDx > 7) return null;
-    return best;
+
+    // Multi-marker disambiguation: count how many are "effectively the same line".
+    // Use a tighter radius so we don't over-count.
+    const close = near.filter(x => x.dx <= 5);
+    const moreCount = Math.max(0, close.length - 1);
+    return { marker: best, moreCount };
   }
 
   if (trendsEl && trendsTipEl) {
@@ -5617,16 +5639,23 @@ import { PATCH_HISTORY } from './content.js';
       const W = trendsEl.width;
       const xCanvas = (ev.clientX - rect.left) * (W / Math.max(1, rect.width));
 
-      const m = nearestTrendsMarkerAtCanvasX(xCanvas);
-      if (!m) return hideTrendsTip();
+      const pick = pickTrendsMarkerAtCanvasX(xCanvas);
+      if (!pick) return hideTrendsTip();
+      const m = pick.marker;
 
       const kind = formatMarkerKind(m.kind);
       const label = String(m.label ?? '').trim();
       const age = Math.max(0, Number(state.t ?? 0) - Number(m.t ?? 0));
       const ageStr = (age < 120) ? `${Math.round(age)}s ago` : `${fmt(age)}s ago`;
-      const txt = label ? `${kind}: ${label} · ${ageStr}` : `${kind} · ${ageStr}`;
+      const more = pick.moreCount > 0 ? ` · +${pick.moreCount} more` : '';
 
-      trendsTipEl.textContent = txt;
+      const chipColor = String(m.color || 'rgba(255,255,255,.25)');
+      const labelHtml = label ? `<span style="opacity:.92">${escapeHtml(label)}</span>` : '';
+      const txtHtml = label
+        ? `<span style="opacity:.95">${escapeHtml(kind)}:</span> ${labelHtml} <span style="opacity:.72">· ${escapeHtml(ageStr)}${escapeHtml(more)}</span>`
+        : `<span style="opacity:.95">${escapeHtml(kind)}</span> <span style="opacity:.72">· ${escapeHtml(ageStr)}${escapeHtml(more)}</span>`;
+
+      trendsTipEl.innerHTML = `<span style="display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; border:1px solid rgba(255,255,255,.14); background:${chipColor}; vertical-align:-1px"></span>` + txtHtml;
       trendsTipEl.style.display = '';
       // Position near cursor but keep on-screen.
       const margin = 12;

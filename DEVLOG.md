@@ -3955,3 +3955,22 @@ What to try
 - Let the sim run until you have a few culture markers in Trends.
 - Hover near a vertical marker line: confirm you see a tooltip like `Norms: vig:wary - 18s ago`.
 - Toggle marker filters (e.g. hide `cot/trad`) and confirm tooltips only appear for visible marker kinds.
+
+---
+
+## 2026-03-02 06:53 CST - Observability: Trends tooltip polish (color chip + wrap + multi-marker)
+
+Summary
+- Observability: Trends hover tooltip now shows a color chip that matches the marker line and supports wrapping for long labels.
+- Aquarium readability: when multiple markers share nearly the same x-position, the tooltip prefers culture beats over generic markers and adds a +N more suffix.
+
+Files touched
+- kitten-knight-civ/js/main.js
+- dist/js/main.js
+- PLAN_STATUS.md
+- DEVLOG.md
+- kitten-knight-civ/DEVLOG.md
+
+What to try
+- Hover near a dense cluster of markers in Trends: confirm you get a colored chip + wrapped label.
+- Hover where season/unlock overlaps a culture beat: confirm you see the culture label first and a +N more hint.
