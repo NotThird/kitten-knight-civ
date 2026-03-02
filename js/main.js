@@ -598,6 +598,133 @@ import { PATCH_HISTORY } from './content.js';
     }
   }
 
+  // --- Micro-factions: Coteries (buddy-linked circles)
+  // Deterministic, low-interaction society depth: small friendship circles emerge from buddy links.
+  // First pass: connected-components over the buddy graph (no pathing); later we can add shared-work edges.
+  // Aquarium hook: when a coterie becomes "influential" (big + aligned), we emit a Society feed line + Trends marker.
+  function computeCoteries(s){
+    ensureBuddies(s);
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    const byId = new Map();
+    for (const k of kittens) {
+      const id = Number(k?.id ?? 0);
+      if (Number.isFinite(id) && id > 0) byId.set(id, k);
+    }
+
+    const adj = new Map();
+    const addEdge = (a,b) => {
+      if (!adj.has(a)) adj.set(a, new Set());
+      if (!adj.has(b)) adj.set(b, new Set());
+      adj.get(a).add(b);
+      adj.get(b).add(a);
+    };
+
+    for (const k of kittens) {
+      const id = Number(k?.id ?? 0);
+      const bid = Number(k?.buddyId ?? 0);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      if (!Number.isFinite(bid) || bid <= 0) continue;
+      if (id === bid) continue;
+      if (!byId.has(bid)) continue;
+      addEdge(id, bid);
+    }
+
+    const seen = new Set();
+    const comps = [];
+
+    for (const id of byId.keys()) {
+      if (seen.has(id)) continue;
+      // Singleton nodes are not interesting as a "coterie".
+      const nbrs = adj.get(id);
+      if (!nbrs || nbrs.size === 0) { seen.add(id); continue; }
+
+      const stack = [id];
+      const members = [];
+      seen.add(id);
+      while (stack.length) {
+        const cur = stack.pop();
+        members.push(cur);
+        const ns = adj.get(cur);
+        if (!ns) continue;
+        for (const nx of ns) {
+          if (seen.has(nx)) continue;
+          seen.add(nx);
+          stack.push(nx);
+        }
+      }
+
+      members.sort((a,b)=>a-b);
+      comps.push(members);
+    }
+
+    const coteries = [];
+    for (const memIds of comps) {
+      const mem = memIds.map(id => byId.get(id)).filter(Boolean);
+      if (mem.length < 2) continue;
+
+      const counts = { Food:0, Safety:0, Progress:0, Social:0 };
+      for (const k of mem) {
+        const ax = dominantValueAxis(k);
+        if (counts[ax] != null) counts[ax] += 1;
+      }
+      let domAx = 'Food';
+      for (const ax of Object.keys(counts)) if (counts[ax] > counts[domAx]) domAx = ax;
+
+      const id = memIds.join('-');
+      const names = mem.map(k => String(k?.name ?? `Kitten ${k?.id ?? '?'}`));
+      coteries.push({ id, members: memIds, size: memIds.length, domAx, domN: counts[domAx] ?? 0, names });
+    }
+
+    // Stable ordering for UI: largest first, then id.
+    coteries.sort((a,b)=> (b.size - a.size) || String(a.id).localeCompare(String(b.id)) );
+    return coteries;
+  }
+
+  function updateCoteriesAquarium(s){
+    s.social = (s.social && typeof s.social === 'object') ? s.social : {};
+
+    const pop = Number(s?.kittens?.length ?? 0);
+    if (pop < 4) {
+      // Keep state stable for old saves; don't spam.
+      s.social.coteries = [];
+      return;
+    }
+
+    const cots = computeCoteries(s);
+    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, members:c.members }));
+
+    // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
+    const isInfluential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
+
+    s._coterieInfluence = (s._coterieInfluence && typeof s._coterieInfluence === 'object') ? s._coterieInfluence : {};
+
+    const nowT = Number(s.t ?? 0);
+    for (const c of cots) {
+      const prev = s._coterieInfluence[c.id] ?? { inf:false, nextAt:0 };
+      const inf = isInfluential(c);
+
+      // Rising edge only, cooldown-protected.
+      if (inf && !prev.inf && nowT >= Number(prev.nextAt ?? 0)) {
+        // Feed
+        s.feed = Array.isArray(s.feed) ? s.feed : [];
+        const label = `${c.domAx} coterie`;
+        const who = c.names.slice(0, 3).join(', ') + (c.names.length > 3 ? '…' : '');
+        s.feed.push(`[${fmt(s.t)}] Coterie rising: a ${label} is gaining influence (${c.size}). (${who})`);
+        const FEED_MAX = 220;
+        if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+        // Trends marker
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'cot', label:`${c.domAx}:${c.size}`, color:'rgba(253,186,116,.18)' });
+        if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+        s._coterieInfluence[c.id] = { inf:true, nextAt: nowT + 90 };
+      } else {
+        s._coterieInfluence[c.id] = { inf, nextAt: Number(prev.nextAt ?? 0) };
+      }
+    }
+  }
+
   function defaultRules(){
 
     return [
@@ -3162,6 +3289,10 @@ import { PATCH_HISTORY } from './content.js';
           state._lastDomBlocNextAt = Number(state.t ?? 0) + 36;
         }
       }
+
+      // Aquarium: micro-factions (coteries) — friendship circles that can become "influential".
+      // Runs on the same slow cadence as the feed tick to keep overhead/spam low.
+      updateCoteriesAquarium(state);
     }
 
     // Politics pressure: demands expire into consequences (instead of silently vanishing).
@@ -6325,7 +6456,34 @@ import { PATCH_HISTORY } from './content.js';
         })()
       : '';
 
-    factionsEl.innerHTML = demandHtml + undoHtml + lines + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Cooldown prevents rapid drift; Undo lets you back out once if you over-correct.</div>`;
+    // Micro-factions: coteries (buddy-linked circles)
+    const coteries = Array.isArray(s?.social?.coteries) ? s.social.coteries : [];
+    const nameById = new Map();
+    for (const k of kittens) {
+      const id = Number(k?.id ?? 0);
+      if (Number.isFinite(id) && id > 0) nameById.set(id, String(k?.name ?? `Kitten ${id}`));
+    }
+    const coteriesHtml = coteries.length
+      ? (() => {
+          const rows = coteries.slice(0, 8).map(c => {
+            const mem = (c.members ?? []).map(id => nameById.get(Number(id)) ?? `#${id}`).slice(0, 5);
+            const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '…' : '');
+            const ax = escapeHtml(String(c.domAx ?? ''));
+            const sz = Number(c.size ?? 0);
+            const title = `Buddy-linked circle. Dominant axis ${ax} (${c.domN ?? 0}/${sz}).`;
+            return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
+              `<span class="tag">Coterie</span> <span class="tag">${ax}</span> <span class="small">x${sz}</span> ` +
+              `<span style="opacity:.9">${escapeHtml(who)}</span>` +
+            `</div>`;
+          }).join('');
+          return `<div style="margin-top:10px">` +
+            `<div class="small" style="opacity:.75">Coteries (micro-factions): buddy-linked circles that sometimes become influential.</div>` +
+            rows +
+          `</div>`;
+        })()
+      : '';
+
+    factionsEl.innerHTML = demandHtml + undoHtml + lines + coteriesHtml + `<div class="small" style="margin-top:6px; opacity:.75">Tip: if dissent is creeping up and focus-fit is low, negotiating with the largest bloc is a quick stabilization lever (at the cost of drifting priorities). Cooldown prevents rapid drift; Undo lets you back out once if you over-correct.</div>`;
   }
 
   function renderBlocHealth(s){

@@ -3493,12 +3493,12 @@ What to try
   - it logs a single "Auto Mode â†’ ON/OFF" line
   - turning it ON allows an immediate mode switch (no waiting)
   - it persists after refresh
-\n\n## 2026-03-01 23:36 CST — Curator mode UI purge (aquarium pivot)\n- Added new **Curator** controls (Culture goal / Ethos / Intervention) and tucked the old Director cockpit into a collapsed **Advanced controls** <details>.\n- Curator goal auto-enables core automation and sets sensible defaults for mode/priorities/doctrine; ethos maps to autonomy/discipline.\n- Added a live **Steering** summary line (shows what automation is currently doing + why).\n- Save-safe: added director.curator defaults + migration (goal/ethos/intervention/enabled/appliedOnce).\n
-\n\n## 2026-03-02 00:10 CST — Observer HUD v1 (aquarium: feed + trends + canvas)\n- Added **Society feed** (persisted state.feed, capped) with periodic status lines + milestone events (unlocks, raids, skill-ups).\n- Added **Trends** sparkline canvas (last ~2 minutes; food/warmth/threat/science/dissent).\n- Added **Tank view** canvas: zones + kitten dots snap to task zones (no pathing; purely representational).\n- Added **Developer Mode** toggle to hide/show Advanced controls by default.\n
-\n\n## 2026-03-02 00:33 CST — Graph overhaul v1 + ML v1 (learned priorities)\n- Trends graph upgraded to 5 stacked mini-charts (Food/Warmth/Threat/Science/Dissent) with per-row scaling + threshold lines + event markers (season flips/unlocks/raids/curator changes).\n- Added ML v1: deterministic online linear learner that adjusts Director priority sliders around Curator base intent (bounded deltas) and shows live ML deltas + loss under the Trends panel.\n
-\n\n## 2026-03-02 00:41 CST — Safety Rules made read-only (Curator)\n- Safety Rules panel remains visible for transparency, but editing is disabled unless **Developer Mode** is enabled.\n- Disabled rule reorder/delete/toggle and hid Add/Restore buttons in Curator mode; attempts to edit produce a feed notice.\n
-\n\n## 2026-03-02 00:56 CST — Adaptive Safety v1 (ML tunes thresholds)\n- Safety Rules remain player read-only in Curator mode, but ML can now tune a bounded subset of numeric thresholds: hungry/tired/warmth/threat.\n- Updates every ~8s with capped ranges + feed logs like \Learned safety: hungry>0.75?0.71 …\ plus a short reason (food deficit / cold risk / threat pressure / fatigue).\n- ML hint line now includes the current learned safety thresholds.\n
-\n\n## 2026-03-02 01:00 CST — Easier population growth\n- Manual kitten cost curve reduced (cheaper base + gentler exponent).\n- Auto Recruit Spring immigration cost reduced (starts at ~18 food, slower scaling).\n- Immigration now posts to Society feed + adds a chart event marker.\n
+\n\n## 2026-03-01 23:36 CST ï¿½ Curator mode UI purge (aquarium pivot)\n- Added new **Curator** controls (Culture goal / Ethos / Intervention) and tucked the old Director cockpit into a collapsed **Advanced controls** <details>.\n- Curator goal auto-enables core automation and sets sensible defaults for mode/priorities/doctrine; ethos maps to autonomy/discipline.\n- Added a live **Steering** summary line (shows what automation is currently doing + why).\n- Save-safe: added director.curator defaults + migration (goal/ethos/intervention/enabled/appliedOnce).\n
+\n\n## 2026-03-02 00:10 CST ï¿½ Observer HUD v1 (aquarium: feed + trends + canvas)\n- Added **Society feed** (persisted state.feed, capped) with periodic status lines + milestone events (unlocks, raids, skill-ups).\n- Added **Trends** sparkline canvas (last ~2 minutes; food/warmth/threat/science/dissent).\n- Added **Tank view** canvas: zones + kitten dots snap to task zones (no pathing; purely representational).\n- Added **Developer Mode** toggle to hide/show Advanced controls by default.\n
+\n\n## 2026-03-02 00:33 CST ï¿½ Graph overhaul v1 + ML v1 (learned priorities)\n- Trends graph upgraded to 5 stacked mini-charts (Food/Warmth/Threat/Science/Dissent) with per-row scaling + threshold lines + event markers (season flips/unlocks/raids/curator changes).\n- Added ML v1: deterministic online linear learner that adjusts Director priority sliders around Curator base intent (bounded deltas) and shows live ML deltas + loss under the Trends panel.\n
+\n\n## 2026-03-02 00:41 CST ï¿½ Safety Rules made read-only (Curator)\n- Safety Rules panel remains visible for transparency, but editing is disabled unless **Developer Mode** is enabled.\n- Disabled rule reorder/delete/toggle and hid Add/Restore buttons in Curator mode; attempts to edit produce a feed notice.\n
+\n\n## 2026-03-02 00:56 CST ï¿½ Adaptive Safety v1 (ML tunes thresholds)\n- Safety Rules remain player read-only in Curator mode, but ML can now tune a bounded subset of numeric thresholds: hungry/tired/warmth/threat.\n- Updates every ~8s with capped ranges + feed logs like \Learned safety: hungry>0.75?0.71 ï¿½\ plus a short reason (food deficit / cold risk / threat pressure / fatigue).\n- ML hint line now includes the current learned safety thresholds.\n
+\n\n## 2026-03-02 01:00 CST ï¿½ Easier population growth\n- Manual kitten cost curve reduced (cheaper base + gentler exponent).\n- Auto Recruit Spring immigration cost reduced (starts at ~18 food, slower scaling).\n- Immigration now posts to Society feed + adds a chart event marker.\n
 
 
 ---
@@ -3524,7 +3524,7 @@ What to try
 
 Summary
 - Aquarium depth/observability: buddy pairs now produce occasional **relationship beats** in the Society feed.
-- When a pair’s buddy-need crosses thresholds, we log either:
+- When a pairï¿½s buddy-need crosses thresholds, we log either:
   - **"drifting apart"** (high relationship pressure), or
   - **"reconnected"** (pressure relieved).
 - Trends: each beat drops a small event marker (`kind:'rel'`, label drift/reconnect) so you can correlate social dynamics with resource swings.
@@ -3541,3 +3541,24 @@ Files touched
 What to try
 - Run Curator hands-off for a few minutes with 4+ kittens.
 - Watch the Society feed for **Relationship:** lines and confirm matching markers appear in the Trends graph.
+
+---
+
+## 2026-03-02 01:45 CST - Aquarium: Coteries (micro-factions)
+
+Summary
+- Aquarium depth: added **Coteries** â€” deterministic micro-factions that form as buddy-linked friendship circles (connected components over the buddy graph).
+- Observability: Coteries are surfaced under the **Factions** panel (shows dominant axis + member names).
+- Aquarium markers: when a coterie becomes **influential** (big + values-aligned), the sim posts a Society feed line and drops a Trends event marker (`kind:'cot'`).
+- Anti-spam: rising-edge only with per-coterie cooldown.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Run Curator hands-off until you have **4+ kittens**.
+- Open **Factions** and scroll to the **Coteries** section; confirm it lists circles and their dominant axis.
+- Let the sim run a bit longer and watch for a feed line like **"Coterie rising"** plus a matching Trends marker.
