@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -8092,18 +8092,14 @@ import { PATCH_HISTORY } from './content.js';
     log('Directive tools â†’ Clear all (Directives reset to Auto).');
   }
 
-  const btnDirBloc = document.getElementById('btnDirBloc');
-  if (btnDirBloc) btnDirBloc.addEventListener('click', ()=>{
-    setDirectivesMatchBlocs(state);
-    save();
-    render();
-  });
-
-  const btnDirClearAll = document.getElementById('btnDirClearAll');
-  if (btnDirClearAll) btnDirClearAll.addEventListener('click', ()=>{
-    clearAllDirectives(state);
-    save();
-    render();
+  initDirectiveTools({
+    btnDirBlocEl: document.getElementById('btnDirBloc'),
+    btnDirClearAllEl: document.getElementById('btnDirClearAll'),
+    getState: () => state,
+    setDirectivesMatchBlocs,
+    clearAllDirectives,
+    save,
+    render,
   });
 
   const docEl = document.getElementById('doctrine');

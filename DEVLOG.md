@@ -3250,3 +3250,23 @@ Files touched
 What to try
 - In Director, confirm the "active directives: X/Y" hint still updates.
 - Start a fresh run (0 kittens) and confirm Directive tools buttons are disabled until you recruit.
+
+
+---
+
+## 2026-03-01 17:56 CST - P0.1 Modularization: extract Directive tools click wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Directive tools** button click wiring (Match blocs / Clear all) out of main.js into a new UI helper: initDirectiveTools(...) in js/ui.js.
+- main.js now just injects the state mutators (setDirectivesMatchBlocs / clearAllDirectives) plus save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- js/ui.js
+- js/main.js
+- DEVLOG.md
+
+What to try
+- In Director, click **Match blocs** and confirm directives are applied + the event log reports counts.
+- Click **Clear all** and confirm all directives reset to Auto.
+

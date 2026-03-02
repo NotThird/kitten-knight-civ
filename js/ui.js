@@ -441,6 +441,48 @@ export function renderDirectiveTools(deps){
 }
 
 /**
+ * Directive tools wiring (Match blocs / Clear all).
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLButtonElement|null} deps.btnDirBlocEl
+ * @param {HTMLButtonElement|null} deps.btnDirClearAllEl
+ * @param {()=>any} deps.getState
+ * @param {(s:any)=>void} deps.setDirectivesMatchBlocs
+ * @param {(s:any)=>void} deps.clearAllDirectives
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initDirectiveTools(deps){
+  const {
+    btnDirBlocEl,
+    btnDirClearAllEl,
+    getState,
+    setDirectivesMatchBlocs,
+    clearAllDirectives,
+    save,
+    render,
+  } = deps || {};
+
+  if (btnDirBlocEl) btnDirBlocEl.addEventListener('click', () => {
+    const s = getState?.();
+    if (!s) return;
+    setDirectivesMatchBlocs?.(s);
+    save?.();
+    render?.();
+  });
+
+  if (btnDirClearAllEl) btnDirClearAllEl.addEventListener('click', () => {
+    const s = getState?.();
+    if (!s) return;
+    clearAllDirectives?.(s);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
