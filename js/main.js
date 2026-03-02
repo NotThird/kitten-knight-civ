@@ -3417,9 +3417,10 @@ import { PATCH_HISTORY } from './content.js';
         const stableThreat = (state.res.threat <= targets.maxThreat * 0.92);
         const stableMood = (avgMood >= 0.56);
 
-        // Cost scales lightly with population so manual kitten-buy stays relevant.
+        // Cost scales lightly with population so growth stays easy.
+        // (We want the aquarium to fill up; pressure systems scale with pop anyway.)
         const pop = Math.max(1, state.kittens.length);
-        const cost = Math.round((28 + Math.floor(pop / 5) * 4) / 2) * 2; // 28,32,36,...
+        const cost = Math.round((18 + Math.floor(pop / 6) * 3) / 2) * 2; // 18,20,22,...
 
         // Explainability: surface why Auto Recruit is (or isn't) firing.
         // Keep it short; the full condition set is already in the tooltip.
@@ -3447,6 +3448,10 @@ import { PATCH_HISTORY } from './content.js';
             state.director.recruitYear = yr;
             state.director.autoRecruitWhy = '';
             log(`A stray kitten joined this Spring! (-${cost} food) Population: ${state.kittens.length}/${cap}`);
+            feed(`Immigration: a stray kitten joined (pop ${state.kittens.length}/${cap}).`);
+            state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+            state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'kitten+', color:'rgba(52,211,153,.18)' });
+            if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           }
         }
       }
@@ -7418,7 +7423,16 @@ import { PATCH_HISTORY } from './content.js';
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#39;');
   }
-  function kittenCost(){ const n = state.kittens.length; return Math.floor(60 * Math.pow(1.27, Math.max(0, n-3))); }
+  function kittenCost(){
+    // Aquarium pacing: early population growth should be easy.
+    // Old: 60 * 1.27^(n-3). New: cheaper base + gentler curve.
+    const n = Math.max(0, Number(state.kittens?.length ?? 0));
+    const expo = Math.max(0, n - 3);
+    const base = 35;
+    const mult = 1.20;
+    const cost = base * Math.pow(mult, expo);
+    return Math.max(10, Math.floor(cost));
+  }
 
   function renderTank(){
     if (!tankEl) return;
