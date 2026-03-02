@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoModeControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7594,17 +7594,6 @@ import { PATCH_HISTORY } from './content.js';
   });
 
 
-  const autoModeEl = document.getElementById('autoMode');
-  if (autoModeEl) autoModeEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60 };
-    state.director.autoMode = !!e.target.checked;
-    // Allow an immediate switch when toggled on.
-    if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
-    log(`Auto Mode â†’ ${state.director.autoMode ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
-
 
   const autoCrisisEl = document.getElementById('autoCrisis');
   if (autoCrisisEl) autoCrisisEl.addEventListener('change', (e) => {
@@ -8114,6 +8103,23 @@ import { PATCH_HISTORY } from './content.js';
   initConfirmPoliticsControls({
     confirmFactionsEl: document.getElementById('confirmFactions'),
     setConfirmPolitics,
+    log,
+    save,
+    render,
+  });
+
+  function setAutoMode(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
+    state.director.autoMode = !!on;
+    // Allow an immediate switch when toggled on.
+    if (state.director.autoMode) state.director.autoModeNextChangeAt = 0;
+    if (!state.director.autoMode) state.director.autoModeWhy = '';
+    return !!state.director.autoMode;
+  }
+
+  initAutoModeControls({
+    autoModeEl: document.getElementById('autoMode'),
+    setAutoMode,
     log,
     save,
     render,

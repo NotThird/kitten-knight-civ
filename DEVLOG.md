@@ -3472,3 +3472,24 @@ What to try
 - In Director, toggle **Confirm politics** ON/OFF and confirm:
   - it logs a single "Confirm politics ? ON/OFF" line
   - it persists after refresh
+
+---
+
+## 2026-03-01 23:28 CST - P0.1 Modularization: extract Auto Mode toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Mode** checkbox change wiring out of main.js into a new UI helper: `initAutoModeControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setAutoMode(...)` mutator (resets cooldown + clears last why when toggled off) plus log/save/render into the UI module.
+- Removed the old inline DOM listener to avoid double-wiring.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Mode** ON/OFF and confirm:
+  - it logs a single "Auto Mode → ON/OFF" line
+  - turning it ON allows an immediate mode switch (no waiting)
+  - it persists after refresh

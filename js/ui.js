@@ -769,6 +769,38 @@ export function initAutoBuildPushControls(deps){
 }
 
 /**
+ * Auto Mode toggle wiring ("director.autoMode").
+ *
+ * Kept in ui.js so main.js can stay focused on sim/mechanics.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoModeEl
+ * @param {(on:boolean)=>boolean} deps.setAutoMode
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoModeControls(deps){
+  const {
+    autoModeEl,
+    setAutoMode,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoModeEl) return;
+
+  autoModeEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoMode?.(on));
+    log?.(`Auto Mode → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Confirm politics toggle wiring ("director.confirmFactions").
  *
  * @param {object} deps
