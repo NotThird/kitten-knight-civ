@@ -1421,6 +1421,49 @@ export function initSocietyInspectors(deps){
       // Never break the inspector.
     }
 
+    // Culture inspector card (persistent norms + last transitions)
+    try {
+      const norms = state?.social?.norms ?? {};
+      const normLines = [];
+      const pct = (x)=>`${Math.round(100 * (clamp01?.(Number(x ?? 0)) ?? 0))}%`;
+
+      const vig = clamp01?.(Number(norms.raidParanoia ?? 0)) ?? 0;
+      const scar = clamp01?.(Number(norms.scarcityMindset ?? 0)) ?? 0;
+      const aid = clamp01?.(Number(norms.mutualAid ?? 0)) ?? 0;
+      const pun = clamp01?.(Number(norms.punitiveTolerance ?? 0)) ?? 0;
+
+      const vigBand = String(state?.social?.normsBand ?? (vig >= 0.70 ? 'paranoid' : vig >= 0.40 ? 'wary' : 'calm'));
+      const scarBand = String(state?.social?.scarcityBand ?? (scar >= 0.70 ? 'hoarding' : scar >= 0.40 ? 'thrifty' : 'calm'));
+      const aidBand = String(state?.social?.mutualAidBand ?? (aid >= 0.70 ? 'communal' : aid >= 0.40 ? 'neighborly' : 'atomized'));
+      const punBand = String(state?.social?.punitiveBand ?? (pun >= 0.70 ? 'punitive' : pun >= 0.40 ? 'firm' : 'lenient'));
+
+      normLines.push('');
+      normLines.push('Culture memory (persistent norms):');
+      normLines.push(`• Vigilance (raid paranoia): ${pct(vig)} — ${vigBand}`);
+      normLines.push(`• Scarcity mindset: ${pct(scar)} — ${scarBand}`);
+      normLines.push(`• Mutual aid: ${pct(aid)} — ${aidBand}`);
+      normLines.push(`• Punitive tolerance: ${pct(pun)} — ${punBand}`);
+
+      // Last 3 norm transitions (pulled from trend markers)
+      const ev = Array.isArray(state?._trendEvents) ? state._trendEvents : [];
+      const normEv = ev.filter(e => String(e?.kind ?? '') === 'norm');
+      if (normEv.length > 0) {
+        const last = normEv.slice(-3);
+        const fmtAgo = (t)=>{
+          const dt = Math.max(0, Number(state?.t ?? 0) - Number(t ?? 0));
+          if (dt >= 120) return `${Math.round(dt/60)}m ago`;
+          return `${Math.round(dt)}s ago`;
+        };
+        normLines.push('Recent culture shifts:');
+        for (const e of last) normLines.push(`• ${String(e?.label ?? '')} (${fmtAgo(e?.t)})`);
+      }
+      normLines.push('');
+
+      lines.push(...normLines);
+    } catch (e) {
+      // Never break the inspector.
+    }
+
     lines.push('What to do (policy knobs):');
     lines.push('• If mood is low: Feast rations, hold Festival, lower Work pace, or let Socialize/Care run.');
     lines.push('• If overwork is high: lower Work pace or switch doctrine to Rotate temporarily.');

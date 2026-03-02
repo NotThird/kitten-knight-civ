@@ -4,6 +4,29 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 05:38 CST - Aquarium/Observability: Culture inspector card (norms summary + last transitions)
+
+Summary
+- Observability: Social inspector modal now includes a **Culture memory** section summarizing persistent norms.
+- Aquarium depth: surfaces the four culture-memory scalars with **values + band labels**:
+  - Vigilance (raid paranoia)
+  - Scarcity mindset
+  - Mutual aid
+  - Punitive tolerance
+- History: lists the **last 3** norm-band transitions by reading existing Trends markers (`kind:'norm'`).
+
+Files touched
+- `js/ui.js`
+- `dist/js/ui.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+
+What to try
+- Click **Dissent/Compliance** to open the Social inspector and scroll to **Culture memory**.
+- Let the sim run until a norm band flips (vig/scar/aid/pun) and confirm it appears under **Recent culture shifts**.
+
+---
+
 ## 2026-03-02 05:19 CST - Aquarium: Norms v4 (punitive tolerance → discipline backlash)
 
 Summary
