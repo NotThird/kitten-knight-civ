@@ -598,10 +598,63 @@ import { PATCH_HISTORY } from './content.js';
     }
   }
 
-  // --- Micro-factions: Coteries (buddy-linked circles)
-  // Deterministic, low-interaction society depth: small friendship circles emerge from buddy links.
-  // First pass: connected-components over the buddy graph (no pathing); later we can add shared-work edges.
-  // Aquarium hook: when a coterie becomes "influential" (big + aligned), we emit a Society feed line + Trends marker.
+  // --- Micro-factions: Coteries (buddy-linked circles + shared-work ties)
+  // Deterministic, low-interaction society depth: small circles emerge from buddy links *and* repeated co-work.
+  // Shared-work edges are transient + decaying: they let circles form/shift beyond the static buddy ring.
+
+  const COTERIE_COWORK_TASKS = new Set([
+    'Forage','Farm','ChopWood','Research','Guard',
+    'BuildHut','BuildPalisade','BuildGranary','BuildWorkshop','BuildLibrary',
+    'CraftTools','PreserveFood','StokeFire',
+  ]);
+
+  const sharedEdgeKey = (a,b) => {
+    const x = Number(a ?? 0), y = Number(b ?? 0);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0 || x === y) return null;
+    const lo = Math.min(x,y), hi = Math.max(x,y);
+    return `${lo}-${hi}`;
+  };
+
+  function updateSharedWorkEdgesPerSecond(s){
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (kittens.length < 2) { s._sharedWorkEdges = {}; return; }
+
+    // Decay old edges.
+    const edges = (s._sharedWorkEdges && typeof s._sharedWorkEdges === 'object') ? s._sharedWorkEdges : {};
+    for (const [k, wRaw] of Object.entries(edges)) {
+      const w = Number(wRaw ?? 0);
+      if (!Number.isFinite(w) || w <= 0.05) { delete edges[k]; continue; }
+      const nw = w * 0.985;
+      if (nw <= 0.08) delete edges[k]; else edges[k] = nw;
+    }
+
+    // Add co-work for this second: if multiple kittens execute the same productive task, strengthen their ties.
+    const groups = new Map();
+    for (const k of kittens) {
+      const id = Number(k?.id ?? 0);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      const task = String(k?.task ?? '');
+      if (!COTERIE_COWORK_TASKS.has(task)) continue;
+      if (!groups.has(task)) groups.set(task, []);
+      groups.get(task).push(id);
+    }
+
+    for (const ids of groups.values()) {
+      if (ids.length < 2) continue;
+      ids.sort((a,b)=>a-b);
+      for (let i=0;i<ids.length;i++) {
+        for (let j=i+1;j<ids.length;j++) {
+          const key = sharedEdgeKey(ids[i], ids[j]);
+          if (!key) continue;
+          const cur = Number(edges[key] ?? 0) || 0;
+          edges[key] = Math.min(40, cur + 1);
+        }
+      }
+    }
+
+    s._sharedWorkEdges = edges;
+  }
+
   function computeCoteries(s){
     ensureBuddies(s);
     const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
@@ -619,6 +672,7 @@ import { PATCH_HISTORY } from './content.js';
       adj.get(b).add(a);
     };
 
+    // Buddy edges (stable, deterministic)
     for (const k of kittens) {
       const id = Number(k?.id ?? 0);
       const bid = Number(k?.buddyId ?? 0);
@@ -627,6 +681,21 @@ import { PATCH_HISTORY } from './content.js';
       if (id === bid) continue;
       if (!byId.has(bid)) continue;
       addEdge(id, bid);
+    }
+
+    // Shared-work edges (transient, decaying)
+    // Only add edges that have built up meaningful co-work time, so circles don't thrash.
+    const JOIN_TH = 8; // seconds of repeated co-work required to count as a tie
+    const edges = (s._sharedWorkEdges && typeof s._sharedWorkEdges === 'object') ? s._sharedWorkEdges : {};
+    for (const [key, wRaw] of Object.entries(edges)) {
+      const w = Number(wRaw ?? 0);
+      if (!Number.isFinite(w) || w < JOIN_TH) continue;
+      const parts = String(key).split('-');
+      const a = Number(parts[0] ?? 0);
+      const b = Number(parts[1] ?? 0);
+      if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) continue;
+      if (!byId.has(a) || !byId.has(b)) continue;
+      addEdge(a, b);
     }
 
     const seen = new Set();
@@ -672,7 +741,20 @@ import { PATCH_HISTORY } from './content.js';
 
       const id = memIds.join('-');
       const names = mem.map(k => String(k?.name ?? `Kitten ${k?.id ?? '?'}`));
-      coteries.push({ id, members: memIds, size: memIds.length, domAx, domN: counts[domAx] ?? 0, names });
+
+      // "Why" signal: how much repeated co-work is tying this circle together (beyond buddies).
+      let coWork = 0;
+      const edges = (s._sharedWorkEdges && typeof s._sharedWorkEdges === 'object') ? s._sharedWorkEdges : {};
+      for (let i=0;i<memIds.length;i++) {
+        for (let j=i+1;j<memIds.length;j++) {
+          const key = sharedEdgeKey(memIds[i], memIds[j]);
+          if (!key) continue;
+          const w = Number(edges[key] ?? 0);
+          if (Number.isFinite(w) && w > 0) coWork += w;
+        }
+      }
+
+      coteries.push({ id, members: memIds, size: memIds.length, domAx, domN: counts[domAx] ?? 0, coWork, names });
     }
 
     // Stable ordering for UI: largest first, then id.
@@ -691,7 +773,7 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     const cots = computeCoteries(s);
-    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, members:c.members }));
+    s.social.coteries = cots.map(c => ({ id:c.id, size:c.size, domAx:c.domAx, domN:c.domN, coWork: Number(c.coWork ?? 0), members:c.members }));
 
     // Influence threshold (first pass): a circle that's both big and values-aligned is "politically relevant".
     const isInfluential = (c) => (c.size >= 3) && (c.domN >= Math.ceil(c.size * 0.67));
@@ -4353,6 +4435,9 @@ import { PATCH_HISTORY } from './content.js';
         commitSecondsForTask,
         reserveForTask,
       });
+
+      // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
+      updateSharedWorkEdgesPerSecond(state);
     }
 
     runKittensTick(state, dt, {
@@ -6470,9 +6555,11 @@ import { PATCH_HISTORY } from './content.js';
             const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '…' : '');
             const ax = escapeHtml(String(c.domAx ?? ''));
             const sz = Number(c.size ?? 0);
-            const title = `Buddy-linked circle. Dominant axis ${ax} (${c.domN ?? 0}/${sz}).`;
+            const cw = Number(c.coWork ?? 0);
+            const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
               `<span class="tag">Coterie</span> <span class="tag">${ax}</span> <span class="small">x${sz}</span> ` +
+              `<span class="small" style="opacity:.7">cowork ${cw.toFixed(0)}</span> ` +
               `<span style="opacity:.9">${escapeHtml(who)}</span>` +
             `</div>`;
           }).join('');

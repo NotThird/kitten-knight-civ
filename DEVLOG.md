@@ -3562,3 +3562,22 @@ What to try
 - Run Curator hands-off until you have **4+ kittens**.
 - Open **Factions** and scroll to the **Coteries** section; confirm it lists circles and their dominant axis.
 - Let the sim run a bit longer and watch for a feed line like **"Coterie rising"** plus a matching Trends marker.
+
+---
+
+## 2026-03-02 02:03 CST - Aquarium: Shared-work edges for Coteries (dynamic circles)
+
+Summary
+- Aquarium depth: Coteries now form from **buddy links + repeated shared-work ties** (not just static buddy connected-components).
+- New transient, decaying **co-work edge** tracker: when multiple kittens execute the same productive task in the same second, their tie strengthens; it decays over time.
+- Factions panel: coteries show a simple **cowork cohesion** sublabel + tooltip so you can see *why* a circle exists.
+- Save-safe: shared-work edges are transient (`_sharedWorkEdges`) and automatically stripped from saves.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+
+What to try
+- Run Curator hands-off with 4+ kittens.
+- Watch coteries in **Factions** as the workforce shifts (e.g., several kittens foraging together should start merging circles over ~10–20s).
