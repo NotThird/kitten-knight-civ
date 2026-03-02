@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoDoctrineControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -7651,16 +7651,6 @@ import { PATCH_HISTORY } from './content.js';
     render();
   });
 
-  const autoDoctrineEl = document.getElementById('autoDoctrine');
-  if (autoDoctrineEl) autoDoctrineEl.addEventListener('change', (e) => {
-    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', projectFocus:'Auto', autonomy: 0.60, workPace: 1.00, doctrine:'Balanced' };
-    state.director.autoDoctrine = !!e.target.checked;
-    // Allow an immediate switch when toggled on.
-    if (state.director.autoDoctrine) state.director.autoDoctrineNextChangeAt = 0;
-    log(`Auto Doctrine â†’ ${state.director.autoDoctrine ? 'ON' : 'OFF'}`);
-    save();
-    render();
-  });
 
   const autoRationsEl = document.getElementById('autoRations');
   if (autoRationsEl) autoRationsEl.addEventListener('change', (e) => {
@@ -8112,6 +8102,23 @@ import { PATCH_HISTORY } from './content.js';
   initDoctrineControls({
     doctrineEl: document.getElementById('doctrine'),
     setDoctrine,
+    log,
+    save,
+    render,
+  });
+
+  function setAutoDoctrine(on){
+    state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
+    state.director.autoDoctrine = !!on;
+    // Allow an immediate switch when toggled on.
+    if (state.director.autoDoctrine) state.director.autoDoctrineNextChangeAt = 0;
+    state.director.autoDoctrineWhy = '';
+    return !!state.director.autoDoctrine;
+  }
+
+  initAutoDoctrineControls({
+    autoDoctrineEl: document.getElementById('autoDoctrine'),
+    setAutoDoctrine,
     log,
     save,
     render,

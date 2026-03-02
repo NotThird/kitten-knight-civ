@@ -3289,3 +3289,20 @@ What to try
 - In Director, switch doctrine between **Balanced / Rotate / Specialize** and confirm:
   - it logs a single "Labor doctrine ? X" line
   - it persists after refresh
+
+---
+
+## 2026-03-01 18:56 CST - P0.1 Modularization: extract Auto Doctrine toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Doctrine** checkbox change wiring out of `main.js` into `js/ui.js` as `initAutoDoctrineControls(...)`.
+- `main.js` now injects a tiny `setAutoDoctrine(...)` mutator (resets cooldown + clears last why) plus `log/save/render` into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- Toggle **Auto Doctrine** ON/OFF in Director and confirm it logs once and persists after refresh.

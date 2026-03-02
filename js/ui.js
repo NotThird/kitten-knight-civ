@@ -515,6 +515,38 @@ export function initDoctrineControls(deps){
 }
 
 /**
+ * Auto Doctrine toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoDoctrineEl
+ * @param {(on:boolean)=>boolean} deps.setAutoDoctrine
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoDoctrineControls(deps){
+  const {
+    autoDoctrineEl,
+    setAutoDoctrine,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoDoctrineEl) return;
+
+  autoDoctrineEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoDoctrine?.(on));
+    log?.(`Auto Doctrine → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
