@@ -164,6 +164,20 @@ export function migrateState(s, {
 
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
+
+  // Social layer migration (includes persistent norms / society memory).
+  s.social = (s.social && typeof s.social === 'object') ? s.social : { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 };
+  if (!('dissent' in s.social)) s.social.dissent = 0;
+  if (!('band' in s.social)) s.social.band = 'calm';
+  if (!('lastLogBand' in s.social)) s.social.lastLogBand = '';
+  if (!('lastLogAt' in s.social)) s.social.lastLogAt = 0;
+  s.social.norms = (s.social.norms && typeof s.social.norms === 'object') ? s.social.norms : { raidParanoia: 0 };
+  if (!('raidParanoia' in s.social.norms)) s.social.norms.raidParanoia = 0;
+  s.social.norms.raidParanoia = (typeof clamp01 === 'function') ? clamp01(Number(s.social.norms.raidParanoia ?? 0)) : Math.max(0, Math.min(1, Number(s.social.norms.raidParanoia ?? 0) || 0));
+  if (!('normsBand' in s.social)) s.social.normsBand = 'calm';
+  if (!('normsLastAt' in s.social)) s.social.normsLastAt = 0;
+  s.social.normsBand = String(s.social.normsBand ?? 'calm');
+  s.social.normsLastAt = Number(s.social.normsLastAt ?? 0) || 0;
   if (!('festivalUntil' in s.effects)) s.effects.festivalUntil = 0;
   if (!('councilUntil' in s.effects)) s.effects.councilUntil = 0;
   s.effects.festivalUntil = Number(s.effects.festivalUntil ?? 0) || 0;

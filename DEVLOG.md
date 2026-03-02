@@ -3759,3 +3759,25 @@ What to try
 - Get (or force) **Crisis Protocol** / **FOOD CRISIS** / **ALARM**, then watch for **Legitimacy:** feed lines and correlate with Compliance drifting a bit.
 - Make (or observe) a circle become **RESENT**; with both an aid and strict influential coterie present, rivalry beats should happen a bit sooner.
 
+
+---
+
+## 2026-03-02 04:33 CST - Aquarium: Norms v1 (raid vigilance memory)
+
+Summary
+- Aquarium depth: added a single persistent Norm (culture memory): raidParanoia (0..1).
+  - Increases on raid outcomes (hit > repel) and decays slowly over minutes.
+  - Creates a small, bounded Guard scoring bias even when threat is below target (the colony remembers danger).
+- Observability: when vigilance crosses bands (calm / wary / paranoid), the sim emits a Norms: Society feed beat and drops a Trends marker (kind=norm, label=vig:...).
+- Save-safe: norms live under social.norms and migrate cleanly for older saves.
+
+Files touched
+- kitten-knight-civ/js/main.js
+- kitten-knight-civ/js/state.js
+- dist/js/main.js
+- dist/js/state.js
+- PLAN_STATUS.md
+
+What to try
+- Let a raid hit you (threat to 100) and watch the Society feed for Norms: lines as vigilance rises.
+- Afterward, even if threat is below target, you should see slightly more Guard activity until vigilance cools back down.

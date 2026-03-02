@@ -207,7 +207,16 @@ import { PATCH_HISTORY } from './content.js';
     // Director helpers (not required for core sim; safe to ignore in old saves)
     director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00, curator: { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true } },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
-    social: { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 },
+    // Also includes slow-moving, persistent norms (society "memory") so macro events leave cultural scars.
+    social: {
+      dissent: 0,
+      band: 'calm',
+      lastLogBand: '',
+      lastLogAt: 0,
+      norms: { raidParanoia: 0 }, // 0..1: heightened vigilance after raids; slowly decays
+      normsBand: 'calm',
+      normsLastAt: 0,
+    },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
@@ -3247,6 +3256,15 @@ import { PATCH_HISTORY } from './content.js';
           reasons.push(`threat ${s.res.threat.toFixed(1)}>${tdef} â†’ +${add.toFixed(1)}`);
         }
         if (s.signals.ALARM) { score += 40; reasons.push('ALARM â†’ +40'); }
+
+        // Norm: raid paranoia creates a small, persistent "vigilance" bias even when threat is below target.
+        // This helps the aquarium feel like it remembers past danger without needing player clicks.
+        const rp = clamp01(Number(s.social?.norms?.raidParanoia ?? 0));
+        if (rp > 0.02) {
+          const add = 6 + rp * 20;
+          score += add;
+          reasons.push(`norm vigilance ${(rp*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+        }
       }
 
       // construction
@@ -4761,6 +4779,11 @@ import { PATCH_HISTORY } from './content.js';
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 45;
           state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'repel' };
+
+          // Norms: raids leave cultural memory. A repelled raid still increases vigilance, but less than a hit.
+          state.social = state.social ?? { dissent: 0 };
+          state.social.norms = (state.social.norms && typeof state.social.norms === 'object') ? state.social.norms : { raidParanoia: 0 };
+          state.social.norms.raidParanoia = clamp01(Number(state.social.norms.raidParanoia ?? 0) + 0.10);
         } else {
           state.res.threat = Math.max(20, state.res.threat - 35);
 
@@ -4783,10 +4806,40 @@ import { PATCH_HISTORY } from './content.js';
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 75;
           state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'hit' };
+
+          // Norms: a raid that hits the colony leaves a stronger vigilance scar.
+          state.social = state.social ?? { dissent: 0 };
+          state.social.norms = (state.social.norms && typeof state.social.norms === 'object') ? state.social.norms : { raidParanoia: 0 };
+          state.social.norms.raidParanoia = clamp01(Number(state.social.norms.raidParanoia ?? 0) + 0.18);
+
           // Auto alarm (only once you know what "ALARM" means)
           state.signals.ALARM = state.unlocked.security ? true : false;
         }
       }
+    }
+
+    // Norms: raid paranoia decays slowly, but changes how the colony behaves even when threat is "objectively" safe.
+    // This creates a self-sustaining aquarium loop: raids -> vigilance -> more guards -> fewer raids -> calm.
+    state.social = state.social ?? { dissent: 0 };
+    state.social.norms = (state.social.norms && typeof state.social.norms === 'object') ? state.social.norms : { raidParanoia: 0 };
+    state.social.normsBand = String(state.social.normsBand ?? 'calm');
+    state.social.normsLastAt = Number(state.social.normsLastAt ?? 0) || 0;
+
+    // Decay (slow): ~5-7 minutes to fully cool down from max.
+    const rp0 = clamp01(Number(state.social.norms.raidParanoia ?? 0));
+    const rp = clamp01(rp0 - dt * 0.0025);
+    state.social.norms.raidParanoia = rp;
+
+    const band = (rp < 0.25) ? 'calm' : (rp < 0.55) ? 'wary' : 'paranoid';
+    if (band !== state.social.normsBand && (Number(state.t ?? 0) - state.social.normsLastAt) > 25) {
+      state.social.normsBand = band;
+      state.social.normsLastAt = Number(state.t ?? 0);
+      if (band === 'wary') feed('Norms: the colony grows more vigilant after recent danger.');
+      else if (band === 'paranoid') feed('Norms: paranoia takes hold. Watch circles and guard rotations intensify.');
+      else feed('Norms: vigilance fades. The colony feels safe enough to relax.');
+      state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`vig:${band}`, color:'rgba(96,165,250,.22)' });
+      if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
     }
 
     // Auto-clear alarm if safe
