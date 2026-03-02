@@ -1023,6 +1023,62 @@ import { PATCH_HISTORY } from './content.js';
       }
       s._coteriePressureGate = nowT + 15;
     }
+
+    // Coterie rivalry beat (tiny politics texture)
+    // Highest-leverage "aquarium" depth: circles with opposing ethos sometimes snub each other,
+    // nudging mood/grievance and leaving a visible marker in the feed + trends.
+    // Deterministic cadence (no RNG): cooldown-gated and keyed off sim time.
+    s._coterieRivalry = (s._coterieRivalry && typeof s._coterieRivalry === 'object') ? s._coterieRivalry : { nextAt:0, lastPair:'' };
+    if (nowT >= Number(s._coterieRivalry.nextAt ?? 0)) {
+      const pickBest = (tag) => cots
+        .filter(c => isInfluential(c) && String(c.ethosTag ?? '') === tag)
+        .sort((a,b)=> ((b.size*1.25 + (b.coWork ?? 0)) - (a.size*1.25 + (a.coWork ?? 0))))
+        [0] ?? null;
+
+      const aid = pickBest('aid');
+      const strict = pickBest('strict');
+      if (aid && strict && String(aid.id) !== String(strict.id)) {
+        const pairKey = `${aid.id}|${strict.id}`;
+        // Prevent the exact same rivalry from repeating back-to-back.
+        if (String(s._coterieRivalry.lastPair ?? '') !== pairKey) {
+          const clampPct = (x) => Math.max(0, Math.min(100, Number(x ?? 0) || 0));
+
+          // Small, bounded consequence: a little mood drag + grievance heat for members of both circles.
+          const applyTo = (c) => {
+            for (const id of (c.members ?? [])) {
+              const k = byId.get(id);
+              if (!k) continue;
+              k.mood = clampPct((Number(k.mood ?? 55) || 55) - 0.6);
+              k.griev = clampPct((Number(k.griev ?? 0) || 0) + 0.9);
+            }
+          };
+          applyTo(aid);
+          applyTo(strict);
+
+          // Observability
+          const whoA = (aid.names ?? []).slice(0, 2).join(', ') + ((aid.names?.length ?? 0) > 2 ? '…' : '');
+          const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '…' : '');
+          s.feed = Array.isArray(s.feed) ? s.feed : [];
+          s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash — the mutual-aid coterie snubs the strict circle. (${whoA} ↔ ${whoB})`);
+          const FEED_MAX = 220;
+          if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+          s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+          s._trendEvents.push({ t: nowT, kind:'rival', label:'aid vs strict', color:'rgba(148,163,184,.14)' });
+          if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+          // Next time: 2–3 minutes, deterministic jitter based on time.
+          const jitter = (Math.floor(nowT) % 61);
+          s._coterieRivalry = { nextAt: nowT + 120 + jitter, lastPair: pairKey };
+        } else {
+          // Same pair; wait a bit.
+          s._coterieRivalry.nextAt = nowT + 60;
+        }
+      } else {
+        // No opposing influential circles yet; check again later.
+        s._coterieRivalry.nextAt = nowT + 45;
+      }
+    }
   }
 
   function defaultRules(){

@@ -4,6 +4,22 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 03:18 CST - Aquarium: Coterie rivalry beat (aid vs strict)
+
+Summary
+- Aquarium depth: influential **mutual-aid** and **strict norms** coteries can now occasionally enter a small **rivalry** beat (deterministic cooldown).
+- Consequence (tiny + bounded): members of both circles take a small **Mood** dip and **Grievance** bump (social friction texture).
+- Observability: emits a **Society feed** line plus a **Trends** event marker (`kind:'rival'`) so you can correlate politics to macro swings.
+
+Files touched
+- `js/main.js`
+
+What to try
+- Run Curator hands-off with **6+ kittens** until you have at least one influential **aid** coterie and one influential **strict** coterie.
+- Watch the Society feed for a **Rivalry:** line and confirm a matching `rival` marker appears in Trends.
+
+---
+
 ## 2026-03-02 03:03 CST - Aquarium: Coterie pressure timers in Factions UI
 
 Summary
