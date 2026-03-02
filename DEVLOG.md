@@ -3072,7 +3072,8 @@ Files touched
 - DEVLOG.md
 
 What to try
-- Open the GitHub Actions tab and confirm **CI** passes (look for PARSE_IMPORT_OK + eplay_test: OK).
+- Open the GitHub Actions tab and confirm **CI** passes (look for PARSE_IMPORT_OK + 
+eplay_test: OK).
 
 
 
@@ -3181,7 +3182,8 @@ What to try
 ## 2026-03-01 15:56 CST - P0.1 Modularization: extract Director Profiles rendering into ui.js
 
 Summary
-- Phase 0 modularization slice: moved the **Director Profiles (A/B/C)** UI rendering (slot rows + saved-at hint text) out of main.js into a pure render helper: enderDirectorProfiles(...) in js/ui.js.
+- Phase 0 modularization slice: moved the **Director Profiles (A/B/C)** UI rendering (slot rows + saved-at hint text) out of main.js into a pure render helper: 
+enderDirectorProfiles(...) in js/ui.js.
 - main.js now just ensures profile data exists and delegates rendering to the UI module boundary.
 - No behavior changes intended (same buttons, same enable/disable logic).
 
@@ -3306,3 +3308,23 @@ Files touched
 
 What to try
 - Toggle **Auto Doctrine** ON/OFF in Director and confirm it logs once and persists after refresh.
+
+---
+
+## 2026-03-01 19:26 CST - P0.1 Modularization: extract Auto Rations toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Rations** checkbox change wiring out of main.js into a new UI helper: initAutoRationsControls(...) in js/ui.js.
+- main.js now injects a tiny setAutoRations(...) mutator (resets the auto-rations cooldown and clears the last why string when toggled off) plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Rations** ON/OFF and confirm:
+  - it logs a single "Auto Rations -> ON/OFF" line
+  - turning it ON allows an immediate rations switch (no waiting)
+  - it persists after refresh

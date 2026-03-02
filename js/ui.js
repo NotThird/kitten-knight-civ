@@ -547,6 +547,38 @@ export function initAutoDoctrineControls(deps){
 }
 
 /**
+ * Auto Rations toggle wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLInputElement|null} deps.autoRationsEl
+ * @param {(on:boolean)=>boolean} deps.setAutoRations
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initAutoRationsControls(deps){
+  const {
+    autoRationsEl,
+    setAutoRations,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!autoRationsEl) return;
+
+  autoRationsEl.addEventListener('change', (e) => {
+    const on = !!e?.target?.checked;
+    const next = !!(setAutoRations?.(on));
+    log?.(`Auto Rations → ${next ? 'ON' : 'OFF'}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *
