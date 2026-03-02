@@ -63,6 +63,11 @@ export function migrateState(s, {
   // Migration: cap persisted event log so old saves don't balloon localStorage.
   s.log = Array.isArray(s.log) ? s.log : [];
   if (Number.isFinite(LOG_MAX) && s.log.length > LOG_MAX) s.log = s.log.slice(-LOG_MAX);
+
+  // Society feed (high-signal, player-facing). Persisted + capped.
+  s.feed = Array.isArray(s.feed) ? s.feed : [];
+  const FEED_MAX = 220;
+  if (s.feed.length > FEED_MAX) s.feed = s.feed.slice(-FEED_MAX);
   s.rations = s.rations ?? 'Normal';
   s.targets = s.targets ?? { foodPerKitten: 120, warmth: 60, maxThreat: 70 };
   s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };
@@ -141,6 +146,7 @@ export function migrateState(s, {
   c.ethos = ['Gentle','Balanced','Strict'].includes(ethos) ? ethos : 'Balanced';
   c.intervention = Math.max(0, Math.min(100, Number(c.intervention ?? 30) || 30));
   if (!('enabled' in c)) c.enabled = true;
+  if (!('devMode' in c)) c.devMode = false;
   if (!('appliedOnce' in c)) c.appliedOnce = false;
 
   // Effects migration

@@ -211,7 +211,8 @@ import { PATCH_HISTORY } from './content.js';
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
-    log: []
+    log: [],
+    feed: []
   });
 
   // --- Personality / micro-emergence
@@ -1402,6 +1403,10 @@ import { PATCH_HISTORY } from './content.js';
       level += 1;
       k.skills[skill] = level;
       log(`Kitten ${k.id} leveled ${skill} â†’ ${level}`);
+
+      // Aquarium-visible milestone.
+      const nm = String(k?.name ?? `Kitten ${k.id}`);
+      feed(`${nm} improved: ${skill} level ${level}.`);
     }
   }
   function xpToNext(level){ return 10 + Math.pow(level, 1.35) * 6; }
@@ -3049,12 +3054,27 @@ import { PATCH_HISTORY } from './content.js';
         state.seenUnlocks[u.id] = true;
         u.apply(state);
         log(`UNLOCK: ${u.name} (science â‰¥ ${u.at})`);
+        feed(`New knowledge: unlocked ${u.name}.`);
       }
     }
   }
 
   function tickPressures(dt){
     const season = seasonAt(state.t);
+
+    // Aquarium: periodic high-level feed (keeps the world feeling alive without player clicks)
+    state._feedTimer = Number(state._feedTimer ?? 0) + dt;
+    if (state._feedTimer >= 12) {
+      state._feedTimer = 0;
+      const yr = yearAt(state.t) + 1;
+      const pop = Number(state.kittens?.length ?? 0);
+      const cap = housingCap(state);
+      const ediblePk = ediblePerKitten(state);
+      const warm = Number(state.res?.warmth ?? 0);
+      const thr = Number(state.res?.threat ?? 0);
+      const diss = dissent01(state);
+      feed(`Year ${yr}: pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}%`);
+    }
 
     // Politics pressure: demands expire into consequences (instead of silently vanishing).
     const exp = expireFactionDemandIfNeeded(state);
@@ -3858,6 +3878,7 @@ import { PATCH_HISTORY } from './content.js';
             k.grievance = clamp01(Number(k.grievance ?? 0) * 0.96);
           }
           log(`RAID REPELLED! (guards ${guards}, palisade ${pal}) Threat pushed back.`);
+          feed('Raid repelled. The colony feels safer.');
         } else {
           state.res.threat = Math.max(20, state.res.threat - 35);
 
@@ -3874,6 +3895,7 @@ import { PATCH_HISTORY } from './content.js';
           }
 
           log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported. (mitigation x${mitigate.toFixed(2)}; guards ${guards}, palisade ${pal})`);
+          feed(`Raid hit the colony. Lost ${fmt(stealFood)} food and ${fmt(stealWood)} wood.`);
           // Auto alarm (only once you know what "ALARM" means)
           state.signals.ALARM = state.unlocked.security ? true : false;
         }
@@ -3892,6 +3914,24 @@ import { PATCH_HISTORY } from './content.js';
 
     applyUnlocks();
     tickPressures(dt);
+
+    // Trends sampling (sparklines): 1Hz, last ~2 minutes
+    state._trend = state._trend ?? { t:[], food:[], warmth:[], threat:[], science:[], dissent:[] };
+    state._trendAcc = Number(state._trendAcc ?? 0) + dt;
+    if (state._trendAcc >= 1) {
+      state._trendAcc -= 1;
+      const tr = state._trend;
+      tr.t.push(Number(state.t ?? 0));
+      tr.food.push(Number(state.res?.food ?? 0));
+      tr.warmth.push(Number(state.res?.warmth ?? 0));
+      tr.threat.push(Number(state.res?.threat ?? 0));
+      tr.science.push(Number(state.res?.science ?? 0));
+      tr.dissent.push(Number(state.social?.dissent ?? 0));
+      const MAX = 120;
+      for (const k of ['t','food','warmth','threat','science','dissent']) {
+        if (tr[k].length > MAX) tr[k].splice(0, tr[k].length - MAX);
+      }
+    }
 
     state._decTimer = (state._decTimer ?? 0) + dt;
     if (state._decTimer >= 1) {
@@ -3990,17 +4030,24 @@ import { PATCH_HISTORY } from './content.js';
   const curatorInterventionEl = el('curatorIntervention');
   const curatorInterventionHintEl = el('curatorInterventionHint');
   const steeringSummaryEl = el('steeringSummary');
+  const devModeEl = el('devMode');
+  const advancedControlsEl = el('advancedControls');
+  const feedEl = el('feed');
+  const tankEl = el('tank');
+  const trendsEl = el('trends');
 
   function ensureCurator(s){
     s.director = s.director ?? {};
-    if (!s.director.curator || typeof s.director.curator !== 'object') s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true };
+    if (!s.director.curator || typeof s.director.curator !== 'object') s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true, devMode:false, appliedOnce:false };
     const c = s.director.curator;
+    if (!('devMode' in c)) c.devMode = false;
     const goal = String(c.goal ?? 'Thrive');
     c.goal = ['Thrive','Expand','Defend','Innovate','Harmonize'].includes(goal) ? goal : 'Thrive';
     const ethos = String(c.ethos ?? 'Balanced');
     c.ethos = ['Gentle','Balanced','Strict'].includes(ethos) ? ethos : 'Balanced';
     c.intervention = Math.max(0, Math.min(100, Number(c.intervention ?? 30) || 30));
     if (!('enabled' in c)) c.enabled = true;
+    if (!('devMode' in c)) c.devMode = false;
     if (!('appliedOnce' in c)) c.appliedOnce = false;
   }
 
@@ -4108,6 +4155,22 @@ import { PATCH_HISTORY } from './content.js';
     render,
     getSteeringSummary,
   });
+
+  // Developer Mode: hide/show the old cockpit.
+  function syncDevMode(){
+    ensureCurator(state);
+    const on = !!state.director.curator.devMode;
+    if (devModeEl) devModeEl.checked = on;
+    if (advancedControlsEl) advancedControlsEl.style.display = on ? '' : 'none';
+  }
+  if (devModeEl) devModeEl.addEventListener('change', () => {
+    ensureCurator(state);
+    state.director.curator.devMode = !!devModeEl.checked;
+    log(`Developer Mode → ${state.director.curator.devMode ? 'ON' : 'OFF'}`);
+    save();
+    render();
+  });
+  syncDevMode();
 
   // Inspector modals are initialized later once their DOM nodes exist.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
@@ -6055,6 +6118,10 @@ import { PATCH_HISTORY } from './content.js';
 
     // Curator summary: show what is currently steering the colony.
     if (steeringSummaryEl) steeringSummaryEl.textContent = getSteeringSummary(state);
+    syncDevMode();
+
+    // Society feed
+    if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
 
     // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
     const pauseBtn = el('btnPause');
@@ -7130,6 +7197,16 @@ import { PATCH_HISTORY } from './content.js';
     logEl.textContent = state.log.slice(-40).join('\n');
     logEl.scrollTop = logEl.scrollHeight;
 
+    // Society feed scroll follows newest entries.
+    if (feedEl) {
+      feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).slice(-180).join('\n');
+      feedEl.scrollTop = feedEl.scrollHeight;
+    }
+
+    // Canvas HUDs
+    renderTank();
+    renderTrends();
+
     // Keep inspectors in sync with latest snapshots.
     renderInspect();
     patchNotesUI.render();
@@ -7146,6 +7223,145 @@ import { PATCH_HISTORY } from './content.js';
   }
   function kittenCost(){ const n = state.kittens.length; return Math.floor(60 * Math.pow(1.27, Math.max(0, n-3))); }
 
+  function renderTank(){
+    if (!tankEl) return;
+    const ctx = tankEl.getContext('2d');
+    if (!ctx) return;
+
+    const W = tankEl.width, H = tankEl.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Zones (no pathing): kittens snap to task zones so it feels like an aquarium.
+    const zones = [
+      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)' },
+      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)' },
+      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)' },
+      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)' },
+      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)' },
+    ];
+
+    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.textBaseline = 'top';
+
+    for (const z of zones) {
+      ctx.fillStyle = z.color;
+      ctx.strokeStyle = 'rgba(255,255,255,.10)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(z.x, z.y, z.w, z.h);
+      ctx.strokeRect(z.x, z.y, z.w, z.h);
+      ctx.fillStyle = 'rgba(148,163,184,.95)';
+      ctx.fillText(z.id, z.x + 6, z.y + 6);
+    }
+
+    const taskZone = (task) => {
+      const t = String(task || '');
+      if (t === 'StokeFire' || t === 'Eat' || t === 'Rest' || t === 'Care' || t === 'Socialize') return 'Hearth';
+      if (t === 'Forage' || t === 'ChopWood' || t === 'Guard') return 'Forest';
+      if (t === 'Farm') return 'Fields';
+      if (t === 'Research' || t === 'Mentor') return 'Study';
+      if (t.startsWith('Build') || t === 'CraftTools' || t === 'PreserveFood') return 'Stock';
+      return 'Hearth';
+    };
+
+    // Place kittens as dots in their zone.
+    const byZone = Object.create(null);
+    for (const z of zones) byZone[z.id] = [];
+    for (const k of (state.kittens ?? [])) {
+      const z = taskZone(k._fallbackTo || k.task);
+      (byZone[z] ?? (byZone[z]=[])).push(k);
+    }
+
+    for (const z of zones) {
+      const arr = byZone[z.id] ?? [];
+      for (let i=0;i<arr.length;i++) {
+        const k = arr[i];
+        const nx = (i % 4);
+        const ny = Math.floor(i / 4);
+        const px = z.x + 20 + nx * 22;
+        const py = z.y + 28 + ny * 18;
+        ctx.fillStyle = 'rgba(217,226,239,.95)';
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(217,226,239,.75)';
+        const name = String(k?.name ?? `#${k.id}`);
+        const short = name.split(/\s+/).slice(-1)[0] || name;
+        ctx.fillText(short, px + 6, py - 6);
+      }
+    }
+  }
+
+  function renderTrends(){
+    if (!trendsEl) return;
+    const ctx = trendsEl.getContext('2d');
+    if (!ctx) return;
+    const W = trendsEl.width, H = trendsEl.height;
+    ctx.clearRect(0,0,W,H);
+
+    const tr = state._trend;
+    if (!tr || !tr.t || tr.t.length < 2) return;
+
+    const pad = 10;
+    const plotW = W - pad*2;
+    const plotH = H - pad*2;
+
+    // pick series with readable scales
+    const series = [
+      { key:'food',   color:'rgba(52,211,153,.9)', label:'food' },
+      { key:'warmth', color:'rgba(251,191,36,.9)', label:'warmth' },
+      { key:'threat', color:'rgba(251,113,133,.9)', label:'threat' },
+      { key:'science',color:'rgba(125,211,252,.9)', label:'sci' },
+      { key:'dissent',color:'rgba(167,139,250,.9)', label:'diss', scale01:true },
+    ];
+
+    // Background grid
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
+    for (let i=0;i<=4;i++) {
+      const y = pad + (plotH * i/4);
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad+plotW, y); ctx.stroke();
+    }
+
+    const n = tr.t.length;
+    const xFor = (i) => pad + (i/(n-1))*plotW;
+
+    for (const s of series) {
+      const arr = tr[s.key] || [];
+      if (arr.length !== n) continue;
+      let min = Infinity, max = -Infinity;
+      for (const v0 of arr) { const v = Number(v0); if (!Number.isFinite(v)) continue; min = Math.min(min,v); max = Math.max(max,v); }
+      if (!Number.isFinite(min) || !Number.isFinite(max)) continue;
+      if (s.scale01) { min = 0; max = 1; }
+      if (Math.abs(max-min) < 1e-6) { max = min + 1; }
+
+      const yFor = (v) => {
+        const t = (Number(v)-min)/(max-min);
+        return pad + (1 - clamp01(t))*plotH;
+      };
+
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i=0;i<n;i++) {
+        const x = xFor(i);
+        const y = yFor(arr[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+
+    // Legend (tiny)
+    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.textBaseline = 'bottom';
+    let lx = pad;
+    for (const s of series) {
+      ctx.fillStyle = s.color;
+      ctx.fillRect(lx, H-6, 10, 2);
+      ctx.fillStyle = 'rgba(148,163,184,.95)';
+      ctx.fillText(s.label, lx+14, H-2);
+      lx += 64;
+    }
+  }
+
   function log(msg){
     // Optional suppression (used for offline simulation to avoid dumping 300 lines of season warnings).
     if (state?._suppressLog) {
@@ -7160,6 +7376,19 @@ import { PATCH_HISTORY } from './content.js';
     if (state.log.length > LOG_MAX) {
       state.log.splice(0, state.log.length - LOG_MAX);
     }
+  }
+
+  function feed(msg){
+    state.feed = Array.isArray(state.feed) ? state.feed : [];
+    state.feed.push(`[${fmt(state.t)}] ${msg}`);
+    const FEED_MAX = 220;
+    if (state.feed.length > FEED_MAX) state.feed.splice(0, state.feed.length - FEED_MAX);
+  }
+
+  // Simple one-shot toast at boot so the aquarium feels alive immediately.
+  if (!state._fedHello) {
+    state._fedHello = true;
+    feed(`Curator goal: ${String(state.director?.curator?.goal ?? 'Thrive')} (${String(state.director?.curator?.ethos ?? 'Balanced')}).`);
   }
 
   function summarizePlan(desired){

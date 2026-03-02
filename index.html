@@ -49,8 +49,20 @@
           <input type="range" id="curatorIntervention" min="0" max="100" step="10">
         </label>
         <span class="small" id="curatorInterventionHint" style="opacity:.85"></span>
+        <label class="small" title="Developer Mode shows the old control cockpit + debug panels."><input type="checkbox" id="devMode"> Developer Mode</label>
         <div class="small" style="min-width:100%; opacity:.9" id="steeringSummary"></div>
       </div>
+
+      <div style="height:10px"></div>
+      <canvas id="tank" width="380" height="190" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+
+      <div style="height:10px"></div>
+      <div class="small">Trends (last ~2 minutes)</div>
+      <canvas id="trends" width="380" height="110" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+
+      <div style="height:10px"></div>
+      <div class="small">Society feed</div>
+      <div class="log" id="feed" style="max-height:220px"></div>
 
       <div style="height:12px"></div>
       <details id="advancedControls">
