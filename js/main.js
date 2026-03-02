@@ -1,4 +1,4 @@
-﻿import { saveGame, loadGame } from './state.js';
+import { saveGame, loadGame } from './state.js';
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
@@ -360,7 +360,7 @@ import { PATCH_HISTORY } from './content.js';
     const cv = colonyFocusVec(s);
     let dot = 0;
     for (const ax of VALUE_AXES) dot += Number(kv[ax] ?? 0) * Number(cv[ax] ?? 0);
-    return clamp01(dot * 1.25); // rescale so "neutral" feels like ~0.7â€“0.8
+    return clamp01(dot * 1.25); // rescale so "neutral" feels like ~0.7–0.8
   }
 
   function valuesShort(k){
@@ -423,7 +423,7 @@ import { PATCH_HISTORY } from './content.js';
       if (d > bestD) { bestD = d; best = ax; }
     }
     k._valuesDriftAt = Number(s?.t ?? 0) || 0;
-    k._valuesDriftNote = `drift â†’ ${best} (rate ${(rate*100).toFixed(1)}%/s)`;
+    k._valuesDriftNote = `drift → ${best} (rate ${(rate*100).toFixed(1)}%/s)`;
   }
 
   function traitInfoList(k){
@@ -674,7 +674,7 @@ import { PATCH_HISTORY } from './content.js';
     const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
     if (!kittens.length) return;
 
-    const DECAY = 0.992; // ~1/(1-DECAY) ≈ 125s effective window
+    const DECAY = 0.992; // ~1/(1-DECAY) � 125s effective window
     const MIN_W = 0.15;
 
     for (const k of kittens) {
@@ -849,7 +849,7 @@ import { PATCH_HISTORY } from './content.js';
   }
 
   function estimateCoterieEthosTarget(c){
-    // Single tiny 0..1 axis: "mutual aid" (high) ↔ "strictness" (low).
+    // Single tiny 0..1 axis: "mutual aid" (high) ? "strictness" (low).
     // Drifts from member values + what the coterie has mostly been doing lately.
     const domAx = String(c?.domAx ?? 'Food');
     let base = 0.52;
@@ -878,7 +878,7 @@ import { PATCH_HISTORY } from './content.js';
 
     const cots = computeCoteries(s);
 
-    // Coterie ethos (tiny norms axis): mutual aid (high) ↔ strictness (low).
+    // Coterie ethos (tiny norms axis): mutual aid (high) ? strictness (low).
     // Stored transiently and surfaced in UI; when a coterie is influential it also slightly biases grievance dynamics.
     const byId = new Map();
     for (const k of (Array.isArray(s?.kittens) ? s.kittens : [])) {
@@ -968,7 +968,7 @@ import { PATCH_HISTORY } from './content.js';
       c.repTag = lab.tag;
     }
 
-    // Aquarium depth: "legitimacy" — during crises, respected circles slightly increase plan compliance,
+    // Aquarium depth: "legitimacy" � during crises, respected circles slightly increase plan compliance,
     // while resented circles slightly erode it. Kept tiny + bounded; fully observable.
     const crisisOn = !!(s?.director?.crisis || s?.signals?.FOOD || s?.signals?.ALARM);
     let repSum = 0;
@@ -993,7 +993,7 @@ import { PATCH_HISTORY } from './content.js';
       const nowT = Number(s.t ?? 0);
       s._repLegitBeat = (s._repLegitBeat && typeof s._repLegitBeat === 'object') ? s._repLegitBeat : { nextAt:0, last:'' };
       if (nowT >= Number(s._repLegitBeat.nextAt ?? 0)) {
-        const txt = compBonus > 0 ? 'respected circles rally behind the curator — coordination steadies.' : 'resented circles undermine authority — coordination frays.';
+        const txt = compBonus > 0 ? 'respected circles rally behind the curator � coordination steadies.' : 'resented circles undermine authority � coordination frays.';
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Legitimacy: ${txt}`);
         const FEED_MAX = 220;
@@ -1026,7 +1026,7 @@ import { PATCH_HISTORY } from './content.js';
       const meaningful = tradTask && score >= 12 && (score - second) >= 3;
       if (meaningful && tradTask !== String(tp.task ?? '') && nowT >= Number(tp.nextAt ?? 0)) {
         s.feed = Array.isArray(s.feed) ? s.feed : [];
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '�' : '');
         s.feed.push(`[${fmt(s.t)}] Tradition shift: a coterie becomes the ${tradLabel}. (${who})`);
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
@@ -1049,7 +1049,7 @@ import { PATCH_HISTORY } from './content.js';
       const curTag = String(c.ethosTag ?? '');
       if (curTag && inf && curTag !== String(ep.tag ?? '') && nowT >= Number(ep.nextAt ?? 0)) {
         s.feed = Array.isArray(s.feed) ? s.feed : [];
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '�' : '');
         const txt = (curTag === 'aid') ? 'leans into mutual aid' : (curTag === 'strict' ? 'leans into strict norms' : 'settles into balance');
         s.feed.push(`[${fmt(s.t)}] Norms: a coterie ${txt}. (${who})`);
         const FEED_MAX = 220;
@@ -1070,7 +1070,7 @@ import { PATCH_HISTORY } from './content.js';
       const rp = s._coterieRepBand[c.id] ?? { tag:'', nextAt:0 };
       const repTag = String(c.repTag ?? '');
       if (repTag && inf && repTag !== String(rp.tag ?? '') && nowT >= Number(rp.nextAt ?? 0)) {
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '�' : '');
         const txt = (repTag === 'pos') ? 'is widely respected' : (repTag === 'neg') ? 'is widely resented' : 'returns to the background';
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Reputation: a coterie ${txt}. (${who})`);
@@ -1092,7 +1092,7 @@ import { PATCH_HISTORY } from './content.js';
         // Feed
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         const label = `${c.domAx} coterie`;
-        const who = c.names.slice(0, 3).join(', ') + (c.names.length > 3 ? '…' : '');
+        const who = c.names.slice(0, 3).join(', ') + (c.names.length > 3 ? '�' : '');
         s.feed.push(`[${fmt(s.t)}] Coterie rising: a ${label} is gaining influence (${c.size}). (${who})`);
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
@@ -1131,10 +1131,10 @@ import { PATCH_HISTORY } from './content.js';
       if (nowT < Number(slot.nextAt ?? 0)) return;
       if (nowT < Number(slot.until ?? 0)) return; // already active
 
-      const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+      const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '�' : '');
       s.feed = Array.isArray(s.feed) ? s.feed : [];
-      if (kind === 'aid') s.feed.push(`[${fmt(s.t)}] Culture: mutual aid spreads through a coterie — resentments cool faster for a time. (${who})`);
-      if (kind === 'strict') s.feed.push(`[${fmt(s.t)}] Culture: strict norms tighten in a coterie — grumbling rises for a time. (${who})`);
+      if (kind === 'aid') s.feed.push(`[${fmt(s.t)}] Culture: mutual aid spreads through a coterie � resentments cool faster for a time. (${who})`);
+      if (kind === 'strict') s.feed.push(`[${fmt(s.t)}] Culture: strict norms tighten in a coterie � grumbling rises for a time. (${who})`);
       const FEED_MAX = 220;
       if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -1231,10 +1231,10 @@ import { PATCH_HISTORY } from './content.js';
           applyTo(strict);
 
           // Observability
-          const whoA = (aid.names ?? []).slice(0, 2).join(', ') + ((aid.names?.length ?? 0) > 2 ? '…' : '');
-          const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '…' : '');
+          const whoA = (aid.names ?? []).slice(0, 2).join(', ') + ((aid.names?.length ?? 0) > 2 ? '�' : '');
+          const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '�' : '');
           s.feed = Array.isArray(s.feed) ? s.feed : [];
-          s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash — the mutual-aid coterie snubs the strict circle. (${whoA} ↔ ${whoB})`);
+          s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash � the mutual-aid coterie snubs the strict circle. (${whoA} ? ${whoB})`);
           const FEED_MAX = 220;
           if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -1248,7 +1248,7 @@ import { PATCH_HISTORY } from './content.js';
           s._trendEvents.push({ t: nowT, kind:'feud', label:'hot', color:'rgba(251,113,133,.10)' });
           if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
 
-          // Next time: 2–3 minutes, deterministic jitter based on time.
+          // Next time: 2�3 minutes, deterministic jitter based on time.
           // Reputation texture: if either circle is widely resented, clashes flare up sooner.
           const jitter = (Math.floor(nowT) % 61);
           const repA = Number(aid.repV ?? 0) || 0;
@@ -1270,12 +1270,12 @@ import { PATCH_HISTORY } from './content.js';
   function defaultRules(){
 
     return [
-      rule('If hungry > 0.75 â†’ Eat', {type:'hungry_gt', v:0.75}, {type:'Eat'}),
-      rule('If tired > 0.88 â†’ Rest', {type:'tired_gt', v:0.88}, {type:'Rest'}),
-      rule('If health < 0.45 â†’ Rest', {type:'health_lt', v:0.45}, {type:'Rest'}),
-      rule('If warmth < 35 â†’ StokeFire', {type:'warmth_lt', v:35}, {type:'StokeFire'}),
-      rule('If threat > 85 or ALARM â†’ Guard', {type:'threat_gt_or_alarm', v:85}, {type:'Guard'}),
-      rule('If FOOD CRISIS â†’ Forage', {type:'signal', v:'FOOD'}, {type:'Forage'}),
+      rule('If hungry > 0.75 → Eat', {type:'hungry_gt', v:0.75}, {type:'Eat'}),
+      rule('If tired > 0.88 → Rest', {type:'tired_gt', v:0.88}, {type:'Rest'}),
+      rule('If health < 0.45 → Rest', {type:'health_lt', v:0.45}, {type:'Rest'}),
+      rule('If warmth < 35 → StokeFire', {type:'warmth_lt', v:35}, {type:'StokeFire'}),
+      rule('If threat > 85 or ALARM → Guard', {type:'threat_gt_or_alarm', v:85}, {type:'Guard'}),
+      rule('If FOOD CRISIS → Forage', {type:'signal', v:'FOOD'}, {type:'Forage'}),
     ];
   }
 
@@ -1578,7 +1578,7 @@ import { PATCH_HISTORY } from './content.js';
         const woodAvail = availableAboveReserve(s,'wood');
         if (foodAvail <= 0.01 || woodAvail <= 0.01) {
           // If we can't afford care, fall back to a free cohesion action.
-          doFallback(s, k, dt, 'Socialize', `Care blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) â†’ Socialize`);
+          doFallback(s, k, dt, 'Socialize', `Care blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) → Socialize`);
           return;
         }
 
@@ -1594,7 +1594,7 @@ import { PATCH_HISTORY } from './content.js';
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
         if (!Number.isFinite(norm) || norm <= 0.0001) {
-          doFallback(s, k, dt, 'Socialize', 'Care blocked â†’ Socialize');
+          doFallback(s, k, dt, 'Socialize', 'Care blocked → Socialize');
           return;
         }
 
@@ -1649,7 +1649,7 @@ import { PATCH_HISTORY } from './content.js';
         const woodAvail = availableAboveReserve(s,'wood');
         if (foodAvail <= 0.01 || woodAvail <= 0.01) {
           const alt = (foodAvail <= woodAvail) ? 'Forage' : 'ChopWood';
-          doFallback(s, k, dt, alt, `PreserveFood blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) â†’ ${alt}`);
+          doFallback(s, k, dt, alt, `PreserveFood blocked by reserve (avail food ${foodAvail.toFixed(1)}, wood ${woodAvail.toFixed(1)}) → ${alt}`);
           return;
         }
 
@@ -1665,7 +1665,7 @@ import { PATCH_HISTORY } from './content.js';
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
         if (!Number.isFinite(norm) || norm <= 0.0001) {
-          doFallback(s, k, dt, 'Forage', 'PreserveFood blocked â†’ Forage');
+          doFallback(s, k, dt, 'Forage', 'PreserveFood blocked → Forage');
           return;
         }
 
@@ -1752,7 +1752,7 @@ import { PATCH_HISTORY } from './content.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildHut blocked by wood reserve â†’ ChopWood' : 'BuildHut blocked (no wood) â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildHut blocked by wood reserve → ChopWood' : 'BuildHut blocked (no wood) → ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1761,7 +1761,7 @@ import { PATCH_HISTORY } from './content.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
           return;
         }
         s._hutProgress = (s._hutProgress ?? 0) + use;
@@ -1781,7 +1781,7 @@ import { PATCH_HISTORY } from './content.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildPalisade blocked by wood reserve â†’ ChopWood' : 'BuildPalisade blocked (no wood) â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildPalisade blocked by wood reserve → ChopWood' : 'BuildPalisade blocked (no wood) → ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1790,7 +1790,7 @@ import { PATCH_HISTORY } from './content.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
           return;
         }
         s._palProgress = (s._palProgress ?? 0) + use;
@@ -1810,7 +1810,7 @@ import { PATCH_HISTORY } from './content.js';
       tick: (s,k,dt) => {
         const woodAvail = availableAboveReserve(s,'wood');
         if (s.res.wood <= 0 || woodAvail <= 0.01) {
-          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildGranary blocked by wood reserve â†’ ChopWood' : 'BuildGranary blocked (no wood) â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', woodAvail <= 0.01 ? 'BuildGranary blocked by wood reserve → ChopWood' : 'BuildGranary blocked (no wood) → ChopWood');
           return;
         }
         const eff = efficiency(s, k);
@@ -1819,7 +1819,7 @@ import { PATCH_HISTORY } from './content.js';
         const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
-          doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve â†’ ChopWood');
+          doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
           return;
         }
         s._granProgress = (s._granProgress ?? 0) + use;
@@ -1845,8 +1845,8 @@ import { PATCH_HISTORY } from './content.js';
           // If we're blocked, do something that unblocks us (prefer science if science is the limiting input).
           const alt = (s.res.science <= 0 || sciAvail <= woodAvail) ? 'Research' : 'ChopWood';
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01)
-            ? `BuildWorkshop blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) â†’ ${alt}`
-            : `BuildWorkshop blocked (need wood+science) â†’ ${alt}`;
+            ? `BuildWorkshop blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) → ${alt}`
+            : `BuildWorkshop blocked (need wood+science) → ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1861,7 +1861,7 @@ import { PATCH_HISTORY } from './content.js';
         // Progress is limited by the scarcer input and by time.
         const prog = Math.min(maxByTime, maxByWood, maxBySci);
         if (prog <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'BuildWorkshop blocked by reserve â†’ Research');
+          doFallback(s, k, dt, 'Research', 'BuildWorkshop blocked by reserve → Research');
           return;
         }
         spendUpToReserve(s,'wood', prog * 0.85);
@@ -1899,8 +1899,8 @@ import { PATCH_HISTORY } from './content.js';
           else alt = 'ChopWood';
 
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01 || toolsAvail <= 0.01)
-            ? `BuildLibrary blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail, ${toolsAvail.toFixed(1)} tools avail) â†’ ${alt}`
-            : `BuildLibrary blocked (need wood+science+tools) â†’ ${alt}`;
+            ? `BuildLibrary blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail, ${toolsAvail.toFixed(1)} tools avail) → ${alt}`
+            : `BuildLibrary blocked (need wood+science+tools) → ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1918,7 +1918,7 @@ import { PATCH_HISTORY } from './content.js';
         const prog = Math.min(maxByTime, maxByWood, maxBySci, maxByTools);
 
         if (prog <= 0.0001) {
-          doFallback(s, k, dt, 'CraftTools', 'BuildLibrary blocked â†’ CraftTools');
+          doFallback(s, k, dt, 'CraftTools', 'BuildLibrary blocked → CraftTools');
           return;
         }
 
@@ -1952,8 +1952,8 @@ import { PATCH_HISTORY } from './content.js';
           // If tools are blocked, do something that refills the limiting input.
           const alt = (s.res.science <= 0 || sciAvail <= woodAvail) ? 'Research' : 'ChopWood';
           const reason = (woodAvail <= 0.01 || sciAvail <= 0.01)
-            ? `CraftTools blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) â†’ ${alt}`
-            : `CraftTools blocked (need wood+science) â†’ ${alt}`;
+            ? `CraftTools blocked by reserve (${woodAvail.toFixed(1)} wood avail, ${sciAvail.toFixed(1)} sci avail) → ${alt}`
+            : `CraftTools blocked (need wood+science) → ${alt}`;
           doFallback(s, k, dt, alt, reason);
           return;
         }
@@ -1966,7 +1966,7 @@ import { PATCH_HISTORY } from './content.js';
         const useSci  = Math.min(sciAvail, 0.40 * mult * dt * eff * wp);
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve â†’ Research');
+          doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
         const made = craft * 0.55 * workshopBonus(s) * mom; // workshops improve throughput
@@ -1987,7 +1987,7 @@ import { PATCH_HISTORY } from './content.js';
         // Mentoring is intentionally a "stable times" action: if science is scarce or protected by reserves, it falls back to Research.
         const sciAvail = availableAboveReserve(s,'science');
         if ((s.res.science ?? 0) <= 0 || sciAvail <= 0.01) {
-          doFallback(s, k, dt, 'Research', `Mentor blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ Research`);
+          doFallback(s, k, dt, 'Research', `Mentor blocked by science reserve (avail ${sciAvail.toFixed(1)}) → Research`);
           return;
         }
 
@@ -2071,7 +2071,7 @@ import { PATCH_HISTORY } from './content.js';
         const wantSci = 0.42 * mult * dt * eff * mom * wp;
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
-          doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve â†’ Research');
+          doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
           return;
         }
 
@@ -2128,7 +2128,7 @@ import { PATCH_HISTORY } from './content.js';
       k.xp[skill] -= xpToNext(level);
       level += 1;
       k.skills[skill] = level;
-      log(`Kitten ${k.id} leveled ${skill} â†’ ${level}`);
+      log(`Kitten ${k.id} leveled ${skill} → ${level}`);
 
       // Aquarium-visible milestone.
       const nm = String(k?.name ?? `Kitten ${k.id}`);
@@ -2222,11 +2222,11 @@ import { PATCH_HISTORY } from './content.js';
           if (have < q) {
             const miss = q - have;
             quotaAdj = Math.min(40, 14 + miss * 12);
-            quotaWhy = `quota ${have}/${q} â†’ +${quotaAdj}`;
+            quotaWhy = `quota ${have}/${q} → +${quotaAdj}`;
           } else if (have > q) {
             const over = have - q;
             quotaAdj = -Math.min(30, 10 + over * 10);
-            quotaWhy = `quota ${have}/${q} â†’ ${quotaAdj}`;
+            quotaWhy = `quota ${have}/${q} → ${quotaAdj}`;
           }
         }
 
@@ -2329,7 +2329,7 @@ import { PATCH_HISTORY } from './content.js';
     const n = Math.max(1, Math.min(3, scored.length));
     const top = scored.slice(0, n);
 
-    // Temperature: higher autonomy â†’ flatter choice distribution.
+    // Temperature: higher autonomy → flatter choice distribution.
     const temp = 2 + a * 10; // 2..12
     const max = Math.max(...top.map(r => Number(r.score) || 0));
     const weights = top.map(r => Math.exp(((Number(r.score) || 0) - max) / temp));
@@ -2359,7 +2359,7 @@ import { PATCH_HISTORY } from './content.js';
     const comp = compliance01(s);
     const doc = doctrineKey(s);
     const docMul = (doc === 'Specialize') ? 1.18 : (doc === 'Rotate') ? 0.78 : 1.00;
-    const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy â†’ 0.75 @ 100% (then doctrine scales it)
+    const roleMul = (1.10 - 0.35 * a) * docMul; // 1.10 @ 0% autonomy → 0.75 @ 100% (then doctrine scales it)
 
     for (const row of scored) {
       if (!def.actions.includes(row.action)) continue;
@@ -2367,7 +2367,7 @@ import { PATCH_HISTORY } from './content.js';
       const base = Math.min(22, 8 + (lvl-1) * 3.5);
       const add = base * roleMul * comp;
       row.score += add;
-      row.reasons.push(`role=${role} (${def.skill} L${lvl}) â†’ +${add.toFixed(0)}` + (comp < 0.95 ? ` (comp x${comp.toFixed(2)})` : ''));
+      row.reasons.push(`role=${role} (${def.skill} L${lvl}) → +${add.toFixed(0)}` + (comp < 0.95 ? ` (comp x${comp.toFixed(2)})` : ''));
     }
   }
 
@@ -2386,11 +2386,11 @@ import { PATCH_HISTORY } from './content.js';
     for (const row of scored) {
       if (p.likes?.includes(row.action)) {
         row.score += likeBonus;
-        row.reasons.push(`likes ${row.action} â†’ +${likeBonus.toFixed(0)}`);
+        row.reasons.push(`likes ${row.action} → +${likeBonus.toFixed(0)}`);
       }
       if (p.dislikes?.includes(row.action)) {
         row.score -= dislikePenalty;
-        row.reasons.push(`dislikes ${row.action} â†’ -${dislikePenalty.toFixed(0)}`);
+        row.reasons.push(`dislikes ${row.action} → -${dislikePenalty.toFixed(0)}`);
       }
 
       if (row.action === (k.task ?? '')) {
@@ -2400,7 +2400,7 @@ import { PATCH_HISTORY } from './content.js';
         if (!noBore.includes(row.action) && streak > 8) {
           const sub = Math.min(18, (streak - 8) * 2) * boreMul;
           row.score -= sub;
-          row.reasons.push(`bored of ${row.action} (${streak}s) â†’ -${sub.toFixed(0)}`);
+          row.reasons.push(`bored of ${row.action} (${streak}s) → -${sub.toFixed(0)}`);
         }
       }
     }
@@ -2418,7 +2418,7 @@ import { PATCH_HISTORY } from './content.js';
         const add = Number(def.bias[row.action] ?? 0);
         if (!add) continue;
         row.score += add;
-        row.reasons.push(`trait ${def.id} â†’ +${add.toFixed(0)}`);
+        row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
       }
     }
   }
@@ -2608,13 +2608,13 @@ import { PATCH_HISTORY } from './content.js';
 
     // Work pace policy: pushing hard makes the colony a bit grumpier over time; relaxed pace is a small morale relief.
     const wp = workPaceMul(s);
-    if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 â†’ -0.0036 / sec
-    if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 â†’ +0.0020 / sec
+    if (wp > 1.02) m -= (wp - 1) * 0.018; // at 1.20 → -0.0036 / sec
+    if (wp < 0.98) m += (1 - wp) * 0.010; // at 0.80 → +0.0020 / sec
 
     // Discipline (cohesion) has a small, steady morale cost.
     // It's intentionally subtle so it's a strategic lever, not a "never use" trap.
     const d = discipline01(s);
-    m -= d * 0.0018; // at 100% â†’ -0.0018 / sec
+    m -= d * 0.0018; // at 100% → -0.0018 / sec
 
     // Curfew (governance lever): makes the colony safer, but costs morale.
     // Discipline amplifies the felt harshness slightly (more enforcement).
@@ -2664,7 +2664,7 @@ import { PATCH_HISTORY } from './content.js';
             const c = cots.find(x => Number(x?.id ?? 0) === Number(cid));
             const who = c ? (Array.isArray(c.members) ? c.members.slice(0, 3).map(id => kittenName(s, id)).join(', ') : '') : '';
             s.feed = Array.isArray(s.feed) ? s.feed : [];
-            s.feed.push(`[${fmt(s.t)}] Reputation: respected circles lift spirits in hard times.` + (who ? ` (${who}${(c?.members?.length ?? 0) > 3 ? '…' : ''})` : ''));
+            s.feed.push(`[${fmt(s.t)}] Reputation: respected circles lift spirits in hard times.` + (who ? ` (${who}${(c?.members?.length ?? 0) > 3 ? '�' : ''})` : ''));
             const FEED_MAX = 220;
             if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2753,7 +2753,7 @@ import { PATCH_HISTORY } from './content.js';
           const fx = s._coterieRepFx[`${cid}:neg`] ?? { nextAt:0 };
           if (nowT >= Number(fx.nextAt ?? 0)) {
             s.feed = Array.isArray(s.feed) ? s.feed : [];
-            s.feed.push(`[${fmt(s.t)}] Reputation: resentment clings to a disliked circle — grievances rise more easily.`);
+            s.feed.push(`[${fmt(s.t)}] Reputation: resentment clings to a disliked circle � grievances rise more easily.`);
             const FEED_MAX = 220;
             if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2984,25 +2984,25 @@ import { PATCH_HISTORY } from './content.js';
       // We apply it as an additive bump proportional to the mode base so it stays readable and doesn't dominate emergencies.
       if (FOOD_ACT.has(a)) {
         const add = base(a) * (pFood - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Food x${pFood.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Food x${pFood.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (SAFETY_ACT.has(a)) {
         const add = base(a) * (pSafety - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Safety x${pSafety.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Safety x${pSafety.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (PROG_ACT.has(a)) {
         const add = base(a) * (pProg - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Progress x${pProg.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (SOCIAL_ACT.has(a)) {
         const add = base(a) * (pSoc - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Social x${pSoc.toFixed(2)} â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Social x${pSoc.toFixed(2)} → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
       if (a === 'BuildHut' || a === 'BuildGranary' || a === 'BuildPalisade') {
         // Infrastructure: treat as a blend of Safety + Progress, so you can push building without always pushing research.
         const mul = (0.55 * pSafety + 0.45 * pProg);
         const add = base(a) * (mul - 1);
-        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) â†’ ${add>=0?'+':''}${add.toFixed(1)}`); }
+        if (Math.abs(add) >= 0.05) { score += add; reasons.push(`prio Infra x${mul.toFixed(2)} (S/P) → ${add>=0?'+':''}${add.toFixed(1)}`); }
       }
 
       // Per-kitten Directive: a persistent scoring nudge (player-set). Not a lock.
@@ -3017,7 +3017,7 @@ import { PATCH_HISTORY } from './content.js';
           // Additive bump so it stays legible and doesn't overpower emergencies.
           const add = 6 + 0.10 * base(a);
           score += add;
-          reasons.push(`directive ${dir} â†’ +${add.toFixed(1)}`);
+          reasons.push(`directive ${dir} → +${add.toFixed(1)}`);
         }
       }
 
@@ -3026,7 +3026,7 @@ import { PATCH_HISTORY } from './content.js';
       if (a === 'Rest' && mood < 0.35) {
         const add = (0.35 - mood) * 45;
         score += add;
-        reasons.push(`low mood ${mood.toFixed(2)} â†’ +${add.toFixed(1)} Rest`);
+        reasons.push(`low mood ${mood.toFixed(2)} → +${add.toFixed(1)} Rest`);
       }
 
       // Loafing is a "soft strike" / morale recovery action.
@@ -3035,25 +3035,25 @@ import { PATCH_HISTORY } from './content.js';
         if (mood < 0.55) {
           const add = (0.55 - mood) * 55;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
         }
         const dis = dissent01(s);
         if (dis > 0.45) {
           // Under murmurs/strike, some kittens idle/drag their paws unless you restore cohesion.
           const disAdj = (dis - 0.45) * 85 * (1 - 0.55 * discipline01(s));
           score += disAdj;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${disAdj.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${disAdj.toFixed(1)}`);
         }
         // If dissent is VERY high but basics are stable, we want some kittens to actively organize
         // (Socialize/Care) rather than everyone passively loafing.
         const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.95) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10) && !s.signals?.ALARM;
         if (dis > 0.65 && basicsOk) {
           score -= 14;
-          reasons.push('strike + stable basics â†’ -14 (prefer organizing)');
+          reasons.push('strike + stable basics → -14 (prefer organizing)');
         }
         // If we're actually starving or freezing, loafing should lose hard.
-        if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency â†’ -45'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold â†’ -25'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.80) { score -= 45; reasons.push('food emergency → -45'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
       }
 
       // Socialize is an active cohesion action: lowers dissent (improves plan compliance) and boosts mood.
@@ -3063,10 +3063,10 @@ import { PATCH_HISTORY } from './content.js';
         if (dis > 0.35) {
           const add = Math.min(60, 12 + (dis - 0.35) * 110);
           score += add;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${add.toFixed(1)}`);
         } else {
           score -= 8;
-          reasons.push('low dissent â†’ -8');
+          reasons.push('low dissent → -8');
         }
 
         // Strike recovery: if dissent is extreme but the colony isn't actively starving/freezing,
@@ -3075,12 +3075,12 @@ import { PATCH_HISTORY } from './content.js';
         if (dis > 0.65 && basicsOk) {
           const add = 18 + 12 * discipline01(s);
           score += add;
-          reasons.push(`strike recovery â†’ +${add.toFixed(1)}`);
+          reasons.push(`strike recovery → +${add.toFixed(1)}`);
         }
         if (mood < 0.55) {
           const add = (0.55 - mood) * 40;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
         }
 
         // Buddy need: if you're missing your buddy, Socialize becomes more attractive.
@@ -3088,7 +3088,7 @@ import { PATCH_HISTORY } from './content.js';
         if (need > 0.55 && buddyOf(s, k)) {
           const add = (need - 0.55) * 48;
           score += add;
-          reasons.push(`misses buddy (${Math.round(need*100)}%) â†’ +${add.toFixed(1)}`);
+          reasons.push(`misses buddy (${Math.round(need*100)}%) → +${add.toFixed(1)}`);
         }
 
         // Norm: mutual-aid culture makes organizing feel more "natural" when cohesion is shaky.
@@ -3096,19 +3096,19 @@ import { PATCH_HISTORY } from './content.js';
         if (ma > 0.02 && dis > 0.40) {
           const add = 4 + ma * 14;
           score += add;
-          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
 
         // If we're in danger, don't chat.
-        if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure â†’ -40'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold â†’ -25'); }
-        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 28; reasons.push('threat pressure â†’ -28'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.85) { score -= 40; reasons.push('food pressure → -40'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 25; reasons.push('winter + cold → -25'); }
+        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 28; reasons.push('threat pressure → -28'); }
         // Small synergy: Discipline makes organizing more effective (less chaotic).
         const dpol = discipline01(s);
         if (dpol > 0.35) {
           const add = (dpol - 0.35) * 18;
           score += add;
-          reasons.push(`discipline ${(dpol*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`discipline ${(dpol*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
       }
 
@@ -3119,10 +3119,10 @@ import { PATCH_HISTORY } from './content.js';
         if (dis > 0.30) {
           const add = Math.min(75, 10 + (dis - 0.30) * 120);
           score += add;
-          reasons.push(`dissent ${(dis*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`dissent ${(dis*100).toFixed(0)}% → +${add.toFixed(1)}`);
         } else {
           score -= 10;
-          reasons.push('low dissent â†’ -10');
+          reasons.push('low dissent → -10');
         }
 
         // Norm: mutual aid makes "paid care" more politically acceptable when things are tense.
@@ -3130,7 +3130,7 @@ import { PATCH_HISTORY } from './content.js';
         if (ma > 0.02 && dis > 0.40) {
           const add = 3 + ma * 16;
           score += add;
-          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`norm mutual aid ${(ma*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
 
         // Strike recovery: if dissent is extreme but basics are stable, "Care" becomes a legitimate
@@ -3139,32 +3139,32 @@ import { PATCH_HISTORY } from './content.js';
         if (dis > 0.65 && basicsOk) {
           const add = 14 + 10 * discipline01(s);
           score += add;
-          reasons.push(`strike recovery (paid care) â†’ +${add.toFixed(1)}`);
+          reasons.push(`strike recovery (paid care) → +${add.toFixed(1)}`);
         }
 
         if (mood < 0.60) {
           const add = (0.60 - mood) * 55;
           score += add;
-          reasons.push(`needs morale (${mood.toFixed(2)}) â†’ +${add.toFixed(1)}`);
+          reasons.push(`needs morale (${mood.toFixed(2)}) → +${add.toFixed(1)}`);
         }
 
         // Resource gating: don't burn buffers.
         const fA = Number(foodAvail ?? 0);
         const wA = Number(woodAvail ?? 0);
-        if (fA < 10) { score -= 18; reasons.push(`low spare food (${fA.toFixed(1)}) â†’ -18`); }
-        if (wA < 6) { score -= 16; reasons.push(`low spare wood (${wA.toFixed(1)}) â†’ -16`); }
+        if (fA < 10) { score -= 18; reasons.push(`low spare food (${fA.toFixed(1)}) → -18`); }
+        if (wA < 6) { score -= 16; reasons.push(`low spare wood (${wA.toFixed(1)}) → -16`); }
 
         // If we're in danger, stop spending.
-        if (foodPerKitten < targets.foodPerKitten * 0.92) { score -= 50; reasons.push('food pressure â†’ -50'); }
-        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 28; reasons.push('winter + cold â†’ -28'); }
-        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 25; reasons.push('threat pressure â†’ -25'); }
+        if (foodPerKitten < targets.foodPerKitten * 0.92) { score -= 50; reasons.push('food pressure → -50'); }
+        if (season.name === 'Winter' && s.res.warmth < 35) { score -= 28; reasons.push('winter + cold → -28'); }
+        if (s.res.threat > targets.maxThreat * 1.05 || s.signals.ALARM) { score -= 25; reasons.push('threat pressure → -25'); }
 
         // Discipline synergy: institutions make aid more organized.
         const dpol = discipline01(s);
         if (dpol > 0.35) {
           const add = (dpol - 0.35) * 22;
           score += add;
-          reasons.push(`discipline ${(dpol*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`discipline ${(dpol*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
       }
 
@@ -3172,7 +3172,7 @@ import { PATCH_HISTORY } from './content.js';
         const add = (mood - 0.55) * 10; // small
         if (Math.abs(add) >= 1) {
           score += add;
-          reasons.push(`mood ${mood.toFixed(2)} â†’ ${add >= 0 ? '+' : ''}${add.toFixed(1)}`);
+          reasons.push(`mood ${mood.toFixed(2)} → ${add >= 0 ? '+' : ''}${add.toFixed(1)}`);
         }
       }
 
@@ -3180,7 +3180,7 @@ import { PATCH_HISTORY } from './content.js';
       // so the kitten doesn't keep "trying" a no-op sink.
       if (k._blockedAction === a) {
         score -= 35;
-        reasons.push(`blocked last tick â†’ -35`);
+        reasons.push(`blocked last tick → -35`);
       }
 
       // Anti-thrash: if we recently learned this action is blocked, keep a short cooldown.
@@ -3188,7 +3188,7 @@ import { PATCH_HISTORY } from './content.js';
       if (cd > 0) {
         const sub = Math.min(38, 18 + cd * 6);
         score -= sub;
-        reasons.push(`cooldown(${cd}s) after block â†’ -${sub.toFixed(0)}`);
+        reasons.push(`cooldown(${cd}s) after block → -${sub.toFixed(0)}`);
       }
 
       // Momentum: staying on a productive task gets a small bonus (pairs with throughput bonus).
@@ -3197,7 +3197,7 @@ import { PATCH_HISTORY } from './content.js';
         if (mom > 1.0001) {
           const add = Math.min(12, (mom - 1) * 55);
           score += add;
-          reasons.push(`momentum x${mom.toFixed(2)} â†’ +${add.toFixed(1)}`);
+          reasons.push(`momentum x${mom.toFixed(2)} → +${add.toFixed(1)}`);
         }
       }
 
@@ -3209,12 +3209,12 @@ import { PATCH_HISTORY } from './content.js';
         const add = Math.min(12, Math.max(0, (lvl - 1) * 1.4));
         if (add >= 0.5) {
           score += add;
-          reasons.push(`skill ${aSkill}=${lvl} â†’ +${add.toFixed(1)}`);
+          reasons.push(`skill ${aSkill}=${lvl} → +${add.toFixed(1)}`);
         }
         if (topSkill.skill && topSkill.skill === aSkill && topSkill.level >= 3) {
           const add2 = Math.min(6, 1.2 * (topSkill.level - 2));
           score += add2;
-          reasons.push(`top skill match â†’ +${add2.toFixed(1)}`);
+          reasons.push(`top skill match → +${add2.toFixed(1)}`);
         }
       }
 
@@ -3224,10 +3224,10 @@ import { PATCH_HISTORY } from './content.js';
           const deficit = (targets.foodPerKitten - foodPerKitten) / Math.max(1, targets.foodPerKitten);
           const add = clamp01(deficit) * 65;
           score += add;
-          reasons.push(`food/kitten ${foodPerKitten.toFixed(1)}<${targets.foodPerKitten} â†’ +${add.toFixed(1)}`);
+          reasons.push(`food/kitten ${foodPerKitten.toFixed(1)}<${targets.foodPerKitten} → +${add.toFixed(1)}`);
         }
-        if (s.signals.FOOD) { score += 45; reasons.push('FOOD CRISIS â†’ +45'); }
-        if (season.name === 'Winter' && a === 'Forage') { score -= 10; reasons.push('winter forage penalty â†’ -10'); }
+        if (s.signals.FOOD) { score += 45; reasons.push('FOOD CRISIS → +45'); }
+        if (season.name === 'Winter' && a === 'Forage') { score -= 10; reasons.push('winter forage penalty → -10'); }
       }
 
       // preservation (turn surplus into non-spoiling rations)
@@ -3237,28 +3237,28 @@ import { PATCH_HISTORY } from './content.js';
         if (surplus > 0) {
           const add = clamp01(surplus / (targets.foodPerKitten * n)) * 55;
           score += add;
-          reasons.push(`surplus food ${surplus.toFixed(1)} â†’ +${add.toFixed(1)}`);
+          reasons.push(`surplus food ${surplus.toFixed(1)} → +${add.toFixed(1)}`);
         } else {
           score -= 25;
-          reasons.push('no surplus to preserve â†’ -25');
+          reasons.push('no surplus to preserve → -25');
         }
         // Seasonal push: late Fall + Winter want preserved buffers.
-        if (season.name === 'Fall' && season.phase >= 0.55) { score += 14; reasons.push('late-Fall stockpile â†’ +14'); }
-        if (season.name === 'Winter') { score += 18; reasons.push('winter stability â†’ +18'); }
+        if (season.name === 'Fall' && season.phase >= 0.55) { score += 14; reasons.push('late-Fall stockpile → +14'); }
+        if (season.name === 'Winter') { score += 18; reasons.push('winter stability → +18'); }
 
         // Norm: sustained scarcity creates a cultural bias toward preservation (even when there is only a modest surplus).
         const sm = clamp01(Number(s.social?.norms?.scarcityMindset ?? 0));
         if (sm > 0.02) {
           const add = 4 + sm * 18;
           score += add;
-          reasons.push(`norm scarcity ${(sm*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`norm scarcity ${(sm*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
         // Needs wood, so don't do it when wood is critically low.
-        if (s.res.wood < 10) { score -= 22; reasons.push('low wood â†’ -22'); }
+        if (s.res.wood < 10) { score -= 22; reasons.push('low wood → -22'); }
         const woodRes = getReserve(s,'wood');
         const foodRes = getReserve(s,'food');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
-        if (foodRes > 0 && foodAvail <= 0.05) { score -= 55; reasons.push(`blocked by food reserve (avail ${foodAvail.toFixed(1)}) â†’ -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
+        if (foodRes > 0 && foodAvail <= 0.05) { score -= 55; reasons.push(`blocked by food reserve (avail ${foodAvail.toFixed(1)}) → -55`); }
       }
 
       // warmth pressure
@@ -3269,9 +3269,9 @@ import { PATCH_HISTORY } from './content.js';
           const deficit = (target - s.res.warmth) / Math.max(1, target);
           const add = clamp01(deficit) * (winter ? 85 : 55);
           score += add;
-          reasons.push(`warmth ${s.res.warmth.toFixed(1)}<${target} â†’ +${add.toFixed(1)}`);
+          reasons.push(`warmth ${s.res.warmth.toFixed(1)}<${target} → +${add.toFixed(1)}`);
         }
-        if (s.res.wood <= 0.5) { score -= 30; reasons.push('no wood â†’ -30'); }
+        if (s.res.wood <= 0.5) { score -= 30; reasons.push('no wood → -30'); }
       }
 
       // threat pressure
@@ -3281,9 +3281,9 @@ import { PATCH_HISTORY } from './content.js';
           const over = (s.res.threat - tdef) / Math.max(1, tdef);
           const add = clamp01(over) * 90;
           score += add;
-          reasons.push(`threat ${s.res.threat.toFixed(1)}>${tdef} â†’ +${add.toFixed(1)}`);
+          reasons.push(`threat ${s.res.threat.toFixed(1)}>${tdef} → +${add.toFixed(1)}`);
         }
-        if (s.signals.ALARM) { score += 40; reasons.push('ALARM â†’ +40'); }
+        if (s.signals.ALARM) { score += 40; reasons.push('ALARM → +40'); }
 
         // Norm: raid paranoia creates a small, persistent "vigilance" bias even when threat is below target.
         // This helps the aquarium feel like it remembers past danger without needing player clicks.
@@ -3291,62 +3291,62 @@ import { PATCH_HISTORY } from './content.js';
         if (rp > 0.02) {
           const add = 6 + rp * 20;
           score += add;
-          reasons.push(`norm vigilance ${(rp*100).toFixed(0)}% â†’ +${add.toFixed(1)}`);
+          reasons.push(`norm vigilance ${(rp*100).toFixed(0)}% → +${add.toFixed(1)}`);
         }
       }
 
       // construction
       if (a === 'BuildHut') {
-        if (pf === 'Housing') { score += 22; reasons.push('project focus: Housing â†’ +22'); }
-        else if (pf !== 'Auto' && ['Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
+        if (pf === 'Housing') { score += 22; reasons.push('project focus: Housing → +22'); }
+        else if (pf !== 'Auto' && ['Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
         const cap = housingCap(s);
         if (s.kittens.length >= cap) {
           score += 60;
-          reasons.push(`housing cap ${cap} hit â†’ +60`);
+          reasons.push(`housing cap ${cap} hit → +60`);
         }
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -40`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -40`); }
         // Project focus: finishing a started hut is usually better than swapping off.
         const prog = Number(s._hutProgress ?? 0);
         if (prog > 0 && k.task === 'BuildHut') {
           const remain = Math.max(0, 12 - prog);
           const add = remain <= 4 ? 34 : 16;
           score += add;
-          reasons.push(`continue hut (${prog.toFixed(1)}/12) â†’ +${add}`);
+          reasons.push(`continue hut (${prog.toFixed(1)}/12) → +${add}`);
         }
-        if (s.signals.BUILD) { score += 28; reasons.push('BUILD PUSH â†’ +28'); }
-        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood â†’ -35'); }
+        if (s.signals.BUILD) { score += 28; reasons.push('BUILD PUSH → +28'); }
+        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood → -35'); }
         const woodRes = getReserve(s,'wood');
         // IMPORTANT: if we're at/below reserve, execution will spend 0 wood; penalize so builders don't idle on blocked tasks.
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
       }
 
       if (a === 'BuildPalisade') {
-        if (pf === 'Defense') { score += 22; reasons.push('project focus: Defense â†’ +22'); }
-        else if (pf !== 'Auto' && ['Housing','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
+        if (pf === 'Defense') { score += 22; reasons.push('project focus: Defense → +22'); }
+        else if (pf !== 'Auto' && ['Housing','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
         // Project focus: keep a builder on the wall once started.
         const prog = Number(s._palProgress ?? 0);
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -40`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 40; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -40`); }
         if (prog > 0 && k.task === 'BuildPalisade') {
           const remain = Math.max(0, 16 - prog);
           const add = remain <= 5 ? 32 : 14;
           score += add;
-          reasons.push(`continue palisade (${prog.toFixed(1)}/16) â†’ +${add}`);
+          reasons.push(`continue palisade (${prog.toFixed(1)}/16) → +${add}`);
         }
-        if (s.res.threat > s.targets.maxThreat * 0.9) { score += 40; reasons.push('threat rising â†’ +40'); }
-        if (s.signals.ALARM) { score += 20; reasons.push('ALARM â†’ +20'); }
-        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood â†’ -35'); }
+        if (s.res.threat > s.targets.maxThreat * 0.9) { score += 40; reasons.push('threat rising → +40'); }
+        if (s.signals.ALARM) { score += 20; reasons.push('ALARM → +20'); }
+        if (s.res.wood <= 0.5) { score -= 35; reasons.push('no wood → -35'); }
         const woodRes = getReserve(s,'wood');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
       }
 
       // storage (granaries): reduces spoilage, makes stockpiling meaningful
       if (a === 'BuildGranary') {
-        if (pf === 'Storage') { score += 22; reasons.push('project focus: Storage â†’ +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Industry'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
+        if (pf === 'Storage') { score += 22; reasons.push('project focus: Storage → +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Industry'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
         const g = s.res.granaries ?? 0;
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
         const want = Math.max(1, Math.floor(s.kittens.length / 6) + 1);
         // Only really matters once you have surplus food to protect.
         const surplus = s.res.food - targets.foodPerKitten * Math.max(1, s.kittens.length) * 1.35;
@@ -3357,36 +3357,36 @@ import { PATCH_HISTORY } from './content.js';
           const remain = Math.max(0, 22 - prog);
           const add = remain <= 6 ? 30 : 12;
           score += add;
-          reasons.push(`continue granary (${prog.toFixed(1)}/22) â†’ +${add}`);
+          reasons.push(`continue granary (${prog.toFixed(1)}/22) → +${add}`);
         }
 
         if (g < want && surplus > 0) {
           const deficit = (want - g) / Math.max(1, want);
           const add = clamp01(deficit) * 55;
           score += add;
-          reasons.push(`granaries ${g}<${want} w/ surplus â†’ +${add.toFixed(1)}`);
+          reasons.push(`granaries ${g}<${want} w/ surplus → +${add.toFixed(1)}`);
         }
-        if (season.name === 'Winter') { score += 6; reasons.push('winter stockpile value â†’ +6'); }
-        if (s.res.wood < 18) { score -= 18; reasons.push('need wood buffer â†’ -18'); }
+        if (season.name === 'Winter') { score += 6; reasons.push('winter stockpile value → +6'); }
+        if (s.res.wood < 18) { score -= 18; reasons.push('need wood buffer → -18'); }
         const woodRes = getReserve(s,'wood');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -55`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -45`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 55; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -55`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 45; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -45`); }
       }
 
       // Workshops: persistent industry building that amplifies crafting + global productivity.
       if (a === 'BuildWorkshop') {
-        if (pf === 'Industry') { score += 22; reasons.push('project focus: Industry â†’ +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
+        if (pf === 'Industry') { score += 22; reasons.push('project focus: Industry → +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
         const w = s.res.workshops ?? 0;
         const want = Math.max(1, Math.floor(s.kittens.length / 5));
 
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
 
         // Only push workshops when we have enough science to not stall unlocks completely.
         const nextUnlockAt = unlockDefs.find(u => !s.seenUnlocks[u.id])?.at ?? Infinity;
         if (s.res.science < Math.min(120, nextUnlockAt * 0.35)) {
           score -= 18;
-          reasons.push('science too low to divert to workshop â†’ -18');
+          reasons.push('science too low to divert to workshop → -18');
         }
 
         // Project focus: if you're already building one, finish it.
@@ -3395,36 +3395,36 @@ import { PATCH_HISTORY } from './content.js';
           const remain = Math.max(0, 26 - prog);
           const add = remain <= 7 ? 32 : 14;
           score += add;
-          reasons.push(`continue workshop (${prog.toFixed(1)}/26) â†’ +${add}`);
+          reasons.push(`continue workshop (${prog.toFixed(1)}/26) → +${add}`);
         }
 
         if (w < want && s.res.wood > 18 && s.res.science > 35) {
           const deficit = (want - w) / Math.max(1, want);
           const add = clamp01(deficit) * 60;
           score += add;
-          reasons.push(`workshops ${w}<${want} â†’ +${add.toFixed(1)}`);
+          reasons.push(`workshops ${w}<${want} → +${add.toFixed(1)}`);
         }
 
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
 
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
 
-        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science â†’ -35'); }
+        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science → -35'); }
       }
 
       // Libraries: persistent research building that amplifies science output.
       if (a === 'BuildLibrary') {
-        if (pf === 'Knowledge') { score += 22; reasons.push('project focus: Knowledge â†’ +22'); }
-        else if (pf !== 'Auto' && ['Housing','Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere â†’ -10'); }
+        if (pf === 'Knowledge') { score += 22; reasons.push('project focus: Knowledge → +22'); }
+        else if (pf !== 'Auto' && ['Housing','Defense','Industry','Storage'].includes(pf)) { score -= 10; reasons.push('project focus elsewhere → -10'); }
 
         const l = s.res.libraries ?? 0;
         const want = Math.max(1, Math.floor(s.kittens.length / 7));
 
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -35`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 35; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -35`); }
 
         // Project focus: if you're already building one, finish it.
         const prog = Number(s._libProgress ?? 0);
@@ -3432,36 +3432,36 @@ import { PATCH_HISTORY } from './content.js';
           const remain = Math.max(0, 30 - prog);
           const add = remain <= 8 ? 34 : 14;
           score += add;
-          reasons.push(`continue library (${prog.toFixed(1)}/30) â†’ +${add}`);
+          reasons.push(`continue library (${prog.toFixed(1)}/30) → +${add}`);
         }
 
         // Only consider libraries when science is healthy (otherwise we should just Research).
         if (s.res.science < 200) {
           score -= 18;
-          reasons.push('science too low to divert to library â†’ -18');
+          reasons.push('science too low to divert to library → -18');
         }
 
         if (l < want && s.res.wood > 22 && s.res.science > 140 && (s.res.tools ?? 0) > 8) {
           const deficit = (want - l) / Math.max(1, want);
           const add = clamp01(deficit) * 58;
           score += add;
-          reasons.push(`libraries ${l}<${want} â†’ +${add.toFixed(1)}`);
+          reasons.push(`libraries ${l}<${want} → +${add.toFixed(1)}`);
         }
 
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
         const toolsRes = getReserve(s,'tools');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
 
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
 
-        if (toolsRes > 0 && toolsAvail <= 0.05) { score -= 65; reasons.push(`blocked by tools reserve (avail ${toolsAvail.toFixed(1)}) â†’ -65`); }
-        else if (toolsRes > 0 && (s.res.tools ?? 0) < toolsRes) { score -= 55; reasons.push(`tools reserve ${(s.res.tools ?? 0).toFixed(1)}<${toolsRes} â†’ -55`); }
+        if (toolsRes > 0 && toolsAvail <= 0.05) { score -= 65; reasons.push(`blocked by tools reserve (avail ${toolsAvail.toFixed(1)}) → -65`); }
+        else if (toolsRes > 0 && (s.res.tools ?? 0) < toolsRes) { score -= 55; reasons.push(`tools reserve ${(s.res.tools ?? 0).toFixed(1)}<${toolsRes} → -55`); }
 
-        if ((s.res.tools ?? 0) < 3) { score -= 35; reasons.push('missing tools â†’ -35'); }
-        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science â†’ -35'); }
+        if ((s.res.tools ?? 0) < 3) { score -= 35; reasons.push('missing tools → -35'); }
+        if (s.res.wood <= 0.5 || s.res.science <= 0.5) { score -= 35; reasons.push('missing wood/science → -35'); }
       }
 
       // Mentoring: spend science to accelerate skill growth (long-run compounding).
@@ -3470,7 +3470,7 @@ import { PATCH_HISTORY } from './content.js';
         const sciRes = getReserve(s,'science');
         if (sciRes > 0 && sciAvail <= 0.05) {
           score -= 65;
-          reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`);
+          reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`);
         }
 
         const stableFood = foodPerKitten >= targets.foodPerKitten * 1.02;
@@ -3480,58 +3480,58 @@ import { PATCH_HISTORY } from './content.js';
         // Only do it when you have spare science above reserve.
         if (s.res.science < (sciRes + 40)) {
           score -= 22;
-          reasons.push('science buffer too low for mentoring â†’ -22');
+          reasons.push('science buffer too low for mentoring → -22');
         }
 
         if (mode === 'Advance' && stableFood && stableWarmth && stableThreat) {
           score += 38;
-          reasons.push('stable basics + Advance â†’ +38');
+          reasons.push('stable basics + Advance → +38');
         } else if (stableFood && stableWarmth && stableThreat) {
           score += 18;
-          reasons.push('stable basics â†’ +18');
+          reasons.push('stable basics → +18');
         } else {
           score -= 18;
-          reasons.push('not stable enough to mentor â†’ -18');
+          reasons.push('not stable enough to mentor → -18');
         }
 
         // Winter: mentoring is indoor and safe, but still avoid it if warmth is low.
-        if (season.name === 'Winter' && s.res.warmth >= 45) { score += 8; reasons.push('winter indoor work â†’ +8'); }
+        if (season.name === 'Winter' && s.res.warmth >= 45) { score += 8; reasons.push('winter indoor work → +8'); }
       }
 
       // tools pressure (new midgame sink)
       if (a === 'CraftTools') {
         const t = s.res.tools ?? 0;
-        if (foodRes > 0 && s.res.food < foodRes) { score -= 25; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} â†’ -25`); }
+        if (foodRes > 0 && s.res.food < foodRes) { score -= 25; reasons.push(`food reserve ${s.res.food.toFixed(1)}<${foodRes} → -25`); }
         const want = s.kittens.length * 10; // tools wear over time; keep a healthier buffer
         if (t < want) {
           const deficit = (want - t) / Math.max(1, want);
           const add = clamp01(deficit) * 65;
           score += add;
-          reasons.push(`tools ${t.toFixed(1)}<${want.toFixed(0)} â†’ +${add.toFixed(1)}`);
+          reasons.push(`tools ${t.toFixed(1)}<${want.toFixed(0)} → +${add.toFixed(1)}`);
         }
-        if (s.res.wood < 10) { score -= 18; reasons.push('low wood â†’ -18'); }
-        if (s.res.science < 15) { score -= 18; reasons.push('low science â†’ -18'); }
+        if (s.res.wood < 10) { score -= 18; reasons.push('low wood → -18'); }
+        if (s.res.science < 15) { score -= 18; reasons.push('low science → -18'); }
         const woodRes = getReserve(s,'wood');
         const sciRes = getReserve(s,'science');
-        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) â†’ -65`); }
-        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} â†’ -55`); }
-        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) â†’ -65`); }
-        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} â†’ -55`); }
+        if (woodRes > 0 && woodAvail <= 0.05) { score -= 65; reasons.push(`blocked by wood reserve (avail ${woodAvail.toFixed(1)}) → -65`); }
+        else if (woodRes > 0 && s.res.wood < woodRes) { score -= 55; reasons.push(`wood reserve ${s.res.wood.toFixed(1)}<${woodRes} → -55`); }
+        if (sciRes > 0 && sciAvail <= 0.05) { score -= 65; reasons.push(`blocked by science reserve (avail ${sciAvail.toFixed(1)}) → -65`); }
+        else if (sciRes > 0 && s.res.science < sciRes) { score -= 55; reasons.push(`science reserve ${s.res.science.toFixed(1)}<${sciRes} → -55`); }
         // In winter, crafting is safer than over-foraging.
-        if (season.name === 'Winter') { score += 6; reasons.push('winter indoor work â†’ +6'); }
+        if (season.name === 'Winter') { score += 6; reasons.push('winter indoor work → +6'); }
       }
 
       // generic needs
       if (a === 'Eat') {
         score += k.hunger * 90;
-        reasons.push(`hunger ${k.hunger.toFixed(2)} â†’ +${(k.hunger*90).toFixed(1)}`);
-        if (edibleFood(s) <= 0) { score -= 60; reasons.push('no edible food â†’ -60'); }
+        reasons.push(`hunger ${k.hunger.toFixed(2)} → +${(k.hunger*90).toFixed(1)}`);
+        if (edibleFood(s) <= 0) { score -= 60; reasons.push('no edible food → -60'); }
       }
 
       if (a === 'Rest') {
         score += tired * 70;
-        reasons.push(`tired ${tired.toFixed(2)} â†’ +${(tired*70).toFixed(1)}`);
-        if (season.name === 'Winter') { score += 6; reasons.push('winter rest bonus â†’ +6'); }
+        reasons.push(`tired ${tired.toFixed(2)} → +${(tired*70).toFixed(1)}`);
+        if (season.name === 'Winter') { score += 6; reasons.push('winter rest bonus → +6'); }
       }
 
       if (a === 'ChopWood') {
@@ -3540,25 +3540,25 @@ import { PATCH_HISTORY } from './content.js';
         if (season.name === 'Winter' && s.res.warmth < s.targets.warmth + 10) want += 20;
         if (s.signals.BUILD) want += 15;
         if (s.unlocked.construction && (s.kittens.length >= housingCap(s))) want += 25;
-        if (want > 0) { score += want; reasons.push(`wood needed â†’ +${want}`); }
-        if (s.res.wood > 80) { score -= 10; reasons.push('wood already high â†’ -10'); }
+        if (want > 0) { score += want; reasons.push(`wood needed → +${want}`); }
+        if (s.res.wood > 80) { score -= 10; reasons.push('wood already high → -10'); }
       }
 
       if (a !== 'Eat') {
         const pen = Math.max(0, k.hunger - 0.78) * 55;
-        if (pen > 0) { score -= pen; reasons.push(`very hungry â†’ -${pen.toFixed(1)}`); }
+        if (pen > 0) { score -= pen; reasons.push(`very hungry → -${pen.toFixed(1)}`); }
       }
 
       // if winter & warmth low, deprioritize research
       if (season.name === 'Winter' && s.res.warmth < 40 && a === 'Research') {
         score -= 25;
-        reasons.push('winter + low warmth â†’ -25');
+        reasons.push('winter + low warmth → -25');
       }
 
       // food reserve: if we're below buffer, stop "nice to have" tasks
       if (foodRes > 0 && s.res.food < foodRes && (a === 'Research' || a === 'CraftTools')) {
         score -= 45;
-        reasons.push(`below food reserve â†’ -45`);
+        reasons.push(`below food reserve → -45`);
       }
 
       out.push({ action: a, score, reasons });
@@ -3875,12 +3875,12 @@ import { PATCH_HISTORY } from './content.js';
         const add0 = Math.min(26, 10 + need * 9);
         const add = add0 * comp;
         row.score += add;
-        row.reasons.push(`plan need ${have}/${want} â†’ +${add.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
+        row.reasons.push(`plan need ${have}/${want} → +${add.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       } else {
         const sub0 = Math.min(18, 6 + (-need) * 6);
         const sub = sub0 * comp;
         row.score -= sub;
-        row.reasons.push(`plan full ${have}/${want} â†’ -${sub.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
+        row.reasons.push(`plan full ${have}/${want} → -${sub.toFixed(0)}` + (comp < 0.95 ? ` (compliance x${comp.toFixed(2)})` : ''));
       }
     }
   }
@@ -3905,7 +3905,7 @@ import { PATCH_HISTORY } from './content.js';
       if (state.res.science >= u.at) {
         state.seenUnlocks[u.id] = true;
         u.apply(state);
-        log(`UNLOCK: ${u.name} (science â‰¥ ${u.at})`);
+        log(`UNLOCK: ${u.name} (science ≥ ${u.at})`);
         feed(`New knowledge: unlocked ${u.name}.`);
         state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
         state._trendEvents.push({ t: Number(state.t ?? 0), kind:'unlock', label:u.name, color:'rgba(125,211,252,.22)' });
@@ -3930,7 +3930,7 @@ import { PATCH_HISTORY } from './content.js';
       const diss = dissent01(state);
       feed(`Year ${yr}: pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}%`);
 
-      // Aquarium: politics drift marker — when the dominant values bloc changes, mark it in the feed + trends.
+      // Aquarium: politics drift marker � when the dominant values bloc changes, mark it in the feed + trends.
       // Keeps "emergent society" visible without needing to open Factions.
       if (pop >= 4) {
         const dom = dominantFactionAxis(state);
@@ -3958,7 +3958,7 @@ import { PATCH_HISTORY } from './content.js';
         }
       }
 
-      // Aquarium: micro-factions (coteries) — friendship circles that can become "influential".
+      // Aquarium: micro-factions (coteries) � friendship circles that can become "influential".
       // Runs on the same slow cadence as the feed tick to keep overhead/spam low.
       updateCoteriesAquarium(state);
     }
@@ -3976,16 +3976,16 @@ import { PATCH_HISTORY } from './content.js';
       state._lastSeasonName = season.name;
 
       const msg = (season.name === 'Winter')
-        ? 'Season change â†’ Winter. Warmth decays faster and Forage output drops; keep warmth â‰¥ target and consider PreserveFood (jerky) + Granaries.'
+        ? 'Season change → Winter. Warmth decays faster and Forage output drops; keep warmth ≥ target and consider PreserveFood (jerky) + Granaries.'
         : (season.name === 'Spring')
-          ? 'Season change â†’ Spring. Forage penalties ease; you can pivot back toward Research/Industry once stable.'
+          ? 'Season change → Spring. Forage penalties ease; you can pivot back toward Research/Industry once stable.'
           : (season.name === 'Fall')
-            ? 'Season change â†’ Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
-            : 'Season change â†’ Summer. Best time to build up science and long-run infrastructure.';
+            ? 'Season change → Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
+            : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
 
       // chart marker
       state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
-      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'season', label:`${from}→${season.name}`, color:'rgba(255,255,255,.10)' });
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'season', label:`${from}?${season.name}`, color:'rgba(255,255,255,.10)' });
       if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
 
       const yr = yearAt(state.t) + 1;
@@ -4006,7 +4006,7 @@ import { PATCH_HISTORY } from './content.js';
       const demand = activeFactionDemand(state);
 
       // Aquarium depth: end-of-Winter leaves a soft "reputation" imprint on coteries.
-      // We tag it once at the Winter→Spring boundary; the coterie ledger consumes it later.
+      // We tag it once at the Winter?Spring boundary; the coterie ledger consumes it later.
       if (String(from) === 'Winter' && String(season.name) === 'Spring') {
         let avgHealth = 0;
         if (pop > 0) {
@@ -4023,13 +4023,13 @@ import { PATCH_HISTORY } from './content.js';
       }
 
       const report = `Year ${yr} | pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}% | mood ${(avgMood*100).toFixed(0)}%`;
-      const targetLine = `Targets now: edible/kit â‰¥ ${targets.foodPerKitten}, warmth â‰¥ ${targets.warmth}, threat â‰¤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
+      const targetLine = `Targets now: edible/kit ≥ ${targets.foodPerKitten}, warmth ≥ ${targets.warmth}, threat ≤ ${targets.maxThreat}` + (targets.why !== 'baseline' ? ` (${targets.why})` : '');
       const demandLine = demand ? `Faction demand active: ${demand.axis} bloc (${String(demand.what ?? 'concessions')})` : '';
 
       log(msg + (from ? ` (from ${from})` : '') + `\n${report}\n${targetLine}` + (demandLine ? `\n${demandLine}` : ''));
 
       // Civ-sim: faction demands often emerge at season boundaries when priorities naturally shift.
-      const fd = maybeStartFactionDemand(state, `season ${from}â†’${season.name}`);
+      const fd = maybeStartFactionDemand(state, `season ${from}→${season.name}`);
       if (fd) log(`Faction demand: the ${fd.axis} bloc wants concessions (accept or ignore in Factions).`);
     }
 
@@ -4150,8 +4150,13 @@ import { PATCH_HISTORY } from './content.js';
       const rawDesire = desire;
 
       // Discipline reduces how quickly dissent forms (but never to zero).
+      // Aquarium: a persistent culture norm can change how *effective* discipline feels.
+      // Low punitiveTolerance => discipline causes backlash (less effective). High => discipline is culturally accepted (more effective).
       const disPol = discipline01(state);
-      desire *= (1 - 0.45 * disPol);
+      state.social.norms = (state.social.norms && typeof state.social.norms === 'object') ? state.social.norms : { raidParanoia: 0, scarcityMindset: 0, mutualAid: 0, punitiveTolerance: 0 };
+      const pt = clamp01(Number(state.social.norms.punitiveTolerance ?? 0));
+      const disEff = clamp01(disPol * (0.75 + 0.50 * pt));
+      desire *= (1 - 0.45 * disEff);
 
       // Doctrine: specialization can feel "rigid" (a bit more grumbling); rotation tends to relieve pressure.
       const doc = doctrineKey(state);
@@ -4162,13 +4167,16 @@ import { PATCH_HISTORY } from './content.js';
 
       const target = clamp01(desire);
       const cur = clamp01(Number(state.social.dissent ?? 0));
-      const next = cur + (target - cur) * 0.045; // smoothing (â‰ˆ 20-25s to swing hard)
+      const next = cur + (target - cur) * 0.045; // smoothing (≈ 20-25s to swing hard)
       state.social.dissent = clamp01(next);
 
       // Snapshot for Social Inspector (transient, not saved).
       state._dissentDrivers = {
         at: state.t,
         avgMood, hungerStress, avgGriev,
+        discipline: disPol,
+        punitiveTolerance: pt,
+        disciplineEffective: disEff,
         workPace: wp,
         rationsLabel: String(rat.label ?? state.rations ?? 'Normal'),
         alarmStress,
@@ -4346,7 +4354,7 @@ import { PATCH_HISTORY } from './content.js';
         // Respect food reserve (director won't "immigrate" below your buffer).
         const minFoodAfter = getReserve(state,'food');
         const needFood = cost + minFoodAfter;
-        if ((state.res.food ?? 0) < needFood) whyParts.push(`need food â‰¥ ${fmt(needFood)} (cost ${cost} + reserve)`);
+        if ((state.res.food ?? 0) < needFood) whyParts.push(`need food ≥ ${fmt(needFood)} (cost ${cost} + reserve)`);
 
         state.director.autoRecruitWhy = whyParts.length ? whyParts.slice(0,2).join('; ') : `ready (cost ${cost} food)`;
 
@@ -4393,12 +4401,12 @@ import { PATCH_HISTORY } from './content.js';
         // Only log when it actually changed meaningfully (avoid spam).
         const changed = (Math.abs(prev.food - recFood) >= 10) || (Math.abs(prev.wood - recWood) >= 2) || (Math.abs(prev.science - recSci) >= 5) || (Math.abs(prev.tools - recTools) >= 5);
         if (changed) {
-          log(`Auto Reserves: foodâ‰¥${recFood}, woodâ‰¥${recWood}, scienceâ‰¥${recSci}, toolsâ‰¥${recTools}`);
+          log(`Auto Reserves: food≥${recFood}, wood≥${recWood}, science≥${recSci}, tools≥${recTools}`);
         }
       }
     }
 
-    // Director automation: optional auto Policy tuning (targets â†’ policy multipliers).
+    // Director automation: optional auto Policy tuning (targets → policy multipliers).
     // Goal: create a more "civ governor" feel: you set Targets; the Director nudges policy quotas a little to hit them.
     // It makes small reversible changes, with a cooldown, and it pauses during Crisis Protocol.
     if (state.director.autoPolicy && !state.director.crisis) {
@@ -4541,7 +4549,7 @@ import { PATCH_HISTORY } from './content.js';
           const warmth = Number(state.res.warmth ?? 0);
           const threat = Number(state.res.threat ?? 0);
 
-          // Trend-based forecasts (smoothed) â€” keeps the pauses from being too hair-trigger.
+          // Trend-based forecasts (smoothed) — keeps the pauses from being too hair-trigger.
           ensureRateState(state);
           const r = state._rate ?? {};
           const foodRate = Number(r.food ?? 0);
@@ -4586,15 +4594,15 @@ import { PATCH_HISTORY } from './content.js';
             if (starving) {
               why = `starving risk (edible/kitten ${fmt(foodPerKitten)} < ${(targets.foodPerKitten * 0.55).toFixed(0)})`;
             } else if (starveSoon) {
-              why = `starving soon (edible ${fmt(edibleNow)} at ${fmtRate(edibleRate)} â†’ 0 in ${fmtEtaSeconds(starveEta)})`;
+              why = `starving soon (edible ${fmt(edibleNow)} at ${fmtRate(edibleRate)} → 0 in ${fmtEtaSeconds(starveEta)})`;
             } else if (freezing) {
               why = `freezing risk (winter warmth ${fmt(warmth)} < ${(targets.warmth - 18).toFixed(0)})`;
             } else if (freezeSoon) {
-              why = `freezing soon (warmth ${fmt(warmth)} at ${fmtRate(warmthRate)} â†’ 0 in ${fmtEtaSeconds(freezeEta)})`;
+              why = `freezing soon (warmth ${fmt(warmth)} at ${fmtRate(warmthRate)} → 0 in ${fmtEtaSeconds(freezeEta)})`;
             } else if (raidSoon) {
               why = `raid risk (threat ${fmt(threat)})`;
             } else {
-              why = `raid soon (threat ${fmt(threat)} at ${fmtRate(threatRate)} â†’ raid in ${fmtEtaSeconds(raidEta)})`;
+              why = `raid soon (threat ${fmt(threat)} at ${fmtRate(threatRate)} → raid in ${fmtEtaSeconds(raidEta)})`;
             }
 
             state.paused = true;
@@ -4665,8 +4673,8 @@ import { PATCH_HISTORY } from './content.js';
     const foodCap = foodStorageCap(state);
     const food = Number(state.res.food ?? 0);
     if (foodCap > 0 && food > foodCap) {
-      const over = (food - foodCap) / foodCap; // 0..âˆž
-      const mult = Math.min(4.0, 1 + over * 2.2); // up to 4Ã— spoil
+      const over = (food - foodCap) / foodCap; // 0..∞
+      const mult = Math.min(4.0, 1 + over * 2.2); // up to 4× spoil
       spoil *= mult;
       state._lastFoodOvercap = { cap: foodCap, food, mult };
     } else {
@@ -4766,7 +4774,7 @@ import { PATCH_HISTORY } from './content.js';
     // One-time warning when raiders are gathering; auto-raises ALARM only after Security is unlocked.
     if (state.res.threat >= 85 && !state._threatWarned) {
       state._threatWarned = true;
-      log('Scouts report raiders gathering nearby (threat â‰¥ 85).');
+      log('Scouts report raiders gathering nearby (threat ≥ 85).');
       if (state.unlocked.security) state.signals.ALARM = true;
     }
     if (state.res.threat < 60) state._threatWarned = false;
@@ -4788,7 +4796,7 @@ import { PATCH_HISTORY } from './content.js';
         const curfew = state.director?.curfew ? 1 : 0;
 
         const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
-        const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) â†’ 0.25 (strong defense)
+        const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) → 0.25 (strong defense)
         const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
 
         const repelled = Math.random() < repelChance;
@@ -4943,6 +4951,50 @@ import { PATCH_HISTORY } from './content.js';
       else feed('Norms: the mutual-aid surge fades. People drift back into their own routines.');
       state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
       state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`aid:${mBand}`, color:'rgba(250,204,21,.18)' });
+      if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+    }
+
+    // Norms: punitive tolerance (culture memory about harsh governance).
+    // Emerges from sustained dissent/grievance under harsh levers (low autonomy/high discipline/curfew).
+    // Small, bounded effect: changes how *effective* Discipline is at suppressing dissent (see dissent model above).
+    state.social.norms.punitiveTolerance = clamp01(Number(state.social.norms.punitiveTolerance ?? 0));
+    state.social.punitiveBand = String(state.social.punitiveBand ?? 'lenient');
+    state.social.punitiveLastAt = Number(state.social.punitiveLastAt ?? 0) || 0;
+
+    const aut01 = clamp01(Number(state.director?.autonomy ?? 0.60));
+    const disPol2 = discipline01(state);
+    const dis01b = clamp01(Number(state.social?.dissent ?? 0) / 100);
+    let gAvg01b = 0;
+    const kk2 = Array.isArray(state.kittens) ? state.kittens : [];
+    if (kk2.length) {
+      let sum = 0;
+      for (const k of kk2) sum += clamp01(Number(k?.grievance ?? 0) / 100);
+      gAvg01b = sum / kk2.length;
+    }
+
+    const conflict = clamp01(Math.max(dis01b - 0.35, gAvg01b - 0.35) / 0.65);
+    const harsh = clamp01((1 - aut01) * 0.65 + disPol2 * 0.55 + (state.director?.curfew ? 0.18 : 0));
+
+    let ptv = clamp01(Number(state.social.norms.punitiveTolerance ?? 0));
+    // Natural decay: fades over ~6-8 minutes if conditions soften.
+    ptv = clamp01(ptv - dt * 0.0018);
+    if (conflict > 0 && harsh > 0.2) {
+      ptv = clamp01(ptv + dt * (0.0022 + 0.0060 * conflict) * harsh);
+    } else if (conflict < 0.10 && aut01 > 0.65 && disPol2 < 0.45 && !state.director?.curfew) {
+      // Calm + liberal governance actively unwind punitive reflexes.
+      ptv = clamp01(ptv - dt * 0.0024);
+    }
+    state.social.norms.punitiveTolerance = ptv;
+
+    const pBand = (ptv < 0.25) ? 'lenient' : (ptv < 0.55) ? 'firm' : 'punitive';
+    if (pBand !== state.social.punitiveBand && (Number(state.t ?? 0) - state.social.punitiveLastAt) > 25) {
+      state.social.punitiveBand = pBand;
+      state.social.punitiveLastAt = Number(state.t ?? 0);
+      if (pBand === 'firm') feed('Norms: people accept stricter measures. Order feels like a fair trade.');
+      else if (pBand === 'punitive') feed('Norms: punitive justice takes root. Harsh governance feels normal.');
+      else feed('Norms: tolerance for harshness fades. Mediation is preferred again.');
+      state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'norm', label:`pun:${pBand}`, color:'rgba(248,113,113,.20)' });
       if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
     }
 
@@ -5123,7 +5175,7 @@ import { PATCH_HISTORY } from './content.js';
           // log only meaningful changes
           const fmt2 = (v)=>Number(v).toFixed(2);
           const changes = [];
-          const pushCh = (name, a, b) => { if (Math.abs(a-b) >= 0.02) changes.push(`${name} ${fmt2(a)}→${fmt2(b)}`); };
+          const pushCh = (name, a, b) => { if (Math.abs(a-b) >= 0.02) changes.push(`${name} ${fmt2(a)}?${fmt2(b)}`); };
           pushCh('hungry>', cur.hungry, rHungry?.cond?.v ?? cur.hungry);
           pushCh('tired>',  cur.tired,  rTired?.cond?.v ?? cur.tired);
           pushCh('warmth<', cur.warmth, rWarmth?.cond?.v ?? cur.warmth);
@@ -5352,7 +5404,7 @@ import { PATCH_HISTORY } from './content.js';
     const mlOn = !!ml?.enabled;
     const mlNote = mlOn ? ` | ML: ON (r=${Number(ml.lastLoss ?? 0).toFixed(3)})` : '';
 
-    return head + (bits.length ? ` — ${bits.slice(0,2).join(' | ')}` : '') + mlNote;
+    return head + (bits.length ? ` � ${bits.slice(0,2).join(' | ')}` : '') + mlNote;
   }
 
   // Ensure curator defaults exist; if this save hasn't seen curator mode yet, apply once.
@@ -5389,7 +5441,7 @@ import { PATCH_HISTORY } from './content.js';
   if (devModeEl) devModeEl.addEventListener('change', () => {
     ensureCurator(state);
     state.director.curator.devMode = !!devModeEl.checked;
-    log(`Developer Mode → ${state.director.curator.devMode ? 'ON' : 'OFF'}`);
+    log(`Developer Mode ? ${state.director.curator.devMode ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -5450,7 +5502,7 @@ import { PATCH_HISTORY } from './content.js';
   }
   function fmtPolicyChange(ch){
     const sign = ch.d >= 0 ? '+' : '';
-    return `${ch.key} x${ch.from.toFixed(2)}â†’x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
+    return `${ch.key} x${ch.from.toFixed(2)}→x${ch.to.toFixed(2)} (${sign}${ch.d.toFixed(2)})`;
   }
 
   // Governance log (explainability): record policy changes driven by automation/politics.
@@ -5491,7 +5543,7 @@ import { PATCH_HISTORY } from './content.js';
 
     const arr = (s.director.govLog ?? []).slice().reverse();
     if (!arr.length) {
-      govLogEl.textContent = 'â€” No governance events yet. Turn on Auto Policy or negotiate with a faction to see entries.';
+      govLogEl.textContent = '— No governance events yet. Turn on Auto Policy or negotiate with a faction to see entries.';
       return;
     }
 
@@ -5502,7 +5554,7 @@ import { PATCH_HISTORY } from './content.js';
       const why = String(e.why ?? '').trim();
       const changes = Array.isArray(e.changes) ? e.changes : [];
 
-      lines.push(head + (why ? ` â€” ${why}` : ''));
+      lines.push(head + (why ? ` — ${why}` : ''));
       for (const ch of changes.slice(0, 6)) lines.push(`  - ${ch}`);
     }
 
@@ -5581,7 +5633,7 @@ import { PATCH_HISTORY } from './content.js';
     const diff = policyDiff(before, after);
     const diffMsg = diff.length ? diff.slice(0, 6).map(fmtPolicyChange).join('; ') : 'No policy changes.';
 
-    log(`Council accepted: ${rec.label} â€” ${diffMsg}`);
+    log(`Council accepted: ${rec.label} — ${diffMsg}`);
 
     // Remember last applied message for panel explainability.
     state.director = state.director ?? {};
@@ -5694,7 +5746,7 @@ import { PATCH_HISTORY } from './content.js';
         const focus = String(ub.dataset.focus || 'Auto');
         state.director = state.director ?? { projectFocus:'Auto' };
         state.director.projectFocus = focus;
-        log(`Unblocked project: lowered ${keys.join('+')} reserve; focus â†’ ${focus}`);
+        log(`Unblocked project: lowered ${keys.join('+')} reserve; focus → ${focus}`);
         save();
         render();
       }
@@ -5706,7 +5758,7 @@ import { PATCH_HISTORY } from './content.js';
     const focus = String(btn.dataset.focus || 'Auto');
     state.director = state.director ?? { projectFocus:'Auto' };
     state.director.projectFocus = focus;
-    log(`Project focus â†’ ${focus}`);
+    log(`Project focus → ${focus}`);
     save();
     render();
   });
@@ -5853,7 +5905,7 @@ import { PATCH_HISTORY } from './content.js';
           k.why = String(k.why ?? '');
 
           // Persist change + keep it legible (updates the "Bias" label + Clear button state).
-          if (next !== prev) log(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) â†’ ${next}`);
+          if (next !== prev) log(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) → ${next}`);
           save();
           renderInspect();
           render();
@@ -5888,32 +5940,32 @@ import { PATCH_HISTORY } from './content.js';
       const ageNote = (age !== null && Number.isFinite(age)) ? ` (age ${fmt(age)}s)` : '';
 
       if (d.kind === 'rule') {
-        lines.push(`Decision: RULE â†’ ${task}${ageNote}`);
+        lines.push(`Decision: RULE → ${task}${ageNote}`);
         lines.push(`  - rule #${d.ruleIndex ?? '?'}: ${d.rule ?? '-'}`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else if (d.kind === 'emergency') {
-        lines.push(`Decision: EMERGENCY â†’ ${task}${ageNote}`);
+        lines.push(`Decision: EMERGENCY → ${task}${ageNote}`);
         lines.push(`  - note: ${d.note ?? '-'}`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else if (d.kind === 'commit') {
-        lines.push(`Decision: COMMIT â†’ ${task}${ageNote}`);
+        lines.push(`Decision: COMMIT → ${task}${ageNote}`);
         lines.push(`  - remaining lock: ${Number(d.lock ?? 0).toFixed(0)}s`);
         lines.push('  - scoring below is informational (last computed top scores)');
       } else {
-        lines.push(`Decision: SCORE â†’ ${task}${ageNote}`);
+        lines.push(`Decision: SCORE → ${task}${ageNote}`);
         if (d.best && d.best !== task) lines.push(`  - top score was ${d.best} (autonomy sampled)`);
         if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`);
       }
       lines.push('');
     }
 
-    // Execution explainability: show the last blocked sink â†’ fallback (if it happened very recently).
+    // Execution explainability: show the last blocked sink → fallback (if it happened very recently).
     const lb = k._lastBlocked;
     if (lb && typeof lb === 'object') {
       const age = (typeof lb.at === 'number') ? (state.t - lb.at) : null;
       if (age !== null && Number.isFinite(age) && age <= 6) {
         const msg = String(lb.msg ?? '').replace(/\s+/g,' ').trim();
-        lines.push(`Execution: ${String(lb.action ?? '')} blocked â†’ ${String(lb.to ?? '')} (age ${fmt(age)}s)`);
+        lines.push(`Execution: ${String(lb.action ?? '')} blocked → ${String(lb.to ?? '')} (age ${fmt(age)}s)`);
         if (msg) lines.push(`  - ${msg}`);
         lines.push('');
       }
@@ -6081,7 +6133,7 @@ import { PATCH_HISTORY } from './content.js';
   }
 
   // Auto Policy: a tiny "governor" that nudges policy multipliers toward the player's Targets.
-  // Design: small reversible adjustments (Â±0.05), bounded, and explainable.
+  // Design: small reversible adjustments (±0.05), bounded, and explainable.
   function autoTunePolicyTowardTargets(s){
     s.director = s.director ?? {};
     s.director.policyLocks = s.director.policyLocks ?? {};
@@ -6123,7 +6175,7 @@ import { PATCH_HISTORY } from './content.js';
       }
     };
 
-    // 1) Basics pressure â†’ push the relevant levers.
+    // 1) Basics pressure → push the relevant levers.
     const foodBad = foodPerKitten < targets.foodPerKitten * 0.95;
     const foodGreat = foodPerKitten >= targets.foodPerKitten * 1.10;
 
@@ -6190,14 +6242,14 @@ import { PATCH_HISTORY } from './content.js';
 
     // 4) Explainability string.
     const parts = [];
-    if (foodBad) parts.push(`food/kitten ${foodPerKitten.toFixed(1)}<${(targets.foodPerKitten*0.95).toFixed(0)} â†’ +food`);
-    else if (foodGreat) parts.push(`food surplus â†’ ease food labor`);
+    if (foodBad) parts.push(`food/kitten ${foodPerKitten.toFixed(1)}<${(targets.foodPerKitten*0.95).toFixed(0)} → +food`);
+    else if (foodGreat) parts.push(`food surplus → ease food labor`);
 
-    if (warmBad) parts.push(`warmth ${fmt(warmth)}<${fmt(warmTarget)} â†’ +fire/wood`);
-    else if (warmGreat) parts.push(`warmth surplus â†’ ease stoke`);
+    if (warmBad) parts.push(`warmth ${fmt(warmth)}<${fmt(warmTarget)} → +fire/wood`);
+    else if (warmGreat) parts.push(`warmth surplus → ease stoke`);
 
-    if (threatBad) parts.push(`threat ${fmt(threat)}>${fmt(targets.maxThreat)} â†’ +guard/defense`);
-    else if (threatGreat) parts.push(`threat low â†’ ease guard`);
+    if (threatBad) parts.push(`threat ${fmt(threat)}>${fmt(targets.maxThreat)} → +guard/defense`);
+    else if (threatGreat) parts.push(`threat low → ease guard`);
 
     const why = parts.length ? parts.join(' | ') : 'stable: drifting policy toward neutral';
 
@@ -6257,7 +6309,7 @@ import { PATCH_HISTORY } from './content.js';
     const demand = activeFactionDemand(s);
     if (demand) {
       const left = Math.max(0, Math.ceil((Number(demand.expiresAt ?? 0) - Number(s.t ?? 0))));
-      lines.push(`â€¢ FACTION DEMAND: ${demand.axis} bloc (expires ~${left}s)`);
+      lines.push(`• FACTION DEMAND: ${demand.axis} bloc (expires ~${left}s)`);
 
       // Recommendation: accept only if the colony is not actively collapsing.
       const basicsOk = (foodPerKitten >= targets.foodPerKitten * 0.92) && (Number(s.res.warmth ?? 0) >= targets.warmth - 6) && (Number(s.res.threat ?? 0) <= targets.maxThreat * 1.10);
@@ -6285,13 +6337,13 @@ import { PATCH_HISTORY } from './content.js';
     const spoilMult = Number(overcap.mult ?? 1);
     const storageBad = Number.isFinite(spoilMult) && spoilMult > 1.05;
     if (storageBad) {
-      lines.push(`â€¢ storage over-cap: spoilage x${spoilMult.toFixed(2)} (cap ${fmt(overcap.cap)}; food ${fmt(overcap.food)})`);
+      lines.push(`• storage over-cap: spoilage x${spoilMult.toFixed(2)} (cap ${fmt(overcap.cap)}; food ${fmt(overcap.food)})`);
       lines.push(`  - Nudge: build Granary / preserve surplus into Jerky (PreserveFood) / stop overstocking`);
 
       recs.push({
         id: 'storage',
         label: 'Storage fix',
-        tip: 'Set Project focus â†’ Storage, boost BuildGranary + PreserveFood, and raise wood reserve a bit so granary builds don\'t stall.',
+        tip: 'Set Project focus → Storage, boost BuildGranary + PreserveFood, and raise wood reserve a bit so granary builds don\'t stall.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = (st.unlocked?.granary ? 'Storage' : 'Auto');
@@ -6308,13 +6360,13 @@ import { PATCH_HISTORY } from './content.js';
     const houseCap = housingCap(s);
     const over = Math.max(0, pop - houseCap);
     if (over > 0) {
-      lines.push(`â€¢ overcrowding: pop ${pop}/${houseCap} (+${over} over cap)`);
+      lines.push(`• overcrowding: pop ${pop}/${houseCap} (+${over} over cap)`);
       lines.push(`  - Nudge: focus Housing (BuildHut) + keep wood flowing; overcrowding slowly raises dissent + grievance`);
 
       recs.push({
         id: 'housing',
         label: 'Fix housing',
-        tip: 'Set Project focus â†’ Housing, enable BUILD PUSH, and bias policy toward Hut building + wood income.',
+        tip: 'Set Project focus → Housing, enable BUILD PUSH, and bias policy toward Hut building + wood income.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = 'Housing';
@@ -6331,7 +6383,7 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     // 0.5) Build progress blocked by reserves
-    // Common early confusion: "why won't they finish the workshop/library?" â†’ reserves are protecting inputs.
+    // Common early confusion: "why won't they finish the workshop/library?" → reserves are protecting inputs.
     const avail = {
       food: availableAboveReserve(s,'food'),
       wood: availableAboveReserve(s,'wood'),
@@ -6359,7 +6411,7 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     if (blockedProj) {
-      lines.push(`â€¢ ${blockedProj.name} progress stalled: ${blockedProj.prog.toFixed(1)}/${blockedProj.req} (blocked by ${blockedProj.blockedBy.join('+')} reserve)`);
+      lines.push(`• ${blockedProj.name} progress stalled: ${blockedProj.prog.toFixed(1)}/${blockedProj.req} (blocked by ${blockedProj.blockedBy.join('+')} reserve)`);
       lines.push(`  - Nudge: lower that reserve slightly or produce more ${blockedProj.blockedBy.join('+')}`);
 
       recs.push({
@@ -6384,7 +6436,7 @@ import { PATCH_HISTORY } from './content.js';
     const canPrep = !s.director?.winterPrep && (lateFall || (winterSoon > 0 && winterSoon <= 45));
     if (canPrep) {
       const eta = fmtEtaSeconds(winterSoon);
-      lines.push(`â€¢ Winter soon (${eta}) â€” consider Winter Prep (stockpile food/wood/warmth; raise reserves)`);
+      lines.push(`• Winter soon (${eta}) — consider Winter Prep (stockpile food/wood/warmth; raise reserves)`);
 
       recs.push({
         id: 'winterprep',
@@ -6401,7 +6453,7 @@ import { PATCH_HISTORY } from './content.js';
     const foodBad = (foodPerKitten < (targets.foodPerKitten - 5)) || (foodRate < -0.15);
     if (foodBad) {
       const howBad = (foodRate < -0.15) ? `food trending down (${fmtRate(foodRate)})` : `food/kitten low (${fmt(foodPerKitten)} < ${targets.foodPerKitten})`;
-      lines.push(`â€¢ ${howBad}`);
+      lines.push(`• ${howBad}`);
       lines.push(`  - Nudge: +Forage / +Farm / +PreserveFood (policy) or toggle FOOD signal`);
       if (secondsToNextWinter(s) < 40 && season.name !== 'Winter') lines.push(`  - Winter soon: consider Winter Prep or raise Food reserve`);
 
@@ -6423,8 +6475,8 @@ import { PATCH_HISTORY } from './content.js';
     // 2) Warmth
     const warmthBad = (Number(s.res.warmth ?? 0) < (targets.warmth - 6)) || (season.name === 'Winter' && warmthRate < -0.08);
     if (warmthBad) {
-      lines.push(`â€¢ warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
-      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve â‰¥ 10-20`);
+      lines.push(`• warmth pressure (now ${fmt(s.res.warmth)}; trend ${fmtRate(warmthRate)})`);
+      lines.push(`  - Nudge: +StokeFire (policy), keep wood reserve ≥ 10-20`);
 
       recs.push({
         id: 'warmth',
@@ -6441,7 +6493,7 @@ import { PATCH_HISTORY } from './content.js';
     const threat = Number(s.res.threat ?? 0);
     const threatBad = (threat > targets.maxThreat + 5) || (threatRate > 0.10 && threat > 70);
     if (threatBad) {
-      lines.push(`â€¢ raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
+      lines.push(`• raids risk (threat ${fmt(threat)}; trend ${fmtRate(threatRate)})`);
       lines.push(`  - Nudge: +Guard / +BuildPalisade (policy) or toggle ALARM (requires Security)`);
 
       recs.push({
@@ -6461,7 +6513,7 @@ import { PATCH_HISTORY } from './content.js';
     // If dissent is high and you can afford it, Council is the cleanest "push the colony back into compliance" lever.
     const disNow = dissent01(s);
     if (disNow > 0.55 && !councilActive(s) && canHoldCouncil(s)) {
-      lines.push(`â€¢ high dissent (${Math.round(disNow*100)}%) â€” Council can reduce grumbling quickly`);
+      lines.push(`• high dissent (${Math.round(disNow*100)}%) — Council can reduce grumbling quickly`);
       recs.push({
         id: 'council',
         label: 'Hold Council',
@@ -6475,7 +6527,7 @@ import { PATCH_HISTORY } from './content.js';
 
     // If mood is low and you can afford it, Festival is the fastest morale lever.
     if (avgMood < 0.48 && !festivalActive(s) && canHoldFestival(s)) {
-      lines.push(`â€¢ low mood (avg ${(avgMood*100).toFixed(0)}%) â€” Festival can boost morale + output`);
+      lines.push(`• low mood (avg ${(avgMood*100).toFixed(0)}%) — Festival can boost morale + output`);
       recs.push({
         id: 'festival',
         label: 'Hold Festival',
@@ -6490,13 +6542,13 @@ import { PATCH_HISTORY } from './content.js';
     // 4) Overcrowding / growth
     const cap = housingCap(s);
     if ((s.kittens?.length ?? 0) >= cap) {
-      lines.push(`â€¢ overcrowded (${s.kittens.length}/${cap})`);
-      lines.push(`  - Nudge: +BuildHut (policy) or set Project focus â†’ Housing`);
+      lines.push(`• overcrowded (${s.kittens.length}/${cap})`);
+      lines.push(`  - Nudge: +BuildHut (policy) or set Project focus → Housing`);
 
       recs.push({
         id: 'housing',
         label: 'Housing build',
-        tip: 'Set Project focus â†’ Housing and boost BuildHut.',
+        tip: 'Set Project focus → Housing and boost BuildHut.',
         apply: (st) => {
           st.director = st.director ?? { projectFocus:'Auto' };
           st.director.projectFocus = 'Housing';
@@ -6512,7 +6564,7 @@ import { PATCH_HISTORY } from './content.js';
     if (basicsOk) {
       const wantsIndustry = (s.unlocked?.workshop && (Number(s.res.tools ?? 0) < pop * 10));
       if (wantsIndustry) {
-        lines.push(`â€¢ tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
+        lines.push(`• tools behind (now ${fmt(s.res.tools ?? 0)}/${(pop*10).toFixed(0)})`);
         lines.push(`  - Nudge: +CraftTools (policy); if blocked, prioritize Workshop inputs (wood+science)`);
 
         recs.push({
@@ -6525,7 +6577,7 @@ import { PATCH_HISTORY } from './content.js';
           }
         });
       } else if (scienceRate < 0.25) {
-        lines.push(`â€¢ slow science (trend ${fmtRate(scienceRate)})`);
+        lines.push(`• slow science (trend ${fmtRate(scienceRate)})`);
         lines.push(`  - Nudge: +Research (policy); consider Library focus once unlocked`);
 
         recs.push({
@@ -6543,7 +6595,7 @@ import { PATCH_HISTORY } from './content.js';
 
     if (!lines.length) {
       return {
-        text: 'All green. Now you can push growth/tech:\nâ€¢ Try Preset: Expand or Advance\nâ€¢ Or set Project focus â†’ (Auto) and watch the plan debug',
+        text: 'All green. Now you can push growth/tech:\n• Try Preset: Expand or Advance\n• Or set Project focus → (Auto) and watch the plan debug',
         recs: []
       };
     }
@@ -6635,7 +6687,7 @@ import { PATCH_HISTORY } from './content.js';
         id: `threat-${k.id}`,
         label: `+Security`,
         effects: `Guard +0.30, BuildPalisade +0.20`,
-        tip: `Threat is rising (now ${fmt(threat)} / target â‰¤${targets.maxThreat}).`,
+        tip: `Threat is rising (now ${fmt(threat)} / target ≤${targets.maxThreat}).`,
         apply: (st) => { nudgePolicyMult(st, 'Guard', 0.30); nudgePolicyMult(st, 'BuildPalisade', 0.20); }
       });
     }
@@ -6742,7 +6794,7 @@ import { PATCH_HISTORY } from './content.js';
     const out = recs.slice(0, 3);
 
     if (!out.length) {
-      // No strong opinions/situations â†’ small cooldown anyway.
+      // No strong opinions/situations → small cooldown anyway.
       s.director.council.nextAt = s.t + 45;
       return { text: 'Council is quiet (no urgent pushes).', recs: [] };
     }
@@ -6941,7 +6993,7 @@ import { PATCH_HISTORY } from './content.js';
       const d = db - da;
       if (Math.abs(d) < 0.0001) return '';
       const sign = d >= 0 ? '+' : '';
-      return `${label} ${da.toFixed(digits)}â†’${db.toFixed(digits)} (${sign}${d.toFixed(digits)})`;
+      return `${label} ${da.toFixed(digits)}→${db.toFixed(digits)} (${sign}${d.toFixed(digits)})`;
     };
 
     const polDiff = [];
@@ -6952,7 +7004,7 @@ import { PATCH_HISTORY } from './content.js';
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
       if (Math.abs(b - a) > 0.0005) {
         const sign = (b - a) >= 0 ? '+' : '';
-        polDiff.push(`${k} x${a.toFixed(2)}â†’x${b.toFixed(2)} (${sign}${(b-a).toFixed(2)})`);
+        polDiff.push(`${k} x${a.toFixed(2)}→x${b.toFixed(2)} (${sign}${(b-a).toFixed(2)})`);
       }
     }
 
@@ -6966,7 +7018,7 @@ import { PATCH_HISTORY } from './content.js';
       ...polDiff,
     ].filter(Boolean);
 
-    const dissMsg = `${Math.round(before.dissent*100)}%â†’${Math.round(after.dissent*100)}%`;
+    const dissMsg = `${Math.round(before.dissent*100)}%→${Math.round(after.dissent*100)}%`;
     const changeMsg = changes.length ? changes.slice(0, 6).join('; ') : 'no policy deltas';
 
     // Explainability: mirror to Governance log.
@@ -7040,11 +7092,11 @@ import { PATCH_HISTORY } from './content.js';
     const n = Number(s?.kittens?.length ?? 0) || 0;
     if (n < 4) return { ok:false, why:'pop too low' };
 
-    // Donâ€™t spam: at most once per ~2 seasons.
+    // Don’t spam: at most once per ~2 seasons.
     const last = Number(s?.director?.factionDemandLastAt ?? 0) || 0;
     if ((Number(s?.t ?? 0) || 0) - last < 120) return { ok:false, why:'cooldown' };
 
-    // Only when thereâ€™s meaningful political tension.
+    // Only when there’s meaningful political tension.
     const dis = clamp01(Number(s?.social?.dissent ?? 0));
     if (dis < 0.38) return { ok:false, why:'dissent low' };
 
@@ -7212,7 +7264,7 @@ import { PATCH_HISTORY } from './content.js';
       const title = `Make a small policy concession to this bloc (reduces dissent slightly). ${tip}${cd}`.trim();
 
       const btn = `<button class="btn" data-faction="${g.axis}" ${can ? '' : 'disabled'} title="${title}">Negotiate</button>`;
-      const sub = `<div class="small" style="opacity:.78; margin-top:2px">${tip}${can ? '' : ` â€” cooldown ${Math.ceil(left)}s`}</div>`;
+      const sub = `<div class="small" style="opacity:.78; margin-top:2px">${tip}${can ? '' : ` — cooldown ${Math.ceil(left)}s`}</div>`;
 
       return `<div style="padding:4px 0">` +
         `<div class="row" style="justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap">` +
@@ -7257,7 +7309,7 @@ import { PATCH_HISTORY } from './content.js';
                   `<span class="small" style="opacity:.9">Last negotiation snapshot</span>` +
                   `<span class="small" style="opacity:.75">(expires ~${Math.ceil(undo.left)}s)</span>` +
                 `</div>` +
-                `<div class="small" style="margin-top:4px; opacity:.85">Politics drift is real â€” but this is a prototype, so you get one quick undo.</div>` +
+                `<div class="small" style="margin-top:4px; opacity:.85">Politics drift is real — but this is a prototype, so you get one quick undo.</div>` +
               `</div>` +
               `<div class="row" style="gap:8px">` +
                 `<button class="btn" data-faction-undo="1" title="${title}">Undo</button>` +
@@ -7281,7 +7333,7 @@ import { PATCH_HISTORY } from './content.js';
 
           const rows = coteries.slice(0, 8).map(c => {
             const mem = (c.members ?? []).map(id => nameById.get(Number(id)) ?? `#${id}`).slice(0, 5);
-            const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '…' : '');
+            const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '�' : '');
             const ax = escapeHtml(String(c.domAx ?? ''));
             const sz = Number(c.size ?? 0);
             const cw = Number(c.coWork ?? 0);
@@ -7745,7 +7797,7 @@ import { PATCH_HISTORY } from './content.js';
         const cm = coordinationMul(state);
         const build = commitSecondsForTask(state,'BuildHut');
         const work = commitSecondsForTask(state,'Forage');
-        return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1â€“6s)`;
+        return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1–6s)`;
       }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
       return '';
@@ -7807,13 +7859,13 @@ import { PATCH_HISTORY } from './content.js';
         d.title = 'Average grievance (slow-burn resentment). It rises when kittens are pushed into disliked/misaligned work under strong central planning, and it contributes to dissent pressure. Click to inspect the social model.';
       }
       if (k === 'Autonomy') {
-        d.title = 'Director Autonomy policy (0â€“100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
+        d.title = 'Director Autonomy policy (0–100%). Higher autonomy makes individual likes/dislikes matter more, increasing emergent behavior (and reducing perfect compliance).';
       }
       if (k === 'Eff Auto') {
         d.title = 'Effective autonomy (felt autonomy). Starts from Autonomy, then shifts with Discipline (down) and Dissent (up). Higher effective autonomy = more individual variation and less plan obedience.';
       }
       if (k === 'Discipline') {
-        d.title = 'Director Discipline policy (0â€“100%). Higher discipline increases compliance and reduces dissent formation, but has a small steady mood cost.';
+        d.title = 'Director Discipline policy (0–100%). Higher discipline increases compliance and reduces dissent formation, but has a small steady mood cost.';
       }
       if (k === 'Work pace') {
         d.title = 'Director Work pace policy. Higher pace increases output but increases fatigue/hunger and slowly drags mood; lower pace is steadier but slower.';
@@ -7915,7 +7967,7 @@ import { PATCH_HISTORY } from './content.js';
             <div class="row" style="gap:6px">
               ${pinBtn}
               ${blockedBy.length ? `<button class=\"btn\" data-unblock=\"${blockedBy.join(',')}\" data-focus=\"${pd.focus}\" title=\"Lowers only the reserve(s) currently blocking this project (safe small steps), then sets focus\">Unblock</button>` : ''}
-              <button class="btn" data-focus="${pd.focus}" title="Sets Project focus â†’ ${pd.focus} (a build-order nudge)">Focus</button>
+              <button class="btn" data-focus="${pd.focus}" title="Sets Project focus → ${pd.focus} (a build-order nudge)">Focus</button>
             </div>
           </div>
           <div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>
@@ -7933,7 +7985,7 @@ import { PATCH_HISTORY } from './content.js';
 
     const nextSeasonEta = fmtEtaSeconds(secondsToNextSeason(state));
     const winterEta = fmtEtaSeconds(secondsToNextWinter(state));
-    const seasonalNote = (targets.why !== 'baseline') ? `Seasonal targets: food/kitten=${targets.foodPerKitten}, warmth=${targets.warmth}, threatâ‰¤${targets.maxThreat} (${targets.why})\n` : '';
+    const seasonalNote = (targets.why !== 'baseline') ? `Seasonal targets: food/kitten=${targets.foodPerKitten}, warmth=${targets.warmth}, threat≤${targets.maxThreat} (${targets.why})\n` : '';
 
     const pfSet = String(state.director?.projectFocus ?? 'Auto');
     const pfEff = getEffectiveProjectFocus(state);
@@ -8035,7 +8087,7 @@ import { PATCH_HISTORY } from './content.js';
       `Colony efficiency: ${(avgEff*100).toFixed(0)}% (hungry/tired/cold/health/mood slows work) | avg health ${(avgHealth*100).toFixed(0)}% | avg mood ${(avgMood*100).toFixed(0)}%\n` +
       `Trends: food ${fmtRate(foodRate)} | warmth ${fmtRate(warmthRate)} | threat ${fmtRate(threatRate)} | science ${fmtRate(scienceRate)}\n` +
       forecastLine +
-      `Danger forecast: edibleâ†’0 in ${starveEtaEdible} | warmthâ†’0 in ${freezeEta}\n` +
+      `Danger forecast: edible→0 in ${starveEtaEdible} | warmth→0 in ${freezeEta}\n` +
       `Preserved: jerky ${fmt(state.res.jerky ?? 0)} (no spoilage)\n` +
       (() => {
         const oc = state._lastFoodOvercap ?? { cap: foodStorageCap(state), food: state.res.food, mult: 1 };
@@ -8046,19 +8098,19 @@ import { PATCH_HISTORY } from './content.js';
       `ETAs: to warmth target ${warmthToTargetEta} | to threat target ${threatTargetEta} | to RAID (100) ${raidEta}\n` +
       (nextUnlock ? `Next unlock: ${nextUnlock.name} @ ${nextUnlock.at} science (ETA ${nextUnlockEta})\n` : 'All unlocks achieved.\n') +
       projLine +
-      `Reserves: foodâ‰¥${getReserve(state,'food')} | woodâ‰¥${getReserve(state,'wood')} | scienceâ‰¥${getReserve(state,'science')} | toolsâ‰¥${getReserve(state,'tools')} (AI avoids spending below)\n` +
+      `Reserves: food≥${getReserve(state,'food')} | wood≥${getReserve(state,'wood')} | science≥${getReserve(state,'science')} | tools≥${getReserve(state,'tools')} (AI avoids spending below)\n` +
       `Housing cap: ${housingCap(state)} | Palisade reduces threat growth.\n` +
-      `Raid at threat â‰¥ 100.` + planLine;
+      `Raid at threat ≥ 100.` + planLine;
 
     // Goals that actually matter
     const goals = [
-      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten â‰¥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
-      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth â‰¥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
-      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat â‰¤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
+      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
+      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
+      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
       { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
       { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
-      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools â‰¥ 10Ã—pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
-      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky â‰¥ 20Ã—pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
+      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
+      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
       { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
       { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
       { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
@@ -8117,7 +8169,7 @@ import { PATCH_HISTORY } from './content.js';
     if (wpEl) wpEl.value = String(Math.round(wpPct/5)*5);
     const wph = el('workPaceHint');
     if (wph) {
-      const moodDrift = wpMul > 1.02 ? `mood drift â†“` : (wpMul < 0.98 ? `mood drift â†‘` : `mood steady`);
+      const moodDrift = wpMul > 1.02 ? `mood drift ↓` : (wpMul < 0.98 ? `mood drift ↑` : `mood steady`);
       wph.textContent = `${wpPct}% | output x${wpMul.toFixed(2)} | fatigue x${wpMul.toFixed(2)} | ${moodDrift}`;
     }
 
@@ -8159,7 +8211,7 @@ import { PATCH_HISTORY } from './content.js';
     if (docSel) docSel.value = doc;
     const docHint = el('doctrineHint');
     if (docHint) {
-      const roleMul = (doc === 'Specialize') ? 'â†‘ role pressure, â†“ boredom' : (doc === 'Rotate') ? 'â†“ role pressure, â†‘ boredom, â†“ dissent' : 'baseline';
+      const roleMul = (doc === 'Specialize') ? '↑ role pressure, ↓ boredom' : (doc === 'Rotate') ? '↓ role pressure, ↑ boredom, ↓ dissent' : 'baseline';
       docHint.textContent = roleMul;
     }
 
@@ -8186,7 +8238,7 @@ import { PATCH_HISTORY } from './content.js';
     const rrEl = el('reserveRecHint');
     if (rrEl) {
       const sn = String(rr?.season?.name ?? '');
-      rrEl.textContent = `Recommended (${sn}): foodâ‰¥${rr.food} | woodâ‰¥${rr.wood} | scienceâ‰¥${rr.science} | toolsâ‰¥${rr.tools}`;
+      rrEl.textContent = `Recommended (${sn}): food≥${rr.food} | wood≥${rr.wood} | science≥${rr.science} | tools≥${rr.tools}`;
     }
 
     renderDirectiveTools({
@@ -8230,7 +8282,7 @@ import { PATCH_HISTORY } from './content.js';
             const ct = blocked[a] ?? 0;
             const msg = String(blockedMsg?.[a] ?? '').trim();
             const short = msg ? msg.replace(/\s+/g,' ').slice(0, 64) : '';
-            lines.push(`- ${a} x${ct}${short ? ` â€” ${short}` : ''}`);
+            lines.push(`- ${a} x${ct}${short ? ` — ${short}` : ''}`);
           }
           if (bKeys.length > top.length) lines.push(`- (+${bKeys.length - top.length} more)`);
         }
@@ -8300,8 +8352,8 @@ import { PATCH_HISTORY } from './content.js';
         const arrow = th.querySelector('.arrow');
         const active = (uiSort.key && key === uiSort.key);
         th.classList.toggle('active', !!active);
-        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? 'â–²' : 'â–¼') : '';
-        th.title = 'Click to sort (desc â†’ asc â†’ off)';
+        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? '▲' : '▼') : '';
+        th.title = 'Click to sort (desc → asc → off)';
       });
     }
 
@@ -8436,7 +8488,7 @@ import { PATCH_HISTORY } from './content.js';
 
       const taskTitleParts = [];
       if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
-      if (k._fallbackTo) taskTitleParts.push(`fallback â†’ ${k._fallbackTo}`);
+      if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
       // If we have a recent blocked snapshot, include the short reason in tooltip.
       const lb = k._lastBlocked;
       if (lb && typeof lb === 'object' && (state.t - Number(lb.at ?? -9999)) <= 6) {
@@ -8457,7 +8509,7 @@ import { PATCH_HISTORY } from './content.js';
       tr.innerHTML = `
         <td title="Kitten id #${k.id}">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag">#${k.id}</span></td>
         <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' â†’ #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' â†’ ' + escapeHtml(k._fallbackTo)) : ''}</td>
+        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
         <td>${fmt(k.energy*100)}%</td>
         <td>${fmt(k.hunger*100)}%</td>
         <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
@@ -8487,8 +8539,8 @@ import { PATCH_HISTORY } from './content.js';
       box.className = 'rule';
       const btns = rulesRO
         ? `<span class="small" style="opacity:.7">(read-only)</span>`
-        : `<button class="btn" data-act="up" data-i="${idx}">â†‘</button>
-           <button class="btn" data-act="down" data-i="${idx}">â†“</button>
+        : `<button class="btn" data-act="up" data-i="${idx}">↑</button>
+           <button class="btn" data-act="down" data-i="${idx}">↓</button>
            <button class="btn bad" data-act="del" data-i="${idx}">Delete</button>`;
       box.innerHTML = `
         <div class="top">
@@ -8728,7 +8780,7 @@ import { PATCH_HISTORY } from './content.js';
         const sTxt = (ms?.enabled && ms.last)
           ? ` | safety(hungry>${Number(ms.last.hungry).toFixed(2)}, tired>${Number(ms.last.tired).toFixed(2)}, warmth<${Number(ms.last.warmth).toFixed(0)}, threat>${Number(ms.last.threat).toFixed(0)})` + (ms.lastWhy ? ` (${ms.lastWhy})` : '')
           : '';
-        mlHintEl.textContent = `ML priorities Δ: food ${(p.food>=0?'+':'')+p.food.toFixed(2)} | safety ${(p.safety>=0?'+':'')+p.safety.toFixed(2)} | progress ${(p.progress>=0?'+':'')+p.progress.toFixed(2)} | social ${(p.social>=0?'+':'')+p.social.toFixed(2)} | loss ${Number(ml.lastLoss??0).toFixed(3)}` + sTxt;
+        mlHintEl.textContent = `ML priorities ?: food ${(p.food>=0?'+':'')+p.food.toFixed(2)} | safety ${(p.safety>=0?'+':'')+p.safety.toFixed(2)} | progress ${(p.progress>=0?'+':'')+p.progress.toFixed(2)} | social ${(p.social>=0?'+':'')+p.social.toFixed(2)} | loss ${Number(ml.lastLoss??0).toFixed(3)}` + sTxt;
       } else {
         mlHintEl.textContent = '';
       }
@@ -8769,7 +8821,7 @@ import { PATCH_HISTORY } from './content.js';
     return order
       .map(a => ({ a, n: desired[a] ?? 0 }))
       .filter(x => x.n > 0)
-      .map(x => `${x.a}Ã—${x.n}`)
+      .map(x => `${x.a}×${x.n}`)
       .join('  ');
   }
 
@@ -8822,16 +8874,16 @@ import { PATCH_HISTORY } from './content.js';
       const b = (plan && plan.desiredBase && (a in plan.desiredBase)) ? Number(plan.desiredBase[a] ?? 0) : null;
       const w = (plan && plan.desired && (a in plan.desired)) ? Number(plan.desired[a] ?? 0) : null;
       const planNote = (b !== null || w !== null)
-        ? `<span class=\"small\" style=\"opacity:.75; margin-left:6px\" title=\"Plan preview for this action (without policy â†’ with policy).\">plan ${b===null?'-':b}â†’${w===null?'-':w}</span>`
+        ? `<span class=\"small\" style=\"opacity:.75; margin-left:6px\" title=\"Plan preview for this action (without policy → with policy).\">plan ${b===null?'-':b}→${w===null?'-':w}</span>`
         : '';
 
       return `
         <div class="row" style="justify-content:space-between; gap:10px; margin-bottom:6px">
           <span class="small" style="min-width:110px">${label}${planNote}</span>
           <div class="row" style="gap:6px">
-            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=Â±0.50, Alt=Â±1.00, Ctrl/âŒ˜=min/max.">-</button>
-            <span class="small" style="display:inline-block; width:44px; text-align:center" title="Multiplier for ${a}. Tip: Shift=0.50 steps, Alt=1.00 steps, Ctrl/âŒ˜ sets to min/max.">${val.toFixed(2)}</span>
-            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=Â±0.50, Alt=Â±1.00, Ctrl/âŒ˜=min/max.">+</button>
+            <button class="btn" data-pol="dec" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">-</button>
+            <span class="small" style="display:inline-block; width:44px; text-align:center" title="Multiplier for ${a}. Tip: Shift=0.50 steps, Alt=1.00 steps, Ctrl/⌘ sets to min/max.">${val.toFixed(2)}</span>
+            <button class="btn" data-pol="inc" data-a="${a}" ${disabled?'disabled':''} title="Adjust multiplier. Shift=±0.50, Alt=±1.00, Ctrl/⌘=min/max.">+</button>
             <button class="btn mode ${isLocked?'active':''}" data-pol="lock" data-a="${a}" title="Auto Policy will not modify this multiplier while locked.">${isLocked?'Locked':'Lock'}</button>
             <span class="small" style="opacity:.85">(0..2)</span>
           </div>
@@ -8847,7 +8899,7 @@ import { PATCH_HISTORY } from './content.js';
         </div>
         <div class="row" style="gap:8px">
           <button class="btn" data-policy-undo="1" ${undo.ok?'':'disabled'} title="Restores the last manual policy/role-quota change for ~2 minutes.">Undo</button>
-          <span class="small" style="opacity:.8">${undo.ok ? `~${Math.ceil(undo.left)}s left${undo.reason?` â€¢ ${escapeHtml(undo.reason)}`:''}` : 'â€”'}</span>
+          <span class="small" style="opacity:.8">${undo.ok ? `~${Math.ceil(undo.left)}s left${undo.reason?` • ${escapeHtml(undo.reason)}`:''}` : '—'}</span>
         </div>
       </div>
     `;
@@ -9002,7 +9054,7 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     s.roleQuota = next;
-    log(`Role quota preset â†’ ${name} (${Object.entries(next).filter(([,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ') || 'all 0'})`);
+    log(`Role quota preset → ${name} (${Object.entries(next).filter(([,v])=>v>0).map(([k,v])=>`${k}:${v}`).join(', ') || 'all 0'})`);
     save();
     render();
   }
@@ -9279,7 +9331,7 @@ import { PATCH_HISTORY } from './content.js';
     const prev = !!st.director.curfew;
     st.director.curfew = !!on;
     if (isGlobal && prev !== !!on) {
-      log(`Curfew â†’ ${on ? 'ON' : 'OFF'} (${on ? 'threat grows slower, morale drifts down' : 'normal civic life resumes'})`);
+      log(`Curfew → ${on ? 'ON' : 'OFF'} (${on ? 'threat grows slower, morale drifts down' : 'normal civic life resumes'})`);
       save();
       render();
     }
@@ -9339,7 +9391,7 @@ import { PATCH_HISTORY } from './content.js';
       state.director.autoCrisisTriggered = false;
       state.director.autoCrisisWhy = '';
     }
-    log(`Auto Crisis â†’ ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
+    log(`Auto Crisis → ${state.director.autoCrisis ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -9350,7 +9402,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director.autoDrills = !!e.target.checked;
     if (state.director.autoDrills) state.director.autoDrillsNextAt = 0;
     state.director.autoDrillsWhy = '';
-    log(`Auto Drills â†’ ${state.director.autoDrills ? 'ON' : 'OFF'}`);
+    log(`Auto Drills → ${state.director.autoDrills ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -9361,7 +9413,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director.autoCouncil = !!e.target.checked;
     if (state.director.autoCouncil) state.director.autoCouncilNextAt = 0;
     state.director.autoCouncilWhy = '';
-    log(`Auto Council â†’ ${state.director.autoCouncil ? 'ON' : 'OFF'}`);
+    log(`Auto Council → ${state.director.autoCouncil ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -9372,7 +9424,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director.autoDangerPause = !!e.target.checked;
     if (state.director.autoDangerPause) state.director.autoDangerPauseNextAt = 0;
     state.director.autoDangerPauseWhy = '';
-    log(`Auto Pause (danger) â†’ ${state.director.autoDangerPause ? 'ON' : 'OFF'}`);
+    log(`Auto Pause (danger) → ${state.director.autoDangerPause ? 'ON' : 'OFF'}`);
     save();
     render();
   });
@@ -9381,7 +9433,7 @@ import { PATCH_HISTORY } from './content.js';
   if (pfEl) pfEl.addEventListener('change', (e) => {
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, projectFocus:'Auto', autonomy: 0.60 };
     state.director.projectFocus = String(e.target.value || 'Auto');
-    log(`Project focus â†’ ${state.director.projectFocus}`);
+    log(`Project focus → ${state.director.projectFocus}`);
     save();
     render();
   });
@@ -9476,7 +9528,7 @@ import { PATCH_HISTORY } from './content.js';
       if (s.unlocked?.workshop && (Number(s.res?.tools ?? 0) < n * 8) && (Number(s.res?.science ?? 0) > 120)) {
         return { mode: 'Advance', why: `stable + tools behind (${fmt(s.res.tools ?? 0)}/${(n*8).toFixed(0)})` };
       }
-      return { mode: 'Advance', why: 'stable basics â†’ push tech' };
+      return { mode: 'Advance', why: 'stable basics → push tech' };
     }
 
     // Default: Survive (keeps buffers healthy without overcommitting).
@@ -9538,12 +9590,12 @@ import { PATCH_HISTORY } from './content.js';
     // Security gate
     if (!state.unlocked.security) state.signals.ALARM = false;
 
-    log(note || `Mode â†’ ${m}`);
+    log(note || `Mode → ${m}`);
     save();
   }
 
   function setMode(m){
-    setModeCore(m, `Mode â†’ ${m}`);
+    setModeCore(m, `Mode → ${m}`);
     render();
   }
 
@@ -9559,7 +9611,7 @@ import { PATCH_HISTORY } from './content.js';
 
   document.getElementById('rations').addEventListener('change', (e)=>{
     state.rations = e.target.value;
-    log(`Rations â†’ ${state.rations}`);
+    log(`Rations → ${state.rations}`);
     save();
     render();
   });
@@ -9579,7 +9631,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00 };
     const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     state.director.discipline = clamp01(pct / 100);
-    uiDebouncedLog('discipline', `Discipline â†’ ${Math.round(state.director.discipline * 100)}%`);
+    uiDebouncedLog('discipline', `Discipline → ${Math.round(state.director.discipline * 100)}%`);
     save();
     render();
   });
@@ -9591,7 +9643,7 @@ import { PATCH_HISTORY } from './content.js';
     if (!('doctrine' in state.director)) state.director.doctrine = 'Balanced';
     const pct = Math.max(80, Math.min(120, Number(e.target.value) || 100));
     state.director.workPace = Math.max(0.8, Math.min(1.2, pct / 100));
-    uiDebouncedLog('workPace', `Work pace â†’ ${Math.round(state.director.workPace * 100)}%`);
+    uiDebouncedLog('workPace', `Work pace → ${Math.round(state.director.workPace * 100)}%`);
     save();
     render();
   });
@@ -9602,7 +9654,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioFood = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioFood', `Priority (Food) â†’ ${Math.round(state.director.prioFood * 100)}%`);
+    uiDebouncedLog('prioFood', `Priority (Food) → ${Math.round(state.director.prioFood * 100)}%`);
     save();
     render();
   });
@@ -9612,7 +9664,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioSafety', `Priority (Safety) â†’ ${Math.round(state.director.prioSafety * 100)}%`);
+    uiDebouncedLog('prioSafety', `Priority (Safety) → ${Math.round(state.director.prioSafety * 100)}%`);
     save();
     render();
   });
@@ -9622,7 +9674,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioProgress', `Priority (Progress) â†’ ${Math.round(state.director.prioProgress * 100)}%`);
+    uiDebouncedLog('prioProgress', `Priority (Progress) → ${Math.round(state.director.prioProgress * 100)}%`);
     save();
     render();
   });
@@ -9632,7 +9684,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00 };
     const pct = Math.max(50, Math.min(150, Number(e.target.value) || 100));
     state.director.prioSocial = Math.max(0.50, Math.min(1.50, pct / 100));
-    uiDebouncedLog('prioSocial', `Priority (Social) â†’ ${Math.round(state.director.prioSocial * 100)}%`);
+    uiDebouncedLog('prioSocial', `Priority (Social) → ${Math.round(state.director.prioSocial * 100)}%`);
     save();
     render();
   });
@@ -9643,7 +9695,7 @@ import { PATCH_HISTORY } from './content.js';
     state.director.prioSafety = Math.max(0.50, Math.min(1.50, Number(pSafety) || 1.00));
     state.director.prioProgress = Math.max(0.50, Math.min(1.50, Number(pProg) || 1.00));
     state.director.prioSocial = Math.max(0.50, Math.min(1.50, Number(pSoc) || 1.00));
-    log(`Priority preset â†’ ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}% | Social ${(state.director.prioSocial*100).toFixed(0)}%`);
+    log(`Priority preset → ${why}: Food ${(state.director.prioFood*100).toFixed(0)}% | Safety ${(state.director.prioSafety*100).toFixed(0)}% | Progress ${(state.director.prioProgress*100).toFixed(0)}% | Social ${(state.director.prioSocial*100).toFixed(0)}%`);
     save();
     render();
   }
@@ -9721,13 +9773,13 @@ import { PATCH_HISTORY } from './content.js';
       if (dir !== 'Auto') counts[dir] = (counts[dir] ?? 0) + 1;
     }
     const parts = Object.entries(counts).filter(([,n])=>n>0).map(([k,n])=>`${k}:${n}`);
-    log(`Directive tools â†’ Match blocs (${parts.join(' | ') || 'none'})`);
+    log(`Directive tools → Match blocs (${parts.join(' | ') || 'none'})`);
   }
 
   function clearAllDirectives(s){
     const ks = Array.isArray(s?.kittens) ? s.kittens : [];
     for (const k of ks) k.directive = 'Auto';
-    log('Directive tools â†’ Clear all (Directives reset to Auto).');
+    log('Directive tools → Clear all (Directives reset to Auto).');
   }
 
   initDirectiveTools({
@@ -9926,7 +9978,7 @@ import { PATCH_HISTORY } from './content.js';
     state.reserve.wood = rr.wood;
     state.reserve.science = rr.science;
     state.reserve.tools = rr.tools;
-    log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): foodâ‰¥${rr.food}, woodâ‰¥${rr.wood}, scienceâ‰¥${rr.science}, toolsâ‰¥${rr.tools}`);
+    log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): food≥${rr.food}, wood≥${rr.wood}, science≥${rr.science}, tools≥${rr.tools}`);
     save();
     render();
   });
@@ -9995,7 +10047,7 @@ import { PATCH_HISTORY } from './content.js';
     // - default: 0.25 steps
     // - Shift:   0.50 steps
     // - Alt:     1.00 steps
-    // - Ctrl/âŒ˜:  snap to 0 (dec) or 2 (inc)
+    // - Ctrl/⌘:  snap to 0 (dec) or 2 (inc)
     const snap = !!(e.ctrlKey || e.metaKey);
     const step = e.altKey ? 1.00 : e.shiftKey ? 0.50 : 0.25;
 
@@ -10029,7 +10081,7 @@ import { PATCH_HISTORY } from './content.js';
     const cur = Number(state.roleQuota[role] ?? 0);
     const next = (rq === 'inc') ? (cur + 1) : (cur - 1);
     state.roleQuota[role] = Math.max(0, Math.min(99, next|0));
-    log(`Role quota â†’ ${role}=${state.roleQuota[role]}`);
+    log(`Role quota → ${role}=${state.roleQuota[role]}`);
     save();
     render();
   });
@@ -10065,13 +10117,13 @@ import { PATCH_HISTORY } from './content.js';
   function applyPolicyPreset(name){
     // Presets are *nudges*; safety rules still override and scoring still matters.
     if (name === 'Survive') {
-      setPolicy({ Socialize:1.05, Care:0.95, Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Mentor:0.80, Research:0.85 }, 'Policy preset â†’ Survive (food + warmth first).');
+      setPolicy({ Socialize:1.05, Care:0.95, Forage:1.25, Farm:1.25, PreserveFood:1.10, ChopWood:1.10, StokeFire:1.35, Guard:1.05, BuildHut:0.75, BuildPalisade:0.85, BuildGranary:1.20, BuildWorkshop:0.85, BuildLibrary:0.75, CraftTools:0.75, Mentor:0.80, Research:0.85 }, 'Policy preset → Survive (food + warmth first).');
     } else if (name === 'Expand') {
-      setPolicy({ Socialize:0.90, Care:0.85, Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Mentor:0.90, Research:0.85 }, 'Policy preset â†’ Expand (wood + building).');
+      setPolicy({ Socialize:0.90, Care:0.85, Forage:1.00, Farm:1.00, ChopWood:1.35, StokeFire:1.00, Guard:0.90, BuildHut:1.50, BuildPalisade:1.05, BuildGranary:1.25, BuildWorkshop:1.10, BuildLibrary:0.95, CraftTools:1.00, Mentor:0.90, Research:0.85 }, 'Policy preset → Expand (wood + building).');
     } else if (name === 'Defend') {
-      setPolicy({ Socialize:0.85, Care:0.70, Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Mentor:0.70, Research:0.75 }, 'Policy preset â†’ Defend (guard + palisade).');
+      setPolicy({ Socialize:0.85, Care:0.70, Forage:1.00, Farm:1.00, ChopWood:1.10, StokeFire:1.00, Guard:1.60, BuildHut:0.85, BuildPalisade:1.55, BuildGranary:1.00, BuildWorkshop:0.80, BuildLibrary:0.70, CraftTools:0.75, Mentor:0.70, Research:0.75 }, 'Policy preset → Defend (guard + palisade).');
     } else if (name === 'Advance') {
-      setPolicy({ Socialize:0.95, Care:0.90, Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Mentor:1.35, Research:1.60 }, 'Policy preset â†’ Advance (research + tools).');
+      setPolicy({ Socialize:0.95, Care:0.90, Forage:0.90, Farm:1.00, ChopWood:1.00, StokeFire:0.95, Guard:0.95, BuildHut:0.70, BuildPalisade:0.80, BuildGranary:1.05, BuildWorkshop:1.35, BuildLibrary:1.45, CraftTools:1.45, Mentor:1.35, Research:1.60 }, 'Policy preset → Advance (research + tools).');
     }
   }
 
@@ -10273,9 +10325,9 @@ import { PATCH_HISTORY } from './content.js';
 
     log(
       `Offline progress: simulated ${sim}s${capped}. ` +
-      `Î”food ${fmt(d('food'))}, Î”jerky ${fmt(d('jerky'))}, Î”wood ${fmt(d('wood'))}, ` +
-      `Î”warmth ${fmt(d('warmth'))}, Î”threat ${fmt(d('threat'))}, ` +
-      `Î”science ${fmt(d('science'))}, Î”tools ${fmt(d('tools'))}` +
+      `Δfood ${fmt(d('food'))}, Δjerky ${fmt(d('jerky'))}, Δwood ${fmt(d('wood'))}, ` +
+      `Δwarmth ${fmt(d('warmth'))}, Δthreat ${fmt(d('threat'))}, ` +
+      `Δscience ${fmt(d('science'))}, Δtools ${fmt(d('tools'))}` +
       (suppressed ? ` (suppressed ${suppressed} log lines)` : '')
     );
 

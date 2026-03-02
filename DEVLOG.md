@@ -4,6 +4,28 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 05:19 CST - Aquarium: Norms v4 (punitive tolerance → discipline backlash)
+
+Summary
+- Aquarium depth: added a fourth persistent Norm (culture memory): `social.norms.punitiveTolerance` (0..1).
+  - It rises during sustained **dissent/grievance** under harsh governance (low autonomy / high discipline / curfew) and decays when conditions soften.
+  - Small, bounded consequence: it changes how effective **Discipline** is at suppressing dissent (low tolerance → backlash, high tolerance → compliance).
+- Observability: when punitive tolerance crosses bands (**lenient / firm / punitive**), the sim emits a **Norms:** Society feed beat and drops a Trends marker (`kind:'norm'`, label=`pun:...`).
+- Save-safe: migrated with defaults for older saves.
+
+Files touched
+- `js/main.js`
+- `js/state.js`
+- `dist/js/main.js`
+- `dist/js/state.js`
+- `PLAN_STATUS.md`
+
+What to try
+- Run Curator hands-off and deliberately apply harsh policy (Autonomy low, Discipline high, Curfew ON) while dissent/grievance are elevated.
+- Watch the Society feed for **Norms:** punitive tolerance lines + `pun:` markers in Trends; then ease policy (raise Autonomy, lower Discipline, Curfew OFF) and watch it cool back down.
+
+---
+
 ## 2026-03-02 05:04 CST - Aquarium: Norms v3 (mutual aid culture → organizer legitimacy)
 
 Summary
