@@ -3517,3 +3517,27 @@ Files touched
 
 What to try
 - Let the colony run hands-off with Curator enabled; watch the Society feed for a "Politics shift" line and see a matching marker line in Trends.
+
+---
+
+## 2026-03-02 01:30 CST - Aquarium: Relationship beats (buddy-need threshold markers)
+
+Summary
+- Aquarium depth/observability: buddy pairs now produce occasional **relationship beats** in the Society feed.
+- When a pair’s buddy-need crosses thresholds, we log either:
+  - **"drifting apart"** (high relationship pressure), or
+  - **"reconnected"** (pressure relieved).
+- Trends: each beat drops a small event marker (`kind:'rel'`, label drift/reconnect) so you can correlate social dynamics with resource swings.
+- Anti-spam: one-side-only emission per pair + a short pair cooldown; beats are transient and stripped from saves.
+
+Files touched
+- `kitten-knight-civ/js/main.js`
+- `dist/js/main.js`
+- `kitten-knight-civ/js/state.js`
+- `dist/js/state.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+
+What to try
+- Run Curator hands-off for a few minutes with 4+ kittens.
+- Watch the Society feed for **Relationship:** lines and confirm matching markers appear in the Trends graph.

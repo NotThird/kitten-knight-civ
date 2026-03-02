@@ -513,9 +513,11 @@ import { PATCH_HISTORY } from './content.js';
   // Buddy need (relationship pressure)
   // Increases slowly when separated; decreases when spending time together.
   // Purpose: small emergent social texture + a policy lever (Socialize/Care + Autonomy).
+  // Aquarium hook: emits occasional relationship "beats" to the Society feed + Trends markers.
   function updateBuddyNeedPerSecond(s, k, task){
     const b = buddyOf(s, k);
-    if (!b) { k.buddyNeed = clamp01(Number(k.buddyNeed ?? 0)); return; }
+    k.buddyNeed = clamp01(Number(k.buddyNeed ?? 0));
+    if (!b) return;
 
     const t = String(task ?? k.task ?? '');
     const bt = String(b.task ?? '');
@@ -526,7 +528,8 @@ import { PATCH_HISTORY } from './content.js';
     const together = (t === 'Socialize' && bt === 'Socialize') || (t && t === bt && t !== 'Rest');
 
     const a = effectiveAutonomy01(s);
-    let need = clamp01(Number(k.buddyNeed ?? 0));
+    const prevNeed = clamp01(Number(k.buddyNeed ?? 0));
+    let need = prevNeed;
 
     if (together) {
       // Faster relief at higher autonomy (they can actually choose to pair up).
@@ -539,6 +542,60 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     k.buddyNeed = need;
+
+    // --- Aquarium: relationship beats (threshold crossings)
+    // We only emit at most one beat per pair per cooldown to avoid spam.
+    // (Deterministic, minimal interaction; purely observability + emergent texture.)
+    const id = Number(k?.id ?? 0);
+    const bid = Number(b?.id ?? 0);
+    if (!Number.isFinite(id) || !Number.isFinite(bid) || id <= 0 || bid <= 0) return;
+    if (id > bid) return; // only one side of the pair emits
+
+    // Transient caches (strip on save)
+    s._buddyBeatCooldown = (s._buddyBeatCooldown && typeof s._buddyBeatCooldown === 'object') ? s._buddyBeatCooldown : {};
+    const key = `${id}-${bid}`;
+    const nowT = Number(s.t ?? 0);
+    const nextAt = Number(s._buddyBeatCooldown[key] ?? 0);
+    if (nowT < nextAt) return;
+
+    const bandFor = (n) => (n >= 0.85) ? 'strained' : (n <= 0.25) ? 'close' : 'ok';
+    const prevBand = String(k._buddyBeatBand ?? bandFor(prevNeed));
+    const newBand = bandFor(need);
+
+    // Initialize silently.
+    if (!k._buddyBeatBand) {
+      k._buddyBeatBand = newBand;
+      return;
+    }
+
+    if (newBand !== prevBand) {
+      const nmA = String(k?.name ?? `Kitten ${id}`);
+      const nmB = String(b?.name ?? `Kitten ${bid}`);
+
+      // Local feed writer (avoid touching global state if called on preview clones).
+      const feedTo = (ss, msg) => {
+        ss.feed = Array.isArray(ss.feed) ? ss.feed : [];
+        ss.feed.push(`[${fmt(ss.t)}] ${msg}`);
+        const FEED_MAX = 220;
+        if (ss.feed.length > FEED_MAX) ss.feed.splice(0, ss.feed.length - FEED_MAX);
+      };
+
+      if (newBand === 'strained') {
+        feedTo(s, `Relationship: ${nmA} and ${nmB} seem to be drifting apart.`);
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'rel', label:'drift', color:'rgba(251,113,133,.16)' });
+      }
+      if (newBand === 'close') {
+        feedTo(s, `Relationship: ${nmA} and ${nmB} reconnected.`);
+        s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+        s._trendEvents.push({ t: nowT, kind:'rel', label:'reconnect', color:'rgba(52,211,153,.14)' });
+      }
+      if (Array.isArray(s._trendEvents) && s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+
+      k._buddyBeatBand = newBand;
+      b._buddyBeatBand = newBand; // keep symmetric
+      s._buddyBeatCooldown[key] = nowT + 60;
+    }
   }
 
   function defaultRules(){
