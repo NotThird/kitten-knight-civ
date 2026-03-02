@@ -3328,3 +3328,25 @@ What to try
   - it logs a single "Auto Rations -> ON/OFF" line
   - turning it ON allows an immediate rations switch (no waiting)
   - it persists after refresh
+
+
+---
+
+## 2026-03-01 19:56 CST - P0.1 Modularization: extract Auto Recruit toggle wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Auto Recruit** checkbox change wiring out of main.js into a new UI helper: initAutoRecruitControls(...) in js/ui.js.
+- main.js now injects a tiny setAutoRecruit(...) mutator (clears the last why string when toggled off) plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, toggle **Auto Recruit** ON/OFF and confirm:
+  - it logs a single "Auto Recruit -> ON/OFF" line
+  - it persists after refresh
+  - the Season panel still shows the Auto Recruit why line when enabled
+
