@@ -4,6 +4,23 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 03:03 CST - Aquarium: Coterie pressure timers in Factions UI
+
+Summary
+- Observability: active **coterie pressure** windows now show inline in **Factions → Coteries** as small tags:
+  - `AID 42s` for mutual-aid pressure (member grievance cools faster)
+  - `STRICT 18s` for strict-norms pressure (slightly higher dissent desire)
+- Pure UI surfacing (no balance changes intended) so the aquarium’s culture beats are readable without scrolling the feed.
+
+Files touched
+- `js/main.js`
+
+What to try
+- Run Curator hands-off until you see a **Culture:** pressure line.
+- Open **Factions → Coteries** and confirm the affected circle shows an `AID …s` or `STRICT …s` tag counting down.
+
+---
+
 ## 2026-02-28 23:45 CST - v0.9.133 QoL: Pinned projects auto-clear on completion
 
 Summary
@@ -3632,7 +3649,7 @@ What to try
 
 Summary
 - Aquarium depth: influential coteries can now occasionally emit a short-lived **culture pressure** window:
-  - **Mutual aid** ? members� **Grievance cools faster** for ~60s.
+  - **Mutual aid** ? members� **Grievance cools faster** for ~60s.
   - **Strict norms** ? colony **dissent desire** rises slightly for ~60s.
 - Observability: each pressure posts a clear **Society feed** line and drops a Trends event marker (kind:'press').
 - Save-safe: pressure state is transient (_coteriePressure*) and stripped from saves.

@@ -6800,6 +6800,9 @@ import { PATCH_HISTORY } from './content.js';
     }
     const coteriesHtml = coteries.length
       ? (() => {
+          const nowT = Number(s?.t ?? 0) || 0;
+          const cp = (s && s._coteriePressure && typeof s._coteriePressure === 'object') ? s._coteriePressure : null;
+
           const rows = coteries.slice(0, 8).map(c => {
             const mem = (c.members ?? []).map(id => nameById.get(Number(id)) ?? `#${id}`).slice(0, 5);
             const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '…' : '');
@@ -6809,9 +6812,27 @@ import { PATCH_HISTORY } from './content.js';
             const trad = escapeHtml(String(c.trad ?? ''));
             const ethosLabel = escapeHtml(String(c.ethosLabel ?? ''));
             const ethos = clamp01(Number(c.ethos ?? 0));
+
+            // Aquarium observability: surface active coterie pressure windows (aid/strict)
+            // so players can connect macro mood/dissent drift to micro-factions.
+            let pressTag = '';
+            if (cp) {
+              const aid = cp.aid;
+              const strict = cp.strict;
+              const aidLeft = aid && Number(aid.until ?? 0) - nowT;
+              const strictLeft = strict && Number(strict.until ?? 0) - nowT;
+              if (aid && Number(aid.cid ?? null) === Number(c.id ?? null) && Number.isFinite(aidLeft) && aidLeft > 0.5) {
+                pressTag = `<span class="tag" style="border-color: rgba(52,211,153,.45); background: rgba(52,211,153,.08)">AID ${Math.ceil(aidLeft)}s</span> `;
+              } else if (strict && Number(strict.cid ?? null) === Number(c.id ?? null) && Number.isFinite(strictLeft) && strictLeft > 0.5) {
+                pressTag = `<span class="tag" style="border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.08)">STRICT ${Math.ceil(strictLeft)}s</span> `;
+              }
+            }
+
             const title = `Circle ties: buddies + shared work. Dominant axis ${ax} (${c.domN ?? 0}/${sz}). Shared-work cohesion ~${cw.toFixed(1)}.${trad ? ` Tradition: ${trad}.` : ''}${ethosLabel ? ` Ethos: ${ethosLabel} (${Math.round(ethos*100)}%).` : ''}`;
             return `<div class="small" style="opacity:.88; margin-top:4px" title="${title}">` +
-              `<span class="tag">Coterie</span> <span class="tag">${ax}</span> <span class="small">x${sz}</span> ` +
+              `<span class="tag">Coterie</span> <span class="tag">${ax}</span> ` +
+              pressTag +
+              `<span class="small">x${sz}</span> ` +
               (trad ? `<span class="small" style="opacity:.72">${trad}</span> ` : '') +
               (ethosLabel ? `<span class="small" style="opacity:.72">${ethosLabel}</span> ` : '') +
               `<span class="small" style="opacity:.7">cowork ${cw.toFixed(0)}</span> ` +
