@@ -4,6 +4,25 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 07:53 CST - Aquarium/Emergence: Ritual aftermath nudges culture memory (norms)
+
+Summary
+- Aquarium depth: when a **Culture ritual** ends, it now leaves a faint, persistent **culture memory** nudge (bounded + deterministic).
+  - **Story-circle** aftermath → tiny +**Mutual Aid** norm bump.
+  - **Work-oath** aftermath → tiny +**Punitive tolerance** norm bump.
+- Observability: posts a single **Society feed** beat and drops a **Trends** marker (`rit: after:*`) so you can correlate “why did norms drift?”
+- Save-safe: reuses existing norms; no schema changes.
+
+Files touched
+- `js/main.js`
+
+What to try
+- Run Curator hands-off until you see a **Ritual:** feed beat.
+- Wait ~60s for it to end; you should then see a **Culture:** aftermath feed line.
+- Open **Culture** and watch either **Mutual aid** or **Punitive tolerance** tick up by a hair over time; hover Trends to see the `after:aid+` / `after:pun+` marker.
+
+---
+
 ## 2026-03-02 07:38 CST - Aquarium/Emergence: Rituals create a tiny "town mood" drift (mood + grievance)
 
 Summary

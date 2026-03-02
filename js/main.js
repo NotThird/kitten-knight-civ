@@ -1165,6 +1165,42 @@ import { PATCH_HISTORY } from './content.js';
     // Goal: make the tank feel like it has "minutes-long" atmosphere shifts without player clicks.
     s._cultureRitual = (s._cultureRitual && typeof s._cultureRitual === 'object') ? s._cultureRitual : { kind:'', cid:null, until:0, nextAt:0 };
     if (nowT >= Number(s._cultureRitual.until ?? 0)) {
+      // Ritual aftermath: a tiny, persistent culture-memory nudge (no player clicks).
+      // Bounded + deterministic: lets 60s rituals leave a faint "scar" in norms.
+      const endedKind = String(s._cultureRitual.kind || '');
+      const endedCid = s._cultureRitual.cid;
+      if (endedKind) {
+        const endedC = (Array.isArray(cots) ? cots : []).find(c => String(c?.id ?? '') === String(endedCid ?? ''));
+        const who = endedC ? ((endedC.names ?? []).slice(0, 3).join(', ') + ((endedC.names?.length ?? 0) > 3 ? '…' : '')) : '';
+
+        s.social = s.social ?? { dissent: 0 };
+        s.social.norms = (s.social.norms && typeof s.social.norms === 'object') ? s.social.norms : { raidParanoia: 0, scarcityMindset: 0, mutualAid: 0, punitiveTolerance: 0 };
+
+        // Very small one-shot nudge (on the order of a few minutes of natural drift).
+        const d = 0.006;
+        if (endedKind === 'story') {
+          s.social.norms.mutualAid = clamp01(Number(s.social.norms.mutualAid ?? 0) + d);
+          s.feed = Array.isArray(s.feed) ? s.feed : [];
+          s.feed.push(`[${fmt(s.t)}] Culture: story-circle aftermath — mutual aid feels a little more natural. ${who ? `(${who})` : ''}`);
+          const FEED_MAX = 220;
+          if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+          s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+          s._trendEvents.push({ t: nowT, kind:'rit', label:'after:aid+', color:'rgba(250,204,21,.12)' });
+          if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+        } else if (endedKind === 'oath') {
+          s.social.norms.punitiveTolerance = clamp01(Number(s.social.norms.punitiveTolerance ?? 0) + d);
+          s.feed = Array.isArray(s.feed) ? s.feed : [];
+          s.feed.push(`[${fmt(s.t)}] Culture: work-oath aftermath — harsher discipline feels a little more normal. ${who ? `(${who})` : ''}`);
+          const FEED_MAX = 220;
+          if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+
+          s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
+          s._trendEvents.push({ t: nowT, kind:'rit', label:'after:pun+', color:'rgba(248,113,113,.14)' });
+          if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
+        }
+      }
+
       // Clear expired ritual.
       if (s._cultureRitual.kind) s._cultureRitual.kind = '';
       if (s._cultureRitual.cid) s._cultureRitual.cid = null;
