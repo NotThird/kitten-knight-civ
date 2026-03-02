@@ -2,7 +2,7 @@
 import { fmt, clamp01, now } from './util.js';
 import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
-import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
+import { initUI, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
 
 (() => {
@@ -8102,14 +8102,19 @@ import { PATCH_HISTORY } from './content.js';
     render,
   });
 
-  const docEl = document.getElementById('doctrine');
-  if (docEl) docEl.addEventListener('change', (e)=>{
+  function setDoctrine(vRaw){
     state.director = state.director ?? { winterPrep:false, saved:null, crisis:false, crisisSaved:null, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', projectFocus:'Auto', autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced' };
-    const v = String(e.target.value || 'Balanced');
+    const v = String(vRaw || 'Balanced');
     state.director.doctrine = (v === 'Specialize' || v === 'Rotate' || v === 'Balanced') ? v : 'Balanced';
-    log(`Labor doctrine â†’ ${state.director.doctrine}`);
-    save();
-    render();
+    return state.director.doctrine;
+  }
+
+  initDoctrineControls({
+    doctrineEl: document.getElementById('doctrine'),
+    setDoctrine,
+    log,
+    save,
+    render,
   });
 
   document.getElementById('targetFood').addEventListener('change', (e)=>{ state.targets.foodPerKitten = Number(e.target.value)||0; save(); render(); });

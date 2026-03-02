@@ -483,6 +483,38 @@ export function initDirectiveTools(deps){
 }
 
 /**
+ * Labor doctrine selector wiring.
+ *
+ * Kept in ui.js so main.js stays thinner; state mutation is dependency-injected.
+ *
+ * @param {object} deps
+ * @param {HTMLSelectElement|null} deps.doctrineEl
+ * @param {(v:string)=>void} deps.setDoctrine
+ * @param {(msg:string)=>void} deps.log
+ * @param {()=>void} deps.save
+ * @param {()=>void} deps.render
+ */
+export function initDoctrineControls(deps){
+  const {
+    doctrineEl,
+    setDoctrine,
+    log,
+    save,
+    render,
+  } = deps || {};
+
+  if (!doctrineEl) return;
+
+  doctrineEl.addEventListener('change', (e) => {
+    const v = String(e?.target?.value ?? 'Balanced');
+    const next = (setDoctrine?.(v) ?? v);
+    log?.(`Labor doctrine → ${String(next || 'Balanced')}`);
+    save?.();
+    render?.();
+  });
+}
+
+/**
  * Decision/Inspect modal wiring (click kitten row for full scoring breakdown).
  * Rendering is dependency-injected to keep this module UI-only.
  *

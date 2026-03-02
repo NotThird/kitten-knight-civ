@@ -3270,3 +3270,22 @@ What to try
 - In Director, click **Match blocs** and confirm directives are applied + the event log reports counts.
 - Click **Clear all** and confirm all directives reset to Auto.
 
+
+---
+
+## 2026-03-01 18:26 CST - P0.1 Modularization: extract Labor doctrine selector wiring into ui.js
+
+Summary
+- Phase 0 modularization slice: moved the Director **Labor doctrine** selector change wiring out of main.js into a new UI helper: `initDoctrineControls(...)` in `js/ui.js`.
+- main.js now injects a tiny `setDoctrine(...)` mutator (normalizes to Balanced/Rotate/Specialize) plus log/save/render into the UI module.
+- No behavior changes intended; this is a boundary/thinning step.
+
+Files touched
+- `js/ui.js`
+- `js/main.js`
+- `DEVLOG.md`
+
+What to try
+- In Director, switch doctrine between **Balanced / Rotate / Specialize** and confirm:
+  - it logs a single "Labor doctrine ? X" line
+  - it persists after refresh
