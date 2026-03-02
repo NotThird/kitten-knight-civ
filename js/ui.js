@@ -13,6 +13,7 @@
  * @param {()=>void} deps.openSocial
  * @param {()=>void} deps.openStorage
  * @param {()=>void} deps.openThreat
+ * @param {()=>void} deps.openCulture
  */
 export function initUI(deps){
   const {
@@ -24,6 +25,7 @@ export function initUI(deps){
     openSocial,
     openStorage,
     openThreat,
+    openCulture,
   } = deps || {};
 
   // Transient UI state (NOT saved)
@@ -47,6 +49,7 @@ export function initUI(deps){
     if (key === 'dissent' || key === 'compliance' || key === 'focusfit' || key === 'grievance') openSocial?.();
     if (key === 'storage') openStorage?.();
     if (key === 'threat') openThreat?.();
+    if (key === 'culture') openCulture?.();
   });
 
   // Colony table sorting (QoL)
@@ -1278,6 +1281,12 @@ export function initSocietyInspectors(deps){
     socialBodyEl,
     btnSocialClose,
 
+    cultureModalEl,
+    cultureTitleEl,
+    cultureSubEl,
+    cultureBodyEl,
+    btnCultureClose,
+
     storageModalEl,
     storageTitleEl,
     storageSubEl,
@@ -1291,7 +1300,7 @@ export function initSocietyInspectors(deps){
     btnThreatClose,
   } = deps || {};
 
-  const ui = { socialOpen:false, storageOpen:false, threatOpen:false };
+  const ui = { socialOpen:false, cultureOpen:false, storageOpen:false, threatOpen:false };
 
   function closeSocial(){
     ui.socialOpen = false;
@@ -1473,6 +1482,70 @@ export function initSocietyInspectors(deps){
     socialBodyEl.textContent = lines.join('\n');
   }
 
+  function closeCulture(){
+    ui.cultureOpen = false;
+    if (cultureModalEl) cultureModalEl.classList.add('hidden');
+  }
+
+  function openCulture(){
+    ui.cultureOpen = true;
+    if (cultureModalEl) cultureModalEl.classList.remove('hidden');
+    renderCulture();
+  }
+
+  function renderCulture(){
+    const state = getState?.();
+    if (!cultureModalEl || !cultureTitleEl || !cultureSubEl || !cultureBodyEl) return;
+    if (!ui.cultureOpen) { cultureModalEl.classList.add('hidden'); return; }
+
+    const norms = state?.social?.norms ?? {};
+    const pct = (x)=>`${Math.round(100 * (clamp01?.(Number(x ?? 0)) ?? 0))}%`;
+
+    const vig = clamp01?.(Number(norms.raidParanoia ?? 0)) ?? 0;
+    const scar = clamp01?.(Number(norms.scarcityMindset ?? 0)) ?? 0;
+    const aid = clamp01?.(Number(norms.mutualAid ?? 0)) ?? 0;
+    const pun = clamp01?.(Number(norms.punitiveTolerance ?? 0)) ?? 0;
+
+    const vigBand = String(state?.social?.normsBand ?? (vig >= 0.70 ? 'paranoid' : vig >= 0.40 ? 'wary' : 'calm'));
+    const scarBand = String(state?.social?.scarcityBand ?? (scar >= 0.70 ? 'hoarding' : scar >= 0.40 ? 'thrifty' : 'calm'));
+    const aidBand = String(state?.social?.mutualAidBand ?? (aid >= 0.70 ? 'communal' : aid >= 0.40 ? 'neighborly' : 'atomized'));
+    const punBand = String(state?.social?.punitiveBand ?? (pun >= 0.70 ? 'punitive' : pun >= 0.40 ? 'firm' : 'lenient'));
+
+    cultureTitleEl.textContent = 'Culture memory (Norms)';
+    cultureSubEl.textContent = 'Persistent norms are slow-moving culture scalars (0..100%). They update from raids, scarcity, social strain, and governance.';
+
+    const lines = [];
+    lines.push('Norms (persistent, 0..100%):');
+    lines.push(`• Vigilance (raid paranoia): ${pct(vig)} — ${vigBand}`);
+    lines.push(`• Scarcity mindset: ${pct(scar)} — ${scarBand}`);
+    lines.push(`• Mutual aid: ${pct(aid)} — ${aidBand}`);
+    lines.push(`• Punitive tolerance: ${pct(pun)} — ${punBand}`);
+    lines.push('');
+
+    // Last 8 norm transitions (pulled from trend markers)
+    const ev = Array.isArray(state?._trendEvents) ? state._trendEvents : [];
+    const normEv = ev.filter(e => String(e?.kind ?? '') === 'norm');
+    if (normEv.length > 0) {
+      const last = normEv.slice(-8);
+      const fmtAgo = (t)=>{
+        const dt = Math.max(0, Number(state?.t ?? 0) - Number(t ?? 0));
+        if (dt >= 120) return `${Math.round(dt/60)}m ago`;
+        return `${Math.round(dt)}s ago`;
+      };
+      lines.push('Recent culture shifts:');
+      for (const e of last) lines.push(`• ${String(e?.label ?? '')} (${fmtAgo(e?.t)})`);
+      lines.push('');
+    }
+
+    lines.push('How this matters:');
+    lines.push('• Vigilance biases Guard even after danger passes (the colony remembers raids).');
+    lines.push('• Scarcity biases PreserveFood even after the pantry recovers (habitual thrift).');
+    lines.push('• Mutual aid makes Socialize/Care more culturally "legitimate" during tension.');
+    lines.push('• Punitive tolerance changes whether Discipline causes backlash or compliance.');
+
+    cultureBodyEl.textContent = lines.join('\n');
+  }
+
   function closeStorage(){
     ui.storageOpen = false;
     if (storageModalEl) storageModalEl.classList.add('hidden');
@@ -1611,6 +1684,11 @@ export function initSocietyInspectors(deps){
     if (e.target === socialModalEl) closeSocial();
   });
 
+  if (btnCultureClose) btnCultureClose.addEventListener('click', closeCulture);
+  if (cultureModalEl) cultureModalEl.addEventListener('click', (e) => {
+    if (e.target === cultureModalEl) closeCulture();
+  });
+
   if (btnStorageClose) btnStorageClose.addEventListener('click', closeStorage);
   if (storageModalEl) storageModalEl.addEventListener('click', (e) => {
     if (e.target === storageModalEl) closeStorage();
@@ -1626,13 +1704,20 @@ export function initSocietyInspectors(deps){
     openSocial,
     closeSocial,
     renderSocial,
+
+    openCulture,
+    closeCulture,
+    renderCulture,
+
     openStorage,
     closeStorage,
     renderStorage,
+
     openThreat,
     closeThreat,
     renderThreat,
-    closeAll(){ closeSocial(); closeStorage(); closeThreat(); },
-    renderAll(){ renderSocial(); renderStorage(); renderThreat(); },
+
+    closeAll(){ closeSocial(); closeCulture(); closeStorage(); closeThreat(); },
+    renderAll(){ renderSocial(); renderCulture(); renderStorage(); renderThreat(); },
   };
 }

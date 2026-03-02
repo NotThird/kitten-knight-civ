@@ -674,7 +674,7 @@ import { PATCH_HISTORY } from './content.js';
     const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
     if (!kittens.length) return;
 
-    const DECAY = 0.992; // ~1/(1-DECAY) ˜ 125s effective window
+    const DECAY = 0.992; // ~1/(1-DECAY) ï¿½ 125s effective window
     const MIN_W = 0.15;
 
     for (const k of kittens) {
@@ -968,7 +968,7 @@ import { PATCH_HISTORY } from './content.js';
       c.repTag = lab.tag;
     }
 
-    // Aquarium depth: "legitimacy" — during crises, respected circles slightly increase plan compliance,
+    // Aquarium depth: "legitimacy" ï¿½ during crises, respected circles slightly increase plan compliance,
     // while resented circles slightly erode it. Kept tiny + bounded; fully observable.
     const crisisOn = !!(s?.director?.crisis || s?.signals?.FOOD || s?.signals?.ALARM);
     let repSum = 0;
@@ -993,7 +993,7 @@ import { PATCH_HISTORY } from './content.js';
       const nowT = Number(s.t ?? 0);
       s._repLegitBeat = (s._repLegitBeat && typeof s._repLegitBeat === 'object') ? s._repLegitBeat : { nextAt:0, last:'' };
       if (nowT >= Number(s._repLegitBeat.nextAt ?? 0)) {
-        const txt = compBonus > 0 ? 'respected circles rally behind the curator — coordination steadies.' : 'resented circles undermine authority — coordination frays.';
+        const txt = compBonus > 0 ? 'respected circles rally behind the curator ï¿½ coordination steadies.' : 'resented circles undermine authority ï¿½ coordination frays.';
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Legitimacy: ${txt}`);
         const FEED_MAX = 220;
@@ -1026,7 +1026,7 @@ import { PATCH_HISTORY } from './content.js';
       const meaningful = tradTask && score >= 12 && (score - second) >= 3;
       if (meaningful && tradTask !== String(tp.task ?? '') && nowT >= Number(tp.nextAt ?? 0)) {
         s.feed = Array.isArray(s.feed) ? s.feed : [];
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? 'ï¿½' : '');
         s.feed.push(`[${fmt(s.t)}] Tradition shift: a coterie becomes the ${tradLabel}. (${who})`);
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
@@ -1049,7 +1049,7 @@ import { PATCH_HISTORY } from './content.js';
       const curTag = String(c.ethosTag ?? '');
       if (curTag && inf && curTag !== String(ep.tag ?? '') && nowT >= Number(ep.nextAt ?? 0)) {
         s.feed = Array.isArray(s.feed) ? s.feed : [];
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? 'ï¿½' : '');
         const txt = (curTag === 'aid') ? 'leans into mutual aid' : (curTag === 'strict' ? 'leans into strict norms' : 'settles into balance');
         s.feed.push(`[${fmt(s.t)}] Norms: a coterie ${txt}. (${who})`);
         const FEED_MAX = 220;
@@ -1070,7 +1070,7 @@ import { PATCH_HISTORY } from './content.js';
       const rp = s._coterieRepBand[c.id] ?? { tag:'', nextAt:0 };
       const repTag = String(c.repTag ?? '');
       if (repTag && inf && repTag !== String(rp.tag ?? '') && nowT >= Number(rp.nextAt ?? 0)) {
-        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+        const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? 'ï¿½' : '');
         const txt = (repTag === 'pos') ? 'is widely respected' : (repTag === 'neg') ? 'is widely resented' : 'returns to the background';
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Reputation: a coterie ${txt}. (${who})`);
@@ -1092,7 +1092,7 @@ import { PATCH_HISTORY } from './content.js';
         // Feed
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         const label = `${c.domAx} coterie`;
-        const who = c.names.slice(0, 3).join(', ') + (c.names.length > 3 ? '…' : '');
+        const who = c.names.slice(0, 3).join(', ') + (c.names.length > 3 ? 'ï¿½' : '');
         s.feed.push(`[${fmt(s.t)}] Coterie rising: a ${label} is gaining influence (${c.size}). (${who})`);
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
@@ -1131,10 +1131,10 @@ import { PATCH_HISTORY } from './content.js';
       if (nowT < Number(slot.nextAt ?? 0)) return;
       if (nowT < Number(slot.until ?? 0)) return; // already active
 
-      const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? '…' : '');
+      const who = (c.names ?? []).slice(0, 3).join(', ') + ((c.names?.length ?? 0) > 3 ? 'ï¿½' : '');
       s.feed = Array.isArray(s.feed) ? s.feed : [];
-      if (kind === 'aid') s.feed.push(`[${fmt(s.t)}] Culture: mutual aid spreads through a coterie — resentments cool faster for a time. (${who})`);
-      if (kind === 'strict') s.feed.push(`[${fmt(s.t)}] Culture: strict norms tighten in a coterie — grumbling rises for a time. (${who})`);
+      if (kind === 'aid') s.feed.push(`[${fmt(s.t)}] Culture: mutual aid spreads through a coterie ï¿½ resentments cool faster for a time. (${who})`);
+      if (kind === 'strict') s.feed.push(`[${fmt(s.t)}] Culture: strict norms tighten in a coterie ï¿½ grumbling rises for a time. (${who})`);
       const FEED_MAX = 220;
       if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -1231,10 +1231,10 @@ import { PATCH_HISTORY } from './content.js';
           applyTo(strict);
 
           // Observability
-          const whoA = (aid.names ?? []).slice(0, 2).join(', ') + ((aid.names?.length ?? 0) > 2 ? '…' : '');
-          const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '…' : '');
+          const whoA = (aid.names ?? []).slice(0, 2).join(', ') + ((aid.names?.length ?? 0) > 2 ? 'ï¿½' : '');
+          const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? 'ï¿½' : '');
           s.feed = Array.isArray(s.feed) ? s.feed : [];
-          s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash — the mutual-aid coterie snubs the strict circle. (${whoA} ? ${whoB})`);
+          s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash ï¿½ the mutual-aid coterie snubs the strict circle. (${whoA} ? ${whoB})`);
           const FEED_MAX = 220;
           if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -1248,7 +1248,7 @@ import { PATCH_HISTORY } from './content.js';
           s._trendEvents.push({ t: nowT, kind:'feud', label:'hot', color:'rgba(251,113,133,.10)' });
           if (s._trendEvents.length > 80) s._trendEvents.splice(0, s._trendEvents.length - 80);
 
-          // Next time: 2–3 minutes, deterministic jitter based on time.
+          // Next time: 2ï¿½3 minutes, deterministic jitter based on time.
           // Reputation texture: if either circle is widely resented, clashes flare up sooner.
           const jitter = (Math.floor(nowT) % 61);
           const repA = Number(aid.repV ?? 0) || 0;
@@ -2664,7 +2664,7 @@ import { PATCH_HISTORY } from './content.js';
             const c = cots.find(x => Number(x?.id ?? 0) === Number(cid));
             const who = c ? (Array.isArray(c.members) ? c.members.slice(0, 3).map(id => kittenName(s, id)).join(', ') : '') : '';
             s.feed = Array.isArray(s.feed) ? s.feed : [];
-            s.feed.push(`[${fmt(s.t)}] Reputation: respected circles lift spirits in hard times.` + (who ? ` (${who}${(c?.members?.length ?? 0) > 3 ? '…' : ''})` : ''));
+            s.feed.push(`[${fmt(s.t)}] Reputation: respected circles lift spirits in hard times.` + (who ? ` (${who}${(c?.members?.length ?? 0) > 3 ? 'ï¿½' : ''})` : ''));
             const FEED_MAX = 220;
             if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2753,7 +2753,7 @@ import { PATCH_HISTORY } from './content.js';
           const fx = s._coterieRepFx[`${cid}:neg`] ?? { nextAt:0 };
           if (nowT >= Number(fx.nextAt ?? 0)) {
             s.feed = Array.isArray(s.feed) ? s.feed : [];
-            s.feed.push(`[${fmt(s.t)}] Reputation: resentment clings to a disliked circle — grievances rise more easily.`);
+            s.feed.push(`[${fmt(s.t)}] Reputation: resentment clings to a disliked circle ï¿½ grievances rise more easily.`);
             const FEED_MAX = 220;
             if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -3930,7 +3930,7 @@ import { PATCH_HISTORY } from './content.js';
       const diss = dissent01(state);
       feed(`Year ${yr}: pop ${pop}/${cap} | edible/kit ${fmt(ediblePk)} | warmth ${fmt(warm)} | threat ${fmt(thr)} | dissent ${(diss*100).toFixed(0)}%`);
 
-      // Aquarium: politics drift marker — when the dominant values bloc changes, mark it in the feed + trends.
+      // Aquarium: politics drift marker ï¿½ when the dominant values bloc changes, mark it in the feed + trends.
       // Keeps "emergent society" visible without needing to open Factions.
       if (pop >= 4) {
         const dom = dominantFactionAxis(state);
@@ -3958,7 +3958,7 @@ import { PATCH_HISTORY } from './content.js';
         }
       }
 
-      // Aquarium: micro-factions (coteries) — friendship circles that can become "influential".
+      // Aquarium: micro-factions (coteries) ï¿½ friendship circles that can become "influential".
       // Runs on the same slow cadence as the feed tick to keep overhead/spam low.
       updateCoteriesAquarium(state);
     }
@@ -5404,7 +5404,7 @@ import { PATCH_HISTORY } from './content.js';
     const mlOn = !!ml?.enabled;
     const mlNote = mlOn ? ` | ML: ON (r=${Number(ml.lastLoss ?? 0).toFixed(3)})` : '';
 
-    return head + (bits.length ? ` — ${bits.slice(0,2).join(' | ')}` : '') + mlNote;
+    return head + (bits.length ? ` ï¿½ ${bits.slice(0,2).join(' | ')}` : '') + mlNote;
   }
 
   // Ensure curator defaults exist; if this save hasn't seen curator mode yet, apply once.
@@ -5458,6 +5458,9 @@ import { PATCH_HISTORY } from './content.js';
   function openThreat(){ societyUI?.openThreat?.(); }
   function closeThreat(){ societyUI?.closeThreat?.(); }
 
+  function openCulture(){ societyUI?.openCulture?.(); }
+  function closeCulture(){ societyUI?.closeCulture?.(); }
+
   // Transient UI state + small listeners (sorting, debounced UI logs, stat-card clicks)
   const { uiSort, uiDebouncedLog } = initUI({
     statsEl,
@@ -5468,6 +5471,7 @@ import { PATCH_HISTORY } from './content.js';
     openSocial,
     openStorage,
     openThreat,
+    openCulture,
   });
 
   // Advisor: quick actions (wired via render-time recommendations)
@@ -5833,6 +5837,13 @@ import { PATCH_HISTORY } from './content.js';
   const socialBodyEl = el('socialBody');
   const btnSocialClose = el('btnSocialClose');
 
+  // --- Culture inspector modal (norms)
+  const cultureModalEl = el('cultureModal');
+  const cultureTitleEl = el('cultureTitle');
+  const cultureSubEl = el('cultureSub');
+  const cultureBodyEl = el('cultureBody');
+  const btnCultureClose = el('btnCultureClose');
+
   const storageModalEl = el('storageModal');
   const storageTitleEl = el('storageTitle');
   const storageSubEl = el('storageSub');
@@ -6010,6 +6021,12 @@ import { PATCH_HISTORY } from './content.js';
     socialSubEl,
     socialBodyEl,
     btnSocialClose,
+
+    cultureModalEl,
+    cultureTitleEl,
+    cultureSubEl,
+    cultureBodyEl,
+    btnCultureClose,
 
     storageModalEl,
     storageTitleEl,
@@ -7333,7 +7350,7 @@ import { PATCH_HISTORY } from './content.js';
 
           const rows = coteries.slice(0, 8).map(c => {
             const mem = (c.members ?? []).map(id => nameById.get(Number(id)) ?? `#${id}`).slice(0, 5);
-            const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? '…' : '');
+            const who = mem.join(', ') + ((c.members?.length ?? 0) > 5 ? 'ï¿½' : '');
             const ax = escapeHtml(String(c.domAx ?? ''));
             const sz = Number(c.size ?? 0);
             const cw = Number(c.coWork ?? 0);
@@ -7800,6 +7817,18 @@ import { PATCH_HISTORY } from './content.js';
         return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1â€“6s)`;
       }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
+      if (key === 'Culture') {
+        const ns = state?.social?.norms ?? {};
+        const vig = Math.max(0, Math.min(1, Number(ns.raidParanoia ?? 0) || 0));
+        const scar = Math.max(0, Math.min(1, Number(ns.scarcityMindset ?? 0) || 0));
+        const aid = Math.max(0, Math.min(1, Number(ns.mutualAid ?? 0) || 0));
+        const pun = Math.max(0, Math.min(1, Number(ns.punitiveTolerance ?? 0) || 0));
+        const vigBand = String(state?.social?.normsBand ?? (vig >= 0.70 ? 'paranoid' : vig >= 0.40 ? 'wary' : 'calm'));
+        const scarBand = String(state?.social?.scarcityBand ?? (scar >= 0.70 ? 'hoarding' : scar >= 0.40 ? 'thrifty' : 'calm'));
+        const aidBand = String(state?.social?.mutualAidBand ?? (aid >= 0.70 ? 'communal' : aid >= 0.40 ? 'neighborly' : 'atomized'));
+        const punBand = String(state?.social?.punitiveBand ?? (pun >= 0.70 ? 'punitive' : pun >= 0.40 ? 'firm' : 'lenient'));
+        return `vig ${vigBand} | scar ${scarBand} | aid ${aidBand} | pun ${punBand}`;
+      }
       return '';
     };
 
@@ -7833,6 +7862,7 @@ import { PATCH_HISTORY } from './content.js';
       ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
       ['Commitment', `x${coordinationMul(state).toFixed(2)}`],
       ['Focus-fit', `${Math.round(avgAlign*100)}%`],
+      ['Culture', 'Norms'],
     ];
 
     for (const [k,v] of stats) {
@@ -7877,6 +7907,11 @@ import { PATCH_HISTORY } from './content.js';
         d.dataset.stat = 'focusfit';
         d.classList.add('inspectable');
         d.title = 'Values alignment: avg match between kittens\' values and colony focus (Mode + priority sliders). Low fit can drag mood and raise dissent, especially with low autonomy/high discipline. Click to inspect the social model.';
+      }
+      if (k === 'Culture') {
+        d.dataset.stat = 'culture';
+        d.classList.add('inspectable');
+        d.title = 'Culture memory (Norms). Persistent norms drift slowly from raids, scarcity, and social strain. Click to open the Culture inspector.';
       }
       if (k === 'Food') {
         const oc = state._lastFoodOvercap ?? { cap: foodCapNow, food: Number(state.res.food ?? 0), mult: 1 };

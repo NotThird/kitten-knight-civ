@@ -4,6 +4,29 @@ Human-readable change log for iterative runs.
 
 ---
 
+## 2026-03-02 05:53 CST - Observability: Dedicated Culture modal + clickable stat card
+
+Summary
+- Observability: added a standalone **Culture inspector** modal focused on persistent norms (culture memory).
+- Discoverability: added a clickable top stat card **Culture** (opens the Culture modal), so you don’t have to open Dissent/Compliance to find norms.
+- Culture modal shows current values + band labels and lists the last several norm-band transitions (from Trends markers).
+
+Files touched
+- `dist/index.html`
+- `js/ui.js`
+- `js/main.js`
+- `dist/js/ui.js`
+- `dist/js/main.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+
+What to try
+- Click the new **Culture** stat card in the top stats grid.
+- Let the sim run until a norm band flips (vig/scar/aid/pun) and confirm it appears under **Recent culture shifts** in the Culture modal.
+
+---
+
 ## 2026-03-02 05:38 CST - Aquarium/Observability: Culture inspector card (norms summary + last transitions)
 
 Summary
