@@ -3893,3 +3893,25 @@ Files touched
 What to try
 - Let a raid hit you (threat to 100) and watch the Society feed for Norms: lines as vigilance rises.
 - Afterward, even if threat is below target, you should see slightly more Guard activity until vigilance cools back down.
+ 
+ 
+---
+ 
+## 2026-03-02 06:08 CST - Observability: Culture modal shows influential coteries (micro-factions)
+ 
+Summary
+- Observability: Culture modal now includes an **Influential coteries** section so culture is not just norms — it also surfaces the active micro-faction layer.
+- Each influential coterie line shows: dominant axis + tradition + ethos + reputation, plus any active **AID/STRICT pressure** windows and **FEUD/TRUCE** timers.
+- Adds a small tip pointing to the matching Trends markers (cot/trad/eth/rep/press).
+ 
+Files touched
+- `kitten-knight-civ/js/ui.js`
+- `dist/js/ui.js`
+- `PLAN_STATUS.md`
+- `DEVLOG.md`
+- `kitten-knight-civ/DEVLOG.md`
+ 
+What to try
+- Run Curator hands-off until at least one coterie becomes influential (you should already see a Coterie rising feed beat).
+- Click the **Culture** stat card: confirm you now see an **Influential coteries** list and that pressure windows (AID/STRICT) and FEUD/TRUCE timers appear when active.
+ 

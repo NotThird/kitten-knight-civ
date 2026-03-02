@@ -1542,6 +1542,75 @@ export function initSocietyInspectors(deps){
     lines.push('• Scarcity biases PreserveFood even after the pantry recovers (habitual thrift).');
     lines.push('• Mutual aid makes Socialize/Care more culturally "legitimate" during tension.');
     lines.push('• Punitive tolerance changes whether Discipline causes backlash or compliance.');
+    lines.push('');
+
+    // Coteries: influential circles are a second "culture" layer (micro-factions) with ethos/tradition/reputation.
+    try {
+      const coteries = Array.isArray(state?.social?.coteries) ? state.social.coteries : [];
+      const inf = (state && state._coterieInfluence && typeof state._coterieInfluence === 'object') ? state._coterieInfluence : {};
+      const influential = coteries.filter(c => !!inf?.[c.id]?.inf);
+      if (influential.length > 0) {
+        influential.sort((a,b)=> (Number(b.size ?? 0) - Number(a.size ?? 0)) || String(a.id).localeCompare(String(b.id)));
+
+        const press = (state && state._coteriePressure && typeof state._coteriePressure === 'object') ? state._coteriePressure : null;
+        const rels = (state && state._coterieRelations && typeof state._coterieRelations === 'object') ? state._coterieRelations : null;
+
+        const activePressTagsFor = (cid)=>{
+          const tags = [];
+          if (press) {
+            for (const kind of ['aid','strict']) {
+              const p = press[kind];
+              if (p && Number(p.cid ?? -1) === Number(cid) && Number(p.until ?? 0) > Number(state?.t ?? 0)) {
+                const rem = Math.max(0, Number(p.until ?? 0) - Number(state?.t ?? 0));
+                const sfx = rem >= 120 ? `${Math.round(rem/60)}m` : `${Math.round(rem)}s`;
+                tags.push(`${kind.toUpperCase()} ${sfx}`);
+              }
+            }
+          }
+          // Relationship arc tags (FEUD/TRUCE)
+          if (rels) {
+            for (const [k,v] of Object.entries(rels)) {
+              const parts = String(k).split('-');
+              if (parts.length !== 2) continue;
+              const a = Number(parts[0]);
+              const b = Number(parts[1]);
+              if (Number(cid) !== a && Number(cid) !== b) continue;
+              const st = String(v?.status ?? '');
+              const until = Number(v?.until ?? 0);
+              if (!st || until <= Number(state?.t ?? 0)) continue;
+              const rem = Math.max(0, until - Number(state?.t ?? 0));
+              const sfx = rem >= 120 ? `${Math.round(rem/60)}m` : `${Math.round(rem)}s`;
+              tags.push(`${st.toUpperCase()} ${sfx}`);
+              break;
+            }
+          }
+          return tags;
+        };
+
+        lines.push('Influential coteries (micro-factions):');
+        for (const c of influential.slice(0, 6)) {
+          const who = Array.isArray(c.members) ? c.members.slice(0, 4).map(id => `#${id}`).join(', ') : '';
+          const tags = activePressTagsFor(c.id);
+          const tagStr = tags.length ? ` | ${tags.join(' | ')}` : '';
+          const trad = String(c.trad ?? '').trim();
+          const ethos = String(c.ethosLabel ?? '').trim();
+          const rep = String(c.repLabel ?? '').trim();
+          const ax = String(c.domAx ?? '').trim();
+          const bits = [];
+          if (ax) bits.push(ax);
+          if (trad) bits.push(trad);
+          if (ethos) bits.push(ethos);
+          if (rep) bits.push(rep);
+          const head = bits.length ? bits.join(' • ') : `Coterie #${c.id}`;
+          lines.push(`• ${head} (size ${Number(c.size ?? 0)})${tagStr}${who ? ` — ${who}` : ''}`);
+        }
+        lines.push('');
+        lines.push('Tip: watch Trends markers like cot/trad/eth/rep/press for "culture beats" (they align with feed lines).');
+        lines.push('');
+      }
+    } catch (e) {
+      // Never break the inspector.
+    }
 
     cultureBodyEl.textContent = lines.join('\n');
   }
