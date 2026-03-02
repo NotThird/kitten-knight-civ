@@ -3055,6 +3055,9 @@ import { PATCH_HISTORY } from './content.js';
         u.apply(state);
         log(`UNLOCK: ${u.name} (science â‰¥ ${u.at})`);
         feed(`New knowledge: unlocked ${u.name}.`);
+        state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+        state._trendEvents.push({ t: Number(state.t ?? 0), kind:'unlock', label:u.name, color:'rgba(125,211,252,.22)' });
+        if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
       }
     }
   }
@@ -3095,6 +3098,11 @@ import { PATCH_HISTORY } from './content.js';
           : (season.name === 'Fall')
             ? 'Season change â†’ Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
             : 'Season change â†’ Summer. Best time to build up science and long-run infrastructure.';
+
+      // chart marker
+      state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+      state._trendEvents.push({ t: Number(state.t ?? 0), kind:'season', label:`${from}→${season.name}`, color:'rgba(255,255,255,.10)' });
+      if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
 
       const yr = yearAt(state.t) + 1;
       const pop = Number(state.kittens?.length ?? 0);
@@ -3879,6 +3887,9 @@ import { PATCH_HISTORY } from './content.js';
           }
           log(`RAID REPELLED! (guards ${guards}, palisade ${pal}) Threat pushed back.`);
           feed('Raid repelled. The colony feels safer.');
+          state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+          state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'repel', color:'rgba(251,113,133,.18)' });
+          if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
         } else {
           state.res.threat = Math.max(20, state.res.threat - 35);
 
@@ -3896,6 +3907,9 @@ import { PATCH_HISTORY } from './content.js';
 
           log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported. (mitigation x${mitigate.toFixed(2)}; guards ${guards}, palisade ${pal})`);
           feed(`Raid hit the colony. Lost ${fmt(stealFood)} food and ${fmt(stealWood)} wood.`);
+          state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+          state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'hit', color:'rgba(251,113,133,.26)' });
+          if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           // Auto alarm (only once you know what "ALARM" means)
           state.signals.ALARM = state.unlocked.security ? true : false;
         }
@@ -3915,7 +3929,7 @@ import { PATCH_HISTORY } from './content.js';
     applyUnlocks();
     tickPressures(dt);
 
-    // Trends sampling (sparklines): 1Hz, last ~2 minutes
+    // Trends sampling (charts): 1Hz, last ~2 minutes
     state._trend = state._trend ?? { t:[], food:[], warmth:[], threat:[], science:[], dissent:[] };
     state._trendAcc = Number(state._trendAcc ?? 0) + dt;
     if (state._trendAcc >= 1) {
@@ -3931,6 +3945,85 @@ import { PATCH_HISTORY } from './content.js';
       for (const k of ['t','food','warmth','threat','science','dissent']) {
         if (tr[k].length > MAX) tr[k].splice(0, tr[k].length - MAX);
       }
+    }
+
+    // --- ML v1: online learned priority deltas (contextual linear model, deterministic)
+    ensureCurator(state);
+    state.director.ml = state.director.ml ?? {
+      enabled: true,
+      lr: 0.06,
+      // weights per axis: [bias, winter, edibleDef, warmthDef, threatOver, dissent, housingCap]
+      w: {
+        food:    [0, 0, 0, 0, 0, 0, 0],
+        safety:  [0, 0, 0, 0, 0, 0, 0],
+        progress:[0, 0, 0, 0, 0, 0, 0],
+        social:  [0, 0, 0, 0, 0, 0, 0],
+      },
+      lastPred: { food:0, safety:0, progress:0, social:0 },
+      lastLoss: 0,
+    };
+    const ml = state.director.ml;
+    if (ml.enabled && state.director?.curator?.enabled) {
+      const season = seasonAt(state.t);
+      const targets = seasonTargets(state);
+      const pop = Math.max(1, Number(state.kittens?.length ?? 1));
+      const ediblePk = ediblePerKitten(state);
+      const edibleDef = clamp01((targets.foodPerKitten - ediblePk) / Math.max(1, targets.foodPerKitten));
+      const warmthDef = clamp01((targets.warmth - Number(state.res?.warmth ?? 0)) / Math.max(1, targets.warmth));
+      const threatOver = clamp01((Number(state.res?.threat ?? 0) - targets.maxThreat) / Math.max(1, targets.maxThreat));
+      const diss = clamp01(Number(state.social?.dissent ?? 0));
+      const houseCapped = (pop >= housingCap(state)) ? 1 : 0;
+      const winter = (season.name === 'Winter') ? 1 : 0;
+      const x = [1, winter, edibleDef, warmthDef, threatOver, diss, houseCapped];
+
+      const dot = (w) => w.reduce((a,wi,i)=>a + wi * x[i], 0);
+      const pred = {
+        food: dot(ml.w.food),
+        safety: dot(ml.w.safety),
+        progress: dot(ml.w.progress),
+        social: dot(ml.w.social),
+      };
+
+      // Targets (supervised): teach the model to map context -> sensible deltas.
+      // This is ML, but still explainable and bounded.
+      const g = String(state.director.curator.goal ?? 'Thrive');
+      const goalBias = (axis) => {
+        if (g === 'Defend') return axis === 'safety' ? 0.10 : axis === 'progress' ? -0.06 : 0;
+        if (g === 'Innovate') return axis === 'progress' ? 0.12 : axis === 'food' ? -0.04 : 0;
+        if (g === 'Expand') return axis === 'progress' ? 0.06 : axis === 'social' ? -0.05 : 0;
+        if (g === 'Harmonize') return axis === 'social' ? 0.14 : axis === 'progress' ? -0.06 : 0;
+        return 0;
+      };
+
+      const y = {
+        food:      goalBias('food')      + 0.22 * edibleDef + 0.08 * warmthDef + 0.05 * threatOver,
+        safety:    goalBias('safety')    + 0.20 * threatOver + 0.10 * warmthDef + 0.04 * diss,
+        progress:  goalBias('progress')  + 0.16 * clamp01(1 - edibleDef*1.2) * clamp01(1 - threatOver*1.2) - 0.10 * warmthDef,
+        social:    goalBias('social')    + 0.18 * diss - 0.08 * edibleDef,
+      };
+
+      const clampDelta = (v) => Math.max(-0.18, Math.min(0.18, Number(v) || 0));
+      for (const k of Object.keys(pred)) pred[k] = clampDelta(pred[k]);
+
+      // SGD update
+      const lr = Math.max(0.0, Math.min(0.25, Number(ml.lr ?? 0.06)));
+      let loss = 0;
+      for (const axis of ['food','safety','progress','social']) {
+        const err = (pred[axis] - clampDelta(y[axis]));
+        loss += err*err;
+        const w = ml.w[axis];
+        for (let i=0;i<w.length;i++) w[i] -= lr * 2 * err * x[i];
+      }
+      ml.lastLoss = loss / 4;
+      ml.lastPred = { ...pred };
+
+      // Apply: base priorities + learned deltas
+      const base = state.director._basePrio ?? { food: state.director.prioFood ?? 1, safety: state.director.prioSafety ?? 1, progress: state.director.prioProgress ?? 1, social: state.director.prioSocial ?? 1, doctrine: state.director.doctrine ?? 'Balanced' };
+      const clampPr = (v) => Math.max(0.70, Math.min(1.45, Number(v) || 1));
+      state.director.prioFood = clampPr(Number(base.food) + pred.food);
+      state.director.prioSafety = clampPr(Number(base.safety) + pred.safety);
+      state.director.prioProgress = clampPr(Number(base.progress) + pred.progress);
+      state.director.prioSocial = clampPr(Number(base.social) + pred.social);
     }
 
     state._decTimer = (state._decTimer ?? 0) + dt;
@@ -4035,6 +4128,7 @@ import { PATCH_HISTORY } from './content.js';
   const feedEl = el('feed');
   const tankEl = el('tank');
   const trendsEl = el('trends');
+  const mlHintEl = el('mlHint');
 
   function ensureCurator(s){
     s.director = s.director ?? {};
@@ -4074,27 +4168,25 @@ import { PATCH_HISTORY } from './content.js';
     s.director.autoRecruit = true;
     s.director.autoCrisis = true;
 
+    // Curator base priorities (ML deltas add on top)
+    const setBase = (pFood,pSafety,pProg,pSoc, doctrine, mode) => {
+      s.mode = mode;
+      s.director._basePrio = { food:pFood, safety:pSafety, progress:pProg, social:pSoc, doctrine };
+      s.director.prioFood = pFood; s.director.prioSafety = pSafety; s.director.prioProgress = pProg; s.director.prioSocial = pSoc;
+      s.director.doctrine = doctrine;
+    };
+
     if (g === 'Expand') {
-      s.mode = 'Expand';
-      s.director.prioFood = 1.05; s.director.prioSafety = 0.95; s.director.prioProgress = 1.10; s.director.prioSocial = 0.90;
-      s.director.doctrine = 'Specialize';
+      setBase(1.05, 0.95, 1.10, 0.90, 'Specialize', 'Expand');
     } else if (g === 'Defend') {
-      s.mode = 'Defend';
-      s.director.prioFood = 1.00; s.director.prioSafety = 1.25; s.director.prioProgress = 0.90; s.director.prioSocial = 0.85;
-      s.director.doctrine = 'Balanced';
+      setBase(1.00, 1.25, 0.90, 0.85, 'Balanced', 'Defend');
     } else if (g === 'Innovate') {
-      s.mode = 'Advance';
-      s.director.prioFood = 0.95; s.director.prioSafety = 1.00; s.director.prioProgress = 1.30; s.director.prioSocial = 0.90;
-      s.director.doctrine = 'Specialize';
+      setBase(0.95, 1.00, 1.30, 0.90, 'Specialize', 'Advance');
     } else if (g === 'Harmonize') {
-      s.mode = 'Survive';
-      s.director.prioFood = 1.05; s.director.prioSafety = 1.00; s.director.prioProgress = 0.85; s.director.prioSocial = 1.35;
-      s.director.doctrine = 'Rotate';
+      setBase(1.05, 1.00, 0.85, 1.35, 'Rotate', 'Survive');
     } else {
       // Thrive
-      s.mode = 'Survive';
-      s.director.prioFood = 1.15; s.director.prioSafety = 1.05; s.director.prioProgress = 0.95; s.director.prioSocial = 1.15;
-      s.director.doctrine = 'Balanced';
+      setBase(1.15, 1.05, 0.95, 1.15, 'Balanced', 'Survive');
     }
 
     applyCuratorEthos(s);
@@ -4105,6 +4197,10 @@ import { PATCH_HISTORY } from './content.js';
     state.director.curator.goal = String(goal || 'Thrive');
     state.director.curator.appliedOnce = true;
     applyCuratorGoal(state);
+
+    state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+    state._trendEvents.push({ t: Number(state.t ?? 0), kind:'curator', label:`goal:${state.director.curator.goal}`, color:'rgba(251,191,36,.18)' });
+    if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
   }
   function setCuratorEthos(ethos){
     ensureCurator(state);
@@ -4129,7 +4225,12 @@ import { PATCH_HISTORY } from './content.js';
     push('Auto doctrine', s.director?.autoDoctrineWhy);
     push('Auto rations', s.director?.autoRationsWhy);
     push('Auto crisis', s.director?.autoCrisisWhy);
-    return head + (bits.length ? ` — ${bits.slice(0,2).join(' | ')}` : '');
+
+    const ml = s.director?.ml;
+    const mlOn = !!ml?.enabled;
+    const mlNote = mlOn ? ` | ML: ON (r=${Number(ml.lastLoss ?? 0).toFixed(3)})` : '';
+
+    return head + (bits.length ? ` — ${bits.slice(0,2).join(' | ')}` : '') + mlNote;
   }
 
   // Ensure curator defaults exist; if this save hasn't seen curator mode yet, apply once.
@@ -7302,43 +7403,76 @@ import { PATCH_HISTORY } from './content.js';
     if (!tr || !tr.t || tr.t.length < 2) return;
 
     const pad = 10;
-    const plotW = W - pad*2;
-    const plotH = H - pad*2;
-
-    // pick series with readable scales
-    const series = [
-      { key:'food',   color:'rgba(52,211,153,.9)', label:'food' },
-      { key:'warmth', color:'rgba(251,191,36,.9)', label:'warmth' },
-      { key:'threat', color:'rgba(251,113,133,.9)', label:'threat' },
-      { key:'science',color:'rgba(125,211,252,.9)', label:'sci' },
-      { key:'dissent',color:'rgba(167,139,250,.9)', label:'diss', scale01:true },
+    const rows = [
+      { key:'food',   label:'Food',   color:'rgba(52,211,153,.95)', threshold: () => (seasonTargets(state).foodPerKitten * Math.max(1, state.kittens.length)) },
+      { key:'warmth', label:'Warmth', color:'rgba(251,191,36,.95)', threshold: () => seasonTargets(state).warmth },
+      { key:'threat', label:'Threat', color:'rgba(251,113,133,.95)', threshold: () => 100 },
+      { key:'science',label:'Science',color:'rgba(125,211,252,.95)', threshold: () => (unlockDefs.find(u => !state.seenUnlocks?.[u.id])?.at ?? null) },
+      { key:'dissent',label:'Dissent',color:'rgba(167,139,250,.95)', threshold: () => 0.45, scale01:true },
     ];
 
-    // Background grid
-    ctx.strokeStyle = 'rgba(255,255,255,.08)';
-    for (let i=0;i<=4;i++) {
-      const y = pad + (plotH * i/4);
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad+plotW, y); ctx.stroke();
-    }
-
     const n = tr.t.length;
-    const xFor = (i) => pad + (i/(n-1))*plotW;
+    const plotW = W - pad*2;
+    const rowH = Math.floor((H - pad*2) / rows.length);
 
-    for (const s of series) {
-      const arr = tr[s.key] || [];
+    // Event markers (season flips, raids, unlocks)
+    const ev = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+    const tMin = tr.t[0];
+    const tMax = tr.t[n-1];
+    const xForT = (t) => pad + ((t - tMin) / Math.max(1e-6, (tMax - tMin))) * plotW;
+
+    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.textBaseline = 'top';
+
+    for (let r=0;r<rows.length;r++) {
+      const row = rows[r];
+      const y0 = pad + r * rowH;
+      const y1 = y0 + rowH - 6;
+
+      // find min/max for this row
+      const arr = tr[row.key] || [];
       if (arr.length !== n) continue;
       let min = Infinity, max = -Infinity;
       for (const v0 of arr) { const v = Number(v0); if (!Number.isFinite(v)) continue; min = Math.min(min,v); max = Math.max(max,v); }
+      if (row.scale01) { min = 0; max = 1; }
       if (!Number.isFinite(min) || !Number.isFinite(max)) continue;
-      if (s.scale01) { min = 0; max = 1; }
-      if (Math.abs(max-min) < 1e-6) { max = min + 1; }
+      if (Math.abs(max-min) < 1e-6) max = min + 1;
+      const padY = (max-min) * 0.10;
+      min -= padY; max += padY;
 
+      const xFor = (i) => pad + (i/(n-1))*plotW;
       const yFor = (v) => {
         const t = (Number(v)-min)/(max-min);
-        return pad + (1 - clamp01(t))*plotH;
+        return y0 + (1 - clamp01(t)) * (y1 - y0);
       };
 
-      ctx.strokeStyle = s.color;
+      // background
+      ctx.fillStyle = 'rgba(0,0,0,.06)';
+      ctx.fillRect(pad, y0, plotW, (y1 - y0));
+      ctx.strokeStyle = 'rgba(255,255,255,.07)';
+      ctx.strokeRect(pad, y0, plotW, (y1 - y0));
+
+      // threshold line
+      const thr = (typeof row.threshold === 'function') ? row.threshold() : null;
+      if (thr !== null && thr !== undefined && Number.isFinite(Number(thr))) {
+        const ty = yFor(Number(thr));
+        ctx.strokeStyle = 'rgba(255,255,255,.12)';
+        ctx.setLineDash([4,3]);
+        ctx.beginPath(); ctx.moveTo(pad, ty); ctx.lineTo(pad+plotW, ty); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // event markers
+      for (const e of ev) {
+        const tt = Number(e.t ?? NaN);
+        if (!Number.isFinite(tt) || tt < tMin || tt > tMax) continue;
+        const x = xForT(tt);
+        ctx.strokeStyle = String(e.color || 'rgba(255,255,255,.10)');
+        ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+      }
+
+      // line
+      ctx.strokeStyle = row.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (let i=0;i<n;i++) {
@@ -7347,18 +7481,28 @@ import { PATCH_HISTORY } from './content.js';
         if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
       ctx.stroke();
+
+      // label + right-side min/max
+      const last = Number(arr[n-1] ?? 0);
+      const slope = (Number(arr[n-1]) - Number(arr[Math.max(0,n-6)]) ) / Math.max(1, Math.min(5, n-1));
+      const slopeStr = (slope >= 0 ? '+' : '') + slope.toFixed(row.scale01 ? 3 : 1) + '/s';
+      ctx.fillStyle = 'rgba(148,163,184,.95)';
+      ctx.fillText(`${row.label}: ${row.scale01 ? (last*100).toFixed(0)+'%' : fmt(last)} (${slopeStr})`, pad+4, y0+2);
+      ctx.fillStyle = 'rgba(148,163,184,.65)';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(fmt(max), pad+plotW-38, y0+12);
+      ctx.textBaseline = 'top';
     }
 
-    // Legend (tiny)
-    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    ctx.textBaseline = 'bottom';
-    let lx = pad;
-    for (const s of series) {
-      ctx.fillStyle = s.color;
-      ctx.fillRect(lx, H-6, 10, 2);
-      ctx.fillStyle = 'rgba(148,163,184,.95)';
-      ctx.fillText(s.label, lx+14, H-2);
-      lx += 64;
+    // ML hint (tiny)
+    if (mlHintEl) {
+      const ml = state.director?.ml;
+      if (ml?.enabled) {
+        const p = ml.lastPred || { food:0, safety:0, progress:0, social:0 };
+        mlHintEl.textContent = `ML priorities Δ: food ${(p.food>=0?'+':'')+p.food.toFixed(2)} | safety ${(p.safety>=0?'+':'')+p.safety.toFixed(2)} | progress ${(p.progress>=0?'+':'')+p.progress.toFixed(2)} | social ${(p.social>=0?'+':'')+p.social.toFixed(2)} | loss ${Number(ml.lastLoss??0).toFixed(3)}`;
+      } else {
+        mlHintEl.textContent = '';
+      }
     }
   }
 
