@@ -4056,3 +4056,9 @@ What to try
   - during **work-oath**, expect slightly more productive picks and fewer Socialize/Care picks.
 - Hover the Trends canvas near the new marker line to see `Ritual: story` / `Ritual: oath`.
 \n\n## 2026-03-02 11:58 CST — Population boom (births + wanderers) + tank crowd UI\n- Increased starting population to 6 and raised base housing cap to 8 (huts now +3 each).\n- Added deterministic population flow: frequent **Birth** and **Wanderer** arrivals when stable (food surplus + low threat + decent mood), with small food costs + reserve respect.\n- Added Society feed beats + Trends pop markers for birth/wander; Tank view now shows +N when zones are crowded (draws first 12 dots).\n
+
+
+## 2026-03-03 20:35 CST — Survival tuning (famine/cold less lethal)
+- Starvation no longer instantly kills at hunger>=0.98 when edible hits 0; instead a long (120s) sustained famine + very low health is required for a death.
+- Winter cold is less punishing (slower warmth decay; reduced cold health damage).
+

@@ -4913,7 +4913,7 @@ import { PATCH_HISTORY } from './content.js';
     state.res.food = Math.max(0, food - food * spoil * dt);
 
     // Warmth decay; faster in winter
-    const decay = season.name === 'Winter' ? 0.55 : 0.28;
+    const decay = season.name === 'Winter' ? 0.42 : 0.22;
     state.res.warmth = Math.max(0, state.res.warmth - decay * dt);
 
     // Threat growth; reduced by palisade, by security unlock, and optionally by Curfew policy.
@@ -4942,7 +4942,7 @@ import { PATCH_HISTORY } from './content.js';
       for (const k of state.kittens) {
         k.energy = clamp01(k.energy - dt * 0.008);
         k.hunger = clamp01(k.hunger + dt * 0.010);
-        k.health = clamp01((k.health ?? 1) - dt * (0.004 + 0.010 * cold));
+        k.health = clamp01((k.health ?? 1) - dt * (0.002 + 0.006 * cold));
       }
     }
 

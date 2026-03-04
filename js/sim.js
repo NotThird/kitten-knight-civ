@@ -215,12 +215,23 @@ export function runKittensTick(s, dt, deps){
       k.health = clamp01((k.health ?? 1) - dt * 0.006);
     }
 
-    // Hard fail: starvation (only if *no edible food* remains)
+    // Starvation failsafe (aquarium-first): do NOT instantly kill kittens.
+    // Instead, apply a harsh but survivable penalty and require long sustained famine to lose population.
     if (edible <= 0 && k.hunger >= 0.98) {
-      // lose a kitten (rare, but makes it a civ sim)
-      s.kittens = s.kittens.filter(x => x.id !== k.id);
-      if (typeof log === 'function') log(`A kitten starved. Population: ${s.kittens.length}`);
-      break;
+      k._starveHardSec = Number(k._starveHardSec ?? 0) + dt;
+      // Fainting spiral.
+      k.energy = clamp01(k.energy - dt * 0.060);
+      k.health = clamp01((k.health ?? 1) - dt * 0.018);
+      k.hunger = Math.min(0.99, Number(k.hunger ?? 1));
+
+      // Only remove a kitten after a long sustained famine (keeps the aquarium alive early).
+      if (k._starveHardSec >= 120 && (k.health ?? 1) <= 0.06) {
+        s.kittens = s.kittens.filter(x => x.id !== k.id);
+        if (typeof log === 'function') log(`A kitten died in the famine. Population: ${s.kittens.length}`);
+        break;
+      }
+    } else {
+      k._starveHardSec = 0;
     }
   }
 
