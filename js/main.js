@@ -5580,7 +5580,7 @@ import { PATCH_HISTORY } from './content.js';
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
-  const trendsEl = el('trends');\n  const socTrendsEl = el('socTrends');\n  const socLegendEl = el('socLegend');\n  const socHintEl = el('socHint');
+  const trendsEl = el('trends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
 
