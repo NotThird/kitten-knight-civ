@@ -5252,7 +5252,6 @@ import { PATCH_HISTORY } from './content.js';
     state._socTrend = state._socTrend ?? { t:[], mood:[], griev:[], dissent:[], compliance:[], threat:[], warmth:[], food:[], jerky:[], science:[] };
     state._culTrend = state._culTrend ?? { t:[], vig:[], scar:[], aid:[], coteries:[], influential:[], repAvg:[], mlLoss:[], mlFood:[], mlSafety:[], mlProg:[], mlSoc:[] };
 
-    if (state._trendAcc < 1e-6) {
       const pop = Number(state.kittens?.length ?? 0);
       const cap = housingCap(state);
       const births = Number(state._birthCt ?? 0);
@@ -5306,7 +5305,6 @@ import { PATCH_HISTORY } from './content.js';
           if (store[k].length > MAX) store[k].splice(0, store[k].length - MAX);
         }
       }
-    }
 
     // --- ML v1: online learned priority deltas (contextual linear model, deterministic)
     ensureCurator(state);
