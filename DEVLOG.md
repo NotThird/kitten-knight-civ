@@ -4062,3 +4062,9 @@ What to try
 - Starvation no longer instantly kills at hunger>=0.98 when edible hits 0; instead a long (120s) sustained famine + very low health is required for a death.
 - Winter cold is less punishing (slower warmth decay; reduced cold health damage).
 
+
+
+## 2026-03-05 02:07 CST — Graph expansion (split dashboards)
+- Split graphs into 3 stacked canvases: **Population trends**, **Society trends**, and **Culture+ML trends** (10+ additional mini-charts).
+- Added 1Hz sampling stores (_popTrend/_socTrend/_culTrend) and rendering helpers so we can keep adding charts fast.
+

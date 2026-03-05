@@ -4569,6 +4569,7 @@ import { PATCH_HISTORY } from './content.js';
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
             state.kittens.push(makeKitten(id));
             feed(`Birth: a kitten was born (pop ${state.kittens.length}/${cap}).`);
+            state._birthCt = (state._birthCt ?? 0) + 1;
             state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
             state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'birth', color:'rgba(52,211,153,.22)' });
             if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
@@ -4583,6 +4584,7 @@ import { PATCH_HISTORY } from './content.js';
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
             state.kittens.push(makeKitten(id));
             feed(`Wanderer: a kitten joined from the wilds (pop ${state.kittens.length}/${cap}).`);
+            state._wanderCt = (state._wanderCt ?? 0) + 1;
             state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
             state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'wander', color:'rgba(52,211,153,.16)' });
             if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
@@ -5245,6 +5247,67 @@ import { PATCH_HISTORY } from './content.js';
       }
     }
 
+    // Extra graphs: Population / Society / Culture+ML (sampled 1Hz, last ~2 minutes)
+    state._popTrend = state._popTrend ?? { t:[], pop:[], cap:[], births:[], wander:[], ediblePk:[] };
+    state._socTrend = state._socTrend ?? { t:[], mood:[], griev:[], dissent:[], compliance:[], threat:[], warmth:[], food:[], jerky:[], science:[] };
+    state._culTrend = state._culTrend ?? { t:[], vig:[], scar:[], aid:[], coteries:[], influential:[], repAvg:[], mlLoss:[], mlFood:[], mlSafety:[], mlProg:[], mlSoc:[] };
+
+    if (state._trendAcc < 1e-6) {
+      const pop = Number(state.kittens?.length ?? 0);
+      const cap = housingCap(state);
+      const births = Number(state._birthCt ?? 0);
+      const wander = Number(state._wanderCt ?? 0);
+      state._birthCt = 0; state._wanderCt = 0;
+
+      const avgMood = pop ? (state.kittens.reduce((a,k)=>a + clamp01(Number(k.mood ?? 0.55)),0)/pop) : 0.55;
+      const avgGriev = pop ? (state.kittens.reduce((a,k)=>a + clamp01(Number(k.grievance ?? 0)),0)/pop) : 0;
+      const repAvg = (state.social?.coteries && Array.isArray(state.social.coteries) && state.social.coteries.length)
+        ? (state.social.coteries.reduce((a,c)=>a + (Number(c.rep ?? 0) || 0),0) / state.social.coteries.length)
+        : 0;
+      const influ = (state.social?.coteries && Array.isArray(state.social.coteries))
+        ? state.social.coteries.filter(c=>c && c.influential).length
+        : 0;
+
+      const tNow = Number(state.t ?? 0);
+      state._popTrend.t.push(tNow);
+      state._popTrend.pop.push(pop);
+      state._popTrend.cap.push(cap);
+      state._popTrend.births.push(births);
+      state._popTrend.wander.push(wander);
+      state._popTrend.ediblePk.push(ediblePerKitten(state));
+
+      state._socTrend.t.push(tNow);
+      state._socTrend.mood.push(avgMood);
+      state._socTrend.griev.push(avgGriev);
+      state._socTrend.dissent.push(Number(state.social?.dissent ?? 0));
+      state._socTrend.compliance.push(compliance01(state));
+      state._socTrend.threat.push(Number(state.res?.threat ?? 0));
+      state._socTrend.warmth.push(Number(state.res?.warmth ?? 0));
+      state._socTrend.food.push(Number(state.res?.food ?? 0));
+      state._socTrend.jerky.push(Number(state.res?.jerky ?? 0));
+      state._socTrend.science.push(Number(state.res?.science ?? 0));
+
+      state._culTrend.t.push(tNow);
+      state._culTrend.vig.push(Number(state.social?.norms?.raidParanoia ?? 0));
+      state._culTrend.scar.push(Number(state.social?.norms?.scarcityMindset ?? 0));
+      state._culTrend.aid.push(Number(state.social?.norms?.mutualAid ?? 0));
+      state._culTrend.coteries.push((state.social?.coteries && Array.isArray(state.social.coteries)) ? state.social.coteries.length : 0);
+      state._culTrend.influential.push(influ);
+      state._culTrend.repAvg.push(repAvg);
+      state._culTrend.mlLoss.push(Number(state.director?.ml?.lastLoss ?? 0));
+      state._culTrend.mlFood.push(Number(state.director?.ml?.lastPred?.food ?? 0));
+      state._culTrend.mlSafety.push(Number(state.director?.ml?.lastPred?.safety ?? 0));
+      state._culTrend.mlProg.push(Number(state.director?.ml?.lastPred?.progress ?? 0));
+      state._culTrend.mlSoc.push(Number(state.director?.ml?.lastPred?.social ?? 0));
+
+      const MAX = 120;
+      for (const store of [state._popTrend, state._socTrend, state._culTrend]) {
+        for (const k of Object.keys(store)) {
+          if (store[k].length > MAX) store[k].splice(0, store[k].length - MAX);
+        }
+      }
+    }
+
     // --- ML v1: online learned priority deltas (contextual linear model, deterministic)
     ensureCurator(state);
     state.director.ml = state.director.ml ?? {
@@ -5517,7 +5580,7 @@ import { PATCH_HISTORY } from './content.js';
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
-  const trendsEl = el('trends');
+  const trendsEl = el('trends');\n  const socTrendsEl = el('socTrends');\n  const socLegendEl = el('socLegend');\n  const socHintEl = el('socHint');
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
 
@@ -9021,8 +9084,7 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     // Canvas HUDs
-    renderTank();
-    renderTrends();
+    renderTank();\n    renderTrends();\n    renderPopTrends();\n    renderSocTrends();\n    renderCulTrends();
 
     // Keep inspectors in sync with latest snapshots.
     renderInspect();
@@ -9122,7 +9184,106 @@ import { PATCH_HISTORY } from './content.js';
     }
   }
 
-  function renderTrends(){
+    function renderStacked(canvasEl, store, rows, opts={}){
+    if (!canvasEl) return;
+    const ctx = canvasEl.getContext('2d');
+    if (!ctx) return;
+    const W = canvasEl.width, H = canvasEl.height;
+    ctx.clearRect(0,0,W,H);
+    if (!store || !store.t || store.t.length < 2) return;
+
+    const pad = 10;
+    const plotW = W - pad*2;
+    const n = store.t.length;
+    const rowH = Math.floor((H - pad*2) / rows.length);
+    const xFor = (i) => pad + (i/(n-1))*plotW;
+
+    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    ctx.textBaseline = 'top';
+
+    for (let r=0;r<rows.length;r++){
+      const row = rows[r];
+      const arr = store[row.key] || [];
+      if (arr.length !== n) continue;
+      const y0 = pad + r*rowH;
+      const y1 = y0 + rowH - 6;
+
+      let min=Infinity, max=-Infinity;
+      for (const v0 of arr){ const v=Number(v0); if (!Number.isFinite(v)) continue; min=Math.min(min,v); max=Math.max(max,v); }
+      if (row.scale01){ min=0; max=1; }
+      if (!Number.isFinite(min) || !Number.isFinite(max)) continue;
+      if (Math.abs(max-min) < 1e-6) max = min + 1;
+      const padY = (max-min)*0.10;
+      min -= padY; max += padY;
+
+      const yFor = (v) => {
+        const t = (Number(v)-min)/(max-min);
+        return y0 + (1 - clamp01(t)) * (y1-y0);
+      };
+
+      // bg
+      ctx.fillStyle = 'rgba(0,0,0,.06)';
+      ctx.fillRect(pad, y0, plotW, (y1-y0));
+      ctx.strokeStyle = 'rgba(255,255,255,.07)';
+      ctx.strokeRect(pad, y0, plotW, (y1-y0));
+
+      // line
+      ctx.strokeStyle = row.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i=0;i<n;i++){
+        const x=xFor(i);
+        const y=yFor(arr[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // label + now
+      const last = Number(arr[n-1] ?? 0);
+      ctx.fillStyle = 'rgba(148,163,184,.95)';
+      const val = row.fmt01 ? row.fmt01(last) : (row.scale01 ? (last*100).toFixed(0)+'%' : fmt(last));
+      ctx.fillText(${row.label}: , pad+4, y0+2);
+    }
+  }
+
+  function renderPopTrends(){
+    renderStacked(popTrendsEl, state._popTrend, [
+      { key:'pop', label:'Pop', color:'rgba(52,211,153,.95)' },
+      { key:'cap', label:'Cap', color:'rgba(148,163,184,.70)' },
+      { key:'births', label:'Birth/s', color:'rgba(34,211,238,.90)' },
+      { key:'wander', label:'Wander/s', color:'rgba(16,185,129,.80)' },
+      { key:'ediblePk', label:'Edible/kit', color:'rgba(251,191,36,.90)' },
+    ]);
+  }
+
+  function renderSocTrends(){
+    renderStacked(socTrendsEl, state._socTrend, [
+      { key:'mood', label:'Mood', color:'rgba(52,211,153,.95)', scale01:true },
+      { key:'griev', label:'Griev', color:'rgba(251,113,133,.90)', scale01:true },
+      { key:'dissent', label:'Dissent', color:'rgba(167,139,250,.95)', scale01:true },
+      { key:'compliance', label:'Compliance', color:'rgba(125,211,252,.95)' },
+      { key:'threat', label:'Threat', color:'rgba(251,113,133,.85)' },
+      { key:'warmth', label:'Warmth', color:'rgba(251,191,36,.90)' },
+      { key:'science', label:'Sci', color:'rgba(125,211,252,.85)' },
+    ]);
+  }
+
+  function renderCulTrends(){
+    renderStacked(culTrendsEl, state._culTrend, [
+      { key:'vig', label:'Vigilance', color:'rgba(251,113,133,.70)', scale01:true },
+      { key:'scar', label:'Scarcity', color:'rgba(251,191,36,.80)', scale01:true },
+      { key:'aid', label:'Mutual aid', color:'rgba(52,211,153,.80)', scale01:true },
+      { key:'coteries', label:'Coteries', color:'rgba(167,139,250,.85)' },
+      { key:'influential', label:'Influential', color:'rgba(139,92,246,.80)' },
+      { key:'repAvg', label:'Rep avg', color:'rgba(148,163,184,.85)' },
+      { key:'mlLoss', label:'ML loss', color:'rgba(125,211,252,.80)', fmt01:(v)=>Number(v).toFixed(3) },
+      { key:'mlFood', label:'ML ? food', color:'rgba(52,211,153,.75)', fmt01:(v)=>Number(v).toFixed(2) },
+      { key:'mlSafety', label:'ML ? safety', color:'rgba(251,191,36,.75)', fmt01:(v)=>Number(v).toFixed(2) },
+      { key:'mlProg', label:'ML ? prog', color:'rgba(125,211,252,.75)', fmt01:(v)=>Number(v).toFixed(2) },
+      { key:'mlSoc', label:'ML ? soc', color:'rgba(167,139,250,.75)', fmt01:(v)=>Number(v).toFixed(2) },
+    ]);
+  }
+function renderTrends(){
     if (!trendsEl) return;
     const ctx = trendsEl.getContext('2d');
     if (!ctx) return;
