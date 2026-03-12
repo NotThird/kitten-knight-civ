@@ -1684,9 +1684,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // On boot, we simulate a capped amount of time since the last save.
   // This keeps the prototype incremental even when you're not staring at the tab.
   // Explainability: we log a compact summary of what happened.
+  const OFFLINE_RATE = 0.50;
+  const OFFLINE_CAP_SEC = 24 * 60 * 60;
   const _lastTs = Number(state?.meta?.lastTs ?? 0) || 0;
   const _offlineSecRaw = _lastTs ? Math.max(0, (Date.now() - _lastTs) / 1000) : 0;
-  state._offlinePending = Math.min(300, _offlineSecRaw); // cap 5 minutes (keeps CPU sane + avoids huge surprise jumps)
+  state._offlinePending = Math.min(OFFLINE_CAP_SEC, _offlineSecRaw);
   state._offlineWasCapped = (_offlineSecRaw > state._offlinePending + 0.5);
 
 
@@ -6780,6 +6782,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const btnPatchNotesEl = el('btnPatchNotes');
   const btnPatchCloseEl = el('btnPatchClose');
 
+  const offlineModalEl = el('offlineModal');
+  const offlineSubEl = el('offlineSub');
+  const offlineBodyEl = el('offlineBody');
+  const btnOfflineCloseEl = el('btnOfflineClose');
+
   const patchNotesUI = initPatchNotes({
     gameVersion: GAME_VERSION,
     patchHistory: PATCH_HISTORY,
@@ -6790,6 +6797,36 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     btnPatchNotesEl,
     btnPatchCloseEl,
   });
+
+  function closeOfflineModal(){
+    if (offlineModalEl) offlineModalEl.classList.add('hidden');
+  }
+
+  function openOfflineModal(summary){
+    if (!offlineModalEl || !offlineSubEl || !offlineBodyEl) return;
+    const away = Number(summary?.away ?? 0) || 0;
+    const sim = Number(summary?.simulated ?? 0) || 0;
+    const capped = !!summary?.capped;
+    const gains = summary?.gains ?? {};
+    const items = [];
+    for (const k of ['food','jerky','wood','science','tools']) {
+      const v = Number(gains[k] ?? 0);
+      if (v > 0.001) items.push(`${k}: +${fmt(v)}`);
+    }
+
+    offlineSubEl.textContent = `Away ${fmt(away)}s. Simulated ${fmt(sim)}s at 50% rate${capped ? ' (capped at 24h)' : ''}.`;
+    offlineBodyEl.innerHTML = items.length
+      ? items.map((line) => `<div>${line}</div>`).join('')
+      : '<div>No meaningful gains this time.</div>';
+
+    offlineModalEl.classList.remove('hidden');
+  }
+
+  if (btnOfflineCloseEl) btnOfflineCloseEl.addEventListener('click', closeOfflineModal);
+  if (offlineModalEl) offlineModalEl.addEventListener('click', (e) => {
+    if (e.target === offlineModalEl) closeOfflineModal();
+  });
+
   // --- Inspect modal (explainability)
   const inspectModalEl = el('inspectModal');
   const inspectTitleEl = el('inspectTitle');
@@ -11501,65 +11538,72 @@ function renderTrends(){
     patchNotesUI.open();
   }
 
+  function maybeShowOfflineSummary(){
+    const summary = state?._offlineSummary;
+    if (!summary) return;
+    openOfflineModal(summary);
+    state._offlineSummary = null;
+    save();
+  }
+
   function applyOfflineProgressOnBoot(){
-    const pending = Number(state?._offlinePending ?? 0) || 0;
-    if (pending < 3) { state._offlinePending = 0; return; }
+    const away = Number(state?._offlinePending ?? 0) || 0;
+    if (away < 3) { state._offlinePending = 0; return; }
 
-    // Snapshot for a concise delta log.
-    const before = {
-      t: Number(state.t ?? 0),
-      food: Number(state.res?.food ?? 0),
-      jerky: Number(state.res?.jerky ?? 0),
-      wood: Number(state.res?.wood ?? 0),
-      warmth: Number(state.res?.warmth ?? 0),
-      threat: Number(state.res?.threat ?? 0),
-      science: Number(state.res?.science ?? 0),
-      tools: Number(state.res?.tools ?? 0),
-    };
+    const simSeconds = Math.min(24 * 60 * 60, away) * OFFLINE_RATE;
+    if (simSeconds < 1) {
+      state._offlinePending = 0;
+      state._offlineWasCapped = false;
+      return;
+    }
 
+    const keys = ['food','jerky','wood','science','tools'];
+    const liveState = state;
+    const probeState = structuredClone(state);
+
+    // Estimate current economy rates by running a short deterministic probe sim.
+    state = probeState;
     state._suppressLog = true;
     state._suppressedLogCount = 0;
 
-    // Run the sim in small dt slices so 1s decision logic stays correct.
-    let left = Math.min(300, pending);
-    const dt = 0.25;
-    while (left > 0) {
-      step(Math.min(dt, left));
-      left -= dt;
+    const probeBefore = {};
+    for (const k of keys) probeBefore[k] = Number(state.res?.[k] ?? 0) || 0;
+
+    let probeLeft = 8;
+    while (probeLeft > 0) {
+      const dt = Math.min(0.25, probeLeft);
+      step(dt);
+      probeLeft -= dt;
     }
 
-    state._suppressLog = false;
+    const perSec = {};
+    for (const k of keys) {
+      const after = Number(state.res?.[k] ?? 0) || 0;
+      perSec[k] = Math.max(0, (after - probeBefore[k]) / 8);
+    }
 
-    const after = {
-      t: Number(state.t ?? 0),
-      food: Number(state.res?.food ?? 0),
-      jerky: Number(state.res?.jerky ?? 0),
-      wood: Number(state.res?.wood ?? 0),
-      warmth: Number(state.res?.warmth ?? 0),
-      threat: Number(state.res?.threat ?? 0),
-      science: Number(state.res?.science ?? 0),
-      tools: Number(state.res?.tools ?? 0),
-    };
+    state = liveState;
 
-    const d = (k) => (after[k] - before[k]);
-    const sim = Math.round(Math.min(300, pending));
+    const gains = {};
+    for (const k of keys) {
+      const add = perSec[k] * simSeconds;
+      gains[k] = add;
+      state.res[k] = Math.max(0, Number(state.res?.[k] ?? 0) + add);
+    }
 
-    const capped = state._offlineWasCapped ? ' (capped at 5m)' : '';
-    const suppressed = Number(state._suppressedLogCount ?? 0) || 0;
-
+    const capped = !!state._offlineWasCapped;
     log(
-      `Offline progress: simulated ${sim}s${capped}. ` +
-      `Δfood ${fmt(d('food'))}, Δjerky ${fmt(d('jerky'))}, Δwood ${fmt(d('wood'))}, ` +
-      `Δwarmth ${fmt(d('warmth'))}, Δthreat ${fmt(d('threat'))}, ` +
-      `Δscience ${fmt(d('science'))}, Δtools ${fmt(d('tools'))}` +
-      (suppressed ? ` (suppressed ${suppressed} log lines)` : '')
+      `Offline progress: away ${fmt(away)}s, simulated ${fmt(simSeconds)}s at 50% rate` +
+      (capped ? ' (capped at 24h).' : '.')
     );
 
+    state._offlineSummary = { away, simulated: simSeconds, capped, gains };
     state._offlinePending = 0;
     state._offlineWasCapped = false;
     state._suppressedLogCount = 0;
+    state._suppressLog = false;
 
-    // Persist immediately so refreshing doesn't repeatedly re-run offline sim.
+    // Persist immediately so refreshing doesn't repeatedly grant offline rewards.
     save();
   }
 
@@ -11568,6 +11612,7 @@ function renderTrends(){
   render();
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
+  maybeShowOfflineSummary();
 })();
 
 
