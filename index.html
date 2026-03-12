@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kitten Knight Proto (Civ)</title>
-  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-05a">
+  <title>Kitten Knight Civ</title>
+  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-12a">
 </head>
 <body>
 <header>
-  <h1>Kitten Knight Proto (Civ)</h1>
+  <h1>Kitten Knight Civ</h1>
   <span class="pill" id="ver"></span>
   <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
   <button id="btnPause" title="Shortcut: Space">Pause</button>
@@ -70,7 +70,8 @@
       <div style="height:12px"></div>
       <div class="small">Society trends (last ~2 minutes)</div>
       <div class="small" id="socLegend" style="margin:6px 0; opacity:.90"></div>
-      
+      <canvas id="socTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+      <div class="small" id="socHint" style="margin-top:6px; opacity:.85"></div>
 
       <div style="height:12px"></div>
       <div class="small">Culture + ML trends (last ~2 minutes)</div>

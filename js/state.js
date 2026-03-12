@@ -37,6 +37,11 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
   delete s._coterieIdByKid;
   delete s._coteriePressure;
   delete s._coteriePressureGate;
+  delete s._trendTimer;
+  delete s._vitalTimer;
+  delete s._coterieRepFx;
+  delete s._projRate;
+  delete s._prevProj;
 
   // Strip transient UI/debug keys (avoid save bloat)
   if (Array.isArray(s.kittens)) {
@@ -49,6 +54,9 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
       delete k._lastBlocked;
       delete k._buddyBeatBand;
       delete k._workMem;
+      // Strip transient chart/trend data (rebuilt on load)
+      delete k._skillTrend;
+      delete k._vitalsTrend;
     }
   }
 
@@ -106,6 +114,8 @@ export function migrateState(s, {
   if (!('version' in s.meta)) s.meta.version = '';
   if (!('seenVersion' in s.meta)) s.meta.seenVersion = '';
   if (!('lastTs' in s.meta)) s.meta.lastTs = 0;
+  // Skill system version: 1 = original 7 skills, 2 = living skill engine (micro-skills)
+  if (!('skillVersion' in s.meta)) s.meta.skillVersion = 2;
   s.meta.version = String(s.meta.version ?? '');
   s.meta.seenVersion = String(s.meta.seenVersion ?? '');
   s.meta.lastTs = Number(s.meta.lastTs ?? 0) || 0;
@@ -243,10 +253,10 @@ export function migrateState(s, {
     if (!('directive' in k)) k.directive = 'Auto';
     const _dir = String(k.directive ?? 'Auto');
     k.directive = ['Auto','Food','Safety','Progress','Social','Rest'].includes(_dir) ? _dir : 'Auto';
-    k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 };
-    k.xp = k.xp ?? { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 };
-    for (const [sk,lv] of Object.entries({ Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 })) if (!(sk in k.skills)) k.skills[sk] = lv;
-    for (const [sk,xp] of Object.entries({ Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 })) if (!(sk in k.xp)) k.xp[sk] = xp;
+    k.skills = k.skills ?? { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1, Social:1, Survival:1, Athletics:1 };
+    k.xp = k.xp ?? { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0, Social:0, Survival:0, Athletics:0 };
+    for (const [sk,lv] of Object.entries({ Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1, Social:1, Survival:1, Athletics:1 })) if (!(sk in k.skills)) k.skills[sk] = lv;
+    for (const [sk,xp] of Object.entries({ Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0, Social:0, Survival:0, Athletics:0 })) if (!(sk in k.xp)) k.xp[sk] = xp;
     if (typeof clamp01 === 'function') {
       k.health = clamp01(Number(k.health ?? 1));
       k.mood = clamp01(Number(k.mood ?? 0.55));
@@ -259,6 +269,8 @@ export function migrateState(s, {
     }
     k.taskStreak = k.taskStreak ?? 0;
     k.taskLock = k.taskLock ?? 0;
+    if (!Array.isArray(k.lifeLog)) k.lifeLog = [];
+    if (!k.activityTime || typeof k.activityTime !== 'object') k.activityTime = {};
     k._blockedAction = k._blockedAction ?? null;
     k._blockedMsg = k._blockedMsg ?? '';
     k._autonomyPickNote = k._autonomyPickNote ?? '';

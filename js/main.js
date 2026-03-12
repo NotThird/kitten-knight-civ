@@ -4,40 +4,28 @@ import { makeCoreTaskDefs } from './tasks_core.js';
 import { SEASON_LEN, YEAR_LEN, seasonAt, yearAt, seasonTargets, secondsToNextSeason, secondsToNextWinter, efficiency, momentumMul, ensureRateState, updateRates, updateProjectRates, runKittensTick, runDecisionSecond } from './sim.js';
 import { initUI, initCuratorControls, initPatchNotes, initInspectModal, initSocietyInspectors, initSaveIO, initDirectorProfiles, initDirectiveTools, initDoctrineControls, initAutoModeControls, initAutoDoctrineControls, initAutoRationsControls, initAutoRecruitControls, initAutoWinterPrepControls, initAutoFoodCrisisControls, initAutoReservesControls, initAutoPolicyControls, initAutoBuildPushControls, initConfirmPoliticsControls, renderDirectorProfiles, renderProjectFocusHint, renderPinnedProjectControls, renderDirectiveTools } from './ui.js';
 import { PATCH_HISTORY } from './content.js';
+import { createSkillRegistry, TASK_SKILL_MAP, SKILL_CATEGORIES, ERAS } from './skills.js';
+import { GENERATED_SKILLS } from './skills_generated.js';
+import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } from './charts.js';
 
 (() => {
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
-  // --- Aptitude: kittens slowly become specialists (via skill levels) and prefer work they are good at.
-  // This gives "policy management" long-term consequences: if you keep leaning on Forage, those kittens get better at it.
-  const ACTION_SKILL = {
-    Forage: 'Foraging',
-    PreserveFood: 'Cooking',
-    Farm: 'Farming',
-    ChopWood: 'Woodcutting',
-    Guard: 'Combat',
-    Research: 'Scholarship',
-    Mentor: 'Scholarship',
-    CraftTools: 'Building',
-    BuildHut: 'Building',
-    BuildPalisade: 'Building',
-    BuildGranary: 'Building',
-    BuildWorkshop: 'Building',
-    BuildLibrary: 'Building',
-    StokeFire: 'Cooking',
-    Socialize: null,
-    Care: null,
-    Eat: null,
-    Rest: null,
-  };
+  // --- Living Skill Registry (DCC-inspired) ─────────────────────────────────
+  // Every micro-action is a skill. Skills are discovered organically and impact the simulation.
+  const skillRegistry = createSkillRegistry();
+  // Register any OpenClaw-generated skills
+  for (const def of GENERATED_SKILLS) skillRegistry.register(def);
 
+  // Primary skill for a task (first micro-skill in TASK_SKILL_MAP)
   function skillForAction(action){
     const a = String(action ?? '');
-    return ACTION_SKILL[a] ?? null;
+    return skillRegistry.primaryForTask(a);
   }
 
+  // Highest-level skill on a kitten (checks all micro-skills + categories)
   function topSkillInfo(k){
     const skills = k?.skills ?? {};
     let best = null;
@@ -46,6 +34,18 @@ import { PATCH_HISTORY } from './content.js';
       const lvl = Number(lvlRaw ?? 1);
       if (!Number.isFinite(lvl)) continue;
       if (lvl > bestLvl) { bestLvl = lvl; best = name; }
+    }
+    return { skill: best, level: (bestLvl > 0 ? bestLvl : 1) };
+  }
+
+  // Top category skill (for scoring, mentor, display)
+  function topCategorySkill(k){
+    const cats = Object.keys(SKILL_CATEGORIES);
+    let best = null;
+    let bestLvl = -1;
+    for (const cat of cats) {
+      const lvl = Number(k?.skills?.[cat] ?? 1);
+      if (lvl > bestLvl) { bestLvl = lvl; best = cat; }
     }
     return { skill: best, level: (bestLvl > 0 ? bestLvl : 1) };
   }
@@ -442,7 +442,8 @@ import { PATCH_HISTORY } from './content.js';
     return out;
   }
 
-  function makeKitten(id){
+  function makeKitten(id, birthTime){
+    const t0 = Number(birthTime ?? 0);
     const traits = genTraits(id);
     return {
       id,
@@ -457,8 +458,8 @@ import { PATCH_HISTORY } from './content.js';
       health: 1.0,
       // Mood: 0..1. Softly affects efficiency + preferences (adds "civ sim" texture without hard locks).
       mood: 0.55,
-      skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1 },
-      xp: { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0 },
+      skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1, Social:1, Survival:1, Athletics:1 },
+      xp: { Foraging:0, Farming:0, Woodcutting:0, Building:0, Scholarship:0, Combat:0, Cooking:0, Social:0, Survival:0, Athletics:0 },
       // Personality: soft preferences that bias scoring (adds emergent specialization)
       personality: genPersonality(id),
       // Traits: steady "identity" bias (civ-sim flavor)
@@ -496,6 +497,10 @@ import { PATCH_HISTORY } from './content.js';
       // Anti-thrash: short per-action cooldown if we just discovered an action is blocked.
       // Prevents kittens from repeatedly "trying" the same no-op sink every 1s.
       blockedCooldown: {},
+
+      // Per-kitten life story
+      lifeLog: [{ t: t0, type: 'milestone', data: { what: 'Born', detail: 'Joined the colony' } }],
+      activityTime: {},
     };
   }
 
@@ -519,7 +524,15 @@ import { PATCH_HISTORY } from './content.js';
 
       const idx = ids.indexOf(id);
       const buddy = ids[(idx + 1) % ids.length];
-      k.buddyId = (buddy && buddy !== id) ? buddy : null;
+      const newBuddy = (buddy && buddy !== id) ? buddy : null;
+      if (newBuddy !== cur) {
+        k.buddyId = newBuddy;
+        if (newBuddy) {
+          kittenLog(k, 'social', { event: 'buddy-assigned', targetName: kittenName(s, newBuddy) });
+        }
+      } else {
+        k.buddyId = newBuddy;
+      }
     }
   }
 
@@ -1584,28 +1597,30 @@ import { PATCH_HISTORY } from './content.js';
         const haveJerky = Number(s.res.jerky ?? 0);
         if (haveFood <= 0 && haveJerky <= 0) return;
 
+        const fx = skillRegistry.applySkillEffects(s, k, 'Eat');
         const need = 0.95 * dt * rat.foodUse;
         const useFood = Math.min(haveFood, need);
         s.res.food = Math.max(0, haveFood - useFood);
         const rem = Math.max(0, need - useFood);
         const useJerky = Math.min(haveJerky, rem);
         s.res.jerky = Math.max(0, haveJerky - useJerky);
-        const use = useFood + useJerky;
-        k.hunger = clamp01(k.hunger - dt * 0.55 * rat.hungerRelief);
+        k.hunger = clamp01(k.hunger - dt * 0.55 * rat.hungerRelief * fx.outputMult);
         k.energy = clamp01(k.energy + dt * 0.03 * rat.energyGain);
         // Food helps recovery.
         k.health = clamp01((k.health ?? 1) + dt * 0.015);
-        gainXP(k,'Cooking', dt * 0.35);
+        gainSkillXP(s, k, 'Eat', dt * 0.35);
       }
     },
     Rest: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
-        k.energy = clamp01(k.energy + dt * 0.16);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Rest');
+        k.energy = clamp01(k.energy + dt * 0.16 * fx.outputMult);
         k.hunger = clamp01(k.hunger + dt * 0.03);
         // Rest recovers health; warmth speeds recovery.
         const w = clamp01(Number(s.res?.warmth ?? 0) / 100);
         k.health = clamp01((k.health ?? 1) + dt * (0.018 + 0.020 * w));
+        gainSkillXP(s, k, 'Rest', dt * 0.30);
       }
     },
     Loaf: {
@@ -1623,6 +1638,7 @@ import { PATCH_HISTORY } from './content.js';
         // Mood: meaningful bump (especially if the colony is celebrating).
         const fest = festivalActive(s) ? 1 : 0;
         k.mood = clamp01(Number(k.mood ?? 0.55) + dt * (0.020 + 0.006 * fest));
+        gainSkillXP(s, k, 'Loaf', dt * 0.25);
       }
     },
     Socialize: {
@@ -1657,7 +1673,8 @@ import { PATCH_HISTORY } from './content.js';
           k.mood = clamp01(Number(k.mood ?? 0.55) + dt * 0.004);
         }
 
-        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Socialize');
+        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - reduce * fx.outputMult);
 
         // Small spillover: boost one other kitten's mood a tiny amount.
         const others = (s.kittens ?? []).filter(x => x && x.id !== k.id);
@@ -1665,6 +1682,7 @@ import { PATCH_HISTORY } from './content.js';
           const target = others[(Math.random() * others.length) | 0];
           target.mood = clamp01(Number(target.mood ?? 0.55) + dt * 0.004);
         }
+        gainSkillXP(s, k, 'Socialize', dt * 0.40 * eff);
       }
     },
     Care: {
@@ -1723,6 +1741,7 @@ import { PATCH_HISTORY } from './content.js';
           const target = others[(Math.random() * others.length) | 0];
           target.health = clamp01(Number(target.health ?? 1) + dt * 0.002);
         }
+        gainSkillXP(s, k, 'Care', dt * 0.40 * eff);
       }
     },
     Forage: {
@@ -1730,15 +1749,15 @@ import { PATCH_HISTORY } from './content.js';
       tick: (s,k,dt) => {
         const season = seasonAt(s.t);
         const winterPenalty = season.name === 'Winter' ? 0.55 : 1;
-        const mult = 1 + 0.07*(k.skills.Foraging-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Forage');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
         s.res.food += out;
-        k.energy = clamp01(k.energy - dt * 0.04 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        gainXP(k,'Foraging', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'Forage', dt * 1.0 * efficiency(s,k));
       }
     },
     PreserveFood: {
@@ -1756,13 +1775,13 @@ import { PATCH_HISTORY } from './content.js';
         }
 
         const eff = efficiency(s, k);
-        const mult = 1 + 0.06*(k.skills.Cooking-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'PreserveFood');
         const mom = momentumMul(k, 'PreserveFood');
         const wp = workPaceMul(s);
 
         // Costs per second at eff=1 (tuned to be a midgame sink, not a free win).
-        const wantFood = 0.95 * mult * dt * eff * mom * wp;
-        const wantWood = 0.22 * mult * dt * eff * mom * wp;
+        const wantFood = 0.95 * fx.outputMult * dt * eff * mom * wp;
+        const wantWood = 0.22 * fx.outputMult * dt * eff * mom * wp;
         const useFood = Math.min(foodAvail, wantFood);
         const useWood = Math.min(woodAvail, wantWood);
         const norm = Math.min(useFood / wantFood, useWood / wantWood);
@@ -1777,9 +1796,9 @@ import { PATCH_HISTORY } from './content.js';
         const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72; // yield < 1 to keep it from dominating
 
         s.res.jerky = (s.res.jerky ?? 0) + made;
-        k.energy = clamp01(k.energy - dt * 0.03 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
-        gainXP(k,'Cooking', dt * 0.95 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.02 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'PreserveFood', dt * 0.95 * efficiency(s,k));
       }
     },
     Farm: {
@@ -1787,29 +1806,29 @@ import { PATCH_HISTORY } from './content.js';
       tick: (s,k,dt) => {
         const season = seasonAt(s.t);
         const winterPenalty = season.name === 'Winter' ? 0.85 : 1;
-        const mult = 1 + 0.08*(k.skills.Farming-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Farm');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
         const wp = workPaceMul(s);
-        const out = 2.35 * mult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
         s.res.food += out;
-        k.energy = clamp01(k.energy - dt * 0.035 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.025 * wp);
-        gainXP(k,'Farming', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.025 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'Farm', dt * 1.0 * efficiency(s,k));
       }
     },
     ChopWood: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
-        const mult = 1 + 0.07*(k.skills.Woodcutting-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'ChopWood');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
         const wp = workPaceMul(s);
-        const out = 1.05 * mult * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 1.05 * fx.outputMult * toolsBonus(s) * dt * eff * mom * wp;
         s.res.wood += out;
-        k.energy = clamp01(k.energy - dt * 0.05 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.035 * wp);
-        gainXP(k,'Woodcutting', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'ChopWood', dt * 1.0 * efficiency(s,k));
       }
     },
     StokeFire: {
@@ -1821,21 +1840,21 @@ import { PATCH_HISTORY } from './content.js';
           k.hunger = clamp01(k.hunger + dt * 0.02);
           return;
         }
+        const fx = skillRegistry.applySkillEffects(s, k, 'StokeFire');
         const wp = workPaceMul(s);
-        const use = Math.min(s.res.wood, 0.9 * dt * wp);
+        const use = Math.min(s.res.wood, 0.9 * dt * wp * fx.speedMult);
         const mom = momentumMul(k, 'StokeFire');
         s.res.wood -= use;
-        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom);
-        k.energy = clamp01(k.energy - dt * 0.02 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
-        // Firekeeping is a real skill: as you keep the hearth going, you get better at it.
-        gainXP(k,'Cooking', dt * 0.70 * efficiency(s,k));
+        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult);
+        k.energy = clamp01(k.energy - dt * 0.02 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.02 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'StokeFire', dt * 0.70 * efficiency(s,k));
       }
     },
     Guard: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
-        const mult = 1 + 0.10*(k.skills.Combat-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Guard');
         let base = s.unlocked.security ? 2.6 : 2.1;
         const drill = drillActive(s) ? 1 : 0;
         if (drill) base += 0.55; // training + patrols
@@ -1843,10 +1862,10 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
-        s.res.threat = Math.max(0, s.res.threat - base * mult * dt * eff * mom * wp);
-        k.energy = clamp01(k.energy - dt * 0.03 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        gainXP(k,'Combat', dt * (1.0 + 0.35*drill) * efficiency(s,k));
+        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * dt * eff * mom * wp);
+        k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'Guard', dt * (1.0 + 0.35*drill) * efficiency(s,k));
       }
     },
     BuildHut: {
@@ -1860,7 +1879,8 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildHut');
         const wp = workPaceMul(s);
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
+        const fx = skillRegistry.applySkillEffects(s, k, 'BuildHut');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
@@ -1873,9 +1893,9 @@ import { PATCH_HISTORY } from './content.js';
           log(`Built a hut. Huts: ${s.res.huts}`);
           maybeAutoClearPinnedProject(s,'Hut');
         }
-        k.energy = clamp01(k.energy - dt * 0.06 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.06 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'BuildHut', dt * 1.0 * efficiency(s,k));
       }
     },
     BuildPalisade: {
@@ -1889,7 +1909,8 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildPalisade');
         const wp = workPaceMul(s);
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
+        const fx = skillRegistry.applySkillEffects(s, k, 'BuildPalisade');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
@@ -1902,9 +1923,9 @@ import { PATCH_HISTORY } from './content.js';
           log(`Built palisade segment. Palisade: ${s.res.palisade}`);
           maybeAutoClearPinnedProject(s,'Palisade');
         }
-        k.energy = clamp01(k.energy - dt * 0.06 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.06 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'BuildPalisade', dt * 1.0 * efficiency(s,k));
       }
     },
     BuildGranary: {
@@ -1918,7 +1939,8 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildGranary');
         const wp = workPaceMul(s);
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
+        const fx = skillRegistry.applySkillEffects(s, k, 'BuildGranary');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
@@ -1931,9 +1953,9 @@ import { PATCH_HISTORY } from './content.js';
           log(`Built a granary. Granaries: ${s.res.granaries}`);
           maybeAutoClearPinnedProject(s,'Granary');
         }
-        k.energy = clamp01(k.energy - dt * 0.055 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.035 * wp);
-        gainXP(k,'Building', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.055 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'BuildGranary', dt * 1.0 * efficiency(s,k));
       }
     },
     BuildWorkshop: {
@@ -1955,7 +1977,8 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildWorkshop');
         const wp = workPaceMul(s);
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
+        const fx = skillRegistry.applySkillEffects(s, k, 'BuildWorkshop');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         // Respect reserves (hard stop at execution time).
         const maxByWood = woodAvail / 0.85;
         const maxBySci  = sciAvail / 0.55;
@@ -1975,11 +1998,9 @@ import { PATCH_HISTORY } from './content.js';
           log(`Built a workshop. Workshops: ${s.res.workshops} (industry x${workshopBonus(s).toFixed(2)})`);
           maybeAutoClearPinnedProject(s,'Workshop');
         }
-        k.energy = clamp01(k.energy - dt * 0.06 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        const effXp = efficiency(s,k);
-        gainXP(k,'Building', dt * 0.9 * effXp);
-        gainXP(k,'Scholarship', dt * 0.3 * effXp);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'BuildWorkshop', dt * 1.2 * efficiency(s,k));
       }
     },
     BuildLibrary: {
@@ -2010,7 +2031,8 @@ import { PATCH_HISTORY } from './content.js';
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'BuildLibrary');
         const wp = workPaceMul(s);
-        const speed = (1 + 0.06*(k.skills.Building-1)) * toolsBonus(s) * eff * mom * wp;
+        const fx = skillRegistry.applySkillEffects(s, k, 'BuildLibrary');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
 
         // Costs per 1 progress.
         const maxByWood  = woodAvail / 0.75;
@@ -2036,11 +2058,9 @@ import { PATCH_HISTORY } from './content.js';
           maybeAutoClearPinnedProject(s,'Library');
         }
 
-        k.energy = clamp01(k.energy - dt * 0.06 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        const effXp = efficiency(s,k);
-        gainXP(k,'Building', dt * 0.75 * effXp);
-        gainXP(k,'Scholarship', dt * 0.55 * effXp);
+        k.energy = clamp01(k.energy - dt * 0.06 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'BuildLibrary', dt * 1.3 * efficiency(s,k));
       }
     },
     CraftTools: {
@@ -2060,12 +2080,12 @@ import { PATCH_HISTORY } from './content.js';
           return;
         }
         const eff = efficiency(s, k);
-        const mult = 1 + 0.06*(k.skills.Building-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'CraftTools');
         const mom = momentumMul(k, 'CraftTools');
         const wp = workPaceMul(s);
         // Respect reserves (hard stop at execution time).
-        const useWood = Math.min(woodAvail, 0.55 * mult * dt * eff * wp);
-        const useSci  = Math.min(sciAvail, 0.40 * mult * dt * eff * wp);
+        const useWood = Math.min(woodAvail, 0.55 * fx.outputMult * dt * eff * wp);
+        const useSci  = Math.min(sciAvail, 0.40 * fx.outputMult * dt * eff * wp);
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
@@ -2075,11 +2095,9 @@ import { PATCH_HISTORY } from './content.js';
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
-        k.energy = clamp01(k.energy - dt * 0.05 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        const effXp = efficiency(s,k);
-        gainXP(k,'Building', dt * 0.6 * effXp);
-        gainXP(k,'Scholarship', dt * 0.4 * effXp);
+        k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'CraftTools', dt * 1.0 * efficiency(s,k));
       }
     },
     Mentor: {
@@ -2094,9 +2112,9 @@ import { PATCH_HISTORY } from './content.js';
         }
 
         // Choose a skill to teach.
-        // Default: mentor's top skill (excluding Cooking) if it exists; otherwise Scholarship.
+        // Default: mentor's top category skill (excluding Cooking) if it exists; otherwise Scholarship.
         // Upgrade: if the colony is short on a quota/plan role, teach the corresponding role skill instead.
-        const top = topSkillInfo(k);
+        const top = topCategorySkill(k);
         let teachSkill = (top.skill && top.skill !== 'Cooking') ? top.skill : 'Scholarship';
         let teachRole = null;
         let teachWhy = `mentor top skill: ${teachSkill}`;
@@ -2166,11 +2184,11 @@ import { PATCH_HISTORY } from './content.js';
 
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Mentor');
-        const mult = 1 + 0.07 * ((k.skills.Scholarship ?? 1) - 1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Mentor');
         const wp = workPaceMul(s);
 
         // Science cost scales with teaching throughput.
-        const wantSci = 0.42 * mult * dt * eff * mom * wp;
+        const wantSci = 0.42 * fx.outputMult * dt * eff * mom * wp;
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
@@ -2179,8 +2197,8 @@ import { PATCH_HISTORY } from './content.js';
 
         // Teaching value: convert spent science into XP for the target.
         const teach = (spent / 0.42) * 1.20 * libraryBonus(s);
-        gainXP(target, teachSkill, teach);
-        gainXP(k, 'Scholarship', teach * 0.45);
+        gainSkillXP(s, target, teachSkill, teach);
+        gainSkillXP(s, k, 'Mentor', teach * 0.45);
 
         // Small morale bump for both; mentoring feels good.
         k.mood = clamp01(Number(k.mood ?? 0.55) + dt * 0.004);
@@ -2189,22 +2207,22 @@ import { PATCH_HISTORY } from './content.js';
         // Track for UI explainability.
         k._mentor = { id: target.id, skill: teachSkill, why: teachWhy };
 
-        k.energy = clamp01(k.energy - dt * 0.032 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.028 * wp);
+        k.energy = clamp01(k.energy - dt * 0.032 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.028 * wp * fx.hungerMult);
       }
     },
     Research: {
       enabled: (s) => true,
       tick: (s,k,dt) => {
-        const mult = 1 + 0.08*(k.skills.Scholarship-1);
+        const fx = skillRegistry.applySkillEffects(s, k, 'Research');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * mult * libraryBonus(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * dt * eff * mom * wp;
         s.res.science += out;
-        k.energy = clamp01(k.energy - dt * 0.035 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        gainXP(k,'Scholarship', dt * 1.0 * efficiency(s,k));
+        k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
+        gainSkillXP(s, k, 'Research', dt * 1.0 * efficiency(s,k));
       }
     },
   };
@@ -2220,24 +2238,131 @@ import { PATCH_HISTORY } from './content.js';
     toolsBonus,
     libraryBonus,
     drillActive,
-    gainXP,
+    gainXP: gainSkillXP,
+    skillEffects: (s, k, task) => skillRegistry.applySkillEffects(s, k, task),
   }));
 
-  function gainXP(k, skill, amt){
-    k.xp[skill] = (k.xp[skill] ?? 0) + amt;
-    let level = k.skills[skill] ?? 1;
-    while (k.xp[skill] >= xpToNext(level)) {
-      k.xp[skill] -= xpToNext(level);
-      level += 1;
-      k.skills[skill] = level;
-      log(`Kitten ${k.id} leveled ${skill} → ${level}`);
+  function xpToNext(level){ return 10 + Math.pow(level, 1.35) * 6; }
 
-      // Aquarium-visible milestone.
-      const nm = String(k?.name ?? `Kitten ${k.id}`);
-      feed(`${nm} improved: ${skill} level ${level}.`);
+  // Award XP to a single skill on a kitten (internal helper).
+  function awardMicroSkillXP(s, k, skillId, xp){
+    const def = skillRegistry.get(skillId);
+    // Era check: don't award XP for skills from locked eras
+    if (def && !skillRegistry.isEraUnlocked(def.era, s)) return;
+    // Auto-init on first earn (organic discovery)
+    if (k.skills[skillId] === undefined) k.skills[skillId] = 1;
+    if (k.xp[skillId] === undefined) k.xp[skillId] = 0;
+    const xpRate = def?.xpRate ?? 1.0;
+    const earned = xp * xpRate;
+    k.xp[skillId] += earned;
+    // Level up
+    let level = k.skills[skillId];
+    const nm = String(k?.name ?? `Kitten ${k.id}`);
+    const sName = def?.name ?? skillId;
+    while (k.xp[skillId] >= xpToNext(level)) {
+      k.xp[skillId] -= xpToNext(level);
+      level += 1;
+      k.skills[skillId] = level;
+      log(`${nm}: ${sName} → level ${level}`);
+      feed(`${nm}: ${sName} level ${level}!`);
+      kittenLog(k, 'skill', { skill: skillId, name: sName, level, category: def?.category });
+      // Milestone log for notable levels
+      if (level === 5 || level === 10 || level === 15 || level === 20) {
+        kittenLog(k, 'milestone', { what: `${sName} level ${level}`, detail: `Reached level ${level} in ${sName}` });
+      }
+    }
+    // Trickle 25% to parent category skill
+    const parent = def?.parentSkill ?? def?.category;
+    if (parent && parent !== skillId) {
+      if (k.skills[parent] === undefined) k.skills[parent] = 1;
+      if (k.xp[parent] === undefined) k.xp[parent] = 0;
+      k.xp[parent] += earned * 0.25;
+      let pLevel = k.skills[parent];
+      while (k.xp[parent] >= xpToNext(pLevel)) {
+        k.xp[parent] -= xpToNext(pLevel);
+        pLevel += 1;
+        k.skills[parent] = pLevel;
+        log(`${nm}: ${parent} → level ${pLevel}`);
+        feed(`${nm}: ${parent} level ${pLevel}!`);
+        kittenLog(k, 'skill', { skill: parent, name: parent, level: pLevel, category: parent });
+      }
     }
   }
-  function xpToNext(level){ return 10 + Math.pow(level, 1.35) * 6; }
+
+  // Main XP function: distributes XP across micro-skills for a task, or awards directly.
+  // Signature: gainSkillXP(state, kitten, taskOrSkill, amount)
+  function gainSkillXP(s, k, taskOrSkill, amt){
+    const entries = TASK_SKILL_MAP[taskOrSkill];
+    if (entries) {
+      // Distribute across micro-skills based on TASK_SKILL_MAP rates
+      for (const [skillId, rate] of entries) {
+        awardMicroSkillXP(s, k, skillId, amt * rate);
+      }
+    } else {
+      // Direct skill/category XP (backward compat for Mentor target teaching, etc.)
+      awardMicroSkillXP(s, k, taskOrSkill, amt);
+    }
+  }
+
+  // --- Per-kitten life logging ─────────────────────────────────────────────────
+  function kittenName(s, id){
+    const k = (s?.kittens ?? []).find(x => Number(x?.id ?? 0) === Number(id));
+    return k ? (String(k.name ?? '').trim() || `#${id}`) : `#${id}`;
+  }
+
+  const LIFE_LOG_MAX = 150;
+
+  function kittenLog(k, type, data){
+    if (!k) return;
+    if (!Array.isArray(k.lifeLog)) k.lifeLog = [];
+    k.lifeLog.push({ t: state?.t ?? 0, type, data });
+    if (k.lifeLog.length > LIFE_LOG_MAX) k.lifeLog.splice(0, k.lifeLog.length - LIFE_LOG_MAX);
+  }
+
+  // Track cumulative time spent on each task
+  function trackActivityTime(k, task, dt){
+    if (!k || !task) return;
+    if (!k.activityTime || typeof k.activityTime !== 'object') k.activityTime = {};
+    k.activityTime[task] = (k.activityTime[task] ?? 0) + dt;
+  }
+
+  // Mood band labels (for life log entries)
+  function moodBand(m){
+    if (m <= 0.20) return 'Miserable';
+    if (m <= 0.35) return 'Glum';
+    if (m <= 0.50) return 'Uneasy';
+    if (m <= 0.65) return 'Content';
+    if (m <= 0.80) return 'Happy';
+    return 'Joyful';
+  }
+
+  // Log task switch (called from decision second hook)
+  function logTaskSwitch(s, k, prevTask, newTask, why){
+    if (!k || prevTask === newTask) return;
+    // Only log if the kitten has been doing the previous task for at least 3s (avoid log spam)
+    if ((k.taskStreak ?? 0) < 3) return;
+    kittenLog(k, 'task', { from: prevTask, to: newTask, why: String(why ?? '').slice(0, 60) });
+  }
+
+  // Log mood band crossings (called at end of mood update)
+  function logMoodTransition(k, prevMood, newMood){
+    if (!k) return;
+    const prevBand = moodBand(prevMood);
+    const newBand = moodBand(newMood);
+    if (prevBand !== newBand) {
+      kittenLog(k, 'mood', { mood: +newMood.toFixed(3), band: newBand, from: prevBand });
+    }
+  }
+
+  // Log health threshold crossings
+  function logHealthEvent(k, prevHealth, newHealth){
+    if (!k) return;
+    if (prevHealth >= 0.50 && newHealth < 0.50) {
+      kittenLog(k, 'health', { health: +newHealth.toFixed(3), event: 'declining' });
+    } else if (prevHealth <= 0.80 && newHealth > 0.80) {
+      kittenLog(k, 'health', { health: +newHealth.toFixed(3), event: 'recovered' });
+    }
+  }
 
   // --- Conditions
   function evalCond(cond, s, k){
@@ -2792,7 +2917,9 @@ import { PATCH_HISTORY } from './content.js';
       }
     }
 
+    const prevMood = clamp01(Number(k.mood ?? 0.55));
     k.mood = clamp01(m);
+    logMoodTransition(k, prevMood, k.mood);
   }
 
   function updateGrievancePerSecond(s, k, task){
@@ -3055,7 +3182,7 @@ import { PATCH_HISTORY } from './content.js';
     const mode = s.mode;
     const pfInfo = getEffectiveProjectFocus(s);
     const pf = String(pfInfo.focus ?? 'Auto');
-    const topSkill = topSkillInfo(k);
+    const topSkill = topCategorySkill(k);
 
     // Director priorities (policy weights)
     const pFood = prioMul(s,'prioFood');
@@ -3346,19 +3473,23 @@ import { PATCH_HISTORY } from './content.js';
       }
 
       // Aptitude bias: kittens prefer tasks they are skilled at (emergent specialization).
-      // This is a *bias*, not a lock: safety rules, quotas, and shortages can still override.
+      // Uses the primary micro-skill for each task + category skill bonus.
       const aSkill = skillForAction(a);
       if (aSkill) {
         const lvl = Number(k.skills?.[aSkill] ?? 1);
         const add = Math.min(12, Math.max(0, (lvl - 1) * 1.4));
         if (add >= 0.5) {
+          const def = skillRegistry.get(aSkill);
           score += add;
-          reasons.push(`skill ${aSkill}=${lvl} → +${add.toFixed(1)}`);
+          reasons.push(`${def?.name ?? aSkill}=${lvl} → +${add.toFixed(1)}`);
         }
-        if (topSkill.skill && topSkill.skill === aSkill && topSkill.level >= 3) {
+        // Category skill bonus: if this kitten's top category matches the task's primary skill category
+        const def = skillRegistry.get(aSkill);
+        const cat = def?.category ?? null;
+        if (cat && topSkill.skill === cat && topSkill.level >= 3) {
           const add2 = Math.min(6, 1.2 * (topSkill.level - 2));
           score += add2;
-          reasons.push(`top skill match → +${add2.toFixed(1)}`);
+          reasons.push(`top cat ${cat}=${topSkill.level} → +${add2.toFixed(1)}`);
         }
       }
 
@@ -4510,7 +4641,7 @@ import { PATCH_HISTORY } from './content.js';
           if ((state.res.food - cost) >= minFoodAfter) {
             state.res.food -= cost;
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
-            state.kittens.push(makeKitten(id));
+            state.kittens.push(makeKitten(id, state.t));
             state.director.recruitYear = yr;
             state.director.autoRecruitWhy = '';
             log(`A stray kitten joined this Spring! (-${cost} food) Population: ${state.kittens.length}/${cap}`);
@@ -4567,7 +4698,7 @@ import { PATCH_HISTORY } from './content.js';
           if ((state.res.food - cost) >= minFoodAfter) {
             state.res.food -= cost;
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
-            state.kittens.push(makeKitten(id));
+            state.kittens.push(makeKitten(id, state.t));
             feed(`Birth: a kitten was born (pop ${state.kittens.length}/${cap}).`);
             state._birthCt = (state._birthCt ?? 0) + 1;
             state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
@@ -4582,7 +4713,7 @@ import { PATCH_HISTORY } from './content.js';
           if ((state.res.food - cost) >= minFoodAfter) {
             state.res.food -= cost;
             const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
-            state.kittens.push(makeKitten(id));
+            state.kittens.push(makeKitten(id, state.t));
             feed(`Wanderer: a kitten joined from the wilds (pop ${state.kittens.length}/${cap}).`);
             state._wanderCt = (state._wanderCt ?? 0) + 1;
             state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
@@ -5488,6 +5619,7 @@ import { PATCH_HISTORY } from './content.js';
         updateValuesPerSecond,
         commitSecondsForTask,
         reserveForTask,
+        onTaskSwitch: logTaskSwitch,
       });
 
       // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
@@ -5501,11 +5633,40 @@ import { PATCH_HISTORY } from './content.js';
       log,
       pinnedProjectInfo,
       clearPinnedProject,
+      onKittenTick: (s, k, tickDt, prevHealth) => {
+        trackActivityTime(k, k.task, tickDt);
+        logHealthEvent(k, prevHealth, Number(k.health ?? 1));
+      },
     });
 
     // Explainability: maintain smoothed deltas (not saved)
     updateRates(state, dt);
     updateProjectRates(state, dt);
+
+    // Transient trend sampling (for per-kitten graphs — stripped on save)
+    state._trendTimer = (state._trendTimer ?? 0) + dt;
+    if (state._trendTimer >= 10) {
+      state._trendTimer = 0;
+      const TREND_MAX = 60;
+      for (const k of state.kittens) {
+        // Skill trend: category skill levels snapshot
+        if (!Array.isArray(k._skillTrend)) k._skillTrend = [];
+        const snap = {};
+        for (const cat of Object.keys(SKILL_CATEGORIES)) snap[cat] = Number(k.skills?.[cat] ?? 1);
+        k._skillTrend.push({ t: state.t, ...snap });
+        if (k._skillTrend.length > TREND_MAX) k._skillTrend.splice(0, k._skillTrend.length - TREND_MAX);
+      }
+    }
+    state._vitalTimer = (state._vitalTimer ?? 0) + dt;
+    if (state._vitalTimer >= 2) {
+      state._vitalTimer = 0;
+      const VITAL_MAX = 60;
+      for (const k of state.kittens) {
+        if (!Array.isArray(k._vitalsTrend)) k._vitalsTrend = [];
+        k._vitalsTrend.push({ t: state.t, mood: +k.mood.toFixed(3), energy: +k.energy.toFixed(3), health: +(k.health ?? 1).toFixed(3), hunger: +k.hunger.toFixed(3) });
+        if (k._vitalsTrend.length > VITAL_MAX) k._vitalsTrend.splice(0, k._vitalsTrend.length - VITAL_MAX);
+      }
+    }
 
     // Autosave
     state._saveTimer = (state._saveTimer ?? 0) + dt;
@@ -5542,14 +5703,14 @@ import { PATCH_HISTORY } from './content.js';
     save();
   }
 
-  // Run once at boot.
-  applyOfflineProgressOnce();
-
   // --- UI
   const el = (id) => document.getElementById(id);
   const statsEl = el('stats');
-  const kittensTableEl = el('kittensTable');
-  const kittensEl = el('kittens');
+  const kittenGridEl = el('kittenGrid');
+  const colonySortKeyEl = el('colonySortKey');
+  const colonySortDirEl = el('colonySortDir');
+  const colonyFilterEl = el('colonyFilter');
+  const colonyCountEl = el('colonyCount');
 
   const rulesEl = el('rules');
   const logEl = el('log');
@@ -5578,7 +5739,7 @@ import { PATCH_HISTORY } from './content.js';
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
-  const trendsEl = el('trends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');
+  const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
 
@@ -5740,9 +5901,13 @@ import { PATCH_HISTORY } from './content.js';
   function closeCulture(){ societyUI?.closeCulture?.(); }
 
   // Transient UI state + small listeners (sorting, debounced UI logs, stat-card clicks)
-  const { uiSort, uiDebouncedLog } = initUI({
+  const { uiSort, uiFilter, uiDebouncedLog, colonyCountEl: _ccEl } = initUI({
     statsEl,
-    kittensTableEl,
+    kittensTableEl: null,
+    colonySortKeyEl,
+    colonySortDirEl,
+    colonyFilterEl,
+    colonyCountEl,
     log,
     save,
     render,
@@ -6301,6 +6466,13 @@ import { PATCH_HISTORY } from './content.js';
     inspectBodyEl,
     inspectControlsEl,
     btnInspectClose,
+    // Skill/chart deps for tabbed UI
+    skillRegistry,
+    SKILL_CATEGORIES,
+    renderRadar,
+    renderSkillTrend,
+    renderVitalsTrend,
+    renderActivityBar,
   });
 
   // --- Social inspector modal (explainability)
@@ -6600,10 +6772,10 @@ import { PATCH_HISTORY } from './content.js';
     }
   });
 
-  if (kittensEl) kittensEl.addEventListener('click', (e) => {
-    const tr = e.target?.closest?.('tr');
-    if (!tr) return;
-    const kidx = Number(tr.dataset.kidx ?? -1);
+  if (kittenGridEl) kittenGridEl.addEventListener('click', (e) => {
+    const card = e.target?.closest?.('.kitten-card');
+    if (!card) return;
+    const kidx = Number(card.dataset.kidx ?? -1);
     if (!Number.isFinite(kidx) || kidx < 0) return;
     openInspect(kidx);
   });
@@ -8852,19 +9024,8 @@ import { PATCH_HISTORY } from './content.js';
       }
     }
 
-    // kittens
-    // Sorting is purely UI/QoL: it does not affect simulation and it is not saved.
-    if (kittensTableEl) {
-      const ths = kittensTableEl.querySelectorAll('thead th.sortable[data-sort]');
-      ths.forEach(th => {
-        const key = String(th.dataset.sort || '');
-        const arrow = th.querySelector('.arrow');
-        const active = (uiSort.key && key === uiSort.key);
-        th.classList.toggle('active', !!active);
-        if (arrow) arrow.textContent = active ? (uiSort.dir === +1 ? '▲' : '▼') : '';
-        th.title = 'Click to sort (desc → asc → off)';
-      });
-    }
+    // ── Colony Kitten Cards ───────────────────────────────────────────────────
+    // Sorting + filtering is purely UI/QoL: it does not affect simulation and is not saved.
 
     const entries = state.kittens.map((k, idx) => ({ k, idx }));
 
@@ -8894,20 +9055,15 @@ import { PATCH_HISTORY } from './content.js';
     if (uiSort.key && uiSort.dir) {
       const key = uiSort.key;
       const dir = uiSort.dir;
-
       entries.sort((a,b) => {
         const av = sortValFor(a.k, key);
         const bv = sortValFor(b.k, key);
-
-        // Numbers
         if (typeof av === 'number' && typeof bv === 'number') {
           const an = Number.isFinite(av) ? av : 0;
           const bn = Number.isFinite(bv) ? bv : 0;
           if (an !== bn) return (an - bn) * dir;
           return (a.idx - b.idx);
         }
-
-        // Strings
         const as = String(av ?? '');
         const bs = String(bv ?? '');
         if (as !== bs) return as.localeCompare(bs) * dir;
@@ -8915,126 +9071,156 @@ import { PATCH_HISTORY } from './content.js';
       });
     }
 
-    kittensEl.innerHTML = '';
-    for (const ent of entries) {
-      const kidx = ent.idx;
-      const k = ent.k;
-      const tr = document.createElement('tr');
-      tr.dataset.kidx = String(kidx);
-      tr.style.cursor = 'pointer';
-      const top = topSkillInfo(k);
-      const topSkills = Object.entries(k.skills).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([s,l])=>`${s}:${l}`).join(' ');
-      const eff = efficiency(state, k);
-      const mood = clamp01(Number(k.mood ?? 0.55));
-      const griev = clamp01(Number(k.grievance ?? 0));
-      const p = k.personality ?? genPersonality(k.id ?? 0);
-      const likes = Array.isArray(p.likes) ? p.likes : [];
-      const dislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
+    // Text filter
+    const filterText = uiFilter?.text ?? '';
+    const filtered = filterText
+      ? entries.filter(({ k }) => {
+          const hay = [
+            k.name, k.role, k.task, k._fallbackTo,
+            ...(Array.isArray(k.traits) ? k.traits : []),
+            k.why,
+          ].filter(Boolean).join(' ').toLowerCase();
+          return hay.includes(filterText);
+        })
+      : entries;
 
-      // Traits: steady identity tags (kept short in-table; details in tooltip).
-      const traits = Array.isArray(k.traits) ? k.traits : [];
-      const traitsShort = traits.length ? traits.join(',') : '-';
-      const traitLines = traitInfoList(k);
+    if (_ccEl) _ccEl.textContent = filterText
+      ? `${filtered.length} / ${entries.length}`
+      : `${entries.length} kittens`;
 
-      // Buddy: show relationship + current pressure as a first-class, readable civ-sim signal.
-      const buddy = buddyOf(state, k);
-      const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
+    if (kittenGridEl) {
+      // Throttle radar re-renders (skills change slowly)
+      const now = performance.now();
+      const radarInterval = 2000; // ms
+      if (!kittenGridEl._lastRadarT) kittenGridEl._lastRadarT = 0;
+      const redrawRadar = (now - kittenGridEl._lastRadarT) > radarInterval;
+      if (redrawRadar) kittenGridEl._lastRadarT = now;
 
-      // Values bloc: dominant axis (used by Factions). Exposed in-table for legibility.
-      const bloc = dominantValueAxis(k);
-      const blocTitle = `Values bloc (dominant axis): ${bloc}. Used by Factions + demands.`;
-      const blocHtml = `<span class="tag">${escapeHtml(bloc)}</span>`;
-      const buddyNameShort = buddy ? (String(buddy.name ?? '').trim().split(/\s+/).slice(-1)[0] || `#${buddy.id}`) : '';
-      const buddyCell = buddy ? `${buddyNameShort} #${buddy.id} (${buddyNeedPct}%)` : '-';
-      const buddyAge = buddy && Number(k.lastBuddyAt ?? 0) > 0 ? Math.max(0, state.t - Number(k.lastBuddyAt ?? 0)) : null;
-      const buddyTitle = buddy
-        ? `Buddy: ${String(buddy.name ?? ('Kitten ' + buddy.id))} (#${buddy.id}) | need ${buddyNeedPct}%${buddyAge !== null ? ` | last together ~${fmt(buddyAge)}s ago` : ''}`
-        : 'No buddy';
+      // Build/update cards
+      // For performance: reuse existing card elements when possible
+      const existingCards = kittenGridEl.querySelectorAll('.kitten-card');
+      const existingMap = new Map();
+      existingCards.forEach(c => existingMap.set(c.dataset.kidx, c));
 
-      const buddyLine = buddy ? `\nBuddy: ${String(buddy.name ?? ('Kitten ' + buddy.id))} (#${buddy.id}) (need ${buddyNeedPct}%)` : '';
+      const usedKeys = new Set();
+      const fragment = document.createDocumentFragment();
 
-      // Explainability: show recent value drift (learning) in the tooltip.
-      const driftFresh = (k._valuesDriftNote && (state.t - Number(k._valuesDriftAt ?? 0)) < 30);
-      const driftLine = driftFresh ? `\nDrift: ${String(k._valuesDriftNote ?? '')}` : '';
+      for (const ent of filtered) {
+        const kidx = ent.idx;
+        const k = ent.k;
+        const key = String(kidx);
+        usedKeys.add(key);
 
-      const traitsTitle = traitLines.length
-        ? `${traitLines.join(' | ')}${buddyLine}\nPrefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}\nValues: ${valuesShort(k)}${driftLine}`
-        : `Prefs: ${likes.join(',') || '-'}${dislikes.length ? ` | hates ${dislikes.join(',')}` : ''}${buddyLine}\nValues: ${valuesShort(k)}${driftLine}`;
+        const top = topSkillInfo(k);
+        const eff = efficiency(state, k);
+        const mood = clamp01(Number(k.mood ?? 0.55));
+        const energy = clamp01(Number(k.energy ?? 0));
+        const hunger = clamp01(Number(k.hunger ?? 0));
+        const health = clamp01(Number(k.health ?? 1));
+        const traits = Array.isArray(k.traits) ? k.traits : [];
+        const buddy = buddyOf(state, k);
+        const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
+        const align = valuesAlignment01(state, k);
+        const fitPct = Math.round(align * 100);
+        const bloc = dominantValueAxis(k);
 
-      // Pref: show whether the current task aligns with the kitten's likes/dislikes.
-      // Always show value-alignment vs current colony focus (explains mood/dissent drift under planning).
-      // Also surface an "Autonomy sampled" tag if they didn't pick the #1 scored action this tick.
-      const align = valuesAlignment01(state, k);
-      const fitPct = Math.round(align * 100);
-      const fitColor = (fitPct >= 75) ? 'var(--good)' : (fitPct >= 55) ? 'var(--warn)' : 'var(--bad)';
-      const fitTitle = `Policy fit vs colony focus (Mode + priorities). Low fit under low autonomy tends to drag mood and raise dissent.`;
-      const fitHtml = `<span class="tag" style="border-color:${fitColor}; color:${fitColor}">${fitPct}%</span>`;
+        const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
+        const kind = String(d?.kind ?? 'score');
+        const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
+        const blockedFresh = !!k._fallbackTo;
 
-      const vals = valuesShort(k);
-      const prefParts = [];
-      const effTask = String(k._fallbackTo || k.task || '');
-      if (likes.includes(effTask)) prefParts.push('Like');
-      if (dislikes.includes(effTask)) prefParts.push('Dislike');
-      prefParts.push(`Align ${Math.round(align*100)}%`);
-      const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2);
-      if (autoFresh) prefParts.push('Autonomy');
-      const dir = String(k.directive ?? 'Auto');
-      if (dir && dir !== 'Auto') prefParts.push(`Dir ${dir}`);
-      const pref = prefParts.join(' / ');
+        // Task display
+        let taskText = escapeHtml(k.task ?? '');
+        if (k._mentor && k.task === 'Mentor') taskText += ` → #${k._mentor.id}`;
+        if (k._fallbackTo) taskText += ` → ${escapeHtml(k._fallbackTo)}`;
 
-      const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
-      const kind = String(d?.kind ?? 'score');
-      const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
-      const decHtml = decLabel ? `<span class="tag" title="Decision override (${decLabel})">${decLabel}</span> ` : '';
+        // Badges
+        let badges = '';
+        if (blockedFresh) badges += `<span class="tag" style="border-color:rgba(251,191,36,.35);color:var(--warn);font-size:10px">BLOCKED</span> `;
+        if (decLabel) badges += `<span class="tag" style="font-size:10px">${decLabel}</span> `;
 
-      // Execution layer explainability: if a sink task was blocked (usually by reserves/inputs) and we executed a fallback,
-      // make it visually obvious in the table so players can distinguish "the plan" vs "what actually happened".
-      const blockedFresh = !!k._fallbackTo;
-      const blockedHtml = blockedFresh
-        ? `<span class="tag" style="border-color: rgba(251,191,36,.35); color: var(--warn)" title="Blocked: could not spend required inputs (often due to reserves). Executed a fallback task this tick.">BLOCKED</span> `
-        : '';
-      const taskClass = blockedFresh ? 'taskCell blocked' : 'taskCell';
+        // Vital bar helper
+        const vBar = (label, val, color) => {
+          const pct = Math.round(val * 100);
+          return `<div class="kc-vital-row">
+            <span class="kc-vital-label">${label}</span>
+            <div class="kc-vital-bar"><div class="kc-vital-fill" style="width:${pct}%;background:${color}"></div></div>
+            <span class="kc-vital-val">${pct}%</span>
+          </div>`;
+        };
 
-      const taskTitleParts = [];
-      if (decLabel) taskTitleParts.push(`decision: ${decLabel}`);
-      if (k._fallbackTo) taskTitleParts.push(`fallback → ${k._fallbackTo}`);
-      // If we have a recent blocked snapshot, include the short reason in tooltip.
-      const lb = k._lastBlocked;
-      if (lb && typeof lb === 'object' && (state.t - Number(lb.at ?? -9999)) <= 6) {
-        const msg = String(lb.msg ?? '').replace(/\s+/g,' ').slice(0, 80);
-        if (msg) taskTitleParts.push(`blocked: ${msg}`);
+        // Fit color
+        const fitColor = (fitPct >= 75) ? 'var(--good)' : (fitPct >= 55) ? 'var(--warn)' : 'var(--bad)';
+
+        // Buddy string
+        const buddyNameShort = buddy ? (String(buddy.name ?? '').trim().split(/\s+/).slice(-1)[0] || `#${buddy.id}`) : '';
+        const buddyStr = buddy ? `Buddy: ${escapeHtml(buddyNameShort)} #${buddy.id} (${buddyNeedPct}%)` : '';
+
+        // Warn classes
+        const warnClass = (health < 0.4) ? ' warn-health' : (mood < 0.3) ? ' warn-mood' : '';
+
+        // Top skills compact
+        const topSkills = Object.entries(k.skills || {}).sort((a,b) => b[1] - a[1]).slice(0, 1);
+        const topSkillStr = topSkills.length ? `${topSkills[0][0]}:${topSkills[0][1]}` : '-';
+
+        const cardHTML = `
+          <div class="kc-header">
+            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span></span>
+            <span class="kc-role">${escapeHtml(k.role ?? '-')}</span>
+          </div>
+          <div class="kc-task${blockedFresh ? ' blocked' : ''}">
+            <span class="kc-task-label">${taskText}</span>
+            ${badges}
+          </div>
+          <div class="kc-vitals">
+            ${vBar('E', energy, '#34d399')}
+            ${vBar('HP', health, '#fb7185')}
+            ${vBar('H', hunger, '#fbbf24')}
+            ${vBar('M', mood, '#c4b5fd')}
+          </div>
+          <div class="kc-middle">
+            <canvas class="kc-radar" width="100" height="100"></canvas>
+            <div class="kc-stats">
+              <div class="kc-stat-line"><span class="kc-stat-k">Eff</span><span class="kc-stat-v">${fmt(eff * 100)}%</span></div>
+              <div class="kc-stat-line"><span class="kc-stat-k">Top</span><span class="kc-stat-v">${escapeHtml(topSkillStr)}</span></div>
+              <div class="kc-stat-line"><span class="kc-stat-k">Bloc</span><span class="kc-stat-v"><span class="tag">${escapeHtml(bloc)}</span></span></div>
+              <div class="kc-stat-line"><span class="kc-stat-k">Fit</span><span class="kc-stat-v"><span class="tag" style="border-color:${fitColor};color:${fitColor}">${fitPct}%</span></span></div>
+            </div>
+          </div>
+          <div class="kc-footer">
+            ${traits.length ? `<div class="kc-traits">${escapeHtml(traits.join(', '))}</div>` : ''}
+            ${buddyStr ? `<div class="kc-buddy">${buddyStr}</div>` : ''}
+            <div class="kc-why">${escapeHtml(k.why ?? '')}</div>
+          </div>
+        `;
+
+        let card = existingMap.get(key);
+        if (card) {
+          // Reuse existing card, update content
+          card.className = `kitten-card${warnClass}`;
+          card.innerHTML = cardHTML;
+          fragment.appendChild(card);
+          existingMap.delete(key);
+        } else {
+          card = document.createElement('div');
+          card.className = `kitten-card${warnClass}`;
+          card.dataset.kidx = key;
+          card.innerHTML = cardHTML;
+          fragment.appendChild(card);
+        }
+
+        // Render mini radar (throttled)
+        if (redrawRadar) {
+          const radarCanvas = card.querySelector('.kc-radar');
+          if (radarCanvas) {
+            try { renderRadar(radarCanvas, k); } catch (_) {}
+          }
+        }
       }
-      if (d?.best && d.best !== k.task) taskTitleParts.push(`top score was ${d.best} (autonomy sampled)`);
-      const taskTitle = taskTitleParts.join(' | ');
 
-      // Buddy UI highlight: high buddy-need is a leading indicator for mood/grievance pressure.
-      const buddyColor = buddy
-        ? (buddyNeedPct >= 85 ? 'var(--bad)' : buddyNeedPct >= 70 ? 'var(--warn)' : 'var(--muted)')
-        : '';
-      const buddyHtml = buddy
-        ? `<span style="color:${buddyColor}">${escapeHtml(buddyCell)}</span>`
-        : '-';
-
-      tr.innerHTML = `
-        <td title="Kitten id #${k.id}">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag">#${k.id}</span></td>
-        <td title="${escapeHtml(k.roleWhy ?? '')}">${escapeHtml(k.role ?? '-')}</td>
-        <td class="${taskClass}" title="${escapeHtml(taskTitle)}${(k._mentor && k.task==='Mentor' && k._mentor.why) ? (' | ' + escapeHtml(String(k._mentor.why))) : ''}">${blockedHtml}${decHtml}${k.task}${(k._mentor && k.task==='Mentor') ? (' → #' + k._mentor.id + ' ' + escapeHtml(k._mentor.skill)) : ''}${k._fallbackTo ? (' → ' + escapeHtml(k._fallbackTo)) : ''}</td>
-        <td>${fmt(k.energy*100)}%</td>
-        <td>${fmt(k.hunger*100)}%</td>
-        <td title="Health (sickness/injury reduces efficiency)">${fmt((k.health ?? 1)*100)}%</td>
-        <td title="Mood (personality alignment + stress + aptitude fit; small effect on efficiency)">${fmt(mood*100)}%</td>
-        <td title="Grievance (slow-burn resentment; contributes to dissent pressure)">${fmt(griev*100)}%</td>
-        <td title="Work effectiveness (hungry/tired/cold/health/mood)">${fmt(eff*100)}%</td>
-        <td title="Aptitude (highest skill level) - kittens tend to prefer this kind of work">${escapeHtml(`${top.skill ?? '-'}`)}:${top.level}</td>
-        <td>${topSkills}</td>
-        <td title="${escapeHtml(traitsTitle)}">${escapeHtml(traitsShort)}</td>
-        <td title="${escapeHtml(blocTitle)}">${blocHtml}</td>
-        <td title="${escapeHtml(fitTitle)}">${fitHtml}</td>
-        <td title="${escapeHtml(buddyTitle)}">${buddyHtml}</td>
-        <td title="Preference + policy fit. Values: ${escapeHtml(vals)} | focus-fit ${Math.round(align*100)}% | (plus autonomy sampling flag)">${escapeHtml(pref)}</td>
-        <td class="why">${escapeHtml(k.why ?? '')}</td>
-      `;
-      kittensEl.appendChild(tr);
+      // Clear stale cards and append new fragment
+      kittenGridEl.innerHTML = '';
+      kittenGridEl.appendChild(fragment);
     }
 
     // safety rules (read-only unless Developer Mode)
@@ -9082,7 +9268,11 @@ import { PATCH_HISTORY } from './content.js';
     }
 
     // Canvas HUDs
-    renderTank();\n    renderTrends();\n    renderPopTrends();\n    renderSocTrends();\n    renderCulTrends();
+    renderTank();
+    renderTrends();
+    renderPopTrends();
+    renderSocTrends();
+    renderCulTrends();
 
     // Keep inspectors in sync with latest snapshots.
     renderInspect();
@@ -9240,7 +9430,7 @@ import { PATCH_HISTORY } from './content.js';
       const last = Number(arr[n-1] ?? 0);
       ctx.fillStyle = 'rgba(148,163,184,.95)';
       const val = row.fmt01 ? row.fmt01(last) : (row.scale01 ? (last*100).toFixed(0)+'%' : fmt(last));
-      ctx.fillText(${row.label}: , pad+4, y0+2);
+      ctx.fillText(`${row.label}: ${val}`, pad+4, y0+2);
     }
   }
 
@@ -10097,7 +10287,7 @@ function renderTrends(){
     if (state.kittens.length >= housingCap(state)) { log(`No housing. Build huts.`); render(); return; }
     state.res.food -= cost;
     const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
-    state.kittens.push(makeKitten(id));
+    state.kittens.push(makeKitten(id, state.t));
     log(`New kitten joined! (#${id})`);
     render();
   });

@@ -17,6 +17,7 @@ export function makeCoreTaskDefs(h = {}){
     libraryBonus,
     drillActive,
     gainXP,
+    skillEffects,
   } = h;
 
   if (typeof clamp01 !== 'function') throw new Error('makeCoreTaskDefs: clamp01 required');
@@ -29,6 +30,8 @@ export function makeCoreTaskDefs(h = {}){
   const libB = (typeof libraryBonus === 'function') ? libraryBonus : (() => 1);
   const drillA = (typeof drillActive === 'function') ? drillActive : (() => 0);
   const gain = (typeof gainXP === 'function') ? gainXP : (() => {});
+  const sfx = (typeof skillEffects === 'function') ? skillEffects
+    : () => ({ outputMult: 1, fatigueMult: 1, hungerMult: 1, speedMult: 1, qualityMult: 1 });
 
   return {
     Forage: {
@@ -36,15 +39,15 @@ export function makeCoreTaskDefs(h = {}){
       tick: (s, k, dt) => {
         const season = seasonAt(s.t);
         const winterPenalty = season.name === 'Winter' ? 0.55 : 1;
-        const mult = 1 + 0.07 * ((k.skills?.Foraging ?? 1) - 1);
+        const fx = sfx(s, k, 'Forage');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * mult * winterPenalty * toolsB(s) * dt * eff * mom * wp;
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsB(s) * dt * eff * mom * wp;
         s.res.food += out;
-        k.energy = clamp01(k.energy - dt * 0.04 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.04 * wp);
-        gain(k, 'Foraging', dt * 1.0 * efficiency(s, k));
+        k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
+        gain(s, k, 'Forage', dt * 1.0 * efficiency(s, k));
       }
     },
 
@@ -57,22 +60,23 @@ export function makeCoreTaskDefs(h = {}){
           k.hunger = clamp01(k.hunger + dt * 0.02);
           return;
         }
+        const fx = sfx(s, k, 'StokeFire');
         const wp = workPaceMul(s);
-        const use = Math.min(s.res.wood, 0.9 * dt * wp);
+        const use = Math.min(s.res.wood, 0.9 * dt * wp * fx.speedMult);
         const mom = momentumMul(k, 'StokeFire');
         s.res.wood -= use;
-        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom);
-        k.energy = clamp01(k.energy - dt * 0.02 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.02 * wp);
+        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult);
+        k.energy = clamp01(k.energy - dt * 0.02 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.02 * wp * fx.hungerMult);
         // Firekeeping is a real skill: as you keep the hearth going, you get better at it.
-        gain(k, 'Cooking', dt * 0.70 * efficiency(s, k));
+        gain(s, k, 'StokeFire', dt * 0.70 * efficiency(s, k));
       }
     },
 
     Guard: {
       enabled: () => true,
       tick: (s, k, dt) => {
-        const mult = 1 + 0.10 * ((k.skills?.Combat ?? 1) - 1);
+        const fx = sfx(s, k, 'Guard');
         let base = s.unlocked?.security ? 2.6 : 2.1;
         const drill = drillA(s) ? 1 : 0;
         if (drill) base += 0.55; // training + patrols
@@ -80,25 +84,25 @@ export function makeCoreTaskDefs(h = {}){
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
-        s.res.threat = Math.max(0, s.res.threat - base * mult * dt * eff * mom * wp);
-        k.energy = clamp01(k.energy - dt * 0.03 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        gain(k, 'Combat', dt * (1.0 + 0.35 * drill) * efficiency(s, k));
+        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * dt * eff * mom * wp);
+        k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
+        gain(s, k, 'Guard', dt * (1.0 + 0.35 * drill) * efficiency(s, k));
       }
     },
 
     Research: {
       enabled: () => true,
       tick: (s, k, dt) => {
-        const mult = 1 + 0.08 * ((k.skills?.Scholarship ?? 1) - 1);
+        const fx = sfx(s, k, 'Research');
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * mult * libB(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libB(s) * dt * eff * mom * wp;
         s.res.science += out;
-        k.energy = clamp01(k.energy - dt * 0.035 * wp);
-        k.hunger = clamp01(k.hunger + dt * 0.03 * wp);
-        gain(k, 'Scholarship', dt * 1.0 * efficiency(s, k));
+        k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
+        k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
+        gain(s, k, 'Research', dt * 1.0 * efficiency(s, k));
       }
     },
   };

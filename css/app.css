@@ -4,8 +4,9 @@
     header { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
     header h1 { font-size:16px; margin:0; font-weight:700; letter-spacing:.2px; }
     header .pill { background:rgba(125,211,252,.12); color:var(--accent); border:1px solid rgba(125,211,252,.25); padding:4px 8px; border-radius:999px; font-size:12px; }
-    header button { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.12); padding:6px 10px; border-radius:10px; cursor:pointer; }
+    header button { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.12); padding:6px 10px; border-radius:10px; cursor:pointer; transition: transform .08s ease, filter .12s ease, background .12s ease; }
     header button:hover { background:rgba(255,255,255,.09); }
+    header button:active { animation: btnClickFlash .22s ease-out; transform: scale(.97); filter: brightness(1.12); }
     header button.danger { border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.10); }
 
     main { padding:16px; display:grid; grid-template-columns: 420px 1fr 420px; gap:12px; align-items:start; }
@@ -51,11 +52,33 @@
     th.sortable .arrow { opacity:.55; margin-left:4px; }
     th.sortable.active .arrow { opacity:1; color:var(--accent); }
 
-    .btn { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px; }
+    .btn { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:6px 10px; border-radius:10px; cursor:pointer; font-size:12px; transition: transform .08s ease, filter .12s ease, background .12s ease; }
     .btn:hover { background:rgba(255,255,255,.09); }
+    .btn:active { animation: btnClickFlash .22s ease-out; transform: scale(.97); filter: brightness(1.12); }
     .btn.good { border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.08); }
     .btn.bad { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.08); }
     .btn.mode.active { border-color: rgba(125,211,252,.35); background: rgba(125,211,252,.10); }
+
+    @keyframes btnClickFlash {
+      0% { box-shadow: 0 0 0 0 rgba(125,211,252,.00); }
+      45% { box-shadow: 0 0 0 5px rgba(125,211,252,.25); }
+      100% { box-shadow: 0 0 0 0 rgba(125,211,252,.00); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn,
+      header button,
+      .feedback-sentiment {
+        transition: none !important;
+        animation: none !important;
+      }
+      .btn:active,
+      header button:active,
+      .feedback-sentiment:active {
+        transform: none !important;
+        filter: none !important;
+      }
+    }
 
     .rule { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; margin-bottom:8px; }
     .rule .top { display:flex; align-items:center; justify-content:space-between; gap:10px; }

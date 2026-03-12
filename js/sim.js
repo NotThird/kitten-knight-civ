@@ -190,6 +190,7 @@ export function runKittensTick(s, dt, deps){
   const log = deps?.log;
   const pinnedProjectInfo = deps?.pinnedProjectInfo;
   const clearPinnedProject = deps?.clearPinnedProject;
+  const onKittenTick = deps?.onKittenTick;
 
   for (const k of s.kittens) {
     // Per-tick execution marker for blocked sink actions that fallback to a different task.
@@ -198,8 +199,12 @@ export function runKittensTick(s, dt, deps){
     // Per-tick mentoring target (only set when the Mentor action runs).
     k._mentor = null;
 
+    const prevHealth = Number(k.health ?? 1);
     const def = taskDefs?.[k.task] ?? taskDefs?.Rest;
     if (def?.tick) def.tick(s, k, dt);
+
+    // Per-kitten tick hook (activity time tracking, health logging)
+    if (typeof onKittenTick === 'function') onKittenTick(s, k, dt, prevHealth);
 
     // Passive regen from warmth and shelter
     const comfort = (s.res.warmth / 100) * 0.004 + s.res.huts * 0.0007;
@@ -257,6 +262,7 @@ export function runDecisionSecond(s, deps){
   const updateValuesPerSecond = deps?.updateValuesPerSecond;
   const commitSecondsForTask = deps?.commitSecondsForTask;
   const reserveForTask = deps?.reserveForTask;
+  const onTaskSwitch = deps?.onTaskSwitch;
 
   if (typeof ensureBuddies === 'function') ensureBuddies(s);
 
@@ -302,6 +308,11 @@ export function runDecisionSecond(s, deps){
     // If we switched tasks, start a short commitment window.
     if (prevTask !== d.task && typeof commitSecondsForTask === 'function') {
       k.taskLock = commitSecondsForTask(s, d.task);
+    }
+
+    // Life log: task switch
+    if (prevTask !== d.task && typeof onTaskSwitch === 'function') {
+      onTaskSwitch(s, k, prevTask, d.task, d.why);
     }
 
     k.task = d.task;

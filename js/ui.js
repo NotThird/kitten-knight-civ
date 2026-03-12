@@ -19,6 +19,10 @@ export function initUI(deps){
   const {
     statsEl,
     kittensTableEl,
+    colonySortKeyEl,
+    colonySortDirEl,
+    colonyFilterEl,
+    colonyCountEl,
     log,
     save,
     render,
@@ -73,6 +77,7 @@ export function initUI(deps){
     render?.();
   }
 
+  // Legacy table header sort (keep for backwards compat if table exists)
   if (kittensTableEl) {
     const thead = kittensTableEl.querySelector('thead');
     if (thead) thead.addEventListener('click', (e) => {
@@ -82,8 +87,41 @@ export function initUI(deps){
     });
   }
 
+  // Card-based sort dropdown
+  if (colonySortKeyEl) {
+    colonySortKeyEl.addEventListener('change', () => {
+      const key = colonySortKeyEl.value;
+      if (key) {
+        uiSort.key = key;
+        uiSort.dir = uiSort.dir || defaultSortDirFor(key);
+      } else {
+        uiSort.key = '';
+        uiSort.dir = 0;
+      }
+      if (colonySortDirEl) colonySortDirEl.innerHTML = uiSort.dir === 1 ? '&#x25B2;' : '&#x25BC;';
+      render?.();
+    });
+  }
+  if (colonySortDirEl) {
+    colonySortDirEl.addEventListener('click', () => {
+      if (!uiSort.key) return;
+      uiSort.dir = uiSort.dir === -1 ? +1 : -1;
+      colonySortDirEl.innerHTML = uiSort.dir === +1 ? '&#x25B2;' : '&#x25BC;';
+      render?.();
+    });
+  }
+
+  // Text filter
+  const uiFilter = { text: '' };
+  if (colonyFilterEl) {
+    colonyFilterEl.addEventListener('input', () => {
+      uiFilter.text = colonyFilterEl.value.trim().toLowerCase();
+      render?.();
+    });
+  }
+
   // Return helpers used elsewhere in main render/handlers.
-  return { uiSort, uiDebouncedLog };
+  return { uiSort, uiFilter, uiDebouncedLog, colonyCountEl };
 }
 
 /**
@@ -962,9 +1000,16 @@ export function initInspectModal(deps){
     inspectBodyEl,
     inspectControlsEl,
     btnInspectClose,
+    // New deps for tabs
+    skillRegistry,
+    SKILL_CATEGORIES: catDefs,
+    renderRadar: _renderRadar,
+    renderSkillTrend: _renderSkillTrend,
+    renderVitalsTrend: _renderVitalsTrend,
+    renderActivityBar: _renderActivityBar,
   } = deps || {};
 
-  const uiInspect = { open:false, kidx:-1 };
+  const uiInspect = { open:false, kidx:-1, tab:'decisions' };
 
   function close(){
     uiInspect.open = false;
@@ -977,6 +1022,23 @@ export function initInspectModal(deps){
     uiInspect.kidx = Number(kidx ?? -1);
     if (inspectModalEl) inspectModalEl.classList.remove('hidden');
     renderInspect();
+  }
+
+  // Tab switching
+  const tabsEl = inspectModalEl?.querySelector?.('#inspectTabs');
+  if (tabsEl) {
+    tabsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest?.('.inspectTab');
+      if (!btn) return;
+      const tab = btn.dataset.tab;
+      if (!tab) return;
+      uiInspect.tab = tab;
+      for (const b of tabsEl.querySelectorAll('.inspectTab')) b.classList.toggle('active', b.dataset.tab === tab);
+      for (const p of inspectModalEl.querySelectorAll('.inspectPanel')) {
+        p.classList.toggle('active', p.id === `inspectPanel${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+      }
+      renderInspect();
+    });
   }
 
   function renderInspect(){
@@ -1000,7 +1062,7 @@ export function initInspectModal(deps){
     const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
     const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
     const buddy = buddyOf?.(state, k);
-    const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
+    const buddyNote = buddy ? ` | buddy: ${String(buddy.name ?? '').trim() || '#' + buddy.id}` : '';
     const needNote = buddy ? ` | buddy-need: ${Math.round((clamp01?.(Number(k.buddyNeed ?? 0)) ?? 0)*100)}%` : '';
     const align = valuesAlignment01?.(state, k) ?? 0;
     const bloc = dominantValueAxis?.(k) ?? 'Food';
@@ -1008,7 +1070,7 @@ export function initInspectModal(deps){
     const driftNote = driftFresh ? ` | ${String(k._valuesDriftNote ?? '')}` : '';
     inspectSubEl.textContent = `traits: ${traits} | bloc: ${bloc} | values: ${valuesShort?.(k) ?? '-'} | focus-fit: ${Math.round(align*100)}% | likes: ${likes} | hates: ${hates}${buddyNote}${needNote}${driftNote}${autoFresh ? ' | ' + autoFresh : ''}${at ? ' | ' + at : ''}`;
 
-    // Controls: per-kitten Directive (a small, persistent bias layer)
+    // Controls: per-kitten Directive
     if (inspectControlsEl) {
       const dir = String(k.directive ?? 'Auto');
       const opts = ['Auto','Food','Safety','Progress','Social','Rest'];
@@ -1021,7 +1083,6 @@ export function initInspectModal(deps){
         <span class="small" style="opacity:.85" title="What this does">Bias: ${dir==='Auto'?'none':dir}</span>
         <button class="btn" id="btnDirectiveClear" ${dir==='Auto'?'disabled':''} title="Reset directive to Auto.">Clear</button>
       `;
-
       const sel = inspectControlsEl.querySelector('#inspectDirective');
       if (sel) {
         sel.addEventListener('change', () => {
@@ -1029,14 +1090,9 @@ export function initInspectModal(deps){
           const next = opts.includes(v) ? v : 'Auto';
           const prev = String(k.directive ?? 'Auto');
           k.directive = next;
-
-          // Make it immediately visible in-table.
           k.why = String(k.why ?? '');
-
           if (next !== prev) log?.(`Directive: ${String(k.name ?? 'Kitten')} (#${k.id}) → ${next}`);
-          save?.();
-          renderInspect();
-          render?.();
+          save?.(); renderInspect(); render?.();
         });
       }
       const btn = inspectControlsEl.querySelector('#btnDirectiveClear');
@@ -1045,60 +1101,43 @@ export function initInspectModal(deps){
           const prev = String(k.directive ?? 'Auto');
           k.directive = 'Auto';
           if (prev !== 'Auto') log?.(`Directive cleared: ${String(k.name ?? 'Kitten')} (#${k.id})`);
-          save?.();
-          renderInspect();
-          render?.();
+          save?.(); renderInspect(); render?.();
         });
       }
     }
 
+    const tab = uiInspect.tab || 'decisions';
+    if (tab === 'decisions') renderDecisionsTab(state, k);
+    else if (tab === 'skills') renderSkillsTab(state, k);
+    else if (tab === 'life') renderLifeTab(state, k);
+    else if (tab === 'graphs') renderGraphsTab(state, k);
+  }
+
+  function renderDecisionsTab(state, k){
     const rows = Array.isArray(k._lastScores) ? k._lastScores : [];
-    if (!rows.length) {
-      inspectBodyEl.textContent = 'No scoring snapshot yet (tick once).';
-      return;
-    }
-
+    if (!rows.length) { inspectBodyEl.textContent = 'No scoring snapshot yet (tick once).'; return; }
     const lines = [];
-
-    const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
+    const d = (k._lastDecision ?? null);
     if (d && typeof d === 'object') {
       const kind = String(d.kind ?? '').toUpperCase() || 'UNKNOWN';
       const task = String(d.task ?? k.task ?? '-');
       const age = (typeof d.at === 'number') ? (state.t - d.at) : null;
       const ageNote = (age !== null && Number.isFinite(age)) ? ` (age ${fmt?.(age)}s)` : '';
-
-      if (d.kind === 'rule') {
-        lines.push(`Decision: RULE → ${task}${ageNote}`);
-        lines.push(`  - rule #${d.ruleIndex ?? '?'}: ${d.rule ?? '-'}`);
-        lines.push('  - scoring below is informational (last computed top scores)');
-      } else if (d.kind === 'emergency') {
-        lines.push(`Decision: EMERGENCY → ${task}${ageNote}`);
-        lines.push(`  - note: ${d.note ?? '-'}`);
-        lines.push('  - scoring below is informational (last computed top scores)');
-      } else if (d.kind === 'commit') {
-        lines.push(`Decision: COMMIT → ${task}${ageNote}`);
-        lines.push(`  - remaining lock: ${Number(d.lock ?? 0).toFixed(0)}s`);
-        lines.push('  - scoring below is informational (last computed top scores)');
-      } else {
-        lines.push(`Decision: ${kind || 'SCORE'} → ${task}${ageNote}`);
-        if (d.best && d.best !== task) lines.push(`  - top score was ${d.best} (autonomy sampled)`);
-        if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`);
-      }
+      if (d.kind === 'rule') { lines.push(`Decision: RULE → ${task}${ageNote}`); lines.push(`  - rule #${d.ruleIndex ?? '?'}: ${d.rule ?? '-'}`); lines.push('  - scoring below is informational (last computed top scores)'); }
+      else if (d.kind === 'emergency') { lines.push(`Decision: EMERGENCY → ${task}${ageNote}`); lines.push(`  - note: ${d.note ?? '-'}`); lines.push('  - scoring below is informational (last computed top scores)'); }
+      else if (d.kind === 'commit') { lines.push(`Decision: COMMIT → ${task}${ageNote}`); lines.push(`  - remaining lock: ${Number(d.lock ?? 0).toFixed(0)}s`); lines.push('  - scoring below is informational (last computed top scores)'); }
+      else { lines.push(`Decision: ${kind || 'SCORE'} → ${task}${ageNote}`); if (d.best && d.best !== task) lines.push(`  - top score was ${d.best} (autonomy sampled)`); if (d.autonomyNote) lines.push(`  - ${d.autonomyNote}`); }
       lines.push('');
     }
-
-    // Execution explainability: show the last blocked sink → fallback (if it happened very recently).
     const lb = k._lastBlocked;
     if (lb && typeof lb === 'object') {
       const age = (typeof lb.at === 'number') ? (state.t - lb.at) : null;
       if (age !== null && Number.isFinite(age) && age <= 6) {
         const msg = String(lb.msg ?? '').replace(/\s+/g,' ').trim();
         lines.push(`Execution: ${String(lb.action ?? '')} blocked → ${String(lb.to ?? '')} (age ${fmt?.(age)}s)`);
-        if (msg) lines.push(`  - ${msg}`);
-        lines.push('');
+        if (msg) lines.push(`  - ${msg}`); lines.push('');
       }
     }
-
     for (let i=0;i<Math.min(10, rows.length);i++) {
       const r = rows[i];
       lines.push(`${String(i+1).padStart(2,' ')}. ${String(r.action).padEnd(14)} ${Number(r.score).toFixed(1)}`);
@@ -1109,6 +1148,78 @@ export function initInspectModal(deps){
     inspectBodyEl.textContent = lines.join('\n');
   }
 
+  function renderSkillsTab(state, k){
+    const radarCanvas = inspectModalEl?.querySelector?.('#inspectRadar');
+    if (radarCanvas && typeof _renderRadar === 'function') _renderRadar(radarCanvas, k);
+    const listEl = inspectModalEl?.querySelector?.('#inspectSkillList');
+    if (!listEl) return;
+    const skills = k.skills ?? {};
+    const xp = k.xp ?? {};
+    const catKeys = catDefs ? Object.keys(catDefs) : [];
+    const allSkills = [];
+    for (const [id, lvl] of Object.entries(skills)){
+      const isCat = catKeys.includes(id);
+      const def = skillRegistry?.get?.(id);
+      const cat = def?.category ?? (isCat ? id : '?');
+      const xpVal = Number(xp[id] ?? 0);
+      const level = Number(lvl ?? 1);
+      const xpNext = 10 + Math.pow(level, 1.35) * 6;
+      allSkills.push({ id, name: def?.name ?? id, level, xp: xpVal, xpNext, category: cat, isCat });
+    }
+    allSkills.sort((a, b) => { if (a.isCat && !b.isCat) return -1; if (!a.isCat && b.isCat) return 1; return b.level - a.level || a.name.localeCompare(b.name); });
+    const html = [];
+    for (const s of allSkills){
+      if (s.level <= 1 && s.xp <= 0 && !s.isCat) continue;
+      const color = catDefs?.[s.category]?.color ?? '#6b7280';
+      const pct = Math.min(100, (s.xp / Math.max(1, s.xpNext)) * 100);
+      const bold = s.isCat ? 'font-weight:700;' : '';
+      html.push(`<div class="skillListItem" style="${bold}"><span class="skillLvl" style="color:${color}">${s.level}</span><span class="skillName">${_esc(s.name)}</span><div class="skillBar"><div class="skillBarFill" style="width:${pct.toFixed(0)}%;background:${color}"></div></div><span class="skillCat">${_esc(s.category)}</span></div>`);
+    }
+    listEl.innerHTML = html.length ? html.join('') : '<div class="small" style="padding:8px;opacity:.5">No skills discovered yet.</div>';
+  }
+
+  function renderLifeTab(state, k){
+    const summaryEl = inspectModalEl?.querySelector?.('#inspectLifeSummary');
+    const logEl = inspectModalEl?.querySelector?.('#inspectLifeLog');
+    if (!summaryEl || !logEl) return;
+    const totalTime = Object.values(k.activityTime ?? {}).reduce((s, v) => s + v, 0);
+    const topTask = Object.entries(k.activityTime ?? {}).sort((a, b) => b[1] - a[1])[0];
+    const topSkill = (() => { let best = null, bestLvl = 0; for (const [id, lvl] of Object.entries(k.skills ?? {})){ if (Number(lvl) > bestLvl) { bestLvl = Number(lvl); best = id; } } return best ? `${best} (Lv ${bestLvl})` : '-'; })();
+    const buddy = buddyOf?.(state, k);
+    const buddyName = buddy ? (String(buddy.name ?? '').trim() || `#${buddy.id}`) : 'none';
+    const age = Math.round(Number(state?.t ?? 0) - (k.lifeLog?.[0]?.t ?? 0));
+    summaryEl.textContent = `age: ${_fmtSec(age)} | top skill: ${topSkill} | buddy: ${buddyName} | top activity: ${topTask ? topTask[0] + ' (' + Math.round((topTask[1] / Math.max(1, totalTime)) * 100) + '%)' : '-'}`;
+    const entries = Array.isArray(k.lifeLog) ? [...k.lifeLog].reverse() : [];
+    if (!entries.length) { logEl.innerHTML = '<div class="small" style="padding:8px;opacity:.5">No life events recorded yet.</div>'; return; }
+    const html = [];
+    for (const e of entries.slice(0, 80)){
+      const cls = String(e.type ?? 'task');
+      const time = _fmtSec(Number(e.t ?? 0));
+      let text = '';
+      const dd = e.data ?? {};
+      switch(e.type){
+        case 'skill': text = `Leveled up: ${dd.name ?? dd.skill} → Lv ${dd.level} (${dd.category ?? ''})`; break;
+        case 'task': text = `Switched: ${dd.from ?? '?'} → ${dd.to ?? '?'}${dd.why ? ' (' + dd.why + ')' : ''}`; break;
+        case 'mood': text = `Mood: ${dd.from ?? '?'} → ${dd.band ?? '?'} (${Math.round((dd.mood ?? 0) * 100)}%)`; break;
+        case 'health': text = `Health ${dd.event ?? ''} (${Math.round((dd.health ?? 0) * 100)}%)`; break;
+        case 'social': text = `${dd.event ?? 'Social'}: ${dd.targetName ?? ''}`; break;
+        case 'milestone': text = dd.what ?? dd.detail ?? 'Milestone'; break;
+        default: text = JSON.stringify(dd).slice(0, 60);
+      }
+      html.push(`<div class="lifeEntry ${cls}"><span class="lifeTime">${_esc(time)}</span> ${_esc(text)}</div>`);
+    }
+    logEl.innerHTML = html.join('');
+  }
+
+  function renderGraphsTab(state, k){
+    const sc = inspectModalEl?.querySelector?.('#inspectSkillTrend');
+    const vc = inspectModalEl?.querySelector?.('#inspectVitalsTrend');
+    const ac = inspectModalEl?.querySelector?.('#inspectActivityBar');
+    if (sc && typeof _renderSkillTrend === 'function') _renderSkillTrend(sc, k);
+    if (vc && typeof _renderVitalsTrend === 'function') _renderVitalsTrend(vc, k);
+    if (ac && typeof _renderActivityBar === 'function') _renderActivityBar(ac, k);
+  }
+
   if (btnInspectClose) btnInspectClose.addEventListener('click', close);
   if (inspectModalEl) inspectModalEl.addEventListener('click', (e) => {
     if (e.target === inspectModalEl) close();
@@ -1116,6 +1227,14 @@ export function initInspectModal(deps){
 
   return { uiInspect, open, close, render: renderInspect };
 }
+
+function _fmtSec(s){
+  s = Math.max(0, Math.round(Number(s) || 0));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s/60)}m ${s%60}s`;
+  return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
+}
+function _esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function verCmp(a,b){
   const pa = String(a||'').split('.').map(x=>parseInt(x,10)).filter(n=>Number.isFinite(n));
