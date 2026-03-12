@@ -191,6 +191,23 @@ export function migrateState(s, {
   s.legacy.upgrades.mil_fortified_timberline = Math.max(0, Math.min(1, Math.floor(Number(s.legacy.upgrades.mil_fortified_timberline ?? 0) || 0)));
   s.legacy.upgrades.mil_war_ledger = Math.max(0, Math.min(4, Math.floor(Number(s.legacy.upgrades.mil_war_ledger ?? 0) || 0)));
 
+  // Research tree migration (TASK-065)
+  s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked:{}, activeBranch:'economy', doctrine:null };
+  s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};
+  const _rb = String(s.research.activeBranch ?? 'economy');
+  s.research.activeBranch = (_rb === 'military' || _rb === 'culture') ? _rb : 'economy';
+  const _rd = String(s.research.doctrine ?? '');
+  s.research.doctrine = (_rd === 'legion' || _rd === 'scholarium') ? _rd : null;
+  for (const id of [
+    'eco_foraging_kit','eco_timber_metrics','eco_tooling_standards','eco_civic_ledger',
+    'mil_watchfires','mil_shieldwall','mil_scout_net','doc_legion',
+    'cul_story_circle','cul_scriptorium','cul_academia','doc_scholarium'
+  ]) {
+    s.research.unlocked[id] = !!s.research.unlocked[id];
+  }
+  if (s.research.unlocked.doc_legion) s.research.doctrine = 'legion';
+  if (s.research.unlocked.doc_scholarium && s.research.doctrine !== 'legion') s.research.doctrine = 'scholarium';
+
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 

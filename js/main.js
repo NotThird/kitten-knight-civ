@@ -224,6 +224,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
+    research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
     sound: { enabled: false },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0 },
     log: [],
@@ -242,6 +243,91 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     { id:'mil_fortified_timberline', name:'Military III: Fortified Timberline', cost: 10, maxRank: 1, desc:'+20% palisade defense contribution during raids.' },
     { id:'mil_war_ledger', name:'Military IV: War Ledger', cost: 5, maxRank: 4, desc:'+1 Legacy Shard on reset per rank (max +4).' },
   ];
+
+  const RESEARCH_TECHS = [
+    { id:'eco_foraging_kit', branch:'economy', tier:1, name:'Economy I: Foraging Kit', cost:60, desc:'+8% food actions output.' },
+    { id:'eco_timber_metrics', branch:'economy', tier:2, name:'Economy II: Timber Metrics', cost:140, prereqs:['eco_foraging_kit'], desc:'+10% wood actions output.' },
+    { id:'eco_tooling_standards', branch:'economy', tier:3, name:'Economy III: Tooling Standards', cost:260, prereqs:['eco_timber_metrics'], desc:'+12% tool crafting output.' },
+    { id:'eco_civic_ledger', branch:'economy', tier:4, name:'Economy IV: Civic Ledger', cost:420, prereqs:['eco_tooling_standards'], desc:'+10% Legacy shard gain from run score.' },
+
+    { id:'mil_watchfires', branch:'military', tier:1, name:'Military I: Watchfires', cost:70, desc:'+10% Guard output.' },
+    { id:'mil_shieldwall', branch:'military', tier:2, name:'Military II: Shieldwall Drills', cost:160, prereqs:['mil_watchfires'], desc:'+12% palisade defense effect.' },
+    { id:'mil_scout_net', branch:'military', tier:3, name:'Military III: Scout Network', cost:300, prereqs:['mil_shieldwall'], desc:'Threat grows slightly slower.' },
+    { id:'doc_legion', branch:'military', tier:4, name:'Doctrine Fork: Legion Charter', cost:500, prereqs:['mil_scout_net'], doctrine:'legion', desc:'Irreversible doctrine: +16% Guard, -6% Research.' },
+
+    { id:'cul_story_circle', branch:'culture', tier:1, name:'Culture I: Story Circle', cost:65, desc:'+6% Socialize/Care effect.' },
+    { id:'cul_scriptorium', branch:'culture', tier:2, name:'Culture II: Scriptorium', cost:150, prereqs:['cul_story_circle'], desc:'+10% Research output.' },
+    { id:'cul_academia', branch:'culture', tier:3, name:'Culture III: Academia', cost:280, prereqs:['cul_scriptorium'], desc:'+12% Mentor effectiveness.' },
+    { id:'doc_scholarium', branch:'culture', tier:4, name:'Doctrine Fork: Scholarium Compact', cost:500, prereqs:['cul_academia'], doctrine:'scholarium', desc:'Irreversible doctrine: +18% Research, -5% Guard output.' },
+  ];
+
+  const RESEARCH_BRANCH_ORDER = ['economy', 'military', 'culture'];
+
+  function ensureResearchState(s){
+    s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked: {}, activeBranch: 'economy', doctrine: null };
+    s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};
+    s.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(s.research.activeBranch) ? s.research.activeBranch : 'economy';
+    const d = String(s.research.doctrine ?? '');
+    s.research.doctrine = (d === 'legion' || d === 'scholarium') ? d : null;
+    for (const tech of RESEARCH_TECHS) {
+      s.research.unlocked[tech.id] = !!s.research.unlocked[tech.id];
+      if (tech.doctrine && s.research.unlocked[tech.id]) s.research.doctrine = tech.doctrine;
+    }
+  }
+
+  function hasResearchTech(s, id){
+    ensureResearchState(s);
+    return !!s.research.unlocked[id];
+  }
+
+  function researchScienceMul(s){
+    let m = 1;
+    if (hasResearchTech(s, 'cul_scriptorium')) m *= 1.10;
+    if (hasResearchTech(s, 'doc_scholarium')) m *= 1.18;
+    if (hasResearchTech(s, 'doc_legion')) m *= 0.94;
+    return m;
+  }
+
+  function researchGuardMul(s){
+    let m = 1;
+    if (hasResearchTech(s, 'mil_watchfires')) m *= 1.10;
+    if (hasResearchTech(s, 'doc_legion')) m *= 1.16;
+    if (hasResearchTech(s, 'doc_scholarium')) m *= 0.95;
+    return m;
+  }
+
+  function researchPalisadeMul(s){
+    return hasResearchTech(s, 'mil_shieldwall') ? 1.12 : 1.00;
+  }
+
+  function researchLegacyShardMul(s){
+    return hasResearchTech(s, 'eco_civic_ledger') ? 1.10 : 1.00;
+  }
+
+  function canBuyResearchTech(s, tech){
+    ensureResearchState(s);
+    if (!tech || s.research.unlocked[tech.id]) return false;
+    if (Number(s.res?.science ?? 0) < Number(tech.cost ?? 0)) return false;
+    const prereqs = Array.isArray(tech.prereqs) ? tech.prereqs : [];
+    for (const p of prereqs) if (!s.research.unlocked[p]) return false;
+    if (tech.doctrine && s.research.doctrine && s.research.doctrine !== tech.doctrine) return false;
+    return true;
+  }
+
+  function buyResearchTech(id){
+    ensureResearchState(state);
+    const tech = RESEARCH_TECHS.find(t => t.id === id);
+    if (!tech) return { ok:false, reason:'missing' };
+    if (!canBuyResearchTech(state, tech)) return { ok:false, reason:'locked' };
+    state.res.science = Math.max(0, Number(state.res.science ?? 0) - Number(tech.cost ?? 0));
+    state.research.unlocked[tech.id] = true;
+    if (tech.doctrine) state.research.doctrine = tech.doctrine;
+    log(`Research unlocked: ${tech.name}.`);
+    playSfx('purchase');
+    save();
+    render();
+    return { ok:true };
+  }
 
   function ensureLegacyState(s){
     s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {}, activeBranch: 'lore' };
@@ -271,11 +357,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function legacyResearchMul(s){
-    return legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
+    const base = legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
+    return base * researchScienceMul(s);
   }
 
   function legacyGuardOutputMul(s){
-    return legacyHas(s, 'mil_drill_doctrine') ? 1.18 : 1.00;
+    const base = legacyHas(s, 'mil_drill_doctrine') ? 1.18 : 1.00;
+    return base * researchGuardMul(s);
   }
 
   function legacyCombatXPMul(s){
@@ -283,7 +371,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function legacyPalisadeDefenseMul(s){
-    return legacyHas(s, 'mil_fortified_timberline') ? 1.20 : 1.00;
+    const base = legacyHas(s, 'mil_fortified_timberline') ? 1.20 : 1.00;
+    return base * researchPalisadeMul(s);
   }
 
   function legacyWarLedgerBonus(s){
@@ -301,7 +390,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       Number(s?.res?.libraries ?? 0) * 4
     );
     const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
-    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6);
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s));
     return Math.max(0, gained + legacyWarLedgerBonus(s));
   }
 
@@ -311,6 +400,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (gain <= 0) return { ok:false, reason:'no_shards' };
 
     const prior = structuredClone(state.legacy);
+    const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -322,6 +412,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.legacy = prior;
+    fresh.research = priorResearch;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
     fresh.legacy.resets += 1;
@@ -338,6 +429,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     state = fresh;
     ensureMilestonesState(state);
     ensureLegacyState(state);
+    ensureResearchState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
     save();
@@ -1851,6 +1943,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
   ensureLegacyState(state);
+  ensureResearchState(state);
   ensureAudioState(state);
 
   // --- Offline progress (tiny idle-game slice)
@@ -9349,6 +9442,32 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         `<div style="margin-top:8px">${upgradeRows}</div>`;
     }
 
+    const researchPanelEl = el('researchPanel');
+    if (researchPanelEl) {
+      ensureResearchState(state);
+      const active = state.research.activeBranch;
+      const bLabel = (b) => b === 'economy' ? 'Economy' : (b === 'military' ? 'Military' : 'Culture');
+      const tabs = RESEARCH_BRANCH_ORDER.map((b) => `<button class="btn ${active === b ? 'active' : ''}" data-research-tab="${b}">${bLabel(b)}</button>`).join(' ');
+      const rows = RESEARCH_TECHS.filter(t => t.branch === active)
+        .sort((a,b) => a.tier - b.tier)
+        .map((tech) => {
+          const owned = !!state.research.unlocked[tech.id];
+          const canBuy = canBuyResearchTech(state, tech);
+          const prereqs = (tech.prereqs ?? []).map((id) => RESEARCH_TECHS.find(t => t.id === id)?.name || id);
+          const reqLine = prereqs.length ? `<div class="small" style="opacity:.75">Requires: ${escapeHtml(prereqs.join(', '))}</div>` : '';
+          const doctrineTag = tech.doctrine ? `<span class="tag warn" style="margin-left:6px">Doctrine fork</span>` : '';
+          const btn = owned
+            ? '<span class="tag good">Unlocked</span>'
+            : `<button class="btn" data-research-buy="${tech.id}" ${canBuy ? '' : 'disabled'}>Research (${tech.cost} science)</button>`;
+          return `<div style="margin-bottom:8px"><div><b>T${tech.tier}.</b> ${escapeHtml(tech.name)}${doctrineTag} - ${escapeHtml(tech.desc)}</div>${reqLine}<div class="small" style="margin-top:4px">${btn}</div></div>`;
+        }).join('');
+      const doctrine = state.research.doctrine ? (state.research.doctrine === 'legion' ? 'Legion Charter' : 'Scholarium Compact') : 'none';
+      researchPanelEl.innerHTML =
+        `<div class="small">Science bank: <b>${fmt(state.res.science)}</b> | Doctrine: <b>${doctrine}</b></div>` +
+        `<div class="row" style="gap:6px; margin-top:8px">${tabs}</div>` +
+        `<div style="margin-top:8px">${rows}</div>`;
+    }
+
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
 
     const nextSeasonEta = fmtEtaSeconds(secondsToNextSeason(state));
@@ -11513,6 +11632,28 @@ function renderTrends(){
     if (!res.ok && res.reason === 'cost') {
       playSfx('error');
       log('Not enough Legacy Shards for that upgrade.');
+    }
+  });
+
+  const researchPanel = document.getElementById('researchPanel');
+  if (researchPanel) researchPanel.addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('button[data-research-tab]');
+    if (tabBtn) {
+      ensureResearchState(state);
+      const next = String(tabBtn.dataset.researchTab || 'economy');
+      state.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(next) ? next : 'economy';
+      save();
+      render();
+      return;
+    }
+
+    const buyBtn = e.target.closest('button[data-research-buy]');
+    if (!buyBtn) return;
+    const id = String(buyBtn.dataset.researchBuy || '');
+    const res = buyResearchTech(id);
+    if (!res.ok) {
+      playSfx('error');
+      log('Research locked: check science/prerequisites/doctrine exclusivity.');
     }
   });
 
