@@ -236,24 +236,58 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     { id:'lore_embers', name:'Lore III: Embers of Memory', cost: 12, desc:'Keep 8% of food/wood/science/tools on legacy reset.' },
   ];
 
+  const LEGACY_MILITARY_UPGRADES = [
+    { id:'mil_drill_doctrine', name:'Military I: Drill Doctrine', cost: 4, maxRank: 1, desc:'+18% Guard threat reduction output.' },
+    { id:'mil_veteran_cadre', name:'Military II: Veteran Cadre', cost: 7, maxRank: 1, desc:'+30% Combat XP gain from Guard duty.' },
+    { id:'mil_fortified_timberline', name:'Military III: Fortified Timberline', cost: 10, maxRank: 1, desc:'+20% palisade defense contribution during raids.' },
+    { id:'mil_war_ledger', name:'Military IV: War Ledger', cost: 5, maxRank: 4, desc:'+1 Legacy Shard on reset per rank (max +4).' },
+  ];
+
   function ensureLegacyState(s){
-    s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {} };
+    s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {}, activeBranch: 'lore' };
     s.legacy.shards = Math.max(0, Math.floor(Number(s.legacy.shards ?? 0) || 0));
     s.legacy.totalShards = Math.max(0, Math.floor(Number(s.legacy.totalShards ?? s.legacy.shards) || 0));
     s.legacy.resets = Math.max(0, Math.floor(Number(s.legacy.resets ?? 0) || 0));
     s.legacy.upgrades = (s.legacy.upgrades && typeof s.legacy.upgrades === 'object') ? s.legacy.upgrades : {};
+    s.legacy.activeBranch = (s.legacy.activeBranch === 'military') ? 'military' : 'lore';
     for (const up of LEGACY_LORE_UPGRADES) {
       s.legacy.upgrades[up.id] = !!s.legacy.upgrades[up.id];
     }
+    for (const up of LEGACY_MILITARY_UPGRADES) {
+      const prev = Math.floor(Number(s.legacy.upgrades[up.id] ?? 0) || 0);
+      s.legacy.upgrades[up.id] = Math.max(0, Math.min(up.maxRank, prev));
+    }
+  }
+
+  function legacyUpgradeRank(s, id){
+    ensureLegacyState(s);
+    const cfg = LEGACY_MILITARY_UPGRADES.find(u => u.id === id);
+    if (!cfg) return s?.legacy?.upgrades?.[id] ? 1 : 0;
+    return Math.max(0, Math.min(cfg.maxRank, Math.floor(Number(s.legacy.upgrades[id] ?? 0) || 0)));
   }
 
   function legacyHas(s, id){
-    ensureLegacyState(s);
-    return !!s.legacy.upgrades[id];
+    return legacyUpgradeRank(s, id) > 0;
   }
 
   function legacyResearchMul(s){
     return legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
+  }
+
+  function legacyGuardOutputMul(s){
+    return legacyHas(s, 'mil_drill_doctrine') ? 1.18 : 1.00;
+  }
+
+  function legacyCombatXPMul(s){
+    return legacyHas(s, 'mil_veteran_cadre') ? 1.30 : 1.00;
+  }
+
+  function legacyPalisadeDefenseMul(s){
+    return legacyHas(s, 'mil_fortified_timberline') ? 1.20 : 1.00;
+  }
+
+  function legacyWarLedgerBonus(s){
+    return Math.min(4, legacyUpgradeRank(s, 'mil_war_ledger'));
   }
 
   function computeLegacyShardGain(s){
@@ -268,7 +302,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     );
     const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
     const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6);
-    return Math.max(0, gained);
+    return Math.max(0, gained + legacyWarLedgerBonus(s));
   }
 
   function performLegacyReset(){
@@ -314,13 +348,29 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function buyLegacyUpgrade(id){
     ensureLegacyState(state);
-    const up = LEGACY_LORE_UPGRADES.find(u => u.id === id);
-    if (!up) return { ok:false, reason:'missing' };
-    if (state.legacy.upgrades[id]) return { ok:false, reason:'owned' };
-    if (state.legacy.shards < up.cost) return { ok:false, reason:'cost' };
-    state.legacy.shards -= up.cost;
-    state.legacy.upgrades[id] = true;
-    log(`Legacy upgrade unlocked: ${up.name}.`);
+    const loreUp = LEGACY_LORE_UPGRADES.find(u => u.id === id);
+    if (loreUp) {
+      if (state.legacy.upgrades[id]) return { ok:false, reason:'owned' };
+      if (state.legacy.shards < loreUp.cost) return { ok:false, reason:'cost' };
+      state.legacy.shards -= loreUp.cost;
+      state.legacy.upgrades[id] = true;
+      log(`Legacy upgrade unlocked: ${loreUp.name}.`);
+      playSfx('purchase');
+      save();
+      render();
+      return { ok:true };
+    }
+
+    const milUp = LEGACY_MILITARY_UPGRADES.find(u => u.id === id);
+    if (!milUp) return { ok:false, reason:'missing' };
+    const rank = legacyUpgradeRank(state, id);
+    if (rank >= milUp.maxRank) return { ok:false, reason:'owned' };
+    if (state.legacy.shards < milUp.cost) return { ok:false, reason:'cost' };
+    state.legacy.shards -= milUp.cost;
+    state.legacy.upgrades[id] = rank + 1;
+    const nextRank = rank + 1;
+    const rankTag = milUp.maxRank > 1 ? ` (Rank ${nextRank}/${milUp.maxRank})` : '';
+    log(`Legacy upgrade unlocked: ${milUp.name}${rankTag}.`);
     playSfx('purchase');
     save();
     render();
@@ -2269,10 +2319,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
-        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * dt * eff * mom * wp);
+        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * legacyGuardOutputMul(s) * dt * eff * mom * wp);
         k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
-        gainSkillXP(s, k, 'Guard', dt * (1.0 + 0.35*drill) * efficiency(s,k));
+        gainSkillXP(s, k, 'Guard', dt * (1.0 + 0.35*drill) * efficiency(s,k) * legacyCombatXPMul(s));
       }
     },
     BuildHut: {
@@ -5552,9 +5602,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const drill = drillActive(state) ? 1 : 0;
         const curfew = state.director?.curfew ? 1 : 0;
 
-        const defScore = pal * 0.7 + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
+        const palWeight = 0.7 * legacyPalisadeDefenseMul(state);
+        const defScore = pal * palWeight + guards * 1.4 + sec * 2.0 + drill * 3.0 + curfew * 1.5;
         const mitigate = Math.max(0.25, 1 - 0.035 * defScore); // 1.00 (none) → 0.25 (strong defense)
-        const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal + 0.10 * drill + 0.06 * sec);
+        const repelChance = Math.min(0.65, 0.04 * guards + 0.012 * pal * legacyPalisadeDefenseMul(state) + 0.10 * drill + 0.06 * sec);
 
         const repelled = Math.random() < repelChance;
 
@@ -9264,18 +9315,33 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (legacyPanelEl) {
       ensureLegacyState(state);
       const preview = computeLegacyShardGain(state);
-      const upgradesHtml = LEGACY_LORE_UPGRADES.map((up) => {
-        const owned = !!state.legacy.upgrades[up.id];
+      const activeBranch = state.legacy.activeBranch === 'military' ? 'military' : 'lore';
+
+      const branchTab = (id, label) => `<button class="btn ${activeBranch === id ? 'active' : ''}" data-legacy-tab="${id}">${label}</button>`;
+      const tabsHtml = `<div class="row" style="gap:6px; margin-top:8px">${branchTab('lore','Lore')} ${branchTab('military','Military')}</div>`;
+
+      const upgradeRows = (activeBranch === 'military' ? LEGACY_MILITARY_UPGRADES : LEGACY_LORE_UPGRADES).map((up) => {
+        const isMil = activeBranch === 'military';
+        const rank = isMil ? legacyUpgradeRank(state, up.id) : (state.legacy.upgrades[up.id] ? 1 : 0);
+        const maxRank = isMil ? up.maxRank : 1;
+        const owned = rank >= maxRank;
         const afford = (state.legacy.shards >= up.cost);
+        const rankLine = isMil ? ` <span class="small" style="opacity:.8">(Rank ${rank}/${maxRank})</span>` : '';
         const btn = owned
           ? '<span class="tag">Owned</span>'
           : `<button class="btn" data-legacy-buy="${up.id}" ${afford ? '' : 'disabled'}>Buy (${up.cost})</button>`;
-        return `<div style="margin-bottom:8px"><div><b>${escapeHtml(up.name)}</b> - ${escapeHtml(up.desc)}</div><div class="small" style="margin-top:4px">${btn}</div></div>`;
+        return `<div style="margin-bottom:8px"><div><b>${escapeHtml(up.name)}</b>${rankLine} - ${escapeHtml(up.desc)}</div><div class="small" style="margin-top:4px">${btn}</div></div>`;
       }).join('');
+
+      const warLedger = legacyWarLedgerBonus(state);
+      const milSummary = `<div class="small" style="margin-top:4px">Military shard bonus: <b>+${warLedger}</b> (cap +4)</div>`;
+
       legacyPanelEl.innerHTML =
         `<div class="small">Shard bank: <b>${fmt(state.legacy.shards)}</b> | total earned: ${fmt(state.legacy.totalShards)} | resets: ${fmt(state.legacy.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(preview)}</b> shards now.</div>` +
-        `<div style="margin-top:8px">${upgradesHtml}</div>`;
+        milSummary +
+        tabsHtml +
+        `<div style="margin-top:8px">${upgradeRows}</div>`;
     }
 
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
@@ -11426,6 +11492,15 @@ function renderTrends(){
 
   const legacyPanel = document.getElementById('legacyPanel');
   if (legacyPanel) legacyPanel.addEventListener('click', (e) => {
+    const tabBtn = e.target.closest('button[data-legacy-tab]');
+    if (tabBtn) {
+      ensureLegacyState(state);
+      state.legacy.activeBranch = (tabBtn.dataset.legacyTab === 'military') ? 'military' : 'lore';
+      save();
+      render();
+      return;
+    }
+
     const btn = e.target.closest('button[data-legacy-buy]');
     if (!btn) return;
     const id = String(btn.dataset.legacyBuy || '');

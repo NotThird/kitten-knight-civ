@@ -177,14 +177,19 @@ export function migrateState(s, {
   if (!('appliedOnce' in c)) c.appliedOnce = false;
 
   // Legacy Chronicle prestige migration
-  s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {} };
+  s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {}, activeBranch: 'lore' };
   s.legacy.shards = Math.max(0, Math.floor(Number(s.legacy.shards ?? 0) || 0));
   s.legacy.totalShards = Math.max(0, Math.floor(Number(s.legacy.totalShards ?? s.legacy.shards) || 0));
   s.legacy.resets = Math.max(0, Math.floor(Number(s.legacy.resets ?? 0) || 0));
   s.legacy.upgrades = (s.legacy.upgrades && typeof s.legacy.upgrades === 'object') ? s.legacy.upgrades : {};
+  s.legacy.activeBranch = (s.legacy.activeBranch === 'military') ? 'military' : 'lore';
   for (const id of ['lore_inkwell','lore_scribes','lore_embers']) {
     s.legacy.upgrades[id] = !!s.legacy.upgrades[id];
   }
+  s.legacy.upgrades.mil_drill_doctrine = Math.max(0, Math.min(1, Math.floor(Number(s.legacy.upgrades.mil_drill_doctrine ?? 0) || 0)));
+  s.legacy.upgrades.mil_veteran_cadre = Math.max(0, Math.min(1, Math.floor(Number(s.legacy.upgrades.mil_veteran_cadre ?? 0) || 0)));
+  s.legacy.upgrades.mil_fortified_timberline = Math.max(0, Math.min(1, Math.floor(Number(s.legacy.upgrades.mil_fortified_timberline ?? 0) || 0)));
+  s.legacy.upgrades.mil_war_ledger = Math.max(0, Math.min(4, Math.floor(Number(s.legacy.upgrades.mil_war_ledger ?? 0) || 0)));
 
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
