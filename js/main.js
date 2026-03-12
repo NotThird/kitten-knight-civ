@@ -9130,10 +9130,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'Legacy Preview': { icon: '✨', tone: 'legacy' },
     };
 
-    const statDisplayLabel = (key) => {
+    const statDisplayParts = (key) => {
       const meta = statLabelMeta[key];
-      if (!meta) return key;
-      return `${meta.icon} ${key}`;
+      if (!meta) return { icon: '', label: key };
+      return { icon: String(meta.icon || ''), label: key };
     };
 
     for (const [k,v] of stats) {
@@ -9223,8 +9223,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const pulseClass = statPulseClass(k, pulseMetric);
       const flyups = (resourceUiFx.popups?.[k] ?? []);
       const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
+      const labelParts = statDisplayParts(k);
+      const iconPulseClass = (isResource && flyups.length > 0 && labelParts.icon) ? ' icon-pulse' : '';
+      const labelHtml = labelParts.icon
+        ? `<span class="stat-icon${iconPulseClass}" aria-hidden="true">${escapeHtml(labelParts.icon)}</span> ${escapeHtml(labelParts.label)}`
+        : escapeHtml(labelParts.label);
 
-      d.innerHTML = `<div class="k">${escapeHtml(statDisplayLabel(k))}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
+      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 

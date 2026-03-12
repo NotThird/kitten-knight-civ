@@ -18,16 +18,25 @@
     #safetySection { --section-accent: rgba(251,191,36,.34); --section-accent-soft: rgba(251,191,36,.10); border-color: rgba(251,191,36,.18); }
 
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
+    .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); border-left:3px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; }
     .stat .k { font-size:12px; color:var(--muted); font-weight:600; }
     .stat .v { font-size:18px; font-weight:700; margin-top:2px; position:relative; display:inline-block; }
+    .stat-icon { display:inline-block; transform-origin:50% 55%; }
+    .stat-icon.icon-pulse { animation: statIconPulse .5s ease-out; }
     .stat.tone-food .k { color: var(--tone-food); }
+    .stat.tone-food { border-left-color: rgba(251,191,36,.42); }
     .stat.tone-wood .k { color: var(--tone-wood); }
+    .stat.tone-wood { border-left-color: rgba(192,132,87,.42); }
     .stat.tone-warmth .k { color: var(--tone-warmth); }
+    .stat.tone-warmth { border-left-color: rgba(251,113,133,.42); }
     .stat.tone-threat .k { color: var(--tone-threat); }
+    .stat.tone-threat { border-left-color: rgba(248,113,113,.42); }
     .stat.tone-science .k { color: var(--tone-science); }
+    .stat.tone-science { border-left-color: rgba(96,165,250,.42); }
     .stat.tone-tools .k { color: var(--tone-tools); }
+    .stat.tone-tools { border-left-color: rgba(167,139,250,.42); }
     .stat.tone-legacy .k { color: var(--tone-legacy); }
+    .stat.tone-legacy { border-left-color: rgba(34,211,238,.42); }
     .stat .v.resource-ok { color: var(--good); }
     .stat .v.resource-low { color: var(--warn); }
     .stat .v.resource-critical { color: var(--bad); }
@@ -43,6 +52,11 @@
       0% { filter: brightness(1); transform: scale(1); }
       40% { filter: brightness(1.2); transform: scale(1.045); }
       100% { filter: brightness(1); transform: scale(1); }
+    }
+    @keyframes statIconPulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      45% { transform: scale(1.18); filter: brightness(1.18); }
+      100% { transform: scale(1); filter: brightness(1); }
     }
 
     .resource-flyup {
