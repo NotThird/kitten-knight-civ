@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kitten Knight Civ</title>
+  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-12a">
+</head>
+<body>
+<header>
+  <h1>Kitten Knight Civ</h1>
+  <span class="pill" id="ver"></span>
+  <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
+  <button id="btnPause" title="Shortcut: Space">Pause</button>
+  <button id="btnSound" title="Toggle sound effects (default off)">Sound: Off</button>
+  <button id="btnPatchNotes" title="What's new in this version">Patch Notes</button>
+  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)">Export Save</button>
+  <button id="btnImport" title="Paste a save string to restore">Import Save</button>
+  <button id="btnPrestige" title="Reset colony for Legacy Shards">Legacy Reset</button>
+  <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils">Eternity Reset</button>
+  <button id="btnReset" title="Resets everything">Hard Reset</button>
+  <span class="small" id="clock"></span>
+</header>
+
+<main>
+  <section class="card" id="directorSection">
+    <h2>Director</h2>
+    <div class="body">
+      <div class="grid2" id="stats"></div>
+
+      <!-- Curator mode: minimal "aquarium" levers. Advanced controls are tucked away below. -->
+      <div style="height:10px"></div>
+      <div class="row" style="align-items:flex-start; gap:10px; flex-wrap:wrap">
+        <div class="small" style="min-width:100%">Curator</div>
+        <label class="small">Culture goal
+          <select id="curatorGoal" title="High-level colony intent. This drives the Director automation (mode/priorities/doctrine) so you can mostly watch the society run.">
+            <option value="Thrive">Thrive</option>
+            <option value="Expand">Expand</option>
+            <option value="Defend">Defend</option>
+            <option value="Innovate">Innovate</option>
+            <option value="Harmonize">Harmonize</option>
+          </select>
+        </label>
+        <label class="small">Ethos
+          <select id="curatorEthos" title="Governance tone. Gentle = more autonomy; Strict = more discipline.">
+            <option value="Gentle">Gentle</option>
+            <option value="Balanced">Balanced</option>
+            <option value="Strict">Strict</option>
+          </select>
+        </label>
+        <label class="small" title="How often you should be asked to intervene (future). For now it’s a saved preference.">Intervention
+          <input type="range" id="curatorIntervention" min="0" max="100" step="10">
+        </label>
+        <span class="small" id="curatorInterventionHint" style="opacity:.85"></span>
+        <label class="small" title="Developer Mode shows the old control cockpit + debug panels."><input type="checkbox" id="devMode"> Developer Mode</label>
+        <div class="small" style="min-width:100%; opacity:.9" id="steeringSummary"></div>
+        <div class="small" style="min-width:100%; opacity:.88">Goal = what the colony prioritizes most (survival, growth, defense, research, harmony).</div>
+        <div class="small" style="min-width:100%; opacity:.88">Ethos = how strict leadership feels (more autonomy vs more discipline).</div>
+        <div class="small" style="min-width:100%; opacity:.88">Intervention = how often you want nudges; lower means quieter, higher means more hands-on.</div>
+      </div>
+
+      <div style="height:10px"></div>
+      <canvas id="tank" width="380" height="190" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+
+      <div style="height:10px"></div>
+      <div class="small" data-reveal-min="2">Trends (last ~2 minutes)</div>
+      <div class="small" id="trendsLegend" style="margin:6px 0; opacity:.90" data-reveal-min="2"></div>
+      <canvas id="trends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px" data-reveal-min="2"></canvas>
+      <div class="small" id="mlHint" style="margin-top:6px; opacity:.85" data-reveal-min="3"></div>
+      <div style="height:12px"></div>
+      <div class="trendPanels" id="trendPanels" data-reveal-min="3">
+        <section class="trendPanel" id="trendPanelPopulation" data-trend-panel="population">
+          <div class="small">Population trends (last ~2 minutes)</div>
+          <div class="small" id="popLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="popTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="popHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
+
+        <section class="trendPanel" id="trendPanelSociety" data-trend-panel="society">
+          <div class="small">Society trends (last ~2 minutes)</div>
+          <div class="small" id="socLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="socTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="socHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
+
+        <section class="trendPanel" id="trendPanelCulture" data-trend-panel="culture">
+          <div class="small">Culture + ML trends (last ~2 minutes)</div>
+          <div class="small" id="culLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="culTrends" width="380" height="320" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="culHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
+      </div>
+      <div class="trendTabRail" id="trendTabRail" role="tablist" aria-label="Trend dashboards" data-reveal-min="3">
+        <button class="trendTab active" id="trendTabPopulation" data-trend-tab="population" role="tab" aria-selected="true">Population</button>
+        <button class="trendTab" id="trendTabSociety" data-trend-tab="society" role="tab" aria-selected="false">Society</button>
+        <button class="trendTab" id="trendTabCulture" data-trend-tab="culture" role="tab" aria-selected="false">Culture + ML</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="small" data-reveal-min="1">Society feed</div>
+      <div class="log" id="feed" style="max-height:220px" data-reveal-min="1"></div>
+
+      <div style="height:12px"></div>
+      <details id="advancedControls" data-reveal-min="2">
+        <summary class="small" style="cursor:pointer; user-select:none">Advanced controls (optional)</summary>
+        <div style="height:10px"></div>
+
+      <!-- ── Quick Actions ── -->
+      <div class="row">
+        <span class="small">Mode</span>
+        <button class="btn mode" id="modeSurvive" title="Shortcut: 1">Survive</button>
+        <button class="btn mode" id="modeExpand" title="Shortcut: 2">Expand</button>
+        <button class="btn mode" id="modeDefend" title="Shortcut: 3">Defend</button>
+        <button class="btn mode" id="modeResearch" title="Shortcut: 4">Advance</button>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small">Project focus
+          <select id="projectFocus" title="Bias the colony toward finishing one major build project. This is a nudge (safety rules still override).">
+            <option value="Auto">Auto</option>
+            <option value="Housing">Housing (Huts)</option>
+            <option value="Defense">Defense (Palisade)</option>
+            <option value="Industry">Industry (Workshop)</option>
+            <option value="Storage">Storage (Granary)</option>
+            <option value="Knowledge">Knowledge (Library)</option>
+          </select>
+        </label>
+        <span class="small" id="projectFocusHint" style="opacity:.85"></span>
+        <span class="small" id="pinHint" style="opacity:.85"></span>
+        <button class="btn" id="btnClearPin" title="Clear pinned project (stops forcing focus)" style="display:none">Clear pin</button>
+      </div>
+
+      <div style="height:6px"></div>
+      <div class="row">
+        <label class="small" title="Pin: temporarily force focus to finish ONE unit of a project. The pin clears itself when 1 completes.">Pin project
+          <select id="pinProjectSelect">
+            <option value="">None</option>
+            <option value="Hut">Hut</option>
+            <option value="Palisade">Palisade</option>
+            <option value="Granary">Granary</option>
+            <option value="Workshop">Workshop</option>
+            <option value="Library">Library</option>
+          </select>
+        </label>
+        <button class="btn" id="btnPinProject" title="Pin the selected project (finish 1). Also sets Project focus to match.">Pin (finish 1)</button>
+        <span class="small" id="pinProjectHint" style="opacity:.85"></span>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="small">Director profiles</div>
+      <div class="small" style="margin-bottom:6px">Save/load your current mode + targets + reserves + policy + quotas (good for seasonal playbooks).</div>
+      <div class="row" id="profiles"></div>
+      <div class="small" id="profilesHint" style="opacity:.85"></div>
+
+      <div style="height:10px"></div>
+      <div class="row" style="flex-wrap:wrap; gap:6px">
+        <button class="btn good" id="btnAddKitten">+ Kitten (<span id="kittenPopCap">3/3</span>, cost: <span id="kittenCost">50</span> food)</button>
+        <button class="btn" id="btnTick">+10s</button>
+        <button class="btn mode" id="btnWinterPrep" title="One-click seasonal policy: prioritize food+wood+warmth, raise reserves, reduce research/build spending.">Winter Prep</button>
+        <button class="btn mode" id="btnCrisis" title="Emergency policy overlay: clamp spending, raise buffers, and force stabilization (food/warmth/threat) until you toggle it off.">Crisis Protocol</button>
+        <button class="btn mode" id="btnCurfew" title="Governance lever: reduce threat growth (fewer raids) by enforcing a curfew. Costs morale over time and can increase dissent if used too long.">Curfew</button>
+        <button class="btn mode" id="btnFestival" title="Spend food+wood to boost colony mood for a bit. Happy kittens work (slightly) better and rest less.">Hold Festival</button>
+        <button class="btn mode" id="btnCouncil" title="Spend food+science to reduce dissent (improves compliance) for a bit. Good when the colony is murmuring/striking.">Hold Council</button>
+        <button class="btn mode" id="btnDrill" title="Shortcut: D. Spend food+wood to run defense drills for a bit. Slows threat growth and makes Guard training more effective.">Run Drills</button>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small"><input type="checkbox" id="sigBuild"> BUILD PUSH</label>
+        <label class="small"><input type="checkbox" id="sigFood"> FOOD CRISIS</label>
+        <label class="small"><input type="checkbox" id="sigAlarm"> ALARM</label>
+        <span class="small" id="alarmHint" style="opacity:.8"></span>
+      </div>
+
+      <!-- ── Automation toggles (collapsible) ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Automation toggles</summary>
+        <div class="row" style="flex-wrap:wrap; gap:4px 12px; padding:6px 0">
+          <label class="small" title="If enabled, the Director will automatically toggle Winter Prep ON in late Fall and OFF in Spring."><input type="checkbox" id="autoWinterPrep"> Auto Winter Prep</label>
+          <label class="small" title="If enabled, the Director will automatically toggle FOOD CRISIS based on food/kitten vs target (helps prevent silent starvation spirals)."><input type="checkbox" id="autoFoodCrisis"> Auto Food Crisis</label>
+          <label class="small" title="If enabled, the Director will auto-tune reserves based on season + population (reduces overspend thrash; makes buffers 'set-and-forget')."><input type="checkbox" id="autoReserves"> Auto Reserves</label>
+          <label class="small" title="If enabled, the Director will gently auto-tune Policy multipliers toward your Targets (food/warmth/threat). Think 'governor': small nudges, not hard overrides."><input type="checkbox" id="autoPolicy"> Auto Policy</label>
+          <label class="small" title="If enabled, the Director will automatically toggle BUILD PUSH when you are housing-capped (keeps huts moving without constant micro)."><input type="checkbox" id="autoBuildPush"> Auto Build Push</label>
+          <label class="small" title="If enabled, the Director will automatically switch Mode (Survive/Expand/Defend/Advance) based on stability. It only switches occasionally to avoid flapping."><input type="checkbox" id="autoMode"> Auto Mode</label>
+          <label class="small" title="If enabled, the Director will automatically switch Labor doctrine (Balanced/Specialize/Rotate) based on dissent + stability. Rotate helps calm murmurs; Specialize helps output when calm."><input type="checkbox" id="autoDoctrine"> Auto Doctrine</label>
+          <label class="small" title="If enabled, the Director will automatically adjust Rations (Tight/Normal/Feast) based on food stability and colony cohesion. Includes a cooldown to avoid flapping."><input type="checkbox" id="autoRations"> Auto Rations</label>
+          <label class="small" title="If enabled, a stray kitten may join once per year (during Spring) when the colony is clearly stable (spare housing, low threat, good mood, and surplus food). Costs some food."><input type="checkbox" id="autoRecruit"> Auto Recruit</label>
+          <label class="small" title="If enabled, the Director will automatically toggle Crisis Protocol ON when the colony is clearly spiraling (food/warmth/threat), and OFF once stabilized."><input type="checkbox" id="autoCrisis"> Auto Crisis</label>
+          <label class="small" title="If enabled, the Director will automatically run Defense Drills when threat is rising and the colony is otherwise stable (spends food+wood above reserves)."><input type="checkbox" id="autoDrills"> Auto Drills</label>
+          <label class="small" title="If enabled, the Director will automatically hold Council when dissent is high and the colony can afford it (spends food+science above reserves)."><input type="checkbox" id="autoCouncil"> Auto Council</label>
+          <label class="small" title="If enabled, the Director will automatically PAUSE the game when the colony is in immediate danger (starving/freezing/raid imminent). Helpful for spotting slow spirals. It will not auto-resume."><input type="checkbox" id="autoDangerPause"> Auto Pause (danger)</label>
+          <label class="small" title="If enabled, faction negotiations will ask for confirmation and show the exact policy drift before applying."><input type="checkbox" id="confirmFactions"> Confirm politics</label>
+        </div>
+      </details>
+
+      <!-- ── Policy sliders ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Policy &amp; sliders</summary>
+        <div style="padding:6px 0">
+
+      <div class="row">
+        <label class="small">Rations
+          <select id="rations">
+            <option value="Tight">Tight</option>
+            <option value="Normal">Normal</option>
+            <option value="Feast">Feast</option>
+          </select>
+        </label>
+        <span class="small" id="rationsHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small" title="Central planning vs autonomy. Higher autonomy makes kittens follow their likes/dislikes more strongly (more emergent behavior) but can reduce perfect compliance with your policy nudges.">Autonomy
+          <input type="range" id="autonomy" min="0" max="100" step="5">
+        </label>
+        <span class="small" id="autonomyHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small" title="Social cohesion policy. Higher discipline increases compliance with the colony plan (less wandering/striking), but makes kittens a bit grumpier over time. Useful when dissent climbs.">Discipline
+          <input type="range" id="discipline" min="0" max="100" step="5">
+        </label>
+        <span class="small" id="disciplineHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small" title="Work pace policy. Higher = more output and faster building, but kittens burn energy/hunger faster and mood drifts down. Lower = steadier + happier but slower progress.">Work pace
+          <input type="range" id="workPace" min="80" max="120" step="5">
+        </label>
+        <span class="small" id="workPaceHint"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small" title="Labor doctrine: how hard you push specialization vs rotation. Specialize makes roles stick (higher role pressure, lower boredom rotation). Rotate reduces role pressure, increases boredom rotation, and slightly reduces dissent buildup.">Labor doctrine
+          <select id="doctrine">
+            <option value="Balanced">Balanced</option>
+            <option value="Specialize">Specialize</option>
+            <option value="Rotate">Rotate</option>
+          </select>
+        </label>
+        <span class="small" id="doctrineHint" style="opacity:.9"></span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small">Target food/kitten <input type="number" id="targetFood" min="0" step="10" style="width:90px"></label>
+        <label class="small">Target warmth <input type="number" id="targetWarmth" min="0" step="10" style="width:90px"></label>
+        <label class="small">Max threat <input type="number" id="targetThreat" min="0" step="10" style="width:90px"></label>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <span class="small">Reserves (AI won't spend below these buffers)</span>
+      </div>
+      <div class="row">
+        <label class="small">Food reserve <input type="number" id="reserveFood" min="0" step="10" style="width:90px"></label>
+        <label class="small">Wood reserve <input type="number" id="reserveWood" min="0" step="5" style="width:90px"></label>
+        <label class="small">Science reserve <input type="number" id="reserveScience" min="0" step="10" style="width:90px"></label>
+        <label class="small">Tools reserve <input type="number" id="reserveTools" min="0" step="5" style="width:90px"></label>
+      </div>
+      <div class="row" style="margin-top:6px; align-items:center; gap:8px;">
+        <span class="small" id="reserveRecHint" style="opacity:.85"></span>
+        <button class="btn" id="btnApplyReserveRec" title="Set reserves to current recommended seasonal values (does not enable Auto Reserves).">Apply recommended</button>
+      </div>
+
+        </div>
+      </details>
+
+      <!-- ── Priorities ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Priorities &amp; directives</summary>
+        <div style="padding:6px 0">
+
+      <div class="row">
+        <label class="small" title="Higher = kittens value food actions more (Forage/Farm/PreserveFood). Lower = they'll only do food work when the situation demands it.">Food
+          <input type="range" id="prioFood" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioFoodHint"></span>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value stability actions more (Guard/StokeFire + emergency-building). Useful for winter and pre-raid.">Safety
+          <input type="range" id="prioSafety" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioSafetyHint"></span>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value advancement actions more (Research/Tools/Workshop/Library). Good when stable; dangerous when resources are tight.">Progress
+          <input type="range" id="prioProgress" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioProgressHint"></span>
+      </div>
+      <div class="row">
+        <label class="small" title="Higher = kittens value social stability actions more (Socialize/Care). Helps recover mood and reduce dissent pressure, but slows pure growth.">Social
+          <input type="range" id="prioSocial" min="50" max="150" step="5">
+        </label>
+        <span class="small" id="prioSocialHint"></span>
+      </div>
+
+      <div class="row" style="gap:6px; margin-top:4px">
+        <span class="small" style="opacity:.9">Priority presets</span>
+        <button class="btn" id="btnPrioBalanced" title="Set Food/Safety/Progress priorities to 100%">Balanced</button>
+        <button class="btn" id="btnPrioFood" title="Lean into food stability (raises Food, slightly lowers Progress)">Food</button>
+        <button class="btn" id="btnPrioSafety" title="Lean into safety/warmth/defense (raises Safety, slightly lowers Progress)">Safety</button>
+        <button class="btn" id="btnPrioProgress" title="Lean into research/industry (raises Progress, slightly lowers Safety)">Progress</button>
+        <button class="btn" id="btnPrioConsensus" title="Bottom-up: set priorities based on the colony's average values (reduces value mismatch and can calm dissent).">Consensus</button>
+      </div>
+
+      <div style="height:6px"></div>
+      <div class="row" style="gap:6px">
+        <span class="small" style="opacity:.9" title="Directives are per-kitten persistent nudges. These buttons help you set them in one click (without editing each kitten).">Directive tools</span>
+        <button class="btn" id="btnDirBloc" title="Set each kitten's Directive to match their dominant Values bloc (Food/Safety/Progress/Social). This makes the colony feel more bottom-up.">Match blocs</button>
+        <button class="btn" id="btnDirClearAll" title="Reset ALL kitten Directives back to Auto.">Clear all</button>
+        <span class="small" id="dirToolsHint" style="opacity:.85"></span>
+      </div>
+
+        </div>
+      </details>
+
+      <!-- ── Task quotas ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Task &amp; role quotas</summary>
+        <div style="padding:6px 0">
+
+      <div class="small">Policy: task quotas (AI plan bias)</div>
+      <div class="small" style="margin-bottom:6px">These multipliers bias the colony-wide worker plan. 0 = never (unless safety/emergency), 1 = default, 2 = strongly prefer. Great for nudging specialization.</div>
+      <div class="panelmono" id="policy"></div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn" id="btnPolicyPresetSurvive" title="Balanced: food + warmth + safety">Preset: Survive</button>
+        <button class="btn" id="btnPolicyPresetExpand" title="More wood + building">Preset: Expand</button>
+        <button class="btn" id="btnPolicyPresetDefend" title="More guard + palisade">Preset: Defend</button>
+        <button class="btn" id="btnPolicyPresetAdvance" title="More research + tools">Preset: Advance</button>
+        <button class="btn" id="btnPolicyReset">Reset</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="small">Role quotas (gentle specialization targets)</div>
+      <div class="small" style="margin-bottom:6px">Optional. If you set a quota above 0, the AI will try to keep that many kittens in the role (still overridden by safety rules/emergencies).</div>
+      <div class="panelmono" id="roleQuotas"></div>
+
+        </div>
+      </details>
+
+      <!-- ── Colony info panels ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Colony info</summary>
+        <div style="padding:6px 0">
+
+      <div class="small">Plan debug (desired vs assigned)</div>
+      <div class="panelmono" id="planDebug"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Projects (build progress)</div>
+      <div class="panelmono" id="projects"></div>
+
+      <div style="height:12px"></div>
+      <div class="small">Season</div>
+      <div class="panelmono" id="season"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Goals</div>
+      <div class="panelmono" id="goals"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Advisor (what to nudge)</div>
+      <div class="panelmono" id="advisor"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Unlocks</div>
+      <div class="panelmono" id="unlocks"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Legacy Chronicle (Prestige)</div>
+      <div class="small" style="margin-bottom:6px">Reset your colony run to gain permanent Legacy Shards and buy upgrades.</div>
+      <div class="panelmono" id="legacyPanel"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Eternity Cycle</div>
+      <div class="small" style="margin-bottom:6px">A deeper reset layer: convert mature legacy runs into Ancestral Sigils for permanent civilization mandates.</div>
+      <div class="panelmono" id="eternityPanel"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Research Tree</div>
+      <div class="small" style="margin-bottom:6px">Spend Science to unlock permanent run upgrades. Some doctrine choices are exclusive.</div>
+      <div class="panelmono" id="researchPanel"></div>
+
+        </div>
+      </details>
+
+      <!-- ── Politics & governance ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Politics &amp; governance</summary>
+        <div style="padding:6px 0">
+
+      <div class="small">Governance log</div>
+      <div class="small" style="margin-bottom:6px">Explains when the Director (Auto Policy) or Politics (Factions) changed your priorities/policy.</div>
+      <div class="panelmono" id="govlog"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Kitten Council (AI policy suggestions) <span class="tag" id="councilNew" style="display:none; margin-left:6px; border-color: rgba(251,191,36,.45); color: var(--warn);">NEW</span></div>
+      <div class="small" style="margin-bottom:6px">Occasional bottom-up nudges from individual kittens (based on their likes/traits + colony status). Accepting adjusts policy multipliers slightly.</div>
+      <div class="panelmono" id="council"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Factions (values blocs)</div>
+      <div class="small" style="margin-bottom:6px">A civ-sim layer: kittens group into simple values blocs (Food/Safety/Progress/Social). Negotiating with the biggest bloc can reduce dissent, but may pull policy away from your ideal plan.</div>
+      <div class="panelmono" id="factions"></div>
+
+      <div style="height:10px"></div>
+      <div class="small">Bloc health (who is unhappy?)</div>
+      <div class="small" style="margin-bottom:6px">Quick readout by values bloc: avg policy-fit, mood, and grievance. Use this to spot which bloc is driving dissent and whether a negotiation would actually help.</div>
+      <div class="panelmono" id="blocHealth"></div>
+
+        </div>
+      </details>
+
+      <div style="height:10px"></div>
+      <div class="small">Event log</div>
+      <div class="log" id="log"></div>
+      </details>
+    </div>
+  </section>
+
+  <section class="card" id="colonySection" data-reveal-min="1">
+    <h2>Colony (AI decisions)</h2>
+    <div class="body">
+      <div class="colony-toolbar" id="colonyToolbar">
+        <label class="small">Sort
+          <select id="colonySortKey">
+            <option value="">Default</option>
+            <option value="name">Name</option>
+            <option value="role">Role</option>
+            <option value="task">Task</option>
+            <option value="energy">Energy</option>
+            <option value="hunger">Hunger</option>
+            <option value="health">Health</option>
+            <option value="mood">Mood</option>
+            <option value="fit">Fit</option>
+          </select>
+        </label>
+        <button class="btn" id="colonySortDir" title="Toggle ascending/descending">&#x25BC;</button>
+        <label class="small">Filter
+          <input type="text" id="colonyFilter" placeholder="name, role, task..."
+                 style="width:120px; background:rgba(0,0,0,.22); color:var(--text);
+                        border:1px solid rgba(255,255,255,.14); padding:4px 8px;
+                        border-radius:10px; font-size:12px;">
+        </label>
+        <span class="small" id="colonyCount" style="opacity:.8"></span>
+      </div>
+      <div class="kitten-grid" id="kittenGrid"></div>
+      <div class="small" style="margin-top:8px;">Click a kitten card to inspect the full scoring breakdown, skills, life log, and graphs.</div>
+    </div>
+  </section>
+
+  <!-- Safety Rules hidden from UI (still functional in JS) -->
+  <section class="card" id="safetySection" style="display:none">
+    <h2>Safety Rules (Hard Overrides)</h2>
+    <div class="body">
+      <div class="small" style="margin-bottom:8px">Guardrails. If a rule matches, it wins immediately. <b>Read-only</b> in Curator mode.</div>
+      <div id="rules"></div>
+      <div class="row" id="rulesControls">
+        <button class="btn" id="btnAddRule">+ Rule</button>
+        <button class="btn" id="btnDefaultRules">Restore Defaults</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="small">Available</div>
+      <div class="small" style="line-height:1.55">
+        <b>Conditions</b>: always, hungry&gt;X, tired&gt;X, health&lt;X, food&lt;X, edible&lt;X (food+jerky), wood&lt;X, warmth&lt;X, threat&gt;X, foodPerKitten&lt;X, signal(FOOD/BUILD/ALARM)<br>
+        <b>Actions</b>: Eat, Rest, Loaf, Socialize, Care, Forage, PreserveFood, Farm (unlock), ChopWood, StokeFire, Guard, BuildHut, BuildPalisade, BuildGranary (unlock), BuildWorkshop (unlock), BuildLibrary (unlock), CraftTools (unlock), Research, Mentor (unlock)
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Patch notes modal (explainability) -->
+<div class="modal hidden" id="patchModal" role="dialog" aria-modal="true" aria-labelledby="patchTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Patch notes</div>
+        <h3 id="patchTitle" style="margin:2px 0 0 0;">What's new</h3>
+      </div>
+      <button class="btn" id="btnPatchClose">Close</button>
+    </div>
+    <div class="small" id="patchSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="patchBody"></div>
+  </div>
+</div>
+
+<!-- Offline progress modal (comeback bonus) -->
+<div class="modal hidden" id="offlineModal" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Welcome back</div>
+        <h3 id="offlineTitle" style="margin:2px 0 0 0;">Offline gains</h3>
+      </div>
+      <button class="btn" id="btnOfflineClose">Close</button>
+    </div>
+    <div class="small" id="offlineSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="offlineBody"></div>
+  </div>
+</div>
+
+<!-- Inspect modal (explainability) -->
+<div class="modal hidden" id="inspectModal" role="dialog" aria-modal="true" aria-labelledby="inspectTitle">
+  <div class="modalCard" style="max-width:680px;">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Kitten inspector</div>
+        <h3 id="inspectTitle" style="margin:2px 0 0 0;">Kitten</h3>
+      </div>
+      <button class="btn" id="btnInspectClose">Close</button>
+    </div>
+    <div class="small" id="inspectSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:8px"></div>
+    <div class="row" id="inspectControls" style="gap:10px; flex-wrap:wrap"></div>
+    <div style="height:6px"></div>
+    <!-- Tabs -->
+    <div class="inspectTabs" id="inspectTabs">
+      <button class="inspectTab active" data-tab="decisions">Decisions</button>
+      <button class="inspectTab" data-tab="skills">Skills</button>
+      <button class="inspectTab" data-tab="life">Life</button>
+      <button class="inspectTab" data-tab="graphs">Graphs</button>
+    </div>
+    <!-- Tab panels -->
+    <div class="inspectPanel active" id="inspectPanelDecisions">
+      <div class="panelmono" id="inspectBody"></div>
+    </div>
+    <div class="inspectPanel" id="inspectPanelSkills">
+      <canvas id="inspectRadar" width="280" height="280" style="display:block;margin:0 auto 8px;"></canvas>
+      <div class="panelmono" id="inspectSkillList" style="max-height:220px;overflow-y:auto;"></div>
+    </div>
+    <div class="inspectPanel" id="inspectPanelLife">
+      <div class="panelmono small" id="inspectLifeSummary" style="margin-bottom:6px;"></div>
+      <div class="panelmono" id="inspectLifeLog" style="max-height:300px;overflow-y:auto;"></div>
+    </div>
+    <div class="inspectPanel" id="inspectPanelGraphs">
+      <div class="small" style="opacity:.7;margin-bottom:4px;">Skill progression (category levels over time)</div>
+      <canvas id="inspectSkillTrend" width="620" height="160" style="display:block;margin-bottom:10px;"></canvas>
+      <div class="small" style="opacity:.7;margin-bottom:4px;">Vitals (mood, energy, health, hunger)</div>
+      <canvas id="inspectVitalsTrend" width="620" height="160" style="display:block;margin-bottom:10px;"></canvas>
+      <div class="small" style="opacity:.7;margin-bottom:4px;">Activity breakdown</div>
+      <canvas id="inspectActivityBar" width="620" height="70" style="display:block;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Social inspector modal (explainability: why dissent/compliance behaves the way it does) -->
+<div class="modal hidden" id="socialModal" role="dialog" aria-modal="true" aria-labelledby="socialTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Social inspector</div>
+        <h3 id="socialTitle" style="margin:2px 0 0 0;">Dissent + Compliance</h3>
+      </div>
+      <button class="btn" id="btnSocialClose">Close</button>
+    </div>
+    <div class="small" id="socialSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="socialBody"></div>
+  </div>
+</div>
+
+<!-- Culture inspector modal (observability: persistent norms) -->
+<div class="modal hidden" id="cultureModal" role="dialog" aria-modal="true" aria-labelledby="cultureTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Culture inspector</div>
+        <h3 id="cultureTitle" style="margin:2px 0 0 0;">Culture memory</h3>
+      </div>
+      <button class="btn" id="btnCultureClose">Close</button>
+    </div>
+    <div class="small" id="cultureSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="cultureBody"></div>
+  </div>
+</div>
+
+<!-- Storage inspector modal (explainability: food cap + spoilage) -->
+<div class="modal hidden" id="storageModal" role="dialog" aria-modal="true" aria-labelledby="storageTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Storage inspector</div>
+        <h3 id="storageTitle" style="margin:2px 0 0 0;">Food cap + Spoilage</h3>
+      </div>
+      <button class="btn" id="btnStorageClose">Close</button>
+    </div>
+    <div class="small" id="storageSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="storageBody"></div>
+  </div>
+</div>
+
+<!-- Threat inspector modal (explainability: why raids happen and how defense mitigates them) -->
+<div class="modal hidden" id="threatModal" role="dialog" aria-modal="true" aria-labelledby="threatTitle">
+  <div class="modalCard">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Threat inspector</div>
+        <h3 id="threatTitle" style="margin:2px 0 0 0;">Raids + Defense</h3>
+      </div>
+      <button class="btn" id="btnThreatClose">Close</button>
+    </div>
+    <div class="small" id="threatSub" style="margin-top:6px; opacity:.9"></div>
+    <div style="height:10px"></div>
+    <div class="panelmono" id="threatBody"></div>
+  </div>
+</div>
+
+
+<!-- Feedback widget (community feedback → Discord webhook → Sentinel agent) -->
+<button id="feedbackPill" title="Send feedback to the dev team">Feedback</button>
+<div class="modal hidden" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+  <div class="modalCard" style="max-width:460px;">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <div class="small" style="opacity:.8">Community feedback</div>
+        <h3 id="feedbackTitle" style="margin:2px 0 0 0;">How's the game?</h3>
+      </div>
+      <button class="btn" id="btnFeedbackClose">Close</button>
+    </div>
+    <div style="height:12px"></div>
+    <div class="row" style="gap:10px; justify-content:center;" id="feedbackSentiment">
+      <button class="btn feedback-sentiment" data-sentiment="positive" style="font-size:18px; padding:10px 20px;">&#128077; Something's Great</button>
+      <button class="btn feedback-sentiment" data-sentiment="negative" style="font-size:18px; padding:10px 20px;">&#128078; Something's Wrong</button>
+    </div>
+    <div style="height:10px"></div>
+    <div id="feedbackForm" style="display:none;">
+      <div class="small" style="margin-bottom:4px;" id="feedbackCategoryLabel">Category</div>
+      <select id="feedbackCategory" style="width:100%; background:rgba(0,0,0,.22); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:6px 10px; border-radius:8px; font-size:13px;">
+        <option value="bug">Bug Report</option>
+        <option value="feature">Feature Request</option>
+        <option value="general">General Feedback</option>
+      </select>
+      <div style="height:8px"></div>
+      <textarea id="feedbackText" placeholder="What happened? Be specific..." rows="4" maxlength="500" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,.22); color:var(--text); border:1px solid rgba(255,255,255,.14); padding:8px 10px; border-radius:8px; font-size:13px; resize:vertical;"></textarea>
+      <div class="small" style="opacity:.6; text-align:right;" id="feedbackCharCount">0/500</div>
+      <div style="height:6px"></div>
+      <button class="btn" id="btnFeedbackSubmit" style="width:100%; padding:10px; font-size:14px;">Submit Feedback</button>
+      <div class="small" style="text-align:center; margin-top:6px; opacity:.6;">Anonymous. No account needed.</div>
+    </div>
+    <div id="feedbackSuccess" style="display:none; text-align:center; padding:20px 0;">
+      <div style="font-size:24px;">&#10003;</div>
+      <div style="margin-top:8px;">Thanks! The forge team will review this.</div>
+    </div>
+    <div id="feedbackCooldown" style="display:none; text-align:center; padding:10px 0;">
+      <div class="small" style="opacity:.7;">You recently submitted feedback. Please wait a few minutes.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js?v=2026-03-12a"></script>
+<script src="./js/pwa.js"></script>
+<script>
+/* Feedback widget — posts to Discord webhook via Sentinel pipeline */
+(function(){
+  var WEBHOOK_URL = 'https://discord.com/api/webhooks/1481523596571443250/WjBcqYPX_jxBeAf18yvjQtE0k4JDHrNlVF2q5JyrN5W-KIjRQFgaztzriSalhnDsi9cz';
+  var COOLDOWN_MS = 0; // no cooldown — send as many as you want
+  var pill = document.getElementById('feedbackPill');
+  var modal = document.getElementById('feedbackModal');
+  var closeBtn = document.getElementById('btnFeedbackClose');
+  var sentimentBtns = document.querySelectorAll('.feedback-sentiment');
+  var form = document.getElementById('feedbackForm');
+  var textarea = document.getElementById('feedbackText');
+  var charCount = document.getElementById('feedbackCharCount');
+  var categorySelect = document.getElementById('feedbackCategory');
+  var submitBtn = document.getElementById('btnFeedbackSubmit');
+  var successDiv = document.getElementById('feedbackSuccess');
+  var cooldownDiv = document.getElementById('feedbackCooldown');
+  var sentimentDiv = document.getElementById('feedbackSentiment');
+  var chosenSentiment = '';
+
+  function openModal(){
+    var lastSubmit = localStorage.getItem('kkc_feedback_ts');
+    if(lastSubmit && Date.now() - parseInt(lastSubmit) < COOLDOWN_MS){
+      sentimentDiv.style.display = 'none';
+      form.style.display = 'none';
+      successDiv.style.display = 'none';
+      cooldownDiv.style.display = '';
+    } else {
+      sentimentDiv.style.display = '';
+      form.style.display = 'none';
+      successDiv.style.display = 'none';
+      cooldownDiv.style.display = 'none';
+    }
+    modal.classList.remove('hidden');
+  }
+  function closeModal(){
+    modal.classList.add('hidden');
+    chosenSentiment = '';
+    textarea.value = '';
+    charCount.textContent = '0/500';
+  }
+
+  pill.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+
+  sentimentBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      chosenSentiment = btn.getAttribute('data-sentiment');
+      if(chosenSentiment === 'negative'){
+        categorySelect.value = 'bug';
+      } else {
+        categorySelect.value = 'feature';
+      }
+      sentimentDiv.style.display = 'none';
+      form.style.display = '';
+    });
+  });
+
+  textarea.addEventListener('input', function(){
+    charCount.textContent = textarea.value.length + '/500';
+  });
+
+  submitBtn.addEventListener('click', function(){
+    var text = textarea.value.trim();
+    if(text.length < 10){
+      textarea.style.borderColor = 'var(--bad)';
+      return;
+    }
+    textarea.style.borderColor = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+
+    var cat = categorySelect.value;
+    var emoji = chosenSentiment === 'positive' ? '\uD83D\uDC4D' : '\uD83D\uDC4E';
+    var catLabel = cat === 'bug' ? 'Bug Report' : cat === 'feature' ? 'Feature Request' : 'General Feedback';
+    var color = cat === 'bug' ? 15548997 : cat === 'feature' ? 5763719 : 5793266;
+    var gameState = 'Unknown';
+    try {
+      var st = window.S || {};
+      gameState = 'Tick ' + (st.tick||'?') + ', ' + ((st.kittens||[]).length||'?') + ' kittens';
+    } catch(e){}
+
+    var body = {
+      username: 'Player Feedback',
+      embeds: [{
+        title: emoji + ' ' + catLabel,
+        description: text,
+        color: color,
+        footer: { text: (document.getElementById('ver')||{}).textContent + ' | ' + new Date().toISOString() },
+        fields: [{ name: 'Game State', value: gameState, inline: true }]
+      }]
+    };
+
+    fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if(r.ok || r.status === 204){
+        localStorage.setItem('kkc_feedback_ts', '' + Date.now());
+        form.style.display = 'none';
+        successDiv.style.display = '';
+        setTimeout(closeModal, 2000);
+      } else {
+        submitBtn.textContent = 'Error — try again';
+        submitBtn.disabled = false;
+      }
+    }).catch(function(){
+      submitBtn.textContent = 'Error — try again';
+      submitBtn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
