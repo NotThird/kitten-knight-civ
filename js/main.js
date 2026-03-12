@@ -287,6 +287,131 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     resourceUiFx.last = snap;
   }
 
+  // --- Milestones + inline celebrations (persisted unlocks, transient visuals)
+  const milestoneUiFx = {
+    active: [],
+    layer: null,
+  };
+
+  const milestoneDefs = [
+    { id:'ms-pop-8', title:'Village Stirs', desc:'Population reached 8 kittens.', tier:'spark', when: (s) => Number(s?.kittens?.length ?? 0) >= 8 },
+    { id:'ms-pop-16', title:'Crowded Burrows', desc:'Population reached 16 kittens.', tier:'surge', when: (s) => Number(s?.kittens?.length ?? 0) >= 16 },
+    { id:'ms-pop-24', title:'City of Whiskers', desc:'Population reached 24 kittens.', tier:'saga', when: (s) => Number(s?.kittens?.length ?? 0) >= 24 },
+    { id:'ms-hut-1', title:'First Hearth', desc:'Built your first hut.', tier:'spark', when: (s) => Number(s?.res?.huts ?? 0) >= 1 },
+    { id:'ms-wall-1', title:'Palisade Raised', desc:'Built your first palisade.', tier:'spark', when: (s) => Number(s?.res?.palisade ?? 0) >= 1 },
+    { id:'ms-workshop-1', title:'Toolsmith Era', desc:'Built your first workshop.', tier:'surge', when: (s) => Number(s?.res?.workshops ?? 0) >= 1 },
+    { id:'ms-library-1', title:'Scroll Hall', desc:'Built your first library.', tier:'surge', when: (s) => Number(s?.res?.libraries ?? 0) >= 1 },
+    { id:'ms-unlock-security', title:'Night Watch', desc:'Unlocked Security doctrine.', tier:'surge', when: (s) => !!s?.unlocked?.security },
+    { id:'ms-faction-rise', title:'Bloc Politics', desc:'A major faction took shape.', tier:'saga', when: (s) => dominantFactionShare01(s) >= 0.40 && Number(s?.kittens?.length ?? 0) >= 8 },
+    { id:'ms-faction-demand', title:'Public Pressure', desc:'First faction demand appeared.', tier:'saga', when: (s) => !!s?.director?.factionDemand },
+    { id:'ms-coterie', title:'Circle Within Circle', desc:'A coterie emerged in society.', tier:'spark', when: (s) => Number(s?.social?.coteries?.length ?? 0) >= 1 },
+    { id:'ms-festival', title:'Lantern Festival', desc:'Held your first festival.', tier:'mythic', when: (s) => Number(s?.effects?.festivalUntil ?? 0) > Number(s?.t ?? 0) }
+  ];
+
+  function dominantFactionShare01(s){
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (!kittens.length) return 0;
+    const groups = { Food:0, Safety:0, Progress:0, Social:0 };
+    for (const k of kittens) {
+      const ax = dominantValueAxis(k);
+      if (ax in groups) groups[ax] += 1;
+    }
+    let top = 0;
+    for (const v of Object.values(groups)) top = Math.max(top, Number(v) || 0);
+    return top / Math.max(1, kittens.length);
+  }
+
+  function ensureMilestonesState(s){
+    s.milestones = (s.milestones && typeof s.milestones === 'object') ? s.milestones : {};
+    s.milestones.unlocked = (s.milestones.unlocked && typeof s.milestones.unlocked === 'object') ? s.milestones.unlocked : {};
+    s.milestones.history = Array.isArray(s.milestones.history) ? s.milestones.history : [];
+    if (!('lastCheckAt' in s.milestones)) s.milestones.lastCheckAt = 0;
+  }
+
+  function milestoneDurationMsForTier(tier){
+    if (tier === 'spark') return 1300;
+    if (tier === 'surge') return 1700;
+    if (tier === 'saga') return 2100;
+    if (tier === 'mythic') return 2600;
+    return 1600;
+  }
+
+  function unlockMilestone(s, def){
+    ensureMilestonesState(s);
+    const key = String(def?.id || '');
+    if (!key || s.milestones.unlocked[key]) return false;
+
+    const at = Number(s?.t ?? 0);
+    s.milestones.unlocked[key] = at;
+    s.milestones.history.push({
+      id: key,
+      at,
+      title: String(def?.title ?? key),
+      desc: String(def?.desc ?? ''),
+      tier: String(def?.tier ?? 'spark')
+    });
+    if (s.milestones.history.length > 80) {
+      s.milestones.history.splice(0, s.milestones.history.length - 80);
+    }
+
+    feed(`Milestone unlocked: ${String(def?.title ?? key)}.`);
+
+    const nowMs = Date.now();
+    milestoneUiFx.active.push({
+      id: key,
+      title: String(def?.title ?? key),
+      desc: String(def?.desc ?? ''),
+      tier: String(def?.tier ?? 'spark'),
+      until: nowMs + milestoneDurationMsForTier(String(def?.tier ?? 'spark')),
+    });
+    if (milestoneUiFx.active.length > 4) milestoneUiFx.active.splice(0, milestoneUiFx.active.length - 4);
+
+    return true;
+  }
+
+  function tickMilestones(s){
+    ensureMilestonesState(s);
+
+    const nowT = Number(s?.t ?? 0);
+    const lastAt = Number(s?.milestones?.lastCheckAt ?? 0) || 0;
+    if ((nowT - lastAt) < 1) return;
+    s.milestones.lastCheckAt = nowT;
+
+    for (const def of milestoneDefs) {
+      if (s.milestones.unlocked?.[def.id]) continue;
+      let ok = false;
+      try { ok = !!def.when(s); } catch (_) { ok = false; }
+      if (ok) unlockMilestone(s, def);
+    }
+  }
+
+  function ensureMilestoneLayer(){
+    if (milestoneUiFx.layer && document.body.contains(milestoneUiFx.layer)) return milestoneUiFx.layer;
+    const d = document.createElement('div');
+    d.className = 'milestone-burst-layer';
+    document.body.appendChild(d);
+    milestoneUiFx.layer = d;
+    return d;
+  }
+
+  function renderMilestonesFx(){
+    const nowMs = Date.now();
+    milestoneUiFx.active = milestoneUiFx.active.filter(x => Number(x?.until ?? 0) > nowMs);
+
+    const layer = ensureMilestoneLayer();
+    if (!milestoneUiFx.active.length) {
+      layer.innerHTML = '';
+      return;
+    }
+
+    layer.innerHTML = milestoneUiFx.active.map((x) => {
+      const tier = escapeHtml(String(x?.tier ?? 'spark'));
+      const title = escapeHtml(String(x?.title ?? 'Milestone'));
+      const desc = escapeHtml(String(x?.desc ?? ''));
+      return `<div class="milestone-burst ${tier}"><div class="tier">${tier}</div><div class="title">${title}</div><div class="desc">${desc}</div></div>`;
+    }).join('');
+  }
+
   // --- Personality / micro-emergence
   // Kittens have soft preferences (likes/dislikes). This does NOT hard-lock actions; it just nudges.
   function rand01At(t, salt=0){
@@ -1458,6 +1583,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   let state = load() ?? defaultState();
+  ensureMilestonesState(state);
 
   // --- Offline progress (tiny idle-game slice)
   // On boot, we simulate a capped amount of time since the last save.
@@ -5702,6 +5828,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     updateRates(state, dt);
     updateProjectRates(state, dt);
 
+    // Milestones: persisted unlock history + short inline celebration bursts.
+    tickMilestones(state);
+
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
     if (state._trendTimer >= 10) {
@@ -8228,6 +8357,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Society feed
     if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
+    renderMilestonesFx();
 
     // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
     const pauseBtn = el('btnPause');
