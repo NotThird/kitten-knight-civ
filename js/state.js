@@ -172,6 +172,16 @@ export function migrateState(s, {
   if (!('devMode' in c)) c.devMode = false;
   if (!('appliedOnce' in c)) c.appliedOnce = false;
 
+  // Legacy Chronicle prestige migration
+  s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {} };
+  s.legacy.shards = Math.max(0, Math.floor(Number(s.legacy.shards ?? 0) || 0));
+  s.legacy.totalShards = Math.max(0, Math.floor(Number(s.legacy.totalShards ?? s.legacy.shards) || 0));
+  s.legacy.resets = Math.max(0, Math.floor(Number(s.legacy.resets ?? 0) || 0));
+  s.legacy.upgrades = (s.legacy.upgrades && typeof s.legacy.upgrades === 'object') ? s.legacy.upgrades : {};
+  for (const id of ['lore_inkwell','lore_scribes','lore_embers']) {
+    s.legacy.upgrades[id] = !!s.legacy.upgrades[id];
+  }
+
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 

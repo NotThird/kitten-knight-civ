@@ -223,10 +223,104 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     },
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
+    legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
     log: [],
     feed: []
   });
+
+  const LEGACY_LORE_UPGRADES = [
+    { id:'lore_inkwell', name:'Lore I: Inkwell Archives', cost: 3, desc:'+10% research output.' },
+    { id:'lore_scribes', name:'Lore II: Scribes Guild', cost: 7, desc:'+25 science on each legacy reset.' },
+    { id:'lore_embers', name:'Lore III: Embers of Memory', cost: 12, desc:'Keep 8% of food/wood/science/tools on legacy reset.' },
+  ];
+
+  function ensureLegacyState(s){
+    s.legacy = (s.legacy && typeof s.legacy === 'object') ? s.legacy : { shards: 0, totalShards: 0, resets: 0, upgrades: {} };
+    s.legacy.shards = Math.max(0, Math.floor(Number(s.legacy.shards ?? 0) || 0));
+    s.legacy.totalShards = Math.max(0, Math.floor(Number(s.legacy.totalShards ?? s.legacy.shards) || 0));
+    s.legacy.resets = Math.max(0, Math.floor(Number(s.legacy.resets ?? 0) || 0));
+    s.legacy.upgrades = (s.legacy.upgrades && typeof s.legacy.upgrades === 'object') ? s.legacy.upgrades : {};
+    for (const up of LEGACY_LORE_UPGRADES) {
+      s.legacy.upgrades[up.id] = !!s.legacy.upgrades[up.id];
+    }
+  }
+
+  function legacyHas(s, id){
+    ensureLegacyState(s);
+    return !!s.legacy.upgrades[id];
+  }
+
+  function legacyResearchMul(s){
+    return legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
+  }
+
+  function computeLegacyShardGain(s){
+    const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
+    const sci = Math.max(0, Number(s?.res?.science ?? 0));
+    const builds = Math.max(0,
+      Number(s?.res?.huts ?? 0) +
+      Number(s?.res?.palisade ?? 0) * 1.5 +
+      Number(s?.res?.granaries ?? 0) * 2 +
+      Number(s?.res?.workshops ?? 0) * 3 +
+      Number(s?.res?.libraries ?? 0) * 4
+    );
+    const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6);
+    return Math.max(0, gained);
+  }
+
+  function performLegacyReset(){
+    ensureLegacyState(state);
+    const gain = computeLegacyShardGain(state);
+    if (gain <= 0) return { ok:false, reason:'no_shards' };
+
+    const prior = structuredClone(state.legacy);
+    const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
+    const keep = {
+      food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
+      wood: Math.floor(Math.max(0, Number(state?.res?.wood ?? 0)) * keepFrac),
+      science: Math.floor(Math.max(0, Number(state?.res?.science ?? 0)) * keepFrac),
+      tools: Math.floor(Math.max(0, Number(state?.res?.tools ?? 0)) * keepFrac),
+    };
+
+    const fresh = defaultState();
+    fresh.legacy = prior;
+    fresh.legacy.shards += gain;
+    fresh.legacy.totalShards += gain;
+    fresh.legacy.resets += 1;
+
+    if (legacyHas(fresh, 'lore_scribes')) {
+      keep.science += 25;
+    }
+
+    fresh.res.food += keep.food;
+    fresh.res.wood += keep.wood;
+    fresh.res.science += keep.science;
+    fresh.res.tools += keep.tools;
+
+    state = fresh;
+    ensureMilestonesState(state);
+    ensureLegacyState(state);
+    save();
+    render();
+    log(`Legacy reset complete: +${gain} shards (${state.legacy.shards} banked).`);
+    return { ok:true, gain };
+  }
+
+  function buyLegacyUpgrade(id){
+    ensureLegacyState(state);
+    const up = LEGACY_LORE_UPGRADES.find(u => u.id === id);
+    if (!up) return { ok:false, reason:'missing' };
+    if (state.legacy.upgrades[id]) return { ok:false, reason:'owned' };
+    if (state.legacy.shards < up.cost) return { ok:false, reason:'cost' };
+    state.legacy.shards -= up.cost;
+    state.legacy.upgrades[id] = true;
+    log(`Legacy upgrade unlocked: ${up.name}.`);
+    save();
+    render();
+    return { ok:true };
+  }
 
   // UI-only resource FX (non-persistent): gain fly-ups + scarcity colors.
   // Kept outside save data to preserve replay/save determinism.
@@ -1584,6 +1678,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
+  ensureLegacyState(state);
 
   // --- Offline progress (tiny idle-game slice)
   // On boot, we simulate a capped amount of time since the last save.
@@ -2403,7 +2498,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * fx.outputMult * libraryBonus(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * dt * eff * mom * wp;
         s.res.science += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
@@ -8415,6 +8510,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       pauseBtn.title = danger ? `Auto-paused (danger): ${why}` : 'Shortcut: Space';
     }
 
+    const prestigeBtn = el('btnPrestige');
+    if (prestigeBtn) {
+      const prev = computeLegacyShardGain(state);
+      prestigeBtn.textContent = `Legacy Reset (+${fmt(prev)})`;
+      prestigeBtn.title = `Reset colony and gain ${fmt(prev)} Legacy Shards`;
+      prestigeBtn.disabled = prev <= 0;
+    }
+
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
     const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
@@ -8720,6 +8823,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         return `x${cm.toFixed(2)} | typical locks: build ${build}s, work ${work}s (range 1–6s)`;
       }
       if (key === 'Focus-fit') return `min ${Math.round(minAlign*100)}% | low ${lowAlignCt}/${Math.max(1,state.kittens.length)}`;
+      if (key === 'Legacy Shards') {
+        return `spent ${fmt(Math.max(0, (state.legacy?.totalShards ?? 0) - (state.legacy?.shards ?? 0)))} | resets ${fmt(state.legacy?.resets ?? 0)}`;
+      }
+      if (key === 'Legacy Preview') {
+        return 'log-scale gain from population, science, and built structures';
+      }
       if (key === 'Culture') {
         const ns = state?.social?.norms ?? {};
         const vig = Math.max(0, Math.min(1, Number(ns.raidParanoia ?? 0) || 0));
@@ -8735,7 +8844,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       return '';
     };
 
+    const legacyPreview = computeLegacyShardGain(state);
     const stats = [
+      ['Legacy Shards', fmt(state.legacy?.shards ?? 0)],
+      ['Legacy Preview', `+${fmt(legacyPreview)} shards`],
       ['Food', fmt(state.res.food)],
       ['Edible', fmt(edibleFood(state))],
       ['Jerky', fmt(state.res.jerky ?? 0)],
@@ -8771,6 +8883,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     for (const [k,v] of stats) {
       const d = document.createElement('div');
       d.className = 'stat';
+      if (k === 'Legacy Shards') {
+        d.title = 'Persistent prestige currency. Shards survive Legacy Reset and buy permanent upgrades.';
+      }
+      if (k === 'Legacy Preview') {
+        d.title = 'Expected shard gain if you reset now. Formula is log-scaled to avoid runaway inflation.';
+      }
       if (k === 'Dissent') {
         d.dataset.stat = 'dissent';
         d.classList.add('inspectable');
@@ -8923,6 +9041,24 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       projectsEl.innerHTML = projHtml.length
         ? projHtml.join('')
         : `<span class="small">No active build projects yet. Unlock Construction via Science, then nudge build tasks with policy or Project focus.</span>`;
+    }
+
+    const legacyPanelEl = el('legacyPanel');
+    if (legacyPanelEl) {
+      ensureLegacyState(state);
+      const preview = computeLegacyShardGain(state);
+      const upgradesHtml = LEGACY_LORE_UPGRADES.map((up) => {
+        const owned = !!state.legacy.upgrades[up.id];
+        const afford = (state.legacy.shards >= up.cost);
+        const btn = owned
+          ? '<span class="tag">Owned</span>'
+          : `<button class="btn" data-legacy-buy="${up.id}" ${afford ? '' : 'disabled'}>Buy (${up.cost})</button>`;
+        return `<div style="margin-bottom:8px"><div><b>${escapeHtml(up.name)}</b> - ${escapeHtml(up.desc)}</div><div class="small" style="margin-top:4px">${btn}</div></div>`;
+      }).join('');
+      legacyPanelEl.innerHTML =
+        `<div class="small">Shard bank: <b>${fmt(state.legacy.shards)}</b> | total earned: ${fmt(state.legacy.totalShards)} | resets: ${fmt(state.legacy.resets)}</div>` +
+        `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(preview)}</b> shards now.</div>` +
+        `<div style="margin-top:8px">${upgradesHtml}</div>`;
     }
 
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
@@ -11051,6 +11187,24 @@ function renderTrends(){
     log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): food≥${rr.food}, wood≥${rr.wood}, science≥${rr.science}, tools≥${rr.tools}`);
     save();
     render();
+  });
+
+  const legacyPanel = document.getElementById('legacyPanel');
+  if (legacyPanel) legacyPanel.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-legacy-buy]');
+    if (!btn) return;
+    const id = String(btn.dataset.legacyBuy || '');
+    const res = buyLegacyUpgrade(id);
+    if (!res.ok && res.reason === 'cost') log('Not enough Legacy Shards for that upgrade.');
+  });
+
+  const prestigeBtn = document.getElementById('btnPrestige');
+  if (prestigeBtn) prestigeBtn.addEventListener('click', () => {
+    const gain = computeLegacyShardGain(state);
+    if (gain <= 0) { log('Legacy Reset unavailable: build up your colony first.'); return; }
+    const ok = confirm(`Legacy Reset now?\n\nYou will gain +${fmt(gain)} Legacy Shards.\nYour colony resources/buildings/population reset.\nLegacy upgrades and shard balance persist.`);
+    if (!ok) return;
+    performLegacyReset();
   });
 
   policyEl.addEventListener('click', (e) => {
