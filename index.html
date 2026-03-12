@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kitten Knight Civ</title>
-  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-12a">
+  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-12c">
 </head>
 <body>
 <header>
@@ -48,7 +48,7 @@
             <option value="Strict">Strict</option>
           </select>
         </label>
-        <label class="small" title="How often you should be asked to intervene (future). For now it’s a saved preference.">Intervention
+        <label class="small" title="How often you should be asked to intervene (future). For now itâ€™s a saved preference.">Intervention
           <input type="range" id="curatorIntervention" min="0" max="100" step="10">
         </label>
         <span class="small" id="curatorInterventionHint" style="opacity:.85"></span>
@@ -105,7 +105,7 @@
         <summary class="small" style="cursor:pointer; user-select:none">Advanced controls (optional)</summary>
         <div style="height:10px"></div>
 
-      <!-- ── Quick Actions ── -->
+      <!-- â”€â”€ Quick Actions â”€â”€ -->
       <div class="row">
         <span class="small">Mode</span>
         <button class="btn mode" id="modeSurvive" title="Shortcut: 1">Survive</button>
@@ -173,7 +173,7 @@
         <span class="small" id="alarmHint" style="opacity:.8"></span>
       </div>
 
-      <!-- ── Automation toggles (collapsible) ── -->
+      <!-- â”€â”€ Automation toggles (collapsible) â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Automation toggles</summary>
@@ -195,7 +195,7 @@
         </div>
       </details>
 
-      <!-- ── Policy sliders ── -->
+      <!-- â”€â”€ Policy sliders â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Policy &amp; sliders</summary>
@@ -273,7 +273,7 @@
         </div>
       </details>
 
-      <!-- ── Priorities ── -->
+      <!-- â”€â”€ Priorities â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Priorities &amp; directives</summary>
@@ -324,7 +324,7 @@
         </div>
       </details>
 
-      <!-- ── Task quotas ── -->
+      <!-- â”€â”€ Task quotas â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Task &amp; role quotas</summary>
@@ -349,7 +349,7 @@
         </div>
       </details>
 
-      <!-- ── Colony info panels ── -->
+      <!-- â”€â”€ Colony info panels â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Colony info</summary>
@@ -395,7 +395,7 @@
         </div>
       </details>
 
-      <!-- ── Politics & governance ── -->
+      <!-- â”€â”€ Politics & governance â”€â”€ -->
       <div style="height:8px"></div>
       <details>
         <summary class="small" style="cursor:pointer; user-select:none">Politics &amp; governance</summary>
@@ -622,7 +622,7 @@
 </div>
 
 
-<!-- Feedback widget (community feedback → Discord webhook → Sentinel agent) -->
+<!-- Feedback widget (community feedback â†’ Discord webhook â†’ Sentinel agent) -->
 <button id="feedbackPill" title="Send feedback to the dev team">Feedback</button>
 <div class="modal hidden" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
   <div class="modalCard" style="max-width:460px;">
@@ -663,13 +663,13 @@
   </div>
 </div>
 
-<script type="module" src="./js/main.js?v=2026-03-12a"></script>
+<script type="module" src="./js/main.js?v=2026-03-12c"></script>
 <script src="./js/pwa.js"></script>
 <script>
-/* Feedback widget — posts to Discord webhook via Sentinel pipeline */
+/* Feedback widget â€” posts to Discord webhook via Sentinel pipeline */
 (function(){
   var WEBHOOK_URL = 'https://discord.com/api/webhooks/1481523596571443250/WjBcqYPX_jxBeAf18yvjQtE0k4JDHrNlVF2q5JyrN5W-KIjRQFgaztzriSalhnDsi9cz';
-  var COOLDOWN_MS = 0; // no cooldown — send as many as you want
+  var COOLDOWN_MS = 0; // no cooldown â€” send as many as you want
   var pill = document.getElementById('feedbackPill');
   var modal = document.getElementById('feedbackModal');
   var closeBtn = document.getElementById('btnFeedbackClose');
@@ -769,11 +769,11 @@
         successDiv.style.display = '';
         setTimeout(closeModal, 2000);
       } else {
-        submitBtn.textContent = 'Error — try again';
+        submitBtn.textContent = 'Error â€” try again';
         submitBtn.disabled = false;
       }
     }).catch(function(){
-      submitBtn.textContent = 'Error — try again';
+      submitBtn.textContent = 'Error â€” try again';
       submitBtn.disabled = false;
     });
   });
