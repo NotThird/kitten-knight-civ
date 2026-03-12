@@ -9063,9 +9063,33 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       );
     }
 
+    const statLabelMeta = {
+      'Food': { icon: '🍖', tone: 'food' },
+      'Edible': { icon: '🥫', tone: 'food' },
+      'Wood': { icon: '🪵', tone: 'wood' },
+      'Warmth': { icon: '🔥', tone: 'warmth' },
+      'Threat': { icon: '⚠️', tone: 'threat' },
+      'Science': { icon: '🔬', tone: 'science' },
+      'Tools': { icon: '⚒️', tone: 'tools' },
+      'Jerky': { icon: '🥓', tone: 'food' },
+      'Food Cap': { icon: '📦', tone: 'food' },
+      'Spoilage': { icon: '🧪', tone: 'threat' },
+      'Edible/Kitten': { icon: '🐾', tone: 'food' },
+      'Legacy Shards': { icon: '💠', tone: 'legacy' },
+      'Legacy Preview': { icon: '✨', tone: 'legacy' },
+    };
+
+    const statDisplayLabel = (key) => {
+      const meta = statLabelMeta[key];
+      if (!meta) return key;
+      return `${meta.icon} ${key}`;
+    };
+
     for (const [k,v] of stats) {
       const d = document.createElement('div');
       d.className = 'stat';
+      const labelMeta = statLabelMeta[k] ?? null;
+      if (labelMeta?.tone) d.classList.add(`tone-${labelMeta.tone}`);
       if (k === 'Legacy Shards') {
         d.title = 'Persistent prestige currency. Shards survive Legacy Reset and buy permanent upgrades.';
       }
@@ -9149,7 +9173,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const flyups = (resourceUiFx.popups?.[k] ?? []);
       const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
 
-      d.innerHTML = `<div class="k">${k}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
+      d.innerHTML = `<div class="k">${escapeHtml(statDisplayLabel(k))}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 
