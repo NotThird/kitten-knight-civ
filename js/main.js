@@ -186,13 +186,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ];
 
   const REVEAL_STAGE_MAX = 4;
-  const REVEAL_STAGE_NAMES = ['Curator Core', 'Colony View', 'Trends', 'Systems', 'Full Civ'];
+  const REVEAL_STAGE_NAMES = ['Core', 'First Action', 'Trends', 'Systems', 'Full Civ'];
   const REVEAL_GATES = [
     null,
-    { milestone: (s) => Number(s?.kittens?.length ?? 0) >= 4, timeSec: 45 },
-    { milestone: (s) => !!(s?.unlocked?.construction), timeSec: 180 },
-    { milestone: (s) => !!(s?.unlocked?.workshop || s?.unlocked?.farm || Number(s?.res?.science ?? 0) >= 180), timeSec: 420 },
-    { milestone: (s) => !!(s?.unlocked?.security || s?.unlocked?.granary || s?.unlocked?.library || Number(s?.legacy?.resets ?? 0) >= 1), timeSec: 900 },
+    { timeSec: 15 },
+    { timeSec: 30 },
+    { timeSec: 45 },
+    { timeSec: 60 },
   ];
 
   function revealStageOf(s){
@@ -9150,7 +9150,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     for (const node of nodes) {
       const min = Math.max(0, Math.min(REVEAL_STAGE_MAX, Number(node.getAttribute('data-reveal-min') ?? 0) || 0));
       const show = stage >= min;
+      const wasVisible = node.getAttribute('data-reveal-visible') === '1';
       node.classList.toggle('reveal-hidden', !show);
+      if (show && !wasVisible) {
+        node.classList.add('reveal-enter');
+        setTimeout(() => node.classList.remove('reveal-enter'), 440);
+      }
+      node.setAttribute('data-reveal-visible', show ? '1' : '0');
       if (!show) node.setAttribute('aria-hidden', 'true');
       else node.removeAttribute('aria-hidden');
     }
