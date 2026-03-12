@@ -152,7 +152,7 @@
       <div class="small" id="profilesHint" style="opacity:.85"></div>
 
       <div style="height:10px"></div>
-      <div class="row">
+      <div class="row" style="flex-wrap:wrap; gap:6px">
         <button class="btn good" id="btnAddKitten">+ Kitten (<span id="kittenPopCap">3/3</span>, cost: <span id="kittenCost">50</span> food)</button>
         <button class="btn" id="btnTick">+10s</button>
         <button class="btn mode" id="btnWinterPrep" title="One-click seasonal policy: prioritize food+wood+warmth, raise reserves, reduce research/build spending.">Winter Prep</button>
@@ -161,23 +161,9 @@
         <button class="btn mode" id="btnFestival" title="Spend food+wood to boost colony mood for a bit. Happy kittens work (slightly) better and rest less.">Hold Festival</button>
         <button class="btn mode" id="btnCouncil" title="Spend food+science to reduce dissent (improves compliance) for a bit. Good when the colony is murmuring/striking.">Hold Council</button>
         <button class="btn mode" id="btnDrill" title="Shortcut: D. Spend food+wood to run defense drills for a bit. Slows threat growth and makes Guard training more effective.">Run Drills</button>
-        <label class="small" title="If enabled, the Director will automatically toggle Winter Prep ON in late Fall and OFF in Spring."><input type="checkbox" id="autoWinterPrep"> Auto Winter Prep</label>
-        <label class="small" title="If enabled, the Director will automatically toggle FOOD CRISIS based on food/kitten vs target (helps prevent silent starvation spirals)."><input type="checkbox" id="autoFoodCrisis"> Auto Food Crisis</label>
-        <label class="small" title="If enabled, the Director will auto-tune reserves based on season + population (reduces overspend thrash; makes buffers 'set-and-forget')."><input type="checkbox" id="autoReserves"> Auto Reserves</label>
-        <label class="small" title="If enabled, the Director will gently auto-tune Policy multipliers toward your Targets (food/warmth/threat). Think 'governor': small nudges, not hard overrides."><input type="checkbox" id="autoPolicy"> Auto Policy</label>
-        <label class="small" title="If enabled, the Director will automatically toggle BUILD PUSH when you are housing-capped (keeps huts moving without constant micro)."><input type="checkbox" id="autoBuildPush"> Auto Build Push</label>
-        <label class="small" title="If enabled, the Director will automatically switch Mode (Survive/Expand/Defend/Advance) based on stability. It only switches occasionally to avoid flapping."><input type="checkbox" id="autoMode"> Auto Mode</label>
-        <label class="small" title="If enabled, the Director will automatically switch Labor doctrine (Balanced/Specialize/Rotate) based on dissent + stability. Rotate helps calm murmurs; Specialize helps output when calm."><input type="checkbox" id="autoDoctrine"> Auto Doctrine</label>
-        <label class="small" title="If enabled, the Director will automatically adjust Rations (Tight/Normal/Feast) based on food stability and colony cohesion. Includes a cooldown to avoid flapping."><input type="checkbox" id="autoRations"> Auto Rations</label>
-        <label class="small" title="If enabled, a stray kitten may join once per year (during Spring) when the colony is clearly stable (spare housing, low threat, good mood, and surplus food). Costs some food."><input type="checkbox" id="autoRecruit"> Auto Recruit</label>
-        <label class="small" title="If enabled, the Director will automatically toggle Crisis Protocol ON when the colony is clearly spiraling (food/warmth/threat), and OFF once stabilized."><input type="checkbox" id="autoCrisis"> Auto Crisis</label>
-        <label class="small" title="If enabled, the Director will automatically run Defense Drills when threat is rising and the colony is otherwise stable (spends food+wood above reserves)."><input type="checkbox" id="autoDrills"> Auto Drills</label>
-        <label class="small" title="If enabled, the Director will automatically hold Council when dissent is high and the colony can afford it (spends food+science above reserves)."><input type="checkbox" id="autoCouncil"> Auto Council</label>
-        <label class="small" title="If enabled, the Director will automatically PAUSE the game when the colony is in immediate danger (starving/freezing/raid imminent). Helpful for spotting slow spirals. It will not auto-resume."><input type="checkbox" id="autoDangerPause"> Auto Pause (danger)</label>
-        <label class="small" title="If enabled, faction negotiations will ask for confirmation and show the exact policy drift before applying."><input type="checkbox" id="confirmFactions"> Confirm politics</label>
       </div>
 
-      <div style="height:10px"></div>
+      <div style="height:8px"></div>
       <div class="row">
         <label class="small"><input type="checkbox" id="sigBuild"> BUILD PUSH</label>
         <label class="small"><input type="checkbox" id="sigFood"> FOOD CRISIS</label>
@@ -185,7 +171,34 @@
         <span class="small" id="alarmHint" style="opacity:.8"></span>
       </div>
 
+      <!-- ── Automation toggles (collapsible) ── -->
       <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Automation toggles</summary>
+        <div class="row" style="flex-wrap:wrap; gap:4px 12px; padding:6px 0">
+          <label class="small" title="If enabled, the Director will automatically toggle Winter Prep ON in late Fall and OFF in Spring."><input type="checkbox" id="autoWinterPrep"> Auto Winter Prep</label>
+          <label class="small" title="If enabled, the Director will automatically toggle FOOD CRISIS based on food/kitten vs target (helps prevent silent starvation spirals)."><input type="checkbox" id="autoFoodCrisis"> Auto Food Crisis</label>
+          <label class="small" title="If enabled, the Director will auto-tune reserves based on season + population (reduces overspend thrash; makes buffers 'set-and-forget')."><input type="checkbox" id="autoReserves"> Auto Reserves</label>
+          <label class="small" title="If enabled, the Director will gently auto-tune Policy multipliers toward your Targets (food/warmth/threat). Think 'governor': small nudges, not hard overrides."><input type="checkbox" id="autoPolicy"> Auto Policy</label>
+          <label class="small" title="If enabled, the Director will automatically toggle BUILD PUSH when you are housing-capped (keeps huts moving without constant micro)."><input type="checkbox" id="autoBuildPush"> Auto Build Push</label>
+          <label class="small" title="If enabled, the Director will automatically switch Mode (Survive/Expand/Defend/Advance) based on stability. It only switches occasionally to avoid flapping."><input type="checkbox" id="autoMode"> Auto Mode</label>
+          <label class="small" title="If enabled, the Director will automatically switch Labor doctrine (Balanced/Specialize/Rotate) based on dissent + stability. Rotate helps calm murmurs; Specialize helps output when calm."><input type="checkbox" id="autoDoctrine"> Auto Doctrine</label>
+          <label class="small" title="If enabled, the Director will automatically adjust Rations (Tight/Normal/Feast) based on food stability and colony cohesion. Includes a cooldown to avoid flapping."><input type="checkbox" id="autoRations"> Auto Rations</label>
+          <label class="small" title="If enabled, a stray kitten may join once per year (during Spring) when the colony is clearly stable (spare housing, low threat, good mood, and surplus food). Costs some food."><input type="checkbox" id="autoRecruit"> Auto Recruit</label>
+          <label class="small" title="If enabled, the Director will automatically toggle Crisis Protocol ON when the colony is clearly spiraling (food/warmth/threat), and OFF once stabilized."><input type="checkbox" id="autoCrisis"> Auto Crisis</label>
+          <label class="small" title="If enabled, the Director will automatically run Defense Drills when threat is rising and the colony is otherwise stable (spends food+wood above reserves)."><input type="checkbox" id="autoDrills"> Auto Drills</label>
+          <label class="small" title="If enabled, the Director will automatically hold Council when dissent is high and the colony can afford it (spends food+science above reserves)."><input type="checkbox" id="autoCouncil"> Auto Council</label>
+          <label class="small" title="If enabled, the Director will automatically PAUSE the game when the colony is in immediate danger (starving/freezing/raid imminent). Helpful for spotting slow spirals. It will not auto-resume."><input type="checkbox" id="autoDangerPause"> Auto Pause (danger)</label>
+          <label class="small" title="If enabled, faction negotiations will ask for confirmation and show the exact policy drift before applying."><input type="checkbox" id="confirmFactions"> Confirm politics</label>
+        </div>
+      </details>
+
+      <!-- ── Policy sliders ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Policy &amp; sliders</summary>
+        <div style="padding:6px 0">
+
       <div class="row">
         <label class="small">Rations
           <select id="rations">
@@ -223,9 +236,47 @@
 
       <div style="height:8px"></div>
       <div class="row">
-        <label class="small" title="Director priorities: these are high-level weight sliders that bias *individual* kitten scoring (not just the colony plan). They combine with Mode, your Policy multipliers, and kitten preferences. This is meant to create more legible 'policy → behavior' loops.">Priorities
+        <label class="small" title="Labor doctrine: how hard you push specialization vs rotation. Specialize makes roles stick (higher role pressure, lower boredom rotation). Rotate reduces role pressure, increases boredom rotation, and slightly reduces dissent buildup.">Labor doctrine
+          <select id="doctrine">
+            <option value="Balanced">Balanced</option>
+            <option value="Specialize">Specialize</option>
+            <option value="Rotate">Rotate</option>
+          </select>
         </label>
+        <span class="small" id="doctrineHint" style="opacity:.9"></span>
       </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <label class="small">Target food/kitten <input type="number" id="targetFood" min="0" step="10" style="width:90px"></label>
+        <label class="small">Target warmth <input type="number" id="targetWarmth" min="0" step="10" style="width:90px"></label>
+        <label class="small">Max threat <input type="number" id="targetThreat" min="0" step="10" style="width:90px"></label>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="row">
+        <span class="small">Reserves (AI won't spend below these buffers)</span>
+      </div>
+      <div class="row">
+        <label class="small">Food reserve <input type="number" id="reserveFood" min="0" step="10" style="width:90px"></label>
+        <label class="small">Wood reserve <input type="number" id="reserveWood" min="0" step="5" style="width:90px"></label>
+        <label class="small">Science reserve <input type="number" id="reserveScience" min="0" step="10" style="width:90px"></label>
+        <label class="small">Tools reserve <input type="number" id="reserveTools" min="0" step="5" style="width:90px"></label>
+      </div>
+      <div class="row" style="margin-top:6px; align-items:center; gap:8px;">
+        <span class="small" id="reserveRecHint" style="opacity:.85"></span>
+        <button class="btn" id="btnApplyReserveRec" title="Set reserves to current recommended seasonal values (does not enable Auto Reserves).">Apply recommended</button>
+      </div>
+
+        </div>
+      </details>
+
+      <!-- ── Priorities ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Priorities &amp; directives</summary>
+        <div style="padding:6px 0">
+
       <div class="row">
         <label class="small" title="Higher = kittens value food actions more (Forage/Farm/PreserveFood). Lower = they'll only do food work when the situation demands it.">Food
           <input type="range" id="prioFood" min="50" max="150" step="5">
@@ -268,41 +319,15 @@
         <span class="small" id="dirToolsHint" style="opacity:.85"></span>
       </div>
 
-      <div style="height:8px"></div>
-      <div class="row">
-        <label class="small" title="Labor doctrine: how hard you push specialization vs rotation. Specialize makes roles stick (higher role pressure, lower boredom rotation). Rotate reduces role pressure, increases boredom rotation, and slightly reduces dissent buildup.">Labor doctrine
-          <select id="doctrine">
-            <option value="Balanced">Balanced</option>
-            <option value="Specialize">Specialize</option>
-            <option value="Rotate">Rotate</option>
-          </select>
-        </label>
-        <span class="small" id="doctrineHint" style="opacity:.9"></span>
-      </div>
+        </div>
+      </details>
 
+      <!-- ── Task quotas ── -->
       <div style="height:8px"></div>
-      <div class="row">
-        <label class="small">Target food/kitten <input type="number" id="targetFood" min="0" step="10" style="width:90px"></label>
-        <label class="small">Target warmth <input type="number" id="targetWarmth" min="0" step="10" style="width:90px"></label>
-        <label class="small">Max threat <input type="number" id="targetThreat" min="0" step="10" style="width:90px"></label>
-      </div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Task &amp; role quotas</summary>
+        <div style="padding:6px 0">
 
-      <div style="height:8px"></div>
-      <div class="row">
-        <span class="small">Reserves (AI won't spend below these buffers)</span>
-      </div>
-      <div class="row">
-        <label class="small">Food reserve <input type="number" id="reserveFood" min="0" step="10" style="width:90px"></label>
-        <label class="small">Wood reserve <input type="number" id="reserveWood" min="0" step="5" style="width:90px"></label>
-        <label class="small">Science reserve <input type="number" id="reserveScience" min="0" step="10" style="width:90px"></label>
-        <label class="small">Tools reserve <input type="number" id="reserveTools" min="0" step="5" style="width:90px"></label>
-      </div>
-      <div class="row" style="margin-top:6px; align-items:center; gap:8px;">
-        <span class="small" id="reserveRecHint" style="opacity:.85"></span>
-        <button class="btn" id="btnApplyReserveRec" title="Set reserves to current recommended seasonal values (does not enable Auto Reserves).">Apply recommended</button>
-      </div>
-
-      <div style="height:12px"></div>
       <div class="small">Policy: task quotas (AI plan bias)</div>
       <div class="small" style="margin-bottom:6px">These multipliers bias the colony-wide worker plan. 0 = never (unless safety/emergency), 1 = default, 2 = strongly prefer. Great for nudging specialization.</div>
       <div class="panelmono" id="policy"></div>
@@ -319,7 +344,15 @@
       <div class="small" style="margin-bottom:6px">Optional. If you set a quota above 0, the AI will try to keep that many kittens in the role (still overridden by safety rules/emergencies).</div>
       <div class="panelmono" id="roleQuotas"></div>
 
-      <div style="height:10px"></div>
+        </div>
+      </details>
+
+      <!-- ── Colony info panels ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Colony info</summary>
+        <div style="padding:6px 0">
+
       <div class="small">Plan debug (desired vs assigned)</div>
       <div class="panelmono" id="planDebug"></div>
 
@@ -340,6 +373,18 @@
       <div class="panelmono" id="advisor"></div>
 
       <div style="height:10px"></div>
+      <div class="small">Unlocks</div>
+      <div class="panelmono" id="unlocks"></div>
+
+        </div>
+      </details>
+
+      <!-- ── Politics & governance ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Politics &amp; governance</summary>
+        <div style="padding:6px 0">
+
       <div class="small">Governance log</div>
       <div class="small" style="margin-bottom:6px">Explains when the Director (Auto Policy) or Politics (Factions) changed your priorities/policy.</div>
       <div class="panelmono" id="govlog"></div>
@@ -359,9 +404,18 @@
       <div class="small" style="margin-bottom:6px">Quick readout by values bloc: avg policy-fit, mood, and grievance. Use this to spot which bloc is driving dissent and whether a negotiation would actually help.</div>
       <div class="panelmono" id="blocHealth"></div>
 
-      <div style="height:10px"></div>
-      <div class="small">Unlocks</div>
-      <div class="panelmono" id="unlocks"></div>
+        </div>
+      </details>
+
+      <!-- ── Legacy ── -->
+      <div style="height:8px"></div>
+      <details>
+        <summary class="small" style="cursor:pointer; user-select:none">Legacy Chronicle (Prestige)</summary>
+        <div style="padding:6px 0">
+      <div class="small" style="margin-bottom:6px">Reset your colony run to gain permanent Legacy Shards and buy upgrades.</div>
+      <div class="panelmono" id="legacyPanel"></div>
+        </div>
+      </details>
 
       <div style="height:10px"></div>
       <div class="small">Legacy Chronicle (Prestige)</div>
@@ -614,7 +668,7 @@
 /* Feedback widget — posts to Discord webhook via Sentinel pipeline */
 (function(){
   var WEBHOOK_URL = 'https://discord.com/api/webhooks/1481523596571443250/WjBcqYPX_jxBeAf18yvjQtE0k4JDHrNlVF2q5JyrN5W-KIjRQFgaztzriSalhnDsi9cz';
-  var COOLDOWN_MS = 300000; // 5 minutes
+  var COOLDOWN_MS = 0; // no cooldown — send as many as you want
   var pill = document.getElementById('feedbackPill');
   var modal = document.getElementById('feedbackModal');
   var closeBtn = document.getElementById('btnFeedbackClose');
