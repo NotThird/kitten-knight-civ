@@ -264,7 +264,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
-    research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
+    research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
     activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
@@ -325,7 +325,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const RESEARCH_BRANCH_ORDER = ['economy', 'military', 'culture'];
 
   function ensureResearchState(s){
-    s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked: {}, activeBranch: 'economy', doctrine: null };
+    s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null };
     s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};
     s.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(s.research.activeBranch) ? s.research.activeBranch : 'economy';
     const d = String(s.research.doctrine ?? '');
@@ -333,6 +333,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     for (const tech of RESEARCH_TECHS) {
       s.research.unlocked[tech.id] = !!s.research.unlocked[tech.id];
       if (tech.doctrine && s.research.unlocked[tech.id]) s.research.doctrine = tech.doctrine;
+    }
+    const selected = String(s.research.selectedTechId ?? '');
+    const selectedExists = RESEARCH_TECHS.some((t) => t.id === selected);
+    s.research.selectedTechId = selectedExists ? selected : null;
+    if (!s.research.selectedTechId) {
+      const branchTech = RESEARCH_TECHS.find((t) => t.branch === s.research.activeBranch);
+      s.research.selectedTechId = branchTech ? branchTech.id : null;
     }
   }
 
@@ -9855,24 +9862,42 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const active = state.research.activeBranch;
       const bLabel = (b) => b === 'economy' ? 'Economy' : (b === 'military' ? 'Military' : 'Culture');
       const tabs = RESEARCH_BRANCH_ORDER.map((b) => `<button class="btn ${active === b ? 'active' : ''}" data-research-tab="${b}">${bLabel(b)}</button>`).join(' ');
-      const rows = RESEARCH_TECHS.filter(t => t.branch === active)
-        .sort((a,b) => a.tier - b.tier)
-        .map((tech) => {
-          const owned = !!state.research.unlocked[tech.id];
-          const canBuy = canBuyResearchTech(state, tech);
-          const prereqs = (tech.prereqs ?? []).map((id) => RESEARCH_TECHS.find(t => t.id === id)?.name || id);
-          const reqLine = prereqs.length ? `<div class="small" style="opacity:.75">Requires: ${escapeHtml(prereqs.join(', '))}</div>` : '';
-          const doctrineTag = tech.doctrine ? `<span class="tag warn" style="margin-left:6px">Doctrine fork</span>` : '';
-          const btn = owned
-            ? '<span class="tag good">Unlocked</span>'
-            : `<button class="btn" data-research-buy="${tech.id}" ${canBuy ? '' : 'disabled'}>Research (${tech.cost} science)</button>`;
-          return `<div style="margin-bottom:8px"><div><b>T${tech.tier}.</b> ${escapeHtml(tech.name)}${doctrineTag} - ${escapeHtml(tech.desc)}</div>${reqLine}<div class="small" style="margin-top:4px">${btn}</div></div>`;
-        }).join('');
+      const branchTechs = RESEARCH_TECHS.filter(t => t.branch === active).sort((a,b) => a.tier - b.tier);
+      const selectedId = String(state.research.selectedTechId ?? '');
+      const selected = branchTechs.find((t) => t.id === selectedId) ?? branchTechs[0] ?? null;
+      if (selected && state.research.selectedTechId !== selected.id) state.research.selectedTechId = selected.id;
+      const rows = branchTechs.map((tech) => {
+        const owned = !!state.research.unlocked[tech.id];
+        const selectedClass = selected && selected.id === tech.id ? 'active' : '';
+        const status = owned ? '<span class="tag good">Unlocked</span>' : `<span class="small" style="opacity:.8">Cost ${tech.cost}</span>`;
+        return `<button class="btn ${selectedClass}" style="width:100%; text-align:left; margin-bottom:6px" data-research-select="${tech.id}"><b>T${tech.tier}.</b> ${escapeHtml(tech.name)} <span class="small" style="opacity:.7">(${tech.branch})</span> ${status}</button>`;
+      }).join('');
+
+      let detailSheet = '<div class="small" style="margin-top:8px; opacity:.75">No research available for this branch.</div>';
+      if (selected) {
+        const owned = !!state.research.unlocked[selected.id];
+        const canBuy = canBuyResearchTech(state, selected);
+        const prereqs = (selected.prereqs ?? []).map((id) => RESEARCH_TECHS.find(t => t.id === id)?.name || id);
+        const reqLine = prereqs.length ? `<div class="small" style="opacity:.75; margin-top:4px">Requires: ${escapeHtml(prereqs.join(', '))}</div>` : '<div class="small" style="opacity:.75; margin-top:4px">Requires: none</div>';
+        const doctrineTag = selected.doctrine ? `<span class="tag warn" style="margin-left:6px">Doctrine fork</span>` : '';
+        const btn = owned
+          ? '<span class="tag good">Unlocked</span>'
+          : `<button class="btn" data-research-buy="${selected.id}" ${canBuy ? '' : 'disabled'}>Research (${selected.cost} science)</button>`;
+        detailSheet =
+          `<div class="research-detail-sheet" style="margin-top:8px">` +
+          `<div><b>${escapeHtml(selected.name)}</b>${doctrineTag}</div>` +
+          `<div class="small" style="margin-top:4px">${escapeHtml(selected.desc)}</div>` +
+          `${reqLine}` +
+          `<div class="small" style="margin-top:8px">${btn}</div>` +
+          `</div>`;
+      }
+
       const doctrine = state.research.doctrine ? (state.research.doctrine === 'legion' ? 'Legion Charter' : 'Scholarium Compact') : 'none';
       researchPanelEl.innerHTML =
         `<div class="small">Science bank: <b>${fmt(state.res.science)}</b> | Doctrine: <b>${doctrine}</b></div>` +
         `<div class="row" style="gap:6px; margin-top:8px">${tabs}</div>` +
-        `<div style="margin-top:8px">${rows}</div>`;
+        `<div style="margin-top:8px">${rows}</div>` +
+        `${detailSheet}`;
     }
 
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
@@ -12094,6 +12119,17 @@ function renderTrends(){
       ensureResearchState(state);
       const next = String(tabBtn.dataset.researchTab || 'economy');
       state.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(next) ? next : 'economy';
+      const firstTech = RESEARCH_TECHS.find((t) => t.branch === state.research.activeBranch);
+      state.research.selectedTechId = firstTech ? firstTech.id : null;
+      save();
+      render();
+      return;
+    }
+
+    const selectBtn = e.target.closest('button[data-research-select]');
+    if (selectBtn) {
+      ensureResearchState(state);
+      state.research.selectedTechId = String(selectBtn.dataset.researchSelect || '');
       save();
       render();
       return;
