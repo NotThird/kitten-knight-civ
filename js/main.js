@@ -266,6 +266,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
     research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
     sound: { enabled: false },
+    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
     feed: []
@@ -687,6 +688,131 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function ensureAudioState(s){
     s.sound = (s.sound && typeof s.sound === 'object') ? s.sound : { enabled:false };
     s.sound.enabled = !!s.sound.enabled;
+  }
+
+  function ensureActivePlayState(s){
+    s.activePlay = (s.activePlay && typeof s.activePlay === 'object') ? s.activePlay : {};
+    const ap = s.activePlay;
+    const tNow = Number(s.t ?? 0) || 0;
+    if (!Number.isFinite(ap.nextAt)) ap.nextAt = tNow + 70;
+    ap.nextAt = Math.max(tNow + 5, Number(ap.nextAt) || (tNow + 70));
+    ap.active = (ap.active && typeof ap.active === 'object') ? ap.active : null;
+    ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
+    ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
+    ap.seen = Math.max(0, Math.floor(Number(ap.seen ?? 0) || 0));
+  }
+
+  function rollActivePlayDelay(){
+    return 60 + Math.random() * 60;
+  }
+
+  function activePlayProdMul(s){
+    const ap = s?.activePlay;
+    if (!ap) return 1;
+    return (Number(s?.t ?? 0) < Number(ap.boostUntil ?? 0)) ? Math.max(1, Number(ap.boostMul ?? 1) || 1) : 1;
+  }
+
+  function spawnActivePlayEvent(s){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    if (ap.active) return;
+    const nowT = Number(s.t ?? 0);
+    const types = [
+      { id:'sunbeam_cache', label:'Sunbeam Cache', reward:'burst', burst:{ food: 26, wood: 14 } },
+      { id:'scholar_scroll', label:'Scholar Scroll', reward:'burst', burst:{ science: 20, tools: 5 } },
+      { id:'forge_surge', label:'Forge Surge', reward:'boost', mul: 2.0, duration: 30 },
+      { id:'harvest_blessing', label:'Harvest Blessing', reward:'boost', mul: 1.8, duration: 30 },
+      { id:'knight_tithe', label:'Knight Tithe', reward:'burst', burst:{ food: 14, wood: 20, science: 8 } },
+    ];
+    const pick = types[Math.floor(Math.random() * types.length)] ?? types[0];
+    ap.active = {
+      id: String(pick.id),
+      label: String(pick.label),
+      reward: String(pick.reward),
+      burst: pick.burst ? { ...pick.burst } : null,
+      mul: Number(pick.mul ?? 1),
+      duration: Number(pick.duration ?? 0),
+      spawnedAt: nowT,
+      expiresAt: nowT + 10,
+    };
+    ap.nextAt = nowT + rollActivePlayDelay();
+    playSfx('unlock');
+    log(`Active event: ${pick.label} appeared (10s).`);
+  }
+
+  function claimActivePlayEvent(s){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    const ev = ap.active;
+    if (!ev) return false;
+
+    const pop = Math.max(1, Number(s.kittens?.length ?? 1));
+    if (ev.reward === 'boost') {
+      ap.boostMul = Math.max(1.6, Number(ev.mul ?? 2));
+      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0), Number(s.t ?? 0) + Math.max(15, Number(ev.duration ?? 30)));
+      log(`${ev.label}: production surge active (${ap.boostMul.toFixed(2)}x for ${Math.max(1, Math.ceil(ap.boostUntil - Number(s.t ?? 0)))}s).`);
+    } else {
+      const burst = ev.burst ?? { food: 18, wood: 10 };
+      const food = Math.max(0, Number(burst.food ?? 0) * (1 + pop * 0.04));
+      const wood = Math.max(0, Number(burst.wood ?? 0) * (1 + pop * 0.03));
+      const science = Math.max(0, Number(burst.science ?? 0) * (1 + pop * 0.03));
+      const tools = Math.max(0, Number(burst.tools ?? 0) * (1 + pop * 0.02));
+      s.res.food = Number(s.res.food ?? 0) + food;
+      s.res.wood = Number(s.res.wood ?? 0) + wood;
+      s.res.science = Number(s.res.science ?? 0) + science;
+      s.res.tools = Number(s.res.tools ?? 0) + tools;
+      log(`${ev.label}: cache recovered (+${fmt(food)} food, +${fmt(wood)} wood${science > 0 ? `, +${fmt(science)} science` : ''}${tools > 0 ? `, +${fmt(tools)} tools` : ''}).`);
+    }
+
+    ap.active = null;
+    ap.seen = Math.max(0, Number(ap.seen ?? 0) + 1);
+    playSfx('milestone');
+    save();
+    return true;
+  }
+
+  function tickActivePlayEvents(){
+    ensureActivePlayState(state);
+    const ap = state.activePlay;
+    const nowT = Number(state.t ?? 0);
+
+    if (ap.active && nowT >= Number(ap.active.expiresAt ?? 0)) {
+      log(`${ap.active.label} faded.`);
+      ap.active = null;
+    }
+
+    if (nowT >= Number(ap.nextAt ?? Infinity) && !ap.active && !state.paused) {
+      spawnActivePlayEvent(state);
+    }
+
+    if (nowT >= Number(ap.boostUntil ?? 0)) {
+      ap.boostMul = 1;
+    }
+  }
+
+  function renderActivePlayEvent(){
+    ensureActivePlayState(state);
+    const ap = state.activePlay;
+    let host = document.getElementById('activePlayEventHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'activePlayEventHost';
+      host.className = 'active-play-event-host';
+      document.body.appendChild(host);
+    }
+
+    const ev = ap.active;
+    const boostLeft = Math.max(0, Number(ap.boostUntil ?? 0) - Number(state.t ?? 0));
+    if (!ev) {
+      host.innerHTML = boostLeft > 0
+        ? `<div class="active-play-event active"><div class="title">Momentum Surge</div><div class="desc">${Number(ap.boostMul ?? 1).toFixed(2)}x production • ${Math.ceil(boostLeft)}s</div></div>`
+        : '';
+      return;
+    }
+
+    const left = Math.max(0, Number(ev.expiresAt ?? 0) - Number(state.t ?? 0));
+    const cta = (ev.reward === 'boost') ? `${Number(ev.mul ?? 2).toFixed(1)}x production` : 'Claim cache';
+    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event" type="button"><div class="title">${ev.label}</div><div class="desc">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
   }
 
   function audioCtx(){
@@ -2153,6 +2279,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ensureEternityState(state);
   ensureResearchState(state);
   ensureAudioState(state);
+  ensureActivePlayState(state);
   state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), revealStage: 0 };
   state.meta.revealStage = Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(Number(state.meta.revealStage ?? 0) || 0)));
 
@@ -2513,7 +2640,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
@@ -2570,7 +2697,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
         const wp = workPaceMul(s);
-        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.025 * wp * fx.hungerMult);
@@ -2584,7 +2711,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
         const wp = workPaceMul(s);
-        const out = 1.05 * fx.outputMult * toolsBonus(s) * dt * eff * mom * wp;
+        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.wood += out;
         k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
@@ -2851,7 +2978,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
-        const made = craft * 0.55 * workshopBonus(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
+        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
@@ -2978,7 +3105,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.science += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
@@ -6125,6 +6252,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     applyUnlocks();
     tryAdvanceRevealStage(state);
     tickPressures(dt);
+    tickActivePlayEvents();
 
     // Trends sampling (charts): 1Hz, last ~2 minutes
     state._trend = state._trend ?? { t:[], food:[], warmth:[], threat:[], science:[], dissent:[] };
@@ -9037,6 +9165,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Society feed
     if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
     renderMilestonesFx();
+    renderActivePlayEvent();
 
     // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
     const pauseBtn = el('btnPause');
@@ -11013,6 +11142,15 @@ function renderTrends(){
     if (target.closest('#btnSound')) return;
     if (target.closest('button, .btn, .mode')) playSfx('click');
   }, { capture:true });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const hit = target.closest('#activePlayEventBtn');
+    if (!hit) return;
+    e.preventDefault();
+    if (claimActivePlayEvent(state)) render();
+  });
 
   // --- Save export/import/reset (moved behind UI boundary)
   initSaveIO({
