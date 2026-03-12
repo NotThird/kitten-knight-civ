@@ -224,6 +224,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
+    sound: { enabled: false },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0 },
     log: [],
     feed: []
@@ -285,6 +286,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     const fresh = defaultState();
+    fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.legacy = prior;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
@@ -302,6 +304,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     state = fresh;
     ensureMilestonesState(state);
     ensureLegacyState(state);
+    ensureAudioState(state);
+    playSfx('legacy_reset');
     save();
     render();
     log(`Legacy reset complete: +${gain} shards (${state.legacy.shards} banked).`);
@@ -317,9 +321,98 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     state.legacy.shards -= up.cost;
     state.legacy.upgrades[id] = true;
     log(`Legacy upgrade unlocked: ${up.name}.`);
+    playSfx('purchase');
     save();
     render();
     return { ok:true };
+  }
+
+  const sfxRuntime = {
+    ctx: null,
+    voices: [],
+    maxVoices: 6,
+    clickCooldownMs: Math.round(1000 / 14),
+    lastClickMs: 0,
+  };
+
+  function ensureAudioState(s){
+    s.sound = (s.sound && typeof s.sound === 'object') ? s.sound : { enabled:false };
+    s.sound.enabled = !!s.sound.enabled;
+  }
+
+  function audioCtx(){
+    if (sfxRuntime.ctx) return sfxRuntime.ctx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    sfxRuntime.ctx = new Ctx();
+    return sfxRuntime.ctx;
+  }
+
+  function playTone(ctx, spec){
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const nowAt = ctx.currentTime;
+    const dur = Math.max(0.01, Number(spec.duration ?? 0.08));
+    const atk = Math.max(0.001, Number(spec.attack ?? 0.004));
+    const rel = Math.max(0.005, Number(spec.release ?? 0.07));
+    const vol = Math.max(0, Math.min(1, Number(spec.volume ?? 0.05)));
+    const startHz = Math.max(30, Number(spec.startHz ?? spec.hz ?? 440));
+    const endHz = Math.max(30, Number(spec.endHz ?? startHz));
+
+    osc.type = String(spec.wave ?? 'sine');
+    osc.frequency.setValueAtTime(startHz, nowAt);
+    if (Math.abs(endHz - startHz) > 0.001) {
+      osc.frequency.exponentialRampToValueAtTime(endHz, nowAt + dur);
+    }
+
+    gain.gain.setValueAtTime(0.0001, nowAt);
+    gain.gain.linearRampToValueAtTime(vol, nowAt + atk);
+    gain.gain.exponentialRampToValueAtTime(0.0001, nowAt + dur + rel);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(nowAt);
+    osc.stop(nowAt + dur + rel + 0.01);
+
+    sfxRuntime.voices.push(osc);
+    osc.onended = () => {
+      sfxRuntime.voices = sfxRuntime.voices.filter(v => v !== osc);
+      try { osc.disconnect(); gain.disconnect(); } catch (_) { /* noop */ }
+    };
+  }
+
+  function playSfx(type){
+    ensureAudioState(state);
+    if (!state.sound.enabled) return;
+
+    const ctx = audioCtx();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      try { ctx.resume(); } catch (_) { return; }
+    }
+
+    const nowMs = Date.now();
+    if (type === 'click' && (nowMs - sfxRuntime.lastClickMs) < sfxRuntime.clickCooldownMs) return;
+    if (type === 'click') sfxRuntime.lastClickMs = nowMs;
+
+    if (sfxRuntime.voices.length >= sfxRuntime.maxVoices) return;
+
+    const bank = {
+      click:         [{ wave:'triangle', startHz:880, endHz:620, duration:0.04, attack:0.001, release:0.04, volume:0.020 }],
+      toggle:        [{ wave:'square',   startHz:620, endHz:780, duration:0.05, attack:0.001, release:0.05, volume:0.018 }],
+      purchase:      [{ wave:'sine',     startHz:520, endHz:820, duration:0.09, attack:0.002, release:0.08, volume:0.045 }],
+      error:         [{ wave:'sawtooth', startHz:260, endHz:180, duration:0.11, attack:0.002, release:0.09, volume:0.035 }],
+      unlock:        [{ wave:'triangle', startHz:520, endHz:980, duration:0.16, attack:0.002, release:0.12, volume:0.055 }],
+      kitten:        [{ wave:'sine',     startHz:660, endHz:880, duration:0.12, attack:0.002, release:0.10, volume:0.040 }],
+      milestone:     [{ wave:'sine',     startHz:740, endHz:1240, duration:0.20, attack:0.003, release:0.15, volume:0.080 }],
+      raid:          [{ wave:'sawtooth', startHz:240, endHz:120, duration:0.22, attack:0.001, release:0.18, volume:0.080 }],
+      legacy_reset:  [{ wave:'triangle', startHz:300, endHz:900, duration:0.28, attack:0.004, release:0.20, volume:0.090 }],
+    };
+
+    const spec = bank[String(type)] ?? bank.click;
+    for (const tone of spec) playTone(ctx, tone);
   }
 
   // UI-only resource FX (non-persistent): gain fly-ups + scarcity colors.
@@ -477,6 +570,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     feed(`Milestone unlocked: ${String(def?.title ?? key)}.`);
+    playSfx('milestone');
 
     const nowMs = Date.now();
     milestoneUiFx.active.push({
@@ -1707,6 +1801,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
   ensureLegacyState(state);
+  ensureAudioState(state);
 
   // --- Offline progress (tiny idle-game slice)
   // On boot, we simulate a capped amount of time since the last save.
@@ -4497,6 +4592,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         state.seenUnlocks[u.id] = true;
         u.apply(state);
         log(`UNLOCK: ${u.name} (science ≥ ${u.at})`);
+        playSfx('unlock');
         feed(`New knowledge: unlocked ${u.name}.`);
         state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
         state._trendEvents.push({ t: Number(state.t ?? 0), kind:'unlock', label:u.name, color:'rgba(125,211,252,.22)' });
@@ -5470,6 +5566,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             k.grievance = clamp01(Number(k.grievance ?? 0) * 0.96);
           }
           log(`RAID REPELLED! (guards ${guards}, palisade ${pal}) Threat pushed back.`);
+          playSfx('raid');
           feed('Raid repelled. The colony feels safer.');
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'repel', color:'rgba(251,113,133,.18)' });
@@ -5497,6 +5594,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           }
 
           log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported. (mitigation x${mitigate.toFixed(2)}; guards ${guards}, palisade ${pal})`);
+          playSfx('raid');
           feed(`Raid hit the colony. Lost ${fmt(stealFood)} food and ${fmt(stealWood)} wood.`);
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
           state._trendEvents.push({ t: Number(state.t ?? 0), kind:'raid', label:'hit', color:'rgba(251,113,133,.26)' });
@@ -8589,6 +8687,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       prestigeBtn.disabled = prev <= 0;
     }
 
+    const soundBtn = el('btnSound');
+    if (soundBtn) {
+      ensureAudioState(state);
+      const on = !!state.sound.enabled;
+      soundBtn.textContent = on ? 'Sound: On' : 'Sound: Off';
+      soundBtn.classList.toggle('active', on);
+      soundBtn.title = on ? 'Sound effects enabled' : 'Toggle sound effects (default off)';
+    }
+
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
     const avgMood = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.mood ?? 0.55)),0) / state.kittens.length) : 0.55;
@@ -10398,6 +10505,23 @@ function renderTrends(){
     togglePause();
   });
 
+  const soundBtn = document.getElementById('btnSound');
+  if (soundBtn) soundBtn.addEventListener('click', () => {
+    ensureAudioState(state);
+    state.sound.enabled = !state.sound.enabled;
+    playSfx('toggle');
+    log(`Sound effects ${state.sound.enabled ? 'enabled' : 'disabled'}.`);
+    save();
+    render();
+  });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('#btnSound')) return;
+    if (target.closest('button, .btn, .mode')) playSfx('click');
+  }, { capture:true });
+
   // --- Save export/import/reset (moved behind UI boundary)
   initSaveIO({
     saveKey: SAVE_KEY,
@@ -10769,11 +10893,12 @@ function renderTrends(){
 
   document.getElementById('btnAddKitten').addEventListener('click', () => {
     const cost = kittenCost();
-    if (state.res.food < cost) { log(`Need ${cost} food for a kitten.`); render(); return; }
-    if (state.kittens.length >= housingCap(state)) { log(`No housing. Build huts.`); render(); return; }
+    if (state.res.food < cost) { playSfx('error'); log(`Need ${cost} food for a kitten.`); render(); return; }
+    if (state.kittens.length >= housingCap(state)) { playSfx('error'); log(`No housing. Build huts.`); render(); return; }
     state.res.food -= cost;
     const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
     state.kittens.push(makeKitten(id, state.t));
+    playSfx('kitten');
     log(`New kitten joined! (#${id})`);
     render();
   });
@@ -11281,13 +11406,16 @@ function renderTrends(){
     if (!btn) return;
     const id = String(btn.dataset.legacyBuy || '');
     const res = buyLegacyUpgrade(id);
-    if (!res.ok && res.reason === 'cost') log('Not enough Legacy Shards for that upgrade.');
+    if (!res.ok && res.reason === 'cost') {
+      playSfx('error');
+      log('Not enough Legacy Shards for that upgrade.');
+    }
   });
 
   const prestigeBtn = document.getElementById('btnPrestige');
   if (prestigeBtn) prestigeBtn.addEventListener('click', () => {
     const gain = computeLegacyShardGain(state);
-    if (gain <= 0) { log('Legacy Reset unavailable: build up your colony first.'); return; }
+    if (gain <= 0) { playSfx('error'); log('Legacy Reset unavailable: build up your colony first.'); return; }
     const ok = confirm(`Legacy Reset now?\n\nYou will gain +${fmt(gain)} Legacy Shards.\nYour colony resources/buildings/population reset.\nLegacy upgrades and shard balance persist.`);
     if (!ok) return;
     performLegacyReset();
