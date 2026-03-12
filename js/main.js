@@ -5804,7 +5804,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function ensureCurator(s){
     s.director = s.director ?? {};
-    if (!s.director.curator || typeof s.director.curator !== 'object') s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true, devMode:false, appliedOnce:false };
+    if (!s.director.curator || typeof s.director.curator !== 'object') s.director.curator = { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true, devMode:false, appliedOnce:false, revealAdvanced:false, advancedRevealNoted:false };
     const c = s.director.curator;
     if (!('devMode' in c)) c.devMode = false;
     const goal = String(c.goal ?? 'Thrive');
@@ -5815,6 +5815,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!('enabled' in c)) c.enabled = true;
     if (!('devMode' in c)) c.devMode = false;
     if (!('appliedOnce' in c)) c.appliedOnce = false;
+    if (!('revealAdvanced' in c)) c.revealAdvanced = false;
+    if (!('advancedRevealNoted' in c)) c.advancedRevealNoted = false;
   }
 
   function applyCuratorEthos(s){
@@ -5929,12 +5931,31 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     getSteeringSummary,
   });
 
-  // Developer Mode: hide/show the old cockpit.
+  // Progressive disclosure: keep advanced controls hidden on fresh saves,
+  // then reveal after first unlock or ~2 minutes. Developer Mode still forces visibility.
+  function hasAnyKnowledgeUnlock(s){
+    const seen = s?.seenUnlocks ?? {};
+    if (Object.keys(seen).some((k) => !!seen[k])) return true;
+    const u = s?.unlocked ?? {};
+    return !!(u.construction || u.workshop || u.farm || u.security || u.granary || u.library);
+  }
   function syncDevMode(){
     ensureCurator(state);
-    const on = !!state.director.curator.devMode;
+    const c = state.director.curator;
+    const on = !!c.devMode;
     if (devModeEl) devModeEl.checked = on;
-    if (advancedControlsEl) advancedControlsEl.style.display = on ? '' : 'none';
+
+    const shouldReveal = !!c.revealAdvanced || hasAnyKnowledgeUnlock(state) || Number(state.t ?? 0) >= 120;
+    if (shouldReveal && !c.revealAdvanced) {
+      c.revealAdvanced = true;
+      save();
+    }
+    if (c.revealAdvanced && !c.advancedRevealNoted) {
+      c.advancedRevealNoted = true;
+      feed('Advanced controls unlocked. Open "Advanced controls (optional)" if you want deeper policy tools.');
+    }
+
+    if (advancedControlsEl) advancedControlsEl.style.display = (on || c.revealAdvanced) ? '' : 'none';
   }
   if (devModeEl) devModeEl.addEventListener('change', () => {
     ensureCurator(state);
