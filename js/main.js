@@ -185,6 +185,45 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     { id:'library', at: 1400, name:'Libraries', desc:'Unlock BuildLibrary. Each library boosts research output (stacking).', apply:(s)=>{ s.unlocked.library = true; } },
   ];
 
+  const REVEAL_STAGE_MAX = 4;
+  const REVEAL_STAGE_NAMES = ['Curator Core', 'Colony View', 'Trends', 'Systems', 'Full Civ'];
+  const REVEAL_GATES = [
+    null,
+    { milestone: (s) => Number(s?.kittens?.length ?? 0) >= 4, timeSec: 45 },
+    { milestone: (s) => !!(s?.unlocked?.construction), timeSec: 180 },
+    { milestone: (s) => !!(s?.unlocked?.workshop || s?.unlocked?.farm || Number(s?.res?.science ?? 0) >= 180), timeSec: 420 },
+    { milestone: (s) => !!(s?.unlocked?.security || s?.unlocked?.granary || s?.unlocked?.library || Number(s?.legacy?.resets ?? 0) >= 1), timeSec: 900 },
+  ];
+
+  function revealStageOf(s){
+    const raw = Number(s?.meta?.revealStage ?? 0);
+    return Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(raw) || 0));
+  }
+
+  function feedOnce(s, msg){
+    s.feed = Array.isArray(s.feed) ? s.feed : [];
+    s.feed.push(`[${fmt(s.t)}] ${msg}`);
+    const FEED_MAX = 220;
+    if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
+  }
+
+  function tryAdvanceRevealStage(s){
+    s.meta = s.meta ?? {};
+    let stage = revealStageOf(s);
+    while (stage < REVEAL_STAGE_MAX) {
+      const next = stage + 1;
+      const gate = REVEAL_GATES[next];
+      const byMilestone = !!(gate && typeof gate.milestone === 'function' && gate.milestone(s));
+      const byTime = !!(gate && Number(s.t ?? 0) >= Number(gate.timeSec ?? Infinity));
+      if (!byMilestone && !byTime) break;
+      stage = next;
+      s.meta.revealStage = stage;
+      const why = byMilestone ? 'milestone reached' : `time ${fmt(Number(gate.timeSec ?? 0))}s`;
+      feedOnce(s, `UI unlock: Stage ${stage} (${REVEAL_STAGE_NAMES[stage]}). ${why}.`);
+    }
+    return stage;
+  }
+
   const defaultState = () => ({
     t: 0,
     paused: false,
@@ -226,7 +265,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
     research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
     sound: { enabled: false },
-    meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0 },
+    meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
     feed: []
   });
@@ -1945,6 +1984,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ensureLegacyState(state);
   ensureResearchState(state);
   ensureAudioState(state);
+  state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), revealStage: 0 };
+  state.meta.revealStage = Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(Number(state.meta.revealStage ?? 0) || 0)));
 
   // --- Offline progress (tiny idle-game slice)
   // On boot, we simulate a capped amount of time since the last save.
@@ -5912,6 +5953,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     state.t += dt;
 
     applyUnlocks();
+    tryAdvanceRevealStage(state);
     tickPressures(dt);
 
     // Trends sampling (charts): 1Hz, last ~2 minutes
@@ -6234,7 +6276,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // On load, simulate some time passage based on last real-world save timestamp.
   // Cap is intentionally small to prevent huge log spam or runaway spirals.
   function applyOfflineProgressOnce(){
-    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0 };
+    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0, revealStage: 0 };
     const lastTs = Number(state.meta.lastTs ?? 0) || 0;
     const nowTs = Date.now();
     if (!lastTs || nowTs <= lastTs) return;
@@ -8797,6 +8839,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     blocHealthEl.textContent = lines.join('\n');
   }
 
+  function applyRevealVisibility(){
+    const stage = revealStageOf(state);
+    const nodes = document.querySelectorAll('[data-reveal-min]');
+    for (const node of nodes) {
+      const min = Math.max(0, Math.min(REVEAL_STAGE_MAX, Number(node.getAttribute('data-reveal-min') ?? 0) || 0));
+      const show = stage >= min;
+      node.classList.toggle('reveal-hidden', !show);
+      if (!show) node.setAttribute('aria-hidden', 'true');
+      else node.removeAttribute('aria-hidden');
+    }
+  }
+
   function render(){
     const season = seasonAt(state.t);
     const targets = seasonTargets(state);
@@ -8807,6 +8861,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Curator summary: show what is currently steering the colony.
     if (steeringSummaryEl) steeringSummaryEl.textContent = getSteeringSummary(state);
     syncDevMode();
+    applyRevealVisibility();
     renderTrendsLegend();
 
     // Society feed
@@ -9168,6 +9223,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     const legacyPreview = computeLegacyShardGain(state);
     const devMode = !!state?.director?.curator?.devMode;
+    const revealStage = revealStageOf(state);
+    const statRevealMin = {
+      'Legacy Shards': 3, 'Legacy Preview': 3,
+      'Food': 0, 'Edible': 1, 'Wood': 0, 'Warmth': 0, 'Threat': 0,
+      'Science': 2, 'Tools': 2, 'Prod x': 3,
+      'Huts': 1, 'Palisade': 1, 'Granaries': 2, 'Workshops': 2, 'Libraries': 3,
+      'Industry x': 3, 'Research x': 3,
+      'Food Cap': 2, 'Spoilage': 2, 'Edible/Kitten': 1,
+      'Dissent': 2, 'Compliance': 2, 'Grievance': 3, 'Autonomy': 2, 'Focus-fit': 3, 'Culture': 4,
+      'Jerky': 3, 'Fresh/Kitten': 2, 'Eff Auto': 3, 'Discipline': 3, 'Work pace': 3, 'Commitment': 4,
+    };
     const stats = [
       ['Legacy Shards', fmt(state.legacy?.shards ?? 0)],
       ['Legacy Preview', `+${fmt(legacyPreview)} shards`],
@@ -9207,6 +9273,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       );
     }
 
+    const visibleStats = stats.filter(([key]) => revealStage >= Number(statRevealMin[key] ?? 0));
+
     const statLabelMeta = {
       'Food': { icon: '🍖', tone: 'food' },
       'Edible': { icon: '🥫', tone: 'food' },
@@ -9229,7 +9297,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       return { icon: String(meta.icon || ''), label: key };
     };
 
-    for (const [k,v] of stats) {
+    for (const [k,v] of visibleStats) {
       const d = document.createElement('div');
       d.className = 'stat';
       const labelMeta = statLabelMeta[k] ?? null;
@@ -11907,6 +11975,26 @@ function renderTrends(){
     });
   }
 
+  window.KKC_DEBUG = window.KKC_DEBUG ?? {};
+  window.KKC_DEBUG.getRevealStage = () => revealStageOf(state);
+  window.KKC_DEBUG.setRevealStage = (n) => {
+    state.meta = state.meta ?? {};
+    state.meta.revealStage = Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(Number(n) || 0)));
+    render();
+    save();
+    return state.meta.revealStage;
+  };
+  window.KKC_DEBUG.nextRevealStage = () => {
+    const cur = revealStageOf(state);
+    return window.KKC_DEBUG.setRevealStage(Math.min(REVEAL_STAGE_MAX, cur + 1));
+  };
+  window.KKC_DEBUG.getRevealInfo = () => ({
+    stage: revealStageOf(state),
+    name: REVEAL_STAGE_NAMES[revealStageOf(state)],
+    t: Number(state.t ?? 0),
+    gates: REVEAL_GATES.map((g, i) => i === 0 ? null : { stage: i, timeSec: g.timeSec }),
+  });
+
   // --- Loop
   // QoL: auto-pause when the tab is hidden. This prevents background CPU burn and
   // avoids players accidentally running the sim for a long time while away.
@@ -11982,7 +12070,7 @@ function renderTrends(){
       return;
     }
 
-    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0, offlineReturnDay: 0, offlineReturnStreak: 0 };
+    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0, offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 };
     const today = Math.floor(Date.now() / 86400000);
     const prevDay = Math.floor(Number(state.meta.offlineReturnDay ?? 0) || 0);
     let streak = Math.max(0, Number(state.meta.offlineReturnStreak ?? 0) || 0);

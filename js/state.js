@@ -116,6 +116,8 @@ export function migrateState(s, {
   if (!('lastTs' in s.meta)) s.meta.lastTs = 0;
   if (!('offlineReturnDay' in s.meta)) s.meta.offlineReturnDay = 0;
   if (!('offlineReturnStreak' in s.meta)) s.meta.offlineReturnStreak = 0;
+  // Progressive reveal migration: existing saves default to fully unlocked stage.
+  if (!('revealStage' in s.meta)) s.meta.revealStage = 4;
   // Skill system version: 1 = original 7 skills, 2 = living skill engine (micro-skills)
   if (!('skillVersion' in s.meta)) s.meta.skillVersion = 2;
   s.meta.version = String(s.meta.version ?? '');
@@ -123,6 +125,7 @@ export function migrateState(s, {
   s.meta.lastTs = Number(s.meta.lastTs ?? 0) || 0;
   s.meta.offlineReturnDay = Math.max(0, Math.floor(Number(s.meta.offlineReturnDay ?? 0) || 0));
   s.meta.offlineReturnStreak = Math.max(0, Math.floor(Number(s.meta.offlineReturnStreak ?? 0) || 0));
+  s.meta.revealStage = Math.max(0, Math.min(4, Math.floor(Number(s.meta.revealStage ?? 4) || 4)));
   // Migration safety: if older saves stored these separately
   if (!('winterPrep' in s.director)) s.director.winterPrep = false;
   if (!('saved' in s.director)) s.director.saved = null;
