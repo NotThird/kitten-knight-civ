@@ -224,7 +224,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
-    meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now() },
+    meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0 },
     log: [],
     feed: []
   });
@@ -1686,6 +1686,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Explainability: we log a compact summary of what happened.
   const OFFLINE_RATE = 0.50;
   const OFFLINE_CAP_SEC = 24 * 60 * 60;
+  const OFFLINE_KNEE_SEC = 4 * 60 * 60;
+  const OFFLINE_STREAK_MIN_AWAY_SEC = 2 * 60;
   const _lastTs = Number(state?.meta?.lastTs ?? 0) || 0;
   const _offlineSecRaw = _lastTs ? Math.max(0, (Date.now() - _lastTs) / 1000) : 0;
   state._offlinePending = Math.min(OFFLINE_CAP_SEC, _offlineSecRaw);
@@ -6808,16 +6810,20 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const sim = Number(summary?.simulated ?? 0) || 0;
     const capped = !!summary?.capped;
     const gains = summary?.gains ?? {};
+    const streak = Math.max(0, Number(summary?.streak ?? 0) || 0);
+    const streakBonusPct = Math.max(0, Number(summary?.streakBonusPct ?? 0) || 0);
+    const tier = String(summary?.tier ?? 'Welcome back');
     const items = [];
     for (const k of ['food','jerky','wood','science','tools']) {
       const v = Number(gains[k] ?? 0);
       if (v > 0.001) items.push(`${k}: +${fmt(v)}`);
     }
 
-    offlineSubEl.textContent = `Away ${fmt(away)}s. Simulated ${fmt(sim)}s at 50% rate${capped ? ' (capped at 24h)' : ''}.`;
-    offlineBodyEl.innerHTML = items.length
-      ? items.map((line) => `<div>${line}</div>`).join('')
-      : '<div>No meaningful gains this time.</div>';
+    offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at 50% base rate${capped ? ' (capped at 24h)' : ''}.`;
+    offlineBodyEl.innerHTML = [
+      `<div>Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}</div>`,
+      items.length ? items.map((line) => `<div>${line}</div>`).join('') : '<div>No meaningful gains this time.</div>'
+    ].join('<div style="height:8px"></div>');
 
     offlineModalEl.classList.remove('hidden');
   }
@@ -11550,12 +11556,29 @@ function renderTrends(){
     const away = Number(state?._offlinePending ?? 0) || 0;
     if (away < 3) { state._offlinePending = 0; return; }
 
-    const simSeconds = Math.min(24 * 60 * 60, away) * OFFLINE_RATE;
+    const effectiveAway = away <= OFFLINE_KNEE_SEC
+      ? away
+      : (OFFLINE_KNEE_SEC + Math.sqrt((away - OFFLINE_KNEE_SEC) * OFFLINE_KNEE_SEC));
+    const simSeconds = Math.min(24 * 60 * 60, effectiveAway) * OFFLINE_RATE;
     if (simSeconds < 1) {
       state._offlinePending = 0;
       state._offlineWasCapped = false;
       return;
     }
+
+    state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: 0, offlineReturnDay: 0, offlineReturnStreak: 0 };
+    const today = Math.floor(Date.now() / 86400000);
+    const prevDay = Math.floor(Number(state.meta.offlineReturnDay ?? 0) || 0);
+    let streak = Math.max(0, Number(state.meta.offlineReturnStreak ?? 0) || 0);
+    if (away >= OFFLINE_STREAK_MIN_AWAY_SEC) {
+      if (prevDay === today - 1) streak += 1;
+      else if (prevDay !== today) streak = 1;
+      state.meta.offlineReturnDay = today;
+      state.meta.offlineReturnStreak = streak;
+    }
+
+    const streakBonusPct = Math.min(25, Math.max(0, (streak - 1) * 5));
+    const streakBonusMul = 1 + (streakBonusPct / 100);
 
     const keys = ['food','jerky','wood','science','tools'];
     const liveState = state;
@@ -11586,18 +11609,20 @@ function renderTrends(){
 
     const gains = {};
     for (const k of keys) {
-      const add = perSec[k] * simSeconds;
+      const add = perSec[k] * simSeconds * streakBonusMul;
       gains[k] = add;
       state.res[k] = Math.max(0, Number(state.res?.[k] ?? 0) + add);
     }
 
     const capped = !!state._offlineWasCapped;
+    const tier = away >= (8 * 60 * 60) ? 'Legendary return' : away >= (2 * 60 * 60) ? 'Recharged return' : away >= (15 * 60) ? 'Rested return' : 'Quick return';
     log(
-      `Offline progress: away ${fmt(away)}s, simulated ${fmt(simSeconds)}s at 50% rate` +
+      `Offline progress: away ${fmt(away)}s, effective ${fmt(effectiveAway)}s, simulated ${fmt(simSeconds)}s at 50% base` +
+      (streakBonusPct > 0 ? ` (+${streakBonusPct}% streak bonus)` : '') +
       (capped ? ' (capped at 24h).' : '.')
     );
 
-    state._offlineSummary = { away, simulated: simSeconds, capped, gains };
+    state._offlineSummary = { away, simulated: simSeconds, capped, gains, tier, streak, streakBonusPct };
     state._offlinePending = 0;
     state._offlineWasCapped = false;
     state._suppressedLogCount = 0;

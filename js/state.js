@@ -110,15 +110,19 @@ export function migrateState(s, {
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 
   // Meta/version (used to show patch notes once per version; safe for old saves)
-  s.meta = s.meta ?? { version: '', seenVersion: '', lastTs: 0 };
+  s.meta = s.meta ?? { version: '', seenVersion: '', lastTs: 0, offlineReturnDay: 0, offlineReturnStreak: 0 };
   if (!('version' in s.meta)) s.meta.version = '';
   if (!('seenVersion' in s.meta)) s.meta.seenVersion = '';
   if (!('lastTs' in s.meta)) s.meta.lastTs = 0;
+  if (!('offlineReturnDay' in s.meta)) s.meta.offlineReturnDay = 0;
+  if (!('offlineReturnStreak' in s.meta)) s.meta.offlineReturnStreak = 0;
   // Skill system version: 1 = original 7 skills, 2 = living skill engine (micro-skills)
   if (!('skillVersion' in s.meta)) s.meta.skillVersion = 2;
   s.meta.version = String(s.meta.version ?? '');
   s.meta.seenVersion = String(s.meta.seenVersion ?? '');
   s.meta.lastTs = Number(s.meta.lastTs ?? 0) || 0;
+  s.meta.offlineReturnDay = Math.max(0, Math.floor(Number(s.meta.offlineReturnDay ?? 0) || 0));
+  s.meta.offlineReturnStreak = Math.max(0, Math.floor(Number(s.meta.offlineReturnStreak ?? 0) || 0));
   // Migration safety: if older saves stored these separately
   if (!('winterPrep' in s.director)) s.director.winterPrep = false;
   if (!('saved' in s.director)) s.director.saved = null;
