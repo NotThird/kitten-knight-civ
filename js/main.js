@@ -329,6 +329,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] }
   };
 
+  const statDeltaUiFx = {
+    last: Object.create(null),
+  };
+
+  function statPulseClass(key, value){
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    const prev = Number(statDeltaUiFx.last[key]);
+    statDeltaUiFx.last[key] = numeric;
+    if (!Number.isFinite(prev)) return '';
+    const delta = numeric - prev;
+    const abs = Math.abs(delta);
+    const thresholdByKey = {
+      Food: 0.4,
+      Edible: 0.4,
+      Threat: 0.25,
+      Dissent: 0.15,
+      Compliance: 0.01,
+      'Legacy Preview': 0.5,
+    };
+    const threshold = Number(thresholdByKey[key] ?? 0.2);
+    if (abs < threshold) return '';
+
+    if (key === 'Threat' || key === 'Dissent') return delta > 0 ? 'pulse-warn' : 'pulse-good';
+    if (key === 'Compliance') return delta > 0 ? 'pulse-good' : 'pulse-warn';
+    return delta > 0 ? 'pulse-good' : 'pulse-warn';
+  }
+
   function currentResourceSnapshot(s){
     return {
       Food: Number(s?.res?.food ?? 0),
@@ -8888,12 +8916,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     const legacyPreview = computeLegacyShardGain(state);
+    const devMode = !!state?.director?.curator?.devMode;
     const stats = [
       ['Legacy Shards', fmt(state.legacy?.shards ?? 0)],
       ['Legacy Preview', `+${fmt(legacyPreview)} shards`],
       ['Food', fmt(state.res.food)],
       ['Edible', fmt(edibleFood(state))],
-      ['Jerky', fmt(state.res.jerky ?? 0)],
       ['Wood', fmt(state.res.wood)],
       ['Warmth', fmt(state.res.warmth)],
       ['Threat', fmt(state.res.threat)],
@@ -8910,18 +8938,23 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ['Food Cap', fmt(foodStorageCap(state))],
       ['Spoilage', `x${spoilMult.toFixed(2)}`],
       ['Edible/Kitten', fmt(foodPerKitten)],
-      ['Fresh/Kitten', fmt(freshPerKitten)],
       ['Dissent', `${Math.round(diss*100)}% (${dissBand})`],
       ['Compliance', `x${compMul.toFixed(2)}`],
       ['Grievance', `${Math.round(avgGriev*100)}%`],
       ['Autonomy', `${Math.round(autonomy01(state)*100)}%`],
-      ['Eff Auto', `${Math.round(effectiveAutonomy01(state)*100)}%`],
-      ['Discipline', `${Math.round(discipline01(state)*100)}%`],
-      ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
-      ['Commitment', `x${coordinationMul(state).toFixed(2)}`],
       ['Focus-fit', `${Math.round(avgAlign*100)}%`],
       ['Culture', 'Norms'],
     ];
+    if (devMode) {
+      stats.push(
+        ['Jerky', fmt(state.res.jerky ?? 0)],
+        ['Fresh/Kitten', fmt(freshPerKitten)],
+        ['Eff Auto', `${Math.round(effectiveAutonomy01(state)*100)}%`],
+        ['Discipline', `${Math.round(discipline01(state)*100)}%`],
+        ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
+        ['Commitment', `x${coordinationMul(state).toFixed(2)}`],
+      );
+    }
 
     for (const [k,v] of stats) {
       const d = document.createElement('div');
@@ -8996,10 +9029,20 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
       const isResource = (k === 'Food' || k === 'Wood' || k === 'Science' || k === 'Tools' || k === 'Jerky');
       const valueClass = isResource ? resourceLevelClass(state, k, state?.res?.[k.toLowerCase()] ?? 0) : '';
+      const pulseMetric = (
+        k === 'Food' ? Number(state.res.food ?? 0) :
+        k === 'Edible' ? Number(edibleFood(state) ?? 0) :
+        k === 'Threat' ? Number(state.res.threat ?? 0) :
+        k === 'Dissent' ? Number(diss ?? 0) :
+        k === 'Compliance' ? Number(compMul ?? 0) :
+        k === 'Legacy Preview' ? Number(legacyPreview ?? 0) :
+        NaN
+      );
+      const pulseClass = statPulseClass(k, pulseMetric);
       const flyups = (resourceUiFx.popups?.[k] ?? []);
       const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
 
-      d.innerHTML = `<div class="k">${k}</div><div class="v ${valueClass}">${v}${flyupHtml}</div>${subHtml}`;
+      d.innerHTML = `<div class="k">${k}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 

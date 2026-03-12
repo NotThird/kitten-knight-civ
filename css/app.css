@@ -10,9 +10,12 @@
     header button.danger { border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.10); }
 
     main { padding:16px; display:grid; grid-template-columns: 420px 1fr 420px; gap:12px; align-items:start; }
-    .card { background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.10); border-radius:14px; overflow:hidden; }
-    .card h2 { margin:0; padding:12px 12px 8px; font-size:13px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted); }
+    .card { background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.10); border-radius:14px; overflow:hidden; --section-accent: rgba(125,211,252,.34); --section-accent-soft: rgba(125,211,252,.10); }
+    .card h2 { margin:0; padding:12px 12px 8px; font-size:13px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted); border-left:3px solid var(--section-accent); background:linear-gradient(90deg, var(--section-accent-soft), rgba(0,0,0,0)); }
     .card .body { padding:12px; }
+    #directorSection { --section-accent: rgba(125,211,252,.36); --section-accent-soft: rgba(125,211,252,.11); border-color: rgba(125,211,252,.20); }
+    #colonySection { --section-accent: rgba(196,181,253,.36); --section-accent-soft: rgba(167,139,250,.10); border-color: rgba(167,139,250,.20); }
+    #safetySection { --section-accent: rgba(251,191,36,.34); --section-accent-soft: rgba(251,191,36,.10); border-color: rgba(251,191,36,.18); }
 
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
@@ -21,6 +24,19 @@
     .stat .v.resource-ok { color: var(--good); }
     .stat .v.resource-low { color: var(--warn); }
     .stat .v.resource-critical { color: var(--bad); }
+    .stat .v.pulse-good { animation: statPulseGood .55s ease-out; text-shadow: 0 0 10px rgba(52,211,153,.26); }
+    .stat .v.pulse-warn { animation: statPulseWarn .55s ease-out; text-shadow: 0 0 10px rgba(251,113,133,.26); }
+
+    @keyframes statPulseGood {
+      0% { filter: brightness(1); transform: scale(1); }
+      40% { filter: brightness(1.24); transform: scale(1.045); }
+      100% { filter: brightness(1); transform: scale(1); }
+    }
+    @keyframes statPulseWarn {
+      0% { filter: brightness(1); transform: scale(1); }
+      40% { filter: brightness(1.2); transform: scale(1.045); }
+      100% { filter: brightness(1); transform: scale(1); }
+    }
 
     .resource-flyup {
       position: absolute;
@@ -148,7 +164,9 @@
       header button,
       .feedback-sentiment,
       .resource-flyup,
-      .milestone-burst {
+      .milestone-burst,
+      .stat .v.pulse-good,
+      .stat .v.pulse-warn {
         transition: none !important;
         animation: none !important;
       }
