@@ -194,6 +194,20 @@ export function migrateState(s, {
   s.legacy.upgrades.mil_fortified_timberline = Math.max(0, Math.min(1, Math.floor(Number(s.legacy.upgrades.mil_fortified_timberline ?? 0) || 0)));
   s.legacy.upgrades.mil_war_ledger = Math.max(0, Math.min(4, Math.floor(Number(s.legacy.upgrades.mil_war_ledger ?? 0) || 0)));
 
+  // Eternity cycle migration (second prestige layer)
+  s.eternity = (s.eternity && typeof s.eternity === 'object') ? s.eternity : { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' };
+  s.eternity.sigils = Math.max(0, Math.floor(Number(s.eternity.sigils ?? 0) || 0));
+  s.eternity.totalSigils = Math.max(0, Math.floor(Number(s.eternity.totalSigils ?? s.eternity.sigils) || 0));
+  s.eternity.resets = Math.max(0, Math.floor(Number(s.eternity.resets ?? 0) || 0));
+  s.eternity.upgrades = (s.eternity.upgrades && typeof s.eternity.upgrades === 'object') ? s.eternity.upgrades : {};
+  s.eternity.mandate = ['harmony','vigil','industry'].includes(String(s.eternity.mandate ?? 'harmony')) ? String(s.eternity.mandate) : 'harmony';
+  s.eternity.preserve = ['balanced','granary','archive'].includes(String(s.eternity.preserve ?? 'balanced')) ? String(s.eternity.preserve) : 'balanced';
+  s.eternity.upgrades.et_sigil_lens = Math.max(0, Math.min(1, Math.floor(Number(s.eternity.upgrades.et_sigil_lens ?? 0) || 0)));
+  s.eternity.upgrades.et_ancestral_forge = Math.max(0, Math.min(1, Math.floor(Number(s.eternity.upgrades.et_ancestral_forge ?? 0) || 0)));
+  s.eternity.upgrades.et_tempered_granaries = Math.max(0, Math.min(1, Math.floor(Number(s.eternity.upgrades.et_tempered_granaries ?? 0) || 0)));
+  s.eternity.upgrades.et_civil_codex = Math.max(0, Math.min(1, Math.floor(Number(s.eternity.upgrades.et_civil_codex ?? 0) || 0)));
+  s.eternity.upgrades.et_epoch_engine = Math.max(0, Math.min(3, Math.floor(Number(s.eternity.upgrades.et_epoch_engine ?? 0) || 0)));
+
   // Research tree migration (TASK-065)
   s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked:{}, activeBranch:'economy', doctrine:null };
   s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};

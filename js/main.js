@@ -263,6 +263,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Lightweight timed colony-wide effects (kept simple + transparent)
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
+    eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
     research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
     sound: { enabled: false },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
@@ -281,6 +282,26 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     { id:'mil_veteran_cadre', name:'Military II: Veteran Cadre', cost: 7, maxRank: 1, desc:'+30% Combat XP gain from Guard duty.' },
     { id:'mil_fortified_timberline', name:'Military III: Fortified Timberline', cost: 10, maxRank: 1, desc:'+20% palisade defense contribution during raids.' },
     { id:'mil_war_ledger', name:'Military IV: War Ledger', cost: 5, maxRank: 4, desc:'+1 Legacy Shard on reset per rank (max +4).' },
+  ];
+
+  const ETERNITY_UPGRADES = [
+    { id:'et_sigil_lens', name:'Sigil Lens', cost: 3, maxRank: 1, desc:'+12% Legacy shard gain.' },
+    { id:'et_ancestral_forge', name:'Ancestral Forge', cost: 5, maxRank: 1, desc:'+15% tool crafting output.' },
+    { id:'et_tempered_granaries', name:'Tempered Granaries', cost: 6, maxRank: 1, desc:'+16% food storage cap.' },
+    { id:'et_civil_codex', name:'Civil Codex', cost: 7, maxRank: 1, desc:'Eligibility gate easier (+1 legacy reset credit).' },
+    { id:'et_epoch_engine', name:'Epoch Engine', cost: 4, maxRank: 3, desc:'+8% Sigil gain per rank from reset formula.' },
+  ];
+
+  const ETERNITY_MANDATES = [
+    { id:'harmony', name:'Harmony Charter', desc:'+10% research and +6% food output, -4% guard output.' },
+    { id:'vigil', name:'Vigil Mandate', desc:'+14% guard output, -5% research output.' },
+    { id:'industry', name:'Industry Pact', desc:'+12% tools output, +5% research output.' },
+  ];
+
+  const PRESERVATION_PACKAGES = [
+    { id:'balanced', name:'Balanced Cache', keep:{ food:0.10, wood:0.10, science:0.10, tools:0.10 }, desc:'Keep 10% of core resources on Eternity reset.' },
+    { id:'granary', name:'Granary Covenant', keep:{ food:0.22, wood:0.06, science:0.04, tools:0.06 }, desc:'Food-heavy carryover for quick regrowth.' },
+    { id:'archive', name:'Archive Covenant', keep:{ food:0.04, wood:0.06, science:0.22, tools:0.08 }, desc:'Science-heavy carryover for fast unlocks.' },
   ];
 
   const RESEARCH_TECHS = [
@@ -397,12 +418,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function legacyResearchMul(s){
     const base = legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
-    return base * researchScienceMul(s);
+    return base * researchScienceMul(s) * eternityMandateMul(s, 'research');
   }
 
   function legacyGuardOutputMul(s){
     const base = legacyHas(s, 'mil_drill_doctrine') ? 1.18 : 1.00;
-    return base * researchGuardMul(s);
+    return base * researchGuardMul(s) * eternityMandateMul(s, 'guard');
   }
 
   function legacyCombatXPMul(s){
@@ -414,11 +435,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return base * researchPalisadeMul(s);
   }
 
-  function legacyWarLedgerBonus(s){
-    return Math.min(4, legacyUpgradeRank(s, 'mil_war_ledger'));
-  }
 
-  function computeLegacyShardGain(s){
     const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
     const sci = Math.max(0, Number(s?.res?.science ?? 0));
     const builds = Math.max(0,
@@ -440,6 +457,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     const prior = structuredClone(state.legacy);
     const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
+    const priorEternity = structuredClone(state.eternity ?? { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' });
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -451,6 +469,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.legacy = prior;
+    fresh.eternity = priorEternity;
     fresh.research = priorResearch;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
@@ -468,6 +487,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     state = fresh;
     ensureMilestonesState(state);
     ensureLegacyState(state);
+    ensureEternityState(state);
     ensureResearchState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
@@ -502,6 +522,154 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const nextRank = rank + 1;
     const rankTag = milUp.maxRank > 1 ? ` (Rank ${nextRank}/${milUp.maxRank})` : '';
     log(`Legacy upgrade unlocked: ${milUp.name}${rankTag}.`);
+    playSfx('purchase');
+    save();
+    render();
+    return { ok:true };
+  }
+
+  function legacyWarLedgerBonus(s){
+    return Math.min(4, legacyUpgradeRank(s, 'mil_war_ledger'));
+  }
+
+  function ensureEternityState(s){
+    s.eternity = (s.eternity && typeof s.eternity === 'object') ? s.eternity : { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' };
+    s.eternity.sigils = Math.max(0, Math.floor(Number(s.eternity.sigils ?? 0) || 0));
+    s.eternity.totalSigils = Math.max(0, Math.floor(Number(s.eternity.totalSigils ?? s.eternity.sigils) || 0));
+    s.eternity.resets = Math.max(0, Math.floor(Number(s.eternity.resets ?? 0) || 0));
+    s.eternity.upgrades = (s.eternity.upgrades && typeof s.eternity.upgrades === 'object') ? s.eternity.upgrades : {};
+    s.eternity.mandate = ETERNITY_MANDATES.some(m => m.id === s.eternity.mandate) ? s.eternity.mandate : 'harmony';
+    s.eternity.preserve = PRESERVATION_PACKAGES.some(p => p.id === s.eternity.preserve) ? s.eternity.preserve : 'balanced';
+    for (const up of ETERNITY_UPGRADES) {
+      const prev = Math.floor(Number(s.eternity.upgrades[up.id] ?? 0) || 0);
+      s.eternity.upgrades[up.id] = Math.max(0, Math.min(up.maxRank, prev));
+    }
+  }
+
+  function eternityUpgradeRank(s, id){
+    ensureEternityState(s);
+    const cfg = ETERNITY_UPGRADES.find(u => u.id === id);
+    if (!cfg) return 0;
+    return Math.max(0, Math.min(cfg.maxRank, Math.floor(Number(s.eternity.upgrades[id] ?? 0) || 0)));
+  }
+
+  function eternityHas(s, id){
+    return eternityUpgradeRank(s, id) > 0;
+  }
+
+  function eternityMandateMul(s, key){
+    ensureEternityState(s);
+    const m = String(s.eternity.mandate ?? 'harmony');
+    if (key === 'research') {
+      if (m === 'harmony') return 1.10;
+      if (m === 'vigil') return 0.95;
+      if (m === 'industry') return 1.05;
+    }
+    if (key === 'guard') {
+      if (m === 'harmony') return 0.96;
+      if (m === 'vigil') return 1.14;
+      if (m === 'industry') return 1.00;
+    }
+    if (key === 'tools') {
+      return (m === 'industry') ? 1.12 : 1.00;
+    }
+    return 1;
+  }
+
+  function eternityGateStatus(s){
+    ensureLegacyState(s);
+    ensureResearchState(s);
+    ensureEternityState(s);
+    const legacyResetsNeed = 4;
+    const gates = {
+      legacyResets: Number(s.legacy?.resets ?? 0) >= (legacyResetsNeed - (eternityHas(s, 'et_civil_codex') ? 1 : 0)),
+      shardMastery: Number(s.legacy?.totalShards ?? 0) >= 60,
+      doctrine: !!(s.research?.doctrine),
+      population: Number(s?.kittens?.length ?? 0) >= 24,
+    };
+    const count = Object.values(gates).filter(Boolean).length;
+    return { gates, count, ok: count >= 4 };
+  }
+
+  function computeEternitySigilGain(s){
+    const gate = eternityGateStatus(s);
+    if (!gate.ok) return 0;
+    const resets = Math.max(0, Number(s.legacy?.resets ?? 0));
+    const shards = Math.max(0, Number(s.legacy?.totalShards ?? 0));
+    const techs = Object.values(s.research?.unlocked ?? {}).filter(Boolean).length;
+    const epochRank = eternityUpgradeRank(s, 'et_epoch_engine');
+    const base = Math.floor(Math.sqrt(shards) / 3 + resets * 0.6 + techs * 0.35);
+    const mul = 1 + (0.08 * epochRank);
+    return Math.max(0, Math.floor(base * mul));
+  }
+
+  function computeLegacyShardGain(s){
+    const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
+    const sci = Math.max(0, Number(s?.res?.science ?? 0));
+    const builds = Math.max(0,
+      Number(s?.res?.huts ?? 0) +
+      Number(s?.res?.palisade ?? 0) * 1.5 +
+      Number(s?.res?.granaries ?? 0) * 2 +
+      Number(s?.res?.workshops ?? 0) * 3 +
+      Number(s?.res?.libraries ?? 0) * 4
+    );
+    const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
+    const etMul = eternityHas(s, 'et_sigil_lens') ? 1.12 : 1.00;
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s) * etMul);
+    return Math.max(0, gained + legacyWarLedgerBonus(s));
+  }
+
+  function performEternityReset(){
+    ensureLegacyState(state);
+    ensureResearchState(state);
+    ensureEternityState(state);
+    const gate = eternityGateStatus(state);
+    const gain = computeEternitySigilGain(state);
+    if (!gate.ok || gain <= 0) return { ok:false, reason:'locked' };
+
+    const priorEt = structuredClone(state.eternity);
+    const pkg = PRESERVATION_PACKAGES.find(p => p.id === priorEt.preserve) ?? PRESERVATION_PACKAGES[0];
+    const keep = {
+      food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * pkg.keep.food),
+      wood: Math.floor(Math.max(0, Number(state?.res?.wood ?? 0)) * pkg.keep.wood),
+      science: Math.floor(Math.max(0, Number(state?.res?.science ?? 0)) * pkg.keep.science),
+      tools: Math.floor(Math.max(0, Number(state?.res?.tools ?? 0)) * pkg.keep.tools),
+    };
+
+    const fresh = defaultState();
+    fresh.sound = structuredClone(state.sound ?? { enabled:false });
+    fresh.eternity = priorEt;
+    fresh.eternity.sigils += gain;
+    fresh.eternity.totalSigils += gain;
+    fresh.eternity.resets += 1;
+    fresh.res.food += keep.food;
+    fresh.res.wood += keep.wood;
+    fresh.res.science += keep.science;
+    fresh.res.tools += keep.tools;
+
+    state = fresh;
+    ensureMilestonesState(state);
+    ensureLegacyState(state);
+    ensureResearchState(state);
+    ensureEternityState(state);
+    ensureAudioState(state);
+    playSfx('legacy_reset');
+    save();
+    render();
+    log(`Eternity reset complete: +${gain} sigils (${state.eternity.sigils} banked).`);
+    return { ok:true, gain };
+  }
+
+  function buyEternityUpgrade(id){
+    ensureEternityState(state);
+    const up = ETERNITY_UPGRADES.find(u => u.id === id);
+    if (!up) return { ok:false, reason:'missing' };
+    const rank = eternityUpgradeRank(state, id);
+    if (rank >= up.maxRank) return { ok:false, reason:'owned' };
+    if (state.eternity.sigils < up.cost) return { ok:false, reason:'cost' };
+    state.eternity.sigils -= up.cost;
+    state.eternity.upgrades[id] = rank + 1;
+    log(`Eternity upgrade unlocked: ${up.name}${up.maxRank > 1 ? ` (Rank ${rank+1}/${up.maxRank})` : ''}.`);
     playSfx('purchase');
     save();
     render();
@@ -1982,6 +2150,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
   ensureLegacyState(state);
+  ensureEternityState(state);
   ensureResearchState(state);
   ensureAudioState(state);
   state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), revealStage: 0 };
@@ -2682,7 +2851,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
-        const made = craft * 0.55 * workshopBonus(s) * mom; // workshops improve throughput
+        const made = craft * 0.55 * workshopBonus(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
@@ -4765,7 +4934,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const huts = Math.max(0, Number(s.res?.huts ?? 0));
     const gran = Math.max(0, Number(s.res?.granaries ?? 0));
     const base = 260;
-    return base + huts * 90 + gran * 260;
+    const raw = base + huts * 90 + gran * 260;
+    return raw * (eternityHas(s, 'et_tempered_granaries') ? 1.16 : 1.00);
   }
 
   // --- Civ pressures
@@ -8886,6 +9056,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       prestigeBtn.disabled = prev <= 0;
     }
 
+    const eternityBtn = el('btnEternity');
+    if (eternityBtn) {
+      ensureEternityState(state);
+      const gate = eternityGateStatus(state);
+      const prev = computeEternitySigilGain(state);
+      eternityBtn.textContent = `Eternity Reset (+${fmt(prev)})`;
+      eternityBtn.title = gate.ok
+        ? `Reset legacy progression and gain ${fmt(prev)} Ancestral Sigils`
+        : `Eternity locked (${gate.count}/4 gates met)`;
+      eternityBtn.disabled = !gate.ok || prev <= 0;
+    }
+
     const soundBtn = el('btnSound');
     if (soundBtn) {
       ensureAudioState(state);
@@ -9508,6 +9690,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         milSummary +
         tabsHtml +
         `<div style="margin-top:8px">${upgradeRows}</div>`;
+    }
+
+    const eternityPanelEl = el('eternityPanel');
+    if (eternityPanelEl) {
+      ensureEternityState(state);
+      const gate = eternityGateStatus(state);
+      const gain = computeEternitySigilGain(state);
+      const rows = ETERNITY_UPGRADES.map((up) => {
+        const rank = eternityUpgradeRank(state, up.id);
+        const owned = rank >= up.maxRank;
+        const afford = state.eternity.sigils >= up.cost;
+        const rankLine = `<span class="small" style="opacity:.8">(Rank ${rank}/${up.maxRank})</span>`;
+        const btn = owned
+          ? '<span class="tag good">Owned</span>'
+          : `<button class="btn" data-eternity-buy="${up.id}" ${afford ? '' : 'disabled'}>Buy (${up.cost})</button>`;
+        return `<div style="margin-bottom:8px"><div><b>${escapeHtml(up.name)}</b> ${rankLine} - ${escapeHtml(up.desc)}</div><div class="small" style="margin-top:4px">${btn}</div></div>`;
+      }).join('');
+
+      const mandateTabs = ETERNITY_MANDATES.map((m) => `<button class="btn ${state.eternity.mandate === m.id ? 'active' : ''}" data-eternity-mandate="${m.id}">${escapeHtml(m.name)}</button>`).join(' ');
+      const preserveTabs = PRESERVATION_PACKAGES.map((p) => `<button class="btn ${state.eternity.preserve === p.id ? 'active' : ''}" data-eternity-preserve="${p.id}">${escapeHtml(p.name)}</button>`).join(' ');
+      const gateLine = `Gates: legacy resets ${gate.gates.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates.doctrine ? 'yes' : 'no'} | population ${gate.gates.population ? 'yes' : 'no'}`;
+
+      eternityPanelEl.innerHTML =
+        `<div class="small">Sigils bank: <b>${fmt(state.eternity.sigils)}</b> | total earned: ${fmt(state.eternity.totalSigils)} | resets: ${fmt(state.eternity.resets)}</div>` +
+        `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(gain)}</b> sigils. ${escapeHtml(gateLine)}</div>` +
+        `<div class="small" style="margin-top:6px">Mandates (tab rail):</div><div class="row" style="gap:6px; margin-top:4px">${mandateTabs}</div>` +
+        `<div class="small" style="margin-top:6px">Preservation package:</div><div class="row" style="gap:6px; margin-top:4px">${preserveTabs}</div>` +
+        `<div style="margin-top:8px">${rows}</div>`;
     }
 
     const researchPanelEl = el('researchPanel');
@@ -11703,6 +11913,42 @@ function renderTrends(){
     }
   });
 
+  const eternityPanel = document.getElementById('eternityPanel');
+  if (eternityPanel) eternityPanel.addEventListener('click', (e) => {
+    const mandateBtn = e.target.closest('button[data-eternity-mandate]');
+    if (mandateBtn) {
+      ensureEternityState(state);
+      const next = String(mandateBtn.dataset.eternityMandate || 'harmony');
+      if (ETERNITY_MANDATES.some(m => m.id === next)) {
+        state.eternity.mandate = next;
+        save();
+        render();
+      }
+      return;
+    }
+
+    const preserveBtn = e.target.closest('button[data-eternity-preserve]');
+    if (preserveBtn) {
+      ensureEternityState(state);
+      const next = String(preserveBtn.dataset.eternityPreserve || 'balanced');
+      if (PRESERVATION_PACKAGES.some(p => p.id === next)) {
+        state.eternity.preserve = next;
+        save();
+        render();
+      }
+      return;
+    }
+
+    const buyBtn = e.target.closest('button[data-eternity-buy]');
+    if (!buyBtn) return;
+    const id = String(buyBtn.dataset.eternityBuy || '');
+    const res = buyEternityUpgrade(id);
+    if (!res.ok && res.reason === 'cost') {
+      playSfx('error');
+      log('Not enough Sigils for that Eternity upgrade.');
+    }
+  });
+
   const researchPanel = document.getElementById('researchPanel');
   if (researchPanel) researchPanel.addEventListener('click', (e) => {
     const tabBtn = e.target.closest('button[data-research-tab]');
@@ -11732,6 +11978,20 @@ function renderTrends(){
     const ok = confirm(`Legacy Reset now?\n\nYou will gain +${fmt(gain)} Legacy Shards.\nYour colony resources/buildings/population reset.\nLegacy upgrades and shard balance persist.`);
     if (!ok) return;
     performLegacyReset();
+  });
+
+  const eternityBtn = document.getElementById('btnEternity');
+  if (eternityBtn) eternityBtn.addEventListener('click', () => {
+    const gate = eternityGateStatus(state);
+    const gain = computeEternitySigilGain(state);
+    if (!gate.ok || gain <= 0) {
+      playSfx('error');
+      log(`Eternity Reset locked (${gate.count}/4 gates met).`);
+      return;
+    }
+    const ok = confirm(`Eternity Reset now?\n\nYou will gain +${fmt(gain)} Ancestral Sigils.\nLegacy shards/upgrades/research reset.\nEternity upgrades, mandate, and sigils persist.`);
+    if (!ok) return;
+    performEternityReset();
   });
 
   policyEl.addEventListener('click', (e) => {
