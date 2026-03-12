@@ -193,6 +193,33 @@
     .inspectPanel { display:none; }
     .inspectPanel.active { display:block; }
 
+    .trendPanels { width:100%; }
+    .trendPanel { display:none; }
+    .trendPanel.active { display:block; }
+    .trendTabRail {
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:8px;
+    }
+    .trendTab {
+      min-height:44px;
+      padding:10px 8px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .trendTab:hover { color:var(--text); background:rgba(255,255,255,.08); }
+    .trendTab.active {
+      color:var(--accent);
+      border-color:rgba(125,211,252,.40);
+      background:rgba(125,211,252,.12);
+    }
+
     /* Skill list in inspect modal */
     .skillListItem { display:flex; align-items:center; gap:8px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:11px; }
     .skillListItem .skillName { min-width:110px; color:var(--text); }

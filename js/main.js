@@ -205,7 +205,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     roleQuota: { Forager:0, Farmer:0, Woodcutter:0, Firekeeper:0, Guard:0, Builder:0, Scholar:0, Toolsmith:0 },
     rules: defaultRules(),
     // Director helpers (not required for core sim; safe to ignore in old saves)
-    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00, curator: { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true } },
+    director: { winterPrep:false, saved:null, crisis:false, crisisSaved:null, curfew:false, autoWinterPrep:false, autoFoodCrisis:false, autoReserves:false, autoPolicy:false, autoPolicyNextAt:0, autoPolicyWhy:'', autoBuildPush:false, autoMode:false, autoModeNextChangeAt:0, autoModeWhy:'', autoDoctrine:false, autoDoctrineNextChangeAt:0, autoDoctrineWhy:'', autoRations:false, autoRationsNextChangeAt:0, autoRationsWhy:'', autoRecruit:false, autoRecruitWhy:'', autoCrisis:false, autoCrisisTriggered:false, autoCrisisNextChangeAt:0, autoCrisisWhy:'', autoDrills:false, autoDrillsNextAt:0, autoDrillsWhy:'', autoCouncil:false, autoCouncilNextAt:0, autoCouncilWhy:'', autoDangerPause:false, autoDangerPauseNextAt:0, autoDangerPauseWhy:'', confirmFactions:true, recruitYear:-1, projectFocus:'Auto', pinnedProject:null, autonomy: 0.60, discipline: 0.40, workPace: 1.00, doctrine:'Balanced', prioFood: 1.00, prioSafety: 1.00, prioProgress: 1.00, prioSocial: 1.00, graphTab:'society', curator: { goal:'Thrive', ethos:'Balanced', intervention: 30, enabled:true } },
     // Social layer (emergence): dissent reduces plan compliance; discipline restores it.
     // Also includes slow-moving, persistent norms (society "memory") so macro events leave cultural scars.
     social: {
@@ -5928,6 +5928,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const feedEl = el('feed');
   const tankEl = el('tank');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
+  const trendTabRailEl = el('trendTabRail');
+  const trendTabButtons = Array.from(document.querySelectorAll('[data-trend-tab]'));
+  const trendPanels = Array.from(document.querySelectorAll('[data-trend-panel]'));
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
 
@@ -5946,6 +5949,40 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!('appliedOnce' in c)) c.appliedOnce = false;
     if (!('revealAdvanced' in c)) c.revealAdvanced = false;
     if (!('advancedRevealNoted' in c)) c.advancedRevealNoted = false;
+  }
+
+  function ensureGraphDashboard(s){
+    s.director = s.director ?? {};
+    const tab = String(s.director.graphTab ?? 'society').toLowerCase();
+    s.director.graphTab = (tab === 'population' || tab === 'society' || tab === 'culture') ? tab : 'society';
+  }
+
+  function setGraphDashboardTab(tab){
+    ensureGraphDashboard(state);
+    const v = String(tab ?? '').toLowerCase();
+    if (v !== 'population' && v !== 'society' && v !== 'culture') return;
+    if (state.director.graphTab === v) return;
+    state.director.graphTab = v;
+    save();
+    render();
+  }
+
+  function syncGraphDashboardUI(){
+    ensureGraphDashboard(state);
+    const active = String(state.director.graphTab ?? 'society');
+
+    for (const btn of trendTabButtons){
+      const tab = String(btn?.dataset?.trendTab ?? '').toLowerCase();
+      const on = tab === active;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      btn.setAttribute('tabindex', on ? '0' : '-1');
+    }
+
+    for (const panel of trendPanels){
+      const tab = String(panel?.dataset?.trendPanel ?? '').toLowerCase();
+      panel.classList.toggle('active', tab === active);
+    }
   }
 
   function applyCuratorEthos(s){
@@ -6038,6 +6075,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   // Ensure curator defaults exist; if this save hasn't seen curator mode yet, apply once.
   ensureCurator(state);
+  ensureGraphDashboard(state);
   if (state.director?.curator?.enabled && !state.director.curator.appliedOnce) {
     applyCuratorGoal(state);
     state.director.curator.appliedOnce = true;
@@ -6094,6 +6132,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     render();
   });
   syncDevMode();
+
+  if (trendTabRailEl) {
+    trendTabRailEl.addEventListener('click', (ev) => {
+      const btn = ev.target?.closest?.('[data-trend-tab]');
+      if (!btn) return;
+      setGraphDashboardTab(btn.dataset?.trendTab);
+    });
+  }
 
   // Inspector modals are initialized later once their DOM nodes exist.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
@@ -9487,9 +9533,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Canvas HUDs
     renderTank();
     renderTrends();
-    renderPopTrends();
-    renderSocTrends();
-    renderCulTrends();
+    syncGraphDashboardUI();
+    if (state.director.graphTab === 'population') renderPopTrends();
+    else if (state.director.graphTab === 'culture') renderCulTrends();
+    else renderSocTrends();
 
     // Keep inspectors in sync with latest snapshots.
     renderInspect();

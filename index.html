@@ -65,22 +65,33 @@
       <canvas id="trends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
       <div class="small" id="mlHint" style="margin-top:6px; opacity:.85"></div>
       <div style="height:12px"></div>
-      <div class="small">Population trends (last ~2 minutes)</div>
-      <div class="small" id="popLegend" style="margin:6px 0; opacity:.90"></div>
-      <canvas id="popTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
-      <div class="small" id="popHint" style="margin-top:6px; opacity:.85"></div>
+      <div class="trendPanels" id="trendPanels">
+        <section class="trendPanel" id="trendPanelPopulation" data-trend-panel="population">
+          <div class="small">Population trends (last ~2 minutes)</div>
+          <div class="small" id="popLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="popTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="popHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
 
-      <div style="height:12px"></div>
-      <div class="small">Society trends (last ~2 minutes)</div>
-      <div class="small" id="socLegend" style="margin:6px 0; opacity:.90"></div>
-      <canvas id="socTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
-      <div class="small" id="socHint" style="margin-top:6px; opacity:.85"></div>
+        <section class="trendPanel" id="trendPanelSociety" data-trend-panel="society">
+          <div class="small">Society trends (last ~2 minutes)</div>
+          <div class="small" id="socLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="socTrends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="socHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
 
-      <div style="height:12px"></div>
-      <div class="small">Culture + ML trends (last ~2 minutes)</div>
-      <div class="small" id="culLegend" style="margin:6px 0; opacity:.90"></div>
-      <canvas id="culTrends" width="380" height="320" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
-      <div class="small" id="culHint" style="margin-top:6px; opacity:.85"></div>
+        <section class="trendPanel" id="trendPanelCulture" data-trend-panel="culture">
+          <div class="small">Culture + ML trends (last ~2 minutes)</div>
+          <div class="small" id="culLegend" style="margin:6px 0; opacity:.90"></div>
+          <canvas id="culTrends" width="380" height="320" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+          <div class="small" id="culHint" style="margin-top:6px; opacity:.85"></div>
+        </section>
+      </div>
+      <div class="trendTabRail" id="trendTabRail" role="tablist" aria-label="Trend dashboards">
+        <button class="trendTab active" id="trendTabPopulation" data-trend-tab="population" role="tab" aria-selected="true">Population</button>
+        <button class="trendTab" id="trendTabSociety" data-trend-tab="society" role="tab" aria-selected="false">Society</button>
+        <button class="trendTab" id="trendTabCulture" data-trend-tab="culture" role="tab" aria-selected="false">Culture + ML</button>
+      </div>
 
       <div style="height:10px"></div>
       <div class="small">Society feed</div>
