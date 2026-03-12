@@ -228,6 +228,65 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     feed: []
   });
 
+  // UI-only resource FX (non-persistent): gain fly-ups + scarcity colors.
+  // Kept outside save data to preserve replay/save determinism.
+  const resourceUiFx = {
+    last: null,
+    popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] }
+  };
+
+  function currentResourceSnapshot(s){
+    return {
+      Food: Number(s?.res?.food ?? 0),
+      Wood: Number(s?.res?.wood ?? 0),
+      Science: Number(s?.res?.science ?? 0),
+      Tools: Number(s?.res?.tools ?? 0),
+      Jerky: Number(s?.res?.jerky ?? 0)
+    };
+  }
+
+  function resourceCapForKey(s, key){
+    const n = Math.max(1, Number(s?.kittens?.length ?? 0));
+    const reserve = s?.reserve ?? {};
+    if (key === 'Food') return Math.max(1, Number(foodStorageCap(s) ?? 0));
+    if (key === 'Wood') return Math.max(40, Number(reserve.wood ?? 0) * 4, n * 16);
+    if (key === 'Science') return Math.max(80, Number(reserve.science ?? 0) * 4, n * 24);
+    if (key === 'Tools') return Math.max(10, Number(reserve.tools ?? 0) * 4, n * 2);
+    if (key === 'Jerky') return Math.max(30, n * 12);
+    return 1;
+  }
+
+  function resourceLevelClass(s, key, amount){
+    const cap = Math.max(1, resourceCapForKey(s, key));
+    const ratio = Math.max(0, Number(amount ?? 0)) / cap;
+    if (ratio < 0.10) return 'resource-critical';
+    if (ratio < 0.50) return 'resource-low';
+    return 'resource-ok';
+  }
+
+  function updateResourceFlyups(s){
+    const nowMs = Date.now();
+    const snap = currentResourceSnapshot(s);
+    if (!resourceUiFx.last) {
+      resourceUiFx.last = snap;
+      return;
+    }
+    for (const key of Object.keys(resourceUiFx.popups)) {
+      const prev = Number(resourceUiFx.last?.[key] ?? 0);
+      const cur = Number(snap?.[key] ?? 0);
+      const delta = cur - prev;
+      if (delta > 0.095) {
+        const arr = resourceUiFx.popups[key] ?? [];
+        arr.push({ amount: delta, until: nowMs + 1200 });
+        if (arr.length > 4) arr.splice(0, arr.length - 4);
+        resourceUiFx.popups[key] = arr;
+      }
+      const arr = resourceUiFx.popups[key] ?? [];
+      resourceUiFx.popups[key] = arr.filter(p => Number(p.until ?? 0) > nowMs);
+    }
+    resourceUiFx.last = snap;
+  }
+
   // --- Personality / micro-emergence
   // Kittens have soft preferences (likes/dislikes). This does NOT hard-lock actions; it just nudges.
   function rand01At(t, salt=0){
@@ -8375,6 +8434,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const compMul = compliance01(state);
 
     statsEl.innerHTML = '';
+    updateResourceFlyups(state);
 
     const spoilMult = (() => {
       const m = Number(state._lastFoodOvercap?.mult ?? 1);
@@ -8575,7 +8635,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
-      d.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>${subHtml}`;
+
+      const isResource = (k === 'Food' || k === 'Wood' || k === 'Science' || k === 'Tools' || k === 'Jerky');
+      const valueClass = isResource ? resourceLevelClass(state, k, state?.res?.[k.toLowerCase()] ?? 0) : '';
+      const flyups = (resourceUiFx.popups?.[k] ?? []);
+      const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
+
+      d.innerHTML = `<div class="k">${k}</div><div class="v ${valueClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 

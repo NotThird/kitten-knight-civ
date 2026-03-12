@@ -17,7 +17,25 @@
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; }
     .stat .k { font-size:12px; color:var(--muted); }
-    .stat .v { font-size:18px; font-weight:700; margin-top:2px; }
+    .stat .v { font-size:18px; font-weight:700; margin-top:2px; position:relative; display:inline-block; }
+    .stat .v.resource-ok { color: var(--good); }
+    .stat .v.resource-low { color: var(--warn); }
+    .stat .v.resource-critical { color: var(--bad); }
+
+    .resource-flyup {
+      position: absolute;
+      left: 8px;
+      top: -2px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--good);
+      text-shadow: 0 1px 4px rgba(0,0,0,.55);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(0);
+      animation: resourceFlyup 1.1s ease-out forwards;
+      animation-delay: calc(var(--flyup-index, 0) * 70ms);
+    }
 
     /* Discoverability: some stat cards are clickable (inspectors). */
     .stat.inspectable { cursor:pointer; position:relative; border-color: rgba(125,211,252,.20); }
@@ -65,10 +83,17 @@
       100% { box-shadow: 0 0 0 0 rgba(125,211,252,.00); }
     }
 
+    @keyframes resourceFlyup {
+      0% { opacity: 0; transform: translateY(0px) scale(.95); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-18px) scale(1); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .btn,
       header button,
-      .feedback-sentiment {
+      .feedback-sentiment,
+      .resource-flyup {
         transition: none !important;
         animation: none !important;
       }
@@ -77,6 +102,10 @@
       .feedback-sentiment:active {
         transform: none !important;
         filter: none !important;
+      }
+      .resource-flyup {
+        opacity: .9;
+        transform: none;
       }
     }
 
