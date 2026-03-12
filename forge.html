@@ -69,8 +69,8 @@
 <body>
 
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
-  <h1>âš”ï¸ Game Forge Dashboard</h1>
-  <button class="refresh-btn" onclick="location.reload()">â†» Refresh</button>
+  <h1> Game Forge Dashboard</h1>
+  <button class="refresh-btn" onclick="location.reload()"> Refresh</button>
   <span id="lastUpdate"></span>
 </div>
 
@@ -141,11 +141,11 @@
 <h2>Active Tasks</h2>
 <div class="cols2">
   <div class="card">
-    <div class="card-title" style="margin-bottom:8px">ðŸ”§ Claimed</div>
+    <div class="card-title" style="margin-bottom:8px"> Claimed</div>
     <div id="claimedList"><div class="sub">None</div></div>
   </div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:8px">ðŸ‘€ In Review</div>
+    <div class="card-title" style="margin-bottom:8px"> In Review</div>
     <div id="reviewList"><div class="sub">None</div></div>
   </div>
 </div>
@@ -190,7 +190,7 @@ const TASKBOARD = {
         "priority": "medium",
         "type": "refactor",
         "createdAt": "2026-03-12T05:04:00Z",
-        "description": "main.js is 540KB â€” a massive monolith. Extract AI logic into ai.js, social systems into social.js. Ensure parse_check still passes. Do NOT change behavior, only move code.",
+        "description": "main.js is 540KB  a massive monolith. Extract AI logic into ai.js, social systems into social.js. Ensure parse_check still passes. Do NOT change behavior, only move code.",
         "acceptanceCriteria": [
           "main.js reduced to <100KB",
           "ai.js exists with kitten AI logic",
@@ -413,13 +413,13 @@ const TASKBOARD = {
         "priority": "medium",
         "type": "feature",
         "createdAt": "2026-03-12T18:22:03.935Z",
-        "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept â€” gentle discovery of an opt-in feature.",
+        "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept  gentle discovery of an opt-in feature.",
         "acceptanceCriteria": [
           "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
           "Tooltip has a dismiss button and never reappears after dismissal",
           "Dismissal state persists in localStorage across sessions",
           "Tooltip does not appear if sound is already ON",
-          "No hover dependency â€” works on mobile tap"
+          "No hover dependency  works on mobile tap"
         ],
         "source": "strategist"
       },
@@ -430,7 +430,7 @@ const TASKBOARD = {
         "priority": "medium",
         "type": "feature",
         "createdAt": "2026-03-12T18:22:03.969Z",
-        "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight â€” calculate from last 5 ticks average, update every 2s.",
+        "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight  calculate from last 5 ticks average, update every 2s.",
         "acceptanceCriteria": [
           "Each resource stat card shows production rate in per-second format",
           "Positive rates show green, negative show red, zero shows gray",
@@ -723,7 +723,7 @@ const TASKBOARD = {
         "priority": "critical",
         "type": "feature",
         "createdAt": "2026-03-12T07:34:00Z",
-        "description": "STAGNATION BREAKER. We have shipped zero player-facing changes in 4 iterations. This task bundles 3 quick wins into one deliverable to break the logjam: (1) Fix game title â€” remove 'Proto' everywhere (HTML title, header, manifest). (2) Add missing socTrends canvas element in index.html. (3) Add CSS button click animations (scale bounce + color flash on .btn or equivalent). These are all surgical edits â€” no refactor needed. Work directly in the monolith if needed. Subsumes TASK-009 and TASK-014.",
+        "description": "STAGNATION BREAKER. We have shipped zero player-facing changes in 4 iterations. This task bundles 3 quick wins into one deliverable to break the logjam: (1) Fix game title  remove 'Proto' everywhere (HTML title, header, manifest). (2) Add missing socTrends canvas element in index.html. (3) Add CSS button click animations (scale bounce + color flash on .btn or equivalent). These are all surgical edits  no refactor needed. Work directly in the monolith if needed. Subsumes TASK-009 and TASK-014.",
         "acceptanceCriteria": [
           "Game title says 'Kitten Knight Civ' everywhere (no Proto)",
           "socTrends canvas element exists in Society section",
@@ -754,7 +754,7 @@ const TASKBOARD = {
         "priority": "high",
         "type": "feature",
         "createdAt": "2026-03-12T07:34:00Z",
-        "description": "STAGNATION BREAKER. Visuals (4/10) is our weakest axis. Add two high-impact visual features: (1) Floating +N text on resource gains (CSS animation, absolute positioned span that fades up and out). (2) Resource text color coding based on supply level â€” green when abundant, yellow when low, red when critical. These create ambient visual life without requiring monolith extraction. Subsumes parts of TASK-008 and TASK-013.",
+        "description": "STAGNATION BREAKER. Visuals (4/10) is our weakest axis. Add two high-impact visual features: (1) Floating +N text on resource gains (CSS animation, absolute positioned span that fades up and out). (2) Resource text color coding based on supply level  green when abundant, yellow when low, red when critical. These create ambient visual life without requiring monolith extraction. Subsumes parts of TASK-008 and TASK-013.",
         "acceptanceCriteria": [
           "Resource gains show floating +N number that animates up and fades out",
           "Resource values change color: green (>50% cap), yellow (10-50%), red (<10%)",
@@ -793,7 +793,7 @@ const TASKBOARD = {
         "priority": "high",
         "type": "feature",
         "createdAt": "2026-03-12T07:04:00Z",
-        "description": "New player experience is hostile â€” too many controls visible immediately. (1) Hide Advanced Controls section by default, reveal after first unlock or 2 minutes. (2) Surface the 3 Curator levers (Goal/Ethos/Intervention) prominently with one-line tooltip explanations. Austin directive: game should be self-explanatory.",
+        "description": "New player experience is hostile  too many controls visible immediately. (1) Hide Advanced Controls section by default, reveal after first unlock or 2 minutes. (2) Surface the 3 Curator levers (Goal/Ethos/Intervention) prominently with one-line tooltip explanations. Austin directive: game should be self-explanatory.",
         "acceptanceCriteria": [
           "Advanced Controls collapsed/hidden on fresh save",
           "Curator levers visible with short explanatory text",
@@ -1279,7 +1279,7 @@ const TASKBOARD = {
           "No performance regression on mobile"
         ],
         "source": "directive",
-        "notes": "Reduced scope â€” visual feedback split to TASK-015/016.",
+        "notes": "Reduced scope  visual feedback split to TASK-015/016.",
         "blockedReason": "Superseded by TASK-045 (audio feedback system) which is DONE. This task can be archived."
       }
     ]
@@ -1389,7 +1389,7 @@ const QUALITY = {
       },
       "overall": 5.5,
       "delta": 0,
-      "notes": "TASK-023 offline design approved. No new code shipped. Design pipeline saturated â€” 4 approved designs awaiting implementation. Velocity bottleneck on developer."
+      "notes": "TASK-023 offline design approved. No new code shipped. Design pipeline saturated  4 approved designs awaiting implementation. Velocity bottleneck on developer."
     },
     {
       "iteration": 8,
@@ -1403,7 +1403,7 @@ const QUALITY = {
       },
       "overall": 5.6,
       "delta": 0.1,
-      "notes": "TASK-017 milestones shipped (engagement +0.5). TASK-024 discovery design approved. Developer must focus on TASK-020 (dashboard) next â€” Austin directive. Design pipeline paused."
+      "notes": "TASK-017 milestones shipped (engagement +0.5). TASK-024 discovery design approved. Developer must focus on TASK-020 (dashboard) next  Austin directive. Design pipeline paused."
     },
     {
       "iteration": 9,
@@ -1431,7 +1431,7 @@ const QUALITY = {
       },
       "overall": 6.3,
       "delta": 0.5,
-      "notes": "TASK-025 prestige shipped â€” biggest single-feature score jump. Legacy Chronicle adds real progression loop (mechanics +1, engagement +1, completeness +0.5). TASK-028 notification design approved. Visuals remain lowest axis."
+      "notes": "TASK-025 prestige shipped  biggest single-feature score jump. Legacy Chronicle adds real progression loop (mechanics +1, engagement +1, completeness +0.5). TASK-028 notification design approved. Visuals remain lowest axis."
     },
     {
       "iteration": 11,
@@ -1445,7 +1445,7 @@ const QUALITY = {
       },
       "overall": 6.7,
       "delta": 0.4,
-      "notes": "TASK-026 offline progress shipped (engagement +0.5, stability +0.5). TASK-031 visual theming design approved â€” ready for implementation. Welcome-back modal adds pull-back loop. Visuals still lowest axis; TASK-034 is next priority."
+      "notes": "TASK-026 offline progress shipped (engagement +0.5, stability +0.5). TASK-031 visual theming design approved  ready for implementation. Welcome-back modal adds pull-back loop. Visuals still lowest axis; TASK-034 is next priority."
     },
     {
       "iteration": 12,
@@ -1459,7 +1459,7 @@ const QUALITY = {
       },
       "overall": 6.8,
       "delta": 0.1,
-      "notes": "TASK-033 enhanced offline shipped (streaks + diminishing returns polish engagement loop). TASK-035 icon/color design approved â€” feeds TASK-034. Engagement +0.5 from streak system. Visuals remain critical gap at 5.5. TASK-034 implementation is urgent priority."
+      "notes": "TASK-033 enhanced offline shipped (streaks + diminishing returns polish engagement loop). TASK-035 icon/color design approved  feeds TASK-034. Engagement +0.5 from streak system. Visuals remain critical gap at 5.5. TASK-034 implementation is urgent priority."
     },
     {
       "iteration": 13,
@@ -1487,7 +1487,7 @@ const QUALITY = {
       },
       "overall": 7,
       "delta": 0.1,
-      "notes": "TASK-038 cache-buster fix confirmed (stability +0.5). TASK-037 progressive reveal design approved â€” implementation task created. No new code shipped. Lowest axes: visuals (6.5). Next priorities: TASK-045 audio, TASK-046 icons, new progressive reveal implementation."
+      "notes": "TASK-038 cache-buster fix confirmed (stability +0.5). TASK-037 progressive reveal design approved  implementation task created. No new code shipped. Lowest axes: visuals (6.5). Next priorities: TASK-045 audio, TASK-046 icons, new progressive reveal implementation."
     },
     {
       "iteration": 15,
@@ -1501,7 +1501,7 @@ const QUALITY = {
       },
       "overall": 7.2,
       "delta": 0.2,
-      "notes": "TASK-045 audio feedback shipped (9 SFX types, voice cap, throttle, default-off). Stability +0.5 (clean impl, tests pass). Completeness +0.5 (major sensory gap filled). Visuals unchanged â€” still lowest axis at 6.5. Found duplicate TASK-047 IDs in taskboard. Next: TASK-046 icons, progressive reveal, sound discoverability nudge."
+      "notes": "TASK-045 audio feedback shipped (9 SFX types, voice cap, throttle, default-off). Stability +0.5 (clean impl, tests pass). Completeness +0.5 (major sensory gap filled). Visuals unchanged  still lowest axis at 6.5. Found duplicate TASK-047 IDs in taskboard. Next: TASK-046 icons, progressive reveal, sound discoverability nudge."
     },
     {
       "iteration": 16,
@@ -1529,7 +1529,7 @@ const QUALITY = {
       },
       "overall": 7.3,
       "delta": 0.1,
-      "notes": "TASK-046 icon/color language shipped (resource tones, emoji markers, accent rails). Visuals +0.5 â€” no longer lowest axis. TASK-042 research tree design approved â€” created implementation task. All axes now 7+. Scores converging; need progressive reveal (TASK-051) and active events (TASK-030) to push engagement/completeness toward 8."
+      "notes": "TASK-046 icon/color language shipped (resource tones, emoji markers, accent rails). Visuals +0.5  no longer lowest axis. TASK-042 research tree design approved  created implementation task. All axes now 7+. Scores converging; need progressive reveal (TASK-051) and active events (TASK-030) to push engagement/completeness toward 8."
     },
     {
       "iteration": 18,
@@ -1613,15 +1613,15 @@ const HEALTH = {
 ;
 
 const agents = [
-  { name: 'Oracle', role: 'Directives', emoji: 'ðŸ”®', model: 'Opus' },
-  { name: 'ForgeLeader', role: 'Orchestrator', emoji: 'ðŸ‘‘', model: 'Opus' },
-  { name: 'Sentinel', role: 'Community', emoji: 'ðŸ›¡ï¸', model: 'Codex' },
-  { name: 'Strategist', role: 'Research', emoji: 'ðŸ“š', model: 'Opus' },
-  { name: 'Architect', role: 'Design', emoji: 'ðŸ“', model: 'Codex' },
-  { name: 'CodeSmith', role: 'Developer', emoji: 'âš’ï¸', model: 'Codex' },
-  { name: 'Gauntlet', role: 'Testing', emoji: 'ðŸ§ª', model: 'Codex' },
-  { name: 'Arbiter', role: 'Quality', emoji: 'âš–ï¸', model: 'Opus' },
-  { name: 'Watchdog', role: 'Health', emoji: 'ðŸ•', model: 'Spark' },
+  { name: 'Oracle', role: 'Directives', emoji: 'O', model: 'Opus' },
+  { name: 'ForgeLeader', role: 'Orchestrator', emoji: 'L', model: 'Opus' },
+  { name: 'Sentinel', role: 'Community', emoji: 'S', model: 'Codex' },
+  { name: 'Strategist', role: 'Research', emoji: 'R', model: 'Opus' },
+  { name: 'Architect', role: 'Design', emoji: 'A', model: 'Codex' },
+  { name: 'CodeSmith', role: 'Developer', emoji: 'C', model: 'Codex' },
+  { name: 'Gauntlet', role: 'Testing', emoji: 'T', model: 'Codex' },
+  { name: 'Arbiter', role: 'Quality', emoji: 'Q', model: 'Opus' },
+  { name: 'Watchdog', role: 'Health', emoji: 'W', model: 'Spark' },
 ];
 
 function init() {
@@ -1639,7 +1639,7 @@ function init() {
   document.getElementById('scoreProgress').style.width = `${(latestQ.overall / 10) * 100}%`;
   const delta = latestQ.delta ?? 0;
   const deltaEl = document.getElementById('scoreDelta');
-  deltaEl.textContent = delta > 0 ? `+${delta}` : delta === 0 ? 'Â±0' : `${delta}`;
+  deltaEl.textContent = delta > 0 ? `+${delta}` : delta === 0 ? '0' : `${delta}`;
   deltaEl.className = `badge ${delta > 0 ? 'badge-green' : delta === 0 ? 'badge-yellow' : 'badge-red'}`;
 
   const done = tb.columns.done.length;
@@ -1687,8 +1687,8 @@ function init() {
     return `<div class="agent-card">
       <div class="agent-status">${a.emoji}</div>
       <div class="agent-name">${a.name}</div>
-      <div class="agent-role">${a.role} Â· ${a.model}</div>
-      <div style="font-size:10px;margin-top:4px;color:${isHealthy?'#3fb950':'#f85149'}">${isHealthy?'â— Healthy':'â— Down'}</div>
+      <div class="agent-role">${a.role} &middot; ${a.model}</div>
+      <div style="font-size:10px;margin-top:4px;color:${isHealthy?'#3fb950':'#f85149'}">${isHealthy?'&#x25CF; Healthy':'&#x25CF; Down'}</div>
     </div>`;
   }).join('');
 
@@ -1705,8 +1705,8 @@ function init() {
     const dCls = it.delta > 0 ? 'pos' : 'zero';
     return `<div class="tl-item ${cls}">
       <span class="tl-score">Iter ${it.iteration}</span>
-      <span class="tl-delta ${dCls}">${it.delta > 0 ? '+'+it.delta : it.delta === 0 ? 'Â±0' : it.delta}</span>
-      â†’ <span class="tl-score">${it.overall}</span>
+      <span class="tl-delta ${dCls}">${it.delta > 0 ? '+'+it.delta : it.delta === 0 ? '0' : it.delta}</span>
+      &rarr; <span class="tl-score">${it.overall}</span>
       <div class="tl-note">${it.notes || ''}</div>
     </div>`;
   }).join('');
