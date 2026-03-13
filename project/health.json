@@ -1,17 +1,17 @@
 {
-  "timestamp": "2026-03-13T16:29:26.5428027-05:00",
+  "timestamp": "2026-03-13T16:59:00.000-05:00",
   "iteration": 0,
   "cronHealth": {
     "healthy": [
-      "forge-oracle-prophet",
-      "forge-forgeleader-orchestrator",
-      "forge-architect-designer",
-      "forge-codesmith-developer",
-      "forge-gauntlet-tester",
-      "forge-arbiter-critic",
-      "forge-watchdog",
+      "forge-oracle",
+      "forge-forgeleader",
+      "forge-architect",
+      "forge-codesmith",
+      "forge-gauntlet",
+      "forge-arbiter",
       "forge-sentinel",
-      "forge-strategist-research-planning"
+      "forge-watchdog",
+      "forge-strategist"
     ],
     "failing": [],
     "disabled": []
@@ -19,12 +19,11 @@
   "pipelineHealth": {
     "todo": 22,
     "claimed": 0,
-    "review": 2,
-    "done": 13,
+    "review": 1,
+    "done": 14,
     "blocked": 0,
     "staleTasks": [],
-    "status": "stalled",
-    "note": "All 9 cron jobs show lastRun=never. Agents not executing despite being enabled."
+    "status": "stalled"
   },
   "agentActivity": {
     "lastCycleActive": [],
@@ -32,21 +31,20 @@
       "oracle",
       "forgeleader",
       "architect",
-      "developer",
-      "tester",
-      "critic",
-      "watchdog",
+      "codesmith",
+      "gauntlet",
+      "arbiter",
       "sentinel",
+      "watchdog",
       "strategist"
     ],
-    "errors": [],
-    "note": "No agents have ever executed. Cron scheduler issue — jobs.json shows lastRun=never for all Forge: jobs."
+    "errors": []
   },
   "convergence": {
     "currentScore": 8.4,
-    "threshold": 8,
-    "consecutiveAbove": 8,
-    "iteration": 8,
+    "threshold": 8.0,
+    "consecutiveAbove": 10,
+    "iteration": 9,
     "maxIterations": 50,
     "status": "converging"
   }
