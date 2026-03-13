@@ -99,7 +99,7 @@
     </div>
     <div class="big-number" id="overallScore">-</div>
     <div class="progress-bar"><div class="progress-fill" id="scoreProgress" style="background:linear-gradient(90deg,#238636,#3fb950);width:0%"></div></div>
-    <div class="sub">Target: 8.0</div>
+    <div class="sub" id="targetLabel">Target: 9.0</div>
   </div>
 
   <div class="card">
@@ -1705,6 +1705,8 @@ function init(TASKBOARD, QUALITY, HEALTH, ACTIVITY = { entries: [] }) {
 
   document.getElementById('overallScore').textContent = latestQ.overall.toFixed(1);
   document.getElementById('scoreProgress').style.width = `${(latestQ.overall / 10) * 100}%`;
+  const qTarget = ql.convergenceThreshold || 9;
+  document.getElementById('targetLabel').textContent = `Target: ${qTarget}.0`;
   const delta = latestQ.delta ?? 0;
   const deltaEl = document.getElementById('scoreDelta');
   deltaEl.textContent = delta > 0 ? `+${delta}` : delta === 0 ? '0' : `${delta}`;
@@ -1747,11 +1749,11 @@ function init(TASKBOARD, QUALITY, HEALTH, ACTIVITY = { entries: [] }) {
   // Score chart
   drawChart(ql);
 
-  // Agents
-  const healthySet = new Set((hp.cronHealth?.healthy || []).map(s => s.replace('forge-', '')));
+  // Agents — health names may be "forge-oracle", "oracle-prophet", "oracle", etc.
+  const healthyList = (hp.cronHealth?.healthy || []).map(s => s.replace('forge-', '').toLowerCase());
   document.getElementById('agentGrid').innerHTML = agents.map(a => {
     const key = a.name.toLowerCase();
-    const isHealthy = healthySet.has(key);
+    const isHealthy = healthyList.some(h => h.startsWith(key) || h.includes(key));
     return `<div class="agent-card">
       <div class="agent-status">${a.emoji}</div>
       <div class="agent-name">${a.name}</div>
@@ -1864,13 +1866,14 @@ function drawChart(qualityData) {
     ctx.fillText(y, pad.l - 4, py + 3);
   }
 
-  // Threshold line
-  const thY = H - pad.b - (8 - yMin) * yScale;
+  // Threshold line (from quality-log convergenceThreshold)
+  const threshold = qualityData.convergenceThreshold || 9;
+  const thY = H - pad.b - (threshold - yMin) * yScale;
   ctx.strokeStyle = '#f8514933'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(pad.l, thY); ctx.lineTo(W - pad.r, thY); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#f8514966'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('Target 8.0', pad.l + 2, thY - 3);
+  ctx.fillText(`Target ${threshold}.0`, pad.l + 2, thY - 3);
 
   // Per-axis lines
   const axes = ['mechanics','visuals','engagement','stability','completeness'];
