@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T22:50:00.273Z",
+    "lastUpdated": "2026-03-13T22:53:02.216Z",
     "columns": {
         "todo": [
             {
@@ -380,10 +380,7 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "orchestrator"
-            }
-        ],
-        "claimed": [],
-        "review": [
+            },
             {
                 "id": "TASK-029",
                 "title": "Implement discovery and secret mechanics from approved TASK-024 design",
@@ -391,7 +388,7 @@
                 "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T15:17:43.621Z",
-                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.",
+                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.\n\n[REJECTED 2026-03-13T22:53:02.216Z] Secrets do not persist through prestige resets (Legacy/Eternity reset wipes state.secrets).",
                 "acceptanceCriteria": [
                     "At least 5 secrets implemented with working triggers",
                     "Secret discovery shows distinct visual notification",
@@ -402,10 +399,11 @@
                 ],
                 "source": "strategist",
                 "claimedAt": "2026-03-13T22:46:23.525Z",
-                "completedAt": "2026-03-13T22:50:00.273Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
+                "testVerdict": "REJECTED"
             }
         ],
+        "claimed": [],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
