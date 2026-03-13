@@ -9,7 +9,7 @@ import { GENERATED_SKILLS } from './skills_generated.js';
 import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } from './charts.js';
 
 (() => {
-  const GAME_VERSION = '0.9.135';
+  const GAME_VERSION = '0.9.136';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -1167,20 +1167,73 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   // --- Traits (civ-sim identity layer)
-  // One small "trait" per kitten. Unlike likes/dislikes (which depend on Autonomy), traits are a steady bias.
-  // Goal: make colonies feel different across runs and make specialization feel more "character-driven".
+  // 6-trait cap by design (clarity + balance). Each kitten gets 1-2 traits at birth.
+  // Traits do two things:
+  // 1) decision bias (which jobs they prefer)
+  // 2) direct per-action output modifier (+/-15%) on productive actions.
   const TRAIT_DEFS = [
-    { id:'Brave',     desc:'Leans into danger. Prefers Guard; ALARM stresses them less.', bias: { Guard: 12 } },
-    { id:'Studious',  desc:'Bookish. Prefers Research (and Mentor once unlocked).', bias: { Research: 10, Mentor: 8 } },
-    { id:'Builder',   desc:'Hands-on. Prefers construction + tool work.', bias: { BuildHut: 9, BuildPalisade: 8, BuildGranary: 8, BuildWorkshop: 8, BuildLibrary: 8, CraftTools: 8 } },
-    { id:'Caretaker', desc:'Keeps spirits up. Prefers Socialize/Care.', bias: { Socialize: 10, Care: 10 } },
-    { id:'Forager',   desc:'Wilderness savvy. Prefers Forage/Farm/ChopWood.', bias: { Forage: 9, Farm: 7, ChopWood: 7 } },
+    { id:'Brave', desc:'Bold in danger. Better at guarding and crisis runs.', bias:{ Guard:12, BuildPalisade:7 }, prod:{ Guard:0.15, BuildPalisade:0.15 } },
+    { id:'Curious', desc:'Always investigating. Better at research/mentoring.', bias:{ Research:11, Mentor:8 }, prod:{ Research:0.15, Mentor:0.15 } },
+    { id:'Lazy', desc:'Conserves effort. Slower output, but less fatigue.', bias:{ Rest:6, Loaf:8 }, prod:{ '*':-0.15 } },
+    { id:'Ambitious', desc:'Pushes hard for growth. Better at build/craft work.', bias:{ BuildHut:8, BuildGranary:8, BuildWorkshop:8, BuildLibrary:8, CraftTools:10 }, prod:{ BuildHut:0.15, BuildGranary:0.15, BuildWorkshop:0.15, BuildLibrary:0.15, CraftTools:0.15 } },
+    { id:'Forager', desc:'Wilderness specialist. Better at food/wood gathering.', bias:{ Forage:9, Farm:8, ChopWood:8, PreserveFood:7 }, prod:{ Forage:0.15, Farm:0.15, ChopWood:0.15, PreserveFood:0.15 } },
+    { id:'Caretaker', desc:'Community-first. Better at social and care duties.', bias:{ Socialize:10, Care:10 }, prod:{ Socialize:0.15, Care:0.15 } },
   ];
+  const TRAIT_DEF_BY_ID = Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, t]));
+
+  function normalizeTraitId(id){
+    const v = String(id ?? '').trim();
+    if (TRAIT_DEF_BY_ID[v]) return v;
+    const map = { Studious: 'Curious', Builder: 'Ambitious' };
+    return map[v] ?? null;
+  }
+
+  function normalizeTraits(arr, fallbackId=1){
+    const raw = Array.isArray(arr) ? arr : [];
+    const out = [];
+    for (const id of raw) {
+      const n = normalizeTraitId(id);
+      if (n && !out.includes(n)) out.push(n);
+      if (out.length >= 2) break;
+    }
+    if (out.length) return out;
+    return genTraits(fallbackId);
+  }
 
   function genTraits(id){
     const rng = seededRng((id * 1103515245 + 12345) | 0);
-    const pick = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Forager';
-    return [pick];
+    const pick1 = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Forager';
+    const wantTwo = rng() < 0.38;
+    if (!wantTwo) return [pick1];
+    const rest = TRAIT_DEFS.map(t => t.id).filter(t => t !== pick1);
+    const pick2 = rest[Math.floor(rng() * Math.max(1, rest.length))] ?? pick1;
+    return [pick1, pick2];
+  }
+
+  function traitOutputMul(k, action){
+    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
+    let mod = 0;
+    for (const id of traits) {
+      const def = TRAIT_DEF_BY_ID[id];
+      if (!def?.prod) continue;
+      mod += Number(def.prod[action] ?? def.prod['*'] ?? 0) || 0;
+    }
+    return Math.max(0.55, Math.min(1.45, 1 + mod));
+  }
+
+  function traitSummary(k){
+    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
+    if (!traits.length) return '-';
+    return traits.map((id) => {
+      const d = TRAIT_DEF_BY_ID[id];
+      if (!d?.prod) return id;
+      const vals = Object.values(d.prod).map(v => Number(v) || 0);
+      const best = vals.length ? Math.max(...vals) : 0;
+      const worst = vals.length ? Math.min(...vals) : 0;
+      if (best > 0 && worst >= 0) return `${id} (+${Math.round(best * 100)}%)`;
+      if (worst < 0 && best <= 0) return `${id} (${Math.round(worst * 100)}%)`;
+      return id;
+    }).join(', ');
   }
 
   // --- Names (civ-sim readability)
@@ -1220,9 +1273,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const t = Array.isArray(traits) ? traits : [];
     if (t.includes('Forager'))   { v.Food += 0.18; v.Safety += 0.05; v.Progress -= 0.10; v.Social -= 0.05; }
     if (t.includes('Brave'))     { v.Safety += 0.22; v.Progress -= 0.05; }
-    if (t.includes('Studious'))  { v.Progress += 0.26; v.Social -= 0.05; }
-    if (t.includes('Builder'))   { v.Progress += 0.20; v.Food += 0.06; v.Social -= 0.04; }
+    if (t.includes('Curious'))   { v.Progress += 0.26; v.Social -= 0.05; }
+    if (t.includes('Ambitious')) { v.Progress += 0.20; v.Food += 0.06; v.Social -= 0.04; }
     if (t.includes('Caretaker')) { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.06; }
+    if (t.includes('Lazy'))      { v.Social += 0.10; v.Progress -= 0.08; }
 
     // Normalize + clamp.
     for (const k of VALUE_AXES) v[k] = Math.max(0.03, Number(v[k] ?? 0));
@@ -1363,7 +1417,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Personality: soft preferences that bias scoring (adds emergent specialization)
       personality: genPersonality(id),
       // Traits: steady "identity" bias (civ-sim flavor)
-      traits,
+      traits: normalizeTraits(traits, id),
       // Values: what this kitten *wants* the colony to be doing (policy fit affects mood under central planning)
       values: genValues(id, traits),
 
@@ -2665,7 +2719,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Forage');
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
@@ -2705,7 +2759,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         // Spend actual resources (respect reserves).
         const spentFood = spendUpToReserve(s,'food', wantFood * norm);
         const spentWood = spendUpToReserve(s,'wood', wantWood * norm);
-        const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72; // yield < 1 to keep it from dominating
+        const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72 * traitOutputMul(k, 'PreserveFood'); // yield < 1 to keep it from dominating
 
         s.res.jerky = (s.res.jerky ?? 0) + made;
         k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
@@ -2722,7 +2776,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
         const wp = workPaceMul(s);
-        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Farm');
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.025 * wp * fx.hungerMult);
@@ -2736,7 +2790,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
         const wp = workPaceMul(s);
-        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'ChopWood');
         s.res.wood += out;
         k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
@@ -2757,7 +2811,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const use = Math.min(s.res.wood, 0.9 * dt * wp * fx.speedMult);
         const mom = momentumMul(k, 'StokeFire');
         s.res.wood -= use;
-        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult);
+        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult * traitOutputMul(k, 'StokeFire'));
         k.energy = clamp01(k.energy - dt * 0.02 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.02 * wp * fx.hungerMult);
         gainSkillXP(s, k, 'StokeFire', dt * 0.70 * efficiency(s,k));
@@ -2774,7 +2828,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
-        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * legacyGuardOutputMul(s) * dt * eff * mom * wp);
+        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * legacyGuardOutputMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Guard'));
         k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
         gainSkillXP(s, k, 'Guard', dt * (1.0 + 0.35*drill) * efficiency(s,k) * legacyCombatXPMul(s));
@@ -2792,7 +2846,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildHut');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildHut');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildHut');
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
@@ -2822,7 +2876,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildPalisade');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildPalisade');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildPalisade');
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
@@ -2852,7 +2906,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildGranary');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildGranary');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildGranary');
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
@@ -2890,7 +2944,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildWorkshop');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildWorkshop');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildWorkshop');
         // Respect reserves (hard stop at execution time).
         const maxByWood = woodAvail / 0.85;
         const maxBySci  = sciAvail / 0.55;
@@ -2944,7 +2998,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildLibrary');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildLibrary');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildLibrary');
 
         // Costs per 1 progress.
         const maxByWood  = woodAvail / 0.75;
@@ -2996,14 +3050,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'CraftTools');
         const wp = workPaceMul(s);
         // Respect reserves (hard stop at execution time).
-        const useWood = Math.min(woodAvail, 0.55 * fx.outputMult * dt * eff * wp);
-        const useSci  = Math.min(sciAvail, 0.40 * fx.outputMult * dt * eff * wp);
+        const useWood = Math.min(woodAvail, 0.55 * fx.outputMult * dt * eff * wp * traitOutputMul(k, 'CraftTools'));
+        const useSci  = Math.min(sciAvail, 0.40 * fx.outputMult * dt * eff * wp * traitOutputMul(k, 'CraftTools'));
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
-        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
+        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00) * traitOutputMul(k, 'CraftTools'); // workshops improve throughput
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
@@ -3100,7 +3154,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const wp = workPaceMul(s);
 
         // Science cost scales with teaching throughput.
-        const wantSci = 0.42 * fx.outputMult * dt * eff * mom * wp;
+        const wantSci = 0.42 * fx.outputMult * dt * eff * mom * wp * traitOutputMul(k, 'Mentor');
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
@@ -3130,7 +3184,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Research');
         s.res.science += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
@@ -3547,7 +3601,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function applyTraitPressure(scored, k){
     // Traits are a steady bias (unlike likes/dislikes which scale with Autonomy).
-    const traits = Array.isArray(k?.traits) ? k.traits : [];
+    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
     if (!traits.length) return;
 
     for (const id of traits) {
@@ -3558,6 +3612,42 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         if (!add) continue;
         row.score += add;
         row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
+      }
+    }
+  }
+
+  function tickTraitEvents(s){
+    s._traitEventTimer = Number(s._traitEventTimer ?? 0) + 1;
+    if (s._traitEventTimer < 20) return;
+    s._traitEventTimer = 0;
+
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (!ks.length) return;
+
+    for (const k of ks) {
+      k._traitEventAt = Number(k._traitEventAt ?? 0) || 0;
+      if ((Number(s.t ?? 0) - k._traitEventAt) < 120) continue;
+      const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
+
+      if (traits.includes('Brave')) {
+        const r = rand01At((s.t ?? 0) + (k.id ?? 0) * 0.37, 41);
+        if (r < 0.015) {
+          const gain = 8 + Math.floor((Number(k.skills?.Combat ?? 1) || 1) * 0.5);
+          s.res.threat = Math.max(0, Number(s.res?.threat ?? 0) - gain);
+          s.res.wood = Number(s.res?.wood ?? 0) + 6;
+          k._traitEventAt = Number(s.t ?? 0);
+          log(`${k.name || ('Kitten '+k.id)} (Brave) led a scouting patrol: -${gain} threat, +6 wood.`);
+        }
+      }
+
+      if (traits.includes('Curious')) {
+        const r = rand01At((s.t ?? 0) + (k.id ?? 0) * 0.53, 77);
+        if (r < 0.015) {
+          const sci = 12 + Math.floor((Number(k.skills?.Scholarship ?? 1) || 1) * 0.8);
+          s.res.science = Number(s.res?.science ?? 0) + sci;
+          k._traitEventAt = Number(s.t ?? 0);
+          log(`${k.name || ('Kitten '+k.id)} (Curious) uncovered an insight cache: +${sci} science.`);
+        }
       }
     }
   }
@@ -6544,6 +6634,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
       updateSharedWorkEdgesPerSecond(state);
       updateRecentWorkMemoryPerSecond(state);
+      tickTraitEvents(state);
     }
 
     runKittensTick(state, dt, {
@@ -7553,7 +7644,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const hates = (p.dislikes ?? []).join(', ') || '-';
     const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
     const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
-    const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
+    const traits = traitSummary(k);
     const buddy = buddyOf(state, k);
     const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
     const needNote = buddy ? ` | buddy-need: ${Math.round(clamp01(Number(k.buddyNeed ?? 0))*100)}%` : '';
@@ -8505,7 +8596,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       log(`Council: spokeskitten #${k.id} suggests ${labels}.`);
     }
 
-    const traits = (k.traits ?? []).join(', ') || '-';
+    const traits = traitSummary(k);
     const mood = Math.round(clamp01(Number(k.mood ?? 0.55)) * 100);
     const dis = Math.round(dissent01(s) * 100);
 
@@ -10292,6 +10383,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // ── Colony Kitten Cards ───────────────────────────────────────────────────
     // Sorting + filtering is purely UI/QoL: it does not affect simulation and is not saved.
 
+    // Visual throttle: hold displayed decision/task for ≥3s so cards don't flash.
+    if (!window._kittenDisplayCache) window._kittenDisplayCache = {};
+    const displayCache = window._kittenDisplayCache;
+    const DISPLAY_HOLD_MS = 3000;
+
     const entries = state.kittens.map((k, idx) => ({ k, idx }));
 
     function sortValFor(k, key){
@@ -10382,7 +10478,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const energy = clamp01(Number(k.energy ?? 0));
         const hunger = clamp01(Number(k.hunger ?? 0));
         const health = clamp01(Number(k.health ?? 1));
-        const traits = Array.isArray(k.traits) ? k.traits : [];
+        const traits = normalizeTraits(k.traits, Number(k.id ?? 1));
         const buddy = buddyOf(state, k);
         const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
         const align = valuesAlignment01(state, k);
@@ -10390,14 +10486,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const bloc = dominantValueAxis(k);
 
         const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
-        const kind = String(d?.kind ?? 'score');
-        const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
-        const blockedFresh = !!k._fallbackTo;
+
+        // Visual throttle: hold decision display for DISPLAY_HOLD_MS so labels don't flash
+        const cacheKey = k.id;
+        const now = performance.now();
+        const cached = displayCache[cacheKey];
+        let displayTask = k.task ?? '';
+        let displayKind = String(d?.kind ?? 'score');
+        let displayFallback = k._fallbackTo || '';
+
+        if (cached && (now - cached.setAt) < DISPLAY_HOLD_MS) {
+          // Hold the cached display values
+          displayTask = cached.task;
+          displayKind = cached.kind;
+          displayFallback = cached.fallback;
+        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind) {
+          // New decision or cache expired with a change — update cache
+          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, setAt: now };
+        }
+        // else: cache expired but nothing changed — refresh timer
+        else { displayCache[cacheKey].setAt = now; }
+
+        const decLabel = (displayKind === 'rule') ? 'RULE' : (displayKind === 'emergency') ? 'EMERG' : (displayKind === 'commit') ? 'COMMIT' : '';
+        const blockedFresh = !!displayFallback;
 
         // Task display
-        let taskText = escapeHtml(k.task ?? '');
-        if (k._mentor && k.task === 'Mentor') taskText += ` → #${k._mentor.id}`;
-        if (k._fallbackTo) taskText += ` → ${escapeHtml(k._fallbackTo)}`;
+        let taskText = escapeHtml(displayTask);
+        if (k._mentor && displayTask === 'Mentor') taskText += ` → #${k._mentor.id}`;
+        if (displayFallback) taskText += ` → ${escapeHtml(displayFallback)}`;
 
         // Badges
         let badges = '';
