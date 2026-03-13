@@ -64,6 +64,12 @@
   #lastUpdate { font-size: 11px; color: #484f58; margin-left: 12px; }
   .refresh-btn { background: #21262d; border: 1px solid #30363d; color: #58a6ff; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
   .refresh-btn:hover { background: #30363d; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { border: 1px solid #30363d; background: #0d1117; border-radius: 999px; padding: 4px 10px; font-size: 11px; color: #c9d1d9; }
+  .evt-row { display: grid; grid-template-columns: 80px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 12px; }
+  .evt-row:last-child { border-bottom: none; }
+  .evt-agent { color: #58a6ff; font-weight: 600; }
+  .evt-time { color: #8b949e; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -137,6 +143,18 @@
   <div class="agent-grid" id="agentGrid"></div>
 </div>
 
+<h2>Last Cycle Activity</h2>
+<div class="cols2">
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">Agents Ran This Cycle</div>
+    <div id="activeAgentsList"><div class="sub">No activity data yet</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:8px">Recent Pipeline Events</div>
+    <div id="activityList"><div class="sub">No recent events</div></div>
+  </div>
+</div>
+
 <!-- Active tasks (claimed + review) -->
 <h2>Active Tasks</h2>
 <div class="cols2">
@@ -190,18 +208,36 @@ async function fetchJSON(path) {
   return null;
 }
 
+let lastDataSignature = '';
+
 async function loadData() {
   document.getElementById('lastUpdate').textContent = 'Loading...';
-  const [tb, ql, hp] = await Promise.all([
+  const [tb, ql, hp, al] = await Promise.all([
     fetchJSON('project/taskboard.json'),
     fetchJSON('project/quality-log.json'),
     fetchJSON('project/health.json'),
+    fetchJSON('project/activity-log.json'),
   ]);
   if (!tb || !ql) {
     document.getElementById('lastUpdate').textContent = 'Error: could not load data from GitHub';
     return;
   }
-  init(tb, ql, hp || {});
+
+  const signature = JSON.stringify({
+    tbUpdated: tb.lastUpdated,
+    qLen: ql.iterations?.length || 0,
+    qLastTs: ql.iterations?.[ql.iterations.length - 1]?.timestamp || '',
+    hpTs: hp?.timestamp || '',
+    actLen: al?.entries?.length || 0,
+    actLastTs: al?.entries?.[al.entries.length - 1]?.timestamp || ''
+  });
+
+  if (signature !== lastDataSignature) {
+    lastDataSignature = signature;
+    init(tb, ql, hp || {}, al || { entries: [] });
+  }
+
+  document.getElementById('lastUpdate').textContent = `Live: ${new Date().toLocaleString()}`;
 }
 
 // Minimal fallback data — live fetch from GitHub is the primary data source.
@@ -1655,10 +1691,11 @@ const agents = [
   { name: 'Watchdog', role: 'Health', emoji: 'W', model: 'Spark' },
 ];
 
-function init(TASKBOARD, QUALITY, HEALTH) {
+function init(TASKBOARD, QUALITY, HEALTH, ACTIVITY = { entries: [] }) {
   const tb = TASKBOARD;
   const ql = QUALITY;
   const hp = HEALTH;
+  const al = ACTIVITY;
   const latestQ = ql.iterations[ql.iterations.length - 1];
 
   // Top stats
@@ -1723,6 +1760,8 @@ function init(TASKBOARD, QUALITY, HEALTH) {
     </div>`;
   }).join('');
 
+  renderActivity(hp, al);
+
   // Task lists
   renderTaskList('claimedList', cols.claimed);
   renderTaskList('reviewList', cols.review);
@@ -1756,6 +1795,47 @@ function renderTaskList(elId, tasks) {
     ${t.priority ? `<span class="priority-${t.priority}">${t.priority}</span>` : ''}
     <span class="task-assignee">${t.assignee||''}</span>
   </div>`).join('');
+}
+
+function renderActivity(healthData, activityData) {
+  const activeEl = document.getElementById('activeAgentsList');
+  const eventEl = document.getElementById('activityList');
+  const activeAgents = healthData?.agentActivity?.lastCycleActive || [];
+
+  if (activeAgents.length) {
+    activeEl.innerHTML = `<div class="pill-row">${activeAgents.map(a => `<span class="pill">${a}</span>`).join('')}</div>`;
+  } else {
+    activeEl.innerHTML = '<div class="sub">No agent reported activity in the last cycle</div>';
+  }
+
+  const entries = Array.isArray(activityData?.entries) ? activityData.entries : [];
+  if (!entries.length) {
+    eventEl.innerHTML = '<div class="sub">No recent events logged</div>';
+    return;
+  }
+
+  const latestIteration = Math.max(...entries.map(e => Number(e.iteration) || 0));
+  const recent = entries
+    .filter(e => (Number(e.iteration) || 0) === latestIteration)
+    .slice(-8)
+    .reverse();
+
+  if (!recent.length) {
+    eventEl.innerHTML = '<div class="sub">No events found for the latest cycle</div>';
+    return;
+  }
+
+  eventEl.innerHTML = recent.map(e => {
+    const when = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '--:--';
+    const agent = e.agent || e.assignee || 'agent';
+    const action = e.action || e.status || 'updated';
+    const title = e.taskId ? `${e.taskId} ${action}` : (e.message || action);
+    return `<div class="evt-row">
+      <span class="evt-agent">${agent}</span>
+      <span>${title}</span>
+      <span class="evt-time">${when}</span>
+    </div>`;
+  }).join('');
 }
 
 function drawChart(qualityData) {
@@ -1835,8 +1915,13 @@ function drawChart(qualityData) {
 
 // Try live fetch first, fall back to inline snapshot
 loadData().catch(() => {
-  init(TASKBOARD_FALLBACK, QUALITY_FALLBACK, HEALTH_FALLBACK);
+  init(TASKBOARD_FALLBACK, QUALITY_FALLBACK, HEALTH_FALLBACK, { entries: [] });
 });
+
+// Auto-refresh so dashboard updates as project files change.
+setInterval(() => {
+  loadData().catch(() => {});
+}, 30000);
 </script>
 </body>
 </html>

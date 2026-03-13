@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T20:53:58.708Z",
+    "lastUpdated": "2026-03-13T21:18:05.981Z",
     "columns": {
         "todo": [
             {
@@ -410,37 +410,6 @@
                 "staleCount": 0
             },
             {
-                "id": "TASK-085",
-                "title": "Fix colony AI decisions flash bug - display too brief to read",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T17:31:04.391Z",
-                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
-                "acceptanceCriteria": [
-                    "Colony AI decision text stays visible for at least 3 seconds",
-                    "Text does not get overwritten by other UI updates",
-                    "Player can read the full decision text before it fades"
-                ],
-                "source": "directive"
-            },
-            {
-                "id": "TASK-086",
-                "title": "Build agent pipeline visibility into forge.html dashboard",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T17:31:18.152Z",
-                "description": "Austin wants better visibility into the agent pipeline - what each agent is doing, task progress, recent activity. The forge dashboard at forge.html needs a section showing: which agents ran recently, what tasks they claimed/completed, current pipeline status, and iteration history. Data sources: health.json, taskboard.json, quality-log.json, activity-log.json.",
-                "acceptanceCriteria": [
-                    "forge.html shows which agents ran in the last cycle",
-                    "forge.html shows current pipeline status (tasks per column)",
-                    "forge.html shows quality score trend over iterations",
-                    "Dashboard updates when data files change"
-                ],
-                "source": "directive"
-            },
-            {
                 "id": "TASK-090",
                 "title": "Verify feedback widget has no cooldown and submissions work end-to-end",
                 "assignee": "tester",
@@ -519,23 +488,6 @@
                     "parse_check passes"
                 ],
                 "source": "orchestrator"
-            },
-            {
-                "id": "TASK-100",
-                "title": "Design save integrity and corruption recovery UX",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T18:39:31.243Z",
-                "description": "TASK-043 (save integrity validation) and TASK-041 (error boundary) both need a UX design for how the game communicates save problems to the player. Currently state.js handles migration silently. Design the player-facing experience for: corrupted save detected, version mismatch migration, manual backup/restore prompts, and graceful degradation. Reference: Antimatter Dimensions shows a clear modal when save issues occur with options (load backup, reset, export). This is stability infrastructure.",
-                "acceptanceCriteria": [
-                    "Spec covers 4 scenarios: corruption, version mismatch, storage full, import failure",
-                    "Each scenario has a specific UI description (modal, toast, inline)",
-                    "Player always has a non-destructive escape path (never forced data loss)",
-                    "Design includes automatic backup cadence recommendation",
-                    "Compatible with existing dark theme and progressive reveal"
-                ],
-                "source": "strategist"
             },
             {
                 "id": "TASK-101",
@@ -724,29 +676,96 @@
                     "Events interact meaningfully with at least one existing system"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-118",
+                "title": "Implement kitten trait mechanics from TASK-091",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:05:30.454Z",
+                "description": "Implement trait effects from TASK-091 design",
+                "acceptanceCriteria": [
+                    "Traits have mechanical effects",
+                    "Cap at 1.45x"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-119",
+                "title": "Add session milestone rewards with escalating bonuses for continuous play",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:09:21.818Z",
+                "description": "BREAKTHROUGH TASK for engagement axis - currently 8, target 9. The game lacks session-level goals that reward continuous play. Pattern from Cookie Clicker: sugar lumps accumulate during active sessions. NGU IDLE: daily spin rewards scale with consecutive days. Implementation: track current session duration. At 5min, 15min, 30min, 1hr milestones, award escalating bonuses - resource burst, temporary production multiplier, or unique cosmetic unlock. Show a milestone tracker bar at the top of screen. This creates short-term goals layered on top of the existing idle loop, directly addressing the one-more-turn feeling. Keep it simple: milestone thresholds plus reward table plus UI indicator.",
+                "acceptanceCriteria": [
+                    "Session timer tracks continuous play time accurately",
+                    "At least 4 milestone thresholds trigger with escalating rewards",
+                    "Milestone progress bar visible in main UI",
+                    "Rewards feel meaningful - minimum 2x current production for 60s at first milestone",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-120",
+                "title": "Add visual progress-to-next-milestone indicators on all progression systems",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:09:36.127Z",
+                "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
+                "acceptanceCriteria": [
+                    "At least 3 progression systems show next-milestone progress indicators",
+                    "Progress bars update in real-time as resources change",
+                    "Milestone name or reward preview shown on hover or tap",
+                    "Indicators collapse gracefully on mobile",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-091",
-                "title": "Design kitten personality trait mechanical impacts",
+                "id": "TASK-100",
+                "title": "Design save integrity and corruption recovery UX",
                 "assignee": "designer",
                 "priority": "medium",
                 "type": "feature",
-                "createdAt": "2026-03-13T18:08:56.123Z",
-                "description": "Arbiter flagged kitten personality differentiation as a top-3 improvement. Traits exist but lack mechanical weight. Design a system where traits visibly affect kitten behavior, production rates, social interactions, and event outcomes. Reference: Dwarf Fortress personality - preferences; RimWorld traits - speed/mood/social. Goal: make players notice and care about individual kittens without needing the inspector.",
+                "createdAt": "2026-03-13T18:39:31.243Z",
+                "description": "TASK-043 (save integrity validation) and TASK-041 (error boundary) both need a UX design for how the game communicates save problems to the player. Currently state.js handles migration silently. Design the player-facing experience for: corrupted save detected, version mismatch migration, manual backup/restore prompts, and graceful degradation. Reference: Antimatter Dimensions shows a clear modal when save issues occur with options (load backup, reset, export). This is stability infrastructure.",
                 "acceptanceCriteria": [
-                    "Each trait has at least 2 visible gameplay effects (production modifier, event probability, social behavior)",
-                    "Design doc specifies how traits surface in the society feed without inspector",
-                    "Trait effects create meaningful roster composition decisions for the player",
-                    "No trait is strictly better than another - tradeoffs exist",
-                    "Design is compatible with existing progressive reveal system"
+                    "Spec covers 4 scenarios: corruption, version mismatch, storage full, import failure",
+                    "Each scenario has a specific UI description (modal, toast, inline)",
+                    "Player always has a non-destructive escape path (never forced data loss)",
+                    "Design includes automatic backup cadence recommendation",
+                    "Compatible with existing dark theme and progressive reveal"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-13T20:40:50.818Z",
-                "completedAt": "2026-03-13T20:42:03.900Z",
+                "claimedAt": "2026-03-13T21:10:45.473Z",
+                "completedAt": "2026-03-13T21:11:46.954Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-086",
+                "title": "Build agent pipeline visibility into forge.html dashboard",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T17:31:18.152Z",
+                "description": "Austin wants better visibility into the agent pipeline - what each agent is doing, task progress, recent activity. The forge dashboard at forge.html needs a section showing: which agents ran recently, what tasks they claimed/completed, current pipeline status, and iteration history. Data sources: health.json, taskboard.json, quality-log.json, activity-log.json.",
+                "acceptanceCriteria": [
+                    "forge.html shows which agents ran in the last cycle",
+                    "forge.html shows current pipeline status (tasks per column)",
+                    "forge.html shows quality score trend over iterations",
+                    "Dashboard updates when data files change"
+                ],
+                "source": "directive",
+                "claimedAt": "2026-03-13T21:16:14.507Z",
+                "completedAt": "2026-03-13T21:18:05.981Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -976,14 +995,53 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T20:53:58.708Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-091",
+                "title": "Design kitten personality trait mechanical impacts",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T18:08:56.123Z",
+                "description": "Arbiter flagged kitten personality differentiation as a top-3 improvement. Traits exist but lack mechanical weight. Design a system where traits visibly affect kitten behavior, production rates, social interactions, and event outcomes. Reference: Dwarf Fortress personality - preferences; RimWorld traits - speed/mood/social. Goal: make players notice and care about individual kittens without needing the inspector.",
+                "acceptanceCriteria": [
+                    "Each trait has at least 2 visible gameplay effects (production modifier, event probability, social behavior)",
+                    "Design doc specifies how traits surface in the society feed without inspector",
+                    "Trait effects create meaningful roster composition decisions for the player",
+                    "No trait is strictly better than another - tradeoffs exist",
+                    "Design is compatible with existing progressive reveal system"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T20:40:50.818Z",
+                "completedAt": "2026-03-13T20:42:03.900Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-13T21:04:32.207Z",
+                "testVerdict": "APPROVED"
             }
         ],
-        "blocked": []
+        "blocked": [
+            {
+                "id": "TASK-085",
+                "title": "Fix colony AI decisions flash bug - display too brief to read",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T17:31:04.391Z",
+                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
+                "acceptanceCriteria": [
+                    "Colony AI decision text stays visible for at least 3 seconds",
+                    "Text does not get overwritten by other UI updates",
+                    "Player can read the full decision text before it fades"
+                ],
+                "source": "directive",
+                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash."
+            }
+        ]
     },
     "meta": {
-        "totalCreated": 113,
-        "totalCompleted": 57,
+        "totalCreated": 116,
+        "totalCompleted": 58,
         "pendingQuestion": null
     },
-    "nextId": 118
+    "nextId": 121
 }
