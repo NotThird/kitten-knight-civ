@@ -89,6 +89,12 @@ export function migrateState(s, {
   s.feed = Array.isArray(s.feed) ? s.feed : [];
   const FEED_MAX = 220;
   if (s.feed.length > FEED_MAX) s.feed = s.feed.slice(-FEED_MAX);
+
+  // Decision log panel (TASK-106): persistent AI task-switch history.
+  s.decisionLog = Array.isArray(s.decisionLog) ? s.decisionLog : [];
+  const DECISION_LOG_MAX = 260;
+  if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog = s.decisionLog.slice(-DECISION_LOG_MAX);
+
   s.rations = s.rations ?? 'Normal';
   s.targets = s.targets ?? { foodPerKitten: 120, warmth: 60, maxThreat: 70 };
   s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };

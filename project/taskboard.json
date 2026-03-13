@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T21:53:06.813Z",
+    "lastUpdated": "2026-03-13T22:19:58.988Z",
     "columns": {
         "todo": [
             {
@@ -122,23 +122,6 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "strategist"
-            },
-            {
-                "id": "TASK-106",
-                "title": "Implement colony AI decision log panel from TASK-099 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-13T19:35:35.603Z",
-                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
-                "acceptanceCriteria": [
-                    "Decision log panel visible on desktop below Society feed",
-                    "Decisions persist in scrollable list not ephemeral flash",
-                    "Mobile collapsed by default with details summary",
-                    "Auto-scroll to bottom unless user scrolled up",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
             },
             {
                 "id": "TASK-041",
@@ -393,29 +376,46 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "orchestrator"
+            },
+            {
+                "id": "TASK-121",
+                "title": "Implement mini-event variety pack from TASK-117 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T22:05:09.406Z",
+                "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
+                "acceptanceCriteria": [
+                    "4 event types spawn with weighted selection and anti-repeat",
+                    "Each event has unique accent color and icon on dark theme",
+                    "Rewards apply correctly including training buff and production boost",
+                    "Boost stacking capped at 2.2x with duration extension rules",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-117",
-                "title": "Design mini-event variety pack for active play diversity",
-                "assignee": "designer",
-                "priority": "medium",
+                "id": "TASK-106",
+                "title": "Implement colony AI decision log panel from TASK-099 design",
+                "assignee": "developer",
+                "priority": "critical",
                 "type": "feature",
-                "createdAt": "2026-03-13T20:39:15.423Z",
-                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
+                "createdAt": "2026-03-13T19:35:35.603Z",
+                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
                 "acceptanceCriteria": [
-                    "3-4 new event types designed with thematic flavor text",
-                    "Each event has clear trigger conditions and probability weights",
-                    "Reward structure defined (active bonus not idle penalty)",
-                    "Visual design spec fits existing dark theme",
-                    "Events interact meaningfully with at least one existing system"
+                    "Decision log panel visible on desktop below Society feed",
+                    "Decisions persist in scrollable list not ephemeral flash",
+                    "Mobile collapsed by default with details summary",
+                    "Auto-scroll to bottom unless user scrolled up",
+                    "parse_check and replay_test pass"
                 ],
-                "source": "strategist",
-                "claimedAt": "2026-03-13T21:40:37.850Z",
-                "completedAt": "2026-03-13T21:41:47.511Z",
-                "outputPath": "agents/designer/output/latest-design.md"
+                "source": "orchestrator",
+                "claimedAt": "2026-03-13T22:16:52.251Z",
+                "completedAt": "2026-03-13T22:19:58.988Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -731,14 +731,36 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T21:53:06.813Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-117",
+                "title": "Design mini-event variety pack for active play diversity",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:39:15.423Z",
+                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
+                "acceptanceCriteria": [
+                    "3-4 new event types designed with thematic flavor text",
+                    "Each event has clear trigger conditions and probability weights",
+                    "Reward structure defined (active bonus not idle penalty)",
+                    "Visual design spec fits existing dark theme",
+                    "Events interact meaningfully with at least one existing system"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T21:40:37.850Z",
+                "completedAt": "2026-03-13T21:41:47.511Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-13T22:04:37.361Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
-        "totalCreated": 116,
-        "totalCompleted": 61,
+        "totalCreated": 117,
+        "totalCompleted": 62,
         "pendingQuestion": null
     },
-    "nextId": 121
+    "nextId": 122
 }

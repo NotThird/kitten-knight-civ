@@ -310,6 +310,12 @@
     .log, .panelmono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; white-space:pre-wrap; overflow:auto; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); border-left:3px solid var(--section-accent, rgba(125,211,252,.30)); padding:10px; border-radius:12px; }
     .log { max-height:160px; }
     .panelmono { max-height:180px; }
+    .decision-log-panel { margin-top:10px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:rgba(0,0,0,.18); }
+    .decision-log-panel > summary { list-style:none; cursor:pointer; user-select:none; padding:8px 10px; color:var(--muted); }
+    .decision-log-panel > summary::-webkit-details-marker { display:none; }
+    .decision-log-panel > summary::before { content:'▾ '; color:var(--accent); }
+    .decision-log-panel:not([open]) > summary::before { content:'▸ '; }
+    .decision-log { max-height:190px; margin:0 10px 10px 10px; }
     .why { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; color:#b7c2d4; white-space:pre-wrap; line-height:1.35; }
 
     .bar { height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; border:1px solid rgba(255,255,255,.10); }

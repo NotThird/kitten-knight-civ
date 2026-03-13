@@ -207,6 +207,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
   }
 
+  function ensureDecisionLog(s){
+    s.decisionLog = Array.isArray(s.decisionLog) ? s.decisionLog : [];
+    const DECISION_LOG_MAX = 260;
+    if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog = s.decisionLog.slice(-DECISION_LOG_MAX);
+  }
+
+  function pushDecisionLog(s, msg){
+    ensureDecisionLog(s);
+    s.decisionLog.push(`[${fmt(s.t)}] ${msg}`);
+    const DECISION_LOG_MAX = 260;
+    if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog.splice(0, s.decisionLog.length - DECISION_LOG_MAX);
+  }
+
   function tryAdvanceRevealStage(s){
     s.meta = s.meta ?? {};
     let stage = revealStageOf(s);
@@ -269,7 +282,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, incident: null, incidentSeen: 0, lastIncidentAt: 0, incidentCooldownUntil: 0, nextIncidentAt: 600 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
-    feed: []
+    feed: [],
+    decisionLog: []
   });
 
   const LEGACY_LORE_UPGRADES = [
@@ -3433,7 +3447,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!k || prevTask === newTask) return;
     // Only log if the kitten has been doing the previous task for at least 3s (avoid log spam)
     if ((k.taskStreak ?? 0) < 3) return;
-    kittenLog(k, 'task', { from: prevTask, to: newTask, why: String(why ?? '').slice(0, 60) });
+    const whyShort = String(why ?? '').slice(0, 60);
+    kittenLog(k, 'task', { from: prevTask, to: newTask, why: whyShort });
+    const fromTask = String(prevTask ?? 'Idle').trim() || 'Idle';
+    const toTask = String(newTask ?? 'Idle').trim() || 'Idle';
+    const who = String(k.name ?? `#${k.id ?? '?'}`).trim() || `#${k.id ?? '?'}`;
+    const because = whyShort ? ` (${whyShort})` : '';
+    pushDecisionLog(s, `${who}: ${fromTask} -> ${toTask}${because}`);
   }
 
   // Log mood band crossings (called at end of mood update)
@@ -6877,6 +6897,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const devModeEl = el('devMode');
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
+  const decisionLogPanelEl = el('decisionLogPanel');
+  const decisionLogSummaryEl = el('decisionLogSummary');
+  const decisionLogEl = el('decisionLog');
   const tankEl = el('tank');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendTabRailEl = el('trendTabRail');
@@ -6884,6 +6907,27 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const trendPanels = Array.from(document.querySelectorAll('[data-trend-panel]'));
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
+
+  function shouldStickToBottom(node){
+    if (!node) return false;
+    const gap = node.scrollHeight - node.scrollTop - node.clientHeight;
+    return gap <= 24;
+  }
+
+  function syncLogView(node, lines, sticky){
+    if (!node) return;
+    node.textContent = lines.join('\n');
+    if (sticky) node.scrollTop = node.scrollHeight;
+  }
+
+  function ensureDecisionLogPanelLayout(){
+    if (!decisionLogPanelEl || decisionLogPanelEl.dataset.mobileInit === '1') return;
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
+    if (isMobile) decisionLogPanelEl.removeAttribute('open');
+    else decisionLogPanelEl.setAttribute('open', '');
+    decisionLogPanelEl.dataset.mobileInit = '1';
+  }
+  ensureDecisionLogPanelLayout();
 
   function ensureCurator(s){
     s.director = s.director ?? {};
@@ -9517,8 +9561,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     applyRevealVisibility();
     renderTrendsLegend();
 
-    // Society feed
-    if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
+    // Society feed + persistent decision log
+    ensureDecisionLog(state);
+    if (feedEl) {
+      const feedSticky = shouldStickToBottom(feedEl);
+      const feedLines = (Array.isArray(state.feed) ? state.feed : []).slice(-180);
+      syncLogView(feedEl, feedLines, feedSticky);
+    }
+    if (decisionLogEl) {
+      const decSticky = shouldStickToBottom(decisionLogEl);
+      const decLines = (Array.isArray(state.decisionLog) ? state.decisionLog : []).slice(-220);
+      syncLogView(decisionLogEl, decLines, decSticky);
+      if (decisionLogSummaryEl) decisionLogSummaryEl.textContent = `Decision log (${decLines.length})`;
+    }
     renderMilestonesFx();
     renderActivePlayEvent();
 
@@ -10884,10 +10939,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     logEl.textContent = state.log.slice(-40).join('\n');
     logEl.scrollTop = logEl.scrollHeight;
 
-    // Society feed scroll follows newest entries.
+    // Society feed + decision log: auto-scroll only while user is at the bottom.
     if (feedEl) {
-      feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).slice(-180).join('\n');
-      feedEl.scrollTop = feedEl.scrollHeight;
+      const feedSticky = shouldStickToBottom(feedEl);
+      const feedLines = (Array.isArray(state.feed) ? state.feed : []).slice(-180);
+      syncLogView(feedEl, feedLines, feedSticky);
+    }
+    if (decisionLogEl) {
+      const decSticky = shouldStickToBottom(decisionLogEl);
+      const decLines = (Array.isArray(state.decisionLog) ? state.decisionLog : []).slice(-220);
+      syncLogView(decisionLogEl, decLines, decSticky);
+      if (decisionLogSummaryEl) decisionLogSummaryEl.textContent = `Decision log (${decLines.length})`;
     }
 
     // Canvas HUDs
