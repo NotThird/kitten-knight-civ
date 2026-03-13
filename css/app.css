@@ -4,6 +4,12 @@
     header { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
     header h1 { font-size:16px; margin:0; font-weight:700; letter-spacing:.2px; }
     header .pill { background:rgba(125,211,252,.12); color:var(--accent); border:1px solid rgba(125,211,252,.25); padding:4px 8px; border-radius:999px; font-size:12px; }
+    .header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .header-overflow { position:relative; }
+    .header-overflow > summary { list-style:none; cursor:pointer; user-select:none; padding:6px 10px; border:1px solid rgba(255,255,255,.14); border-radius:10px; background:rgba(255,255,255,.06); min-height:34px; display:flex; align-items:center; }
+    .header-overflow > summary::-webkit-details-marker { display:none; }
+    .header-overflow-menu { position:absolute; right:0; top:calc(100% + 6px); z-index:30; min-width:170px; display:grid; gap:6px; background:#0b1220; border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:8px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    .header-overflow:not([open]) .header-overflow-menu { display:none; }
     header button { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.12); padding:6px 10px; border-radius:10px; cursor:pointer; transition: transform .08s ease, filter .12s ease, background .12s ease; }
     header button:hover { background:rgba(255,255,255,.09); }
     header button:active { animation: btnClickFlash .22s ease-out; transform: scale(.97); filter: brightness(1.12); }
@@ -309,7 +315,51 @@
     .bar { height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; border:1px solid rgba(255,255,255,.10); }
     .bar > div { height:100%; width:50%; background:rgba(125,211,252,.35); }
 
-    @media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+    @media (max-width: 767px) {
+      header { padding:10px 12px; gap:10px; }
+      .pill { max-width:100%; }
+      .header-actions { width:100%; }
+      .header-actions > button,
+      .header-overflow > summary,
+      .btn,
+      .incident-choice-btn,
+      header button { min-height:44px; }
+      main { grid-template-columns:1fr; padding:12px; gap:10px; }
+      .grid2 { grid-template-columns:1fr; }
+      .kc-middle { flex-direction:column; }
+      .kc-radar { width:100%; height:auto; max-width:140px; }
+      .trendTabRail { grid-template-columns:1fr; }
+    }
+
+    @media (max-width: 479px) {
+      main { padding:10px; gap:8px; }
+      .card .body { padding:10px; }
+      .grid2 { gap:8px; }
+      .header-actions { justify-content:space-between; }
+      .header-actions > button,
+      .header-overflow { flex:1 1 auto; }
+      .header-actions > button { min-width:0; }
+      .header-overflow > summary { justify-content:center; }
+      .header-overflow-menu { left:0; right:0; min-width:0; }
+
+      body.mobile-accordion main { display:block; }
+      body.mobile-accordion .card { margin-bottom:10px; }
+      body.mobile-accordion .card > h2 {
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin:0;
+        padding:12px;
+      }
+      body.mobile-accordion .card > h2::after {
+        content:'▾';
+        opacity:.8;
+        font-size:12px;
+      }
+      body.mobile-accordion .card.is-collapsed > h2::after { content:'▸'; }
+      body.mobile-accordion .card.is-collapsed > .body { display:none; }
+    }
 
     /* Modal (inspect scoring) */
     .hidden { display:none !important; }
@@ -443,8 +493,3 @@
   #feedbackModal .modalCard { margin-top:16px; }
 }
 
-@media (max-width:420px) {
-  main { padding:10px; gap:8px; }
-  .card .body { padding:10px; }
-  .grid2 { gap:8px; }
-}

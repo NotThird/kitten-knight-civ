@@ -11,14 +11,21 @@
   <h1>Kitten Knight Civ</h1>
   <span class="pill" id="ver"></span>
   <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
-  <button id="btnPause" title="Shortcut: Space" data-reveal-min="1">Pause</button>
-  <button id="btnSound" title="Toggle sound effects (default off)" data-reveal-min="4">Sound: Off</button>
-  <button id="btnPatchNotes" title="What's new in this version" data-reveal-min="4">Patch Notes</button>
-  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)" data-reveal-min="4">Export Save</button>
-  <button id="btnImport" title="Paste a save string to restore" data-reveal-min="4">Import Save</button>
-  <button id="btnPrestige" title="Reset colony for Legacy Shards" data-reveal-min="4">Legacy Reset</button>
-  <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils" data-reveal-min="4">Eternity Reset</button>
-  <button id="btnReset" title="Resets everything" data-reveal-min="4">Hard Reset</button>
+  <div class="header-actions">
+    <button id="btnPause" title="Shortcut: Space" data-reveal-min="1">Pause</button>
+    <button id="btnSound" title="Toggle sound effects (default off)" data-reveal-min="4">Sound: Off</button>
+    <details class="header-overflow" id="headerOverflow">
+      <summary class="small">More</summary>
+      <div class="header-overflow-menu">
+        <button id="btnPatchNotes" title="What's new in this version" data-reveal-min="4">Patch Notes</button>
+        <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)" data-reveal-min="4">Export Save</button>
+        <button id="btnImport" title="Paste a save string to restore" data-reveal-min="4">Import Save</button>
+        <button id="btnPrestige" title="Reset colony for Legacy Shards" data-reveal-min="4">Legacy Reset</button>
+        <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils" data-reveal-min="4">Eternity Reset</button>
+        <button id="btnReset" title="Resets everything" data-reveal-min="4">Hard Reset</button>
+      </div>
+    </details>
+  </div>
   <span class="small" id="clock"></span>
 </header>
 

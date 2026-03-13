@@ -7107,6 +7107,79 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     });
   }
 
+  function initMobileLayoutControls(){
+    const mobileMq = window.matchMedia('(max-width: 479px)');
+    const accordionIds = ['directorSection', 'colonySection', 'safetySection'];
+    const storageKey = 'kkc_mobile_accordion_v1';
+    const cards = accordionIds
+      .map((id) => document.getElementById(id))
+      .filter((node) => !!node);
+
+    let persisted = {};
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) persisted = JSON.parse(raw) || {};
+    } catch (_err) { persisted = {}; }
+
+    const persist = () => {
+      const next = {};
+      for (const card of cards) next[card.id] = !card.classList.contains('is-collapsed');
+      try { window.localStorage.setItem(storageKey, JSON.stringify(next)); } catch (_err) {}
+    };
+
+    for (const card of cards){
+      const heading = card.querySelector(':scope > h2');
+      if (!heading) continue;
+      heading.setAttribute('role', 'button');
+      heading.setAttribute('tabindex', '0');
+      heading.addEventListener('click', () => {
+        if (!mobileMq.matches) return;
+        card.classList.toggle('is-collapsed');
+        persist();
+      });
+      heading.addEventListener('keydown', (ev) => {
+        if (!mobileMq.matches) return;
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        ev.preventDefault();
+        card.classList.toggle('is-collapsed');
+        persist();
+      });
+    }
+
+    const apply = () => {
+      document.body.classList.toggle('mobile-accordion', mobileMq.matches);
+      for (const card of cards){
+        if (!mobileMq.matches) {
+          card.classList.remove('is-collapsed');
+          continue;
+        }
+        const open = Object.prototype.hasOwnProperty.call(persisted, card.id)
+          ? !!persisted[card.id]
+          : card.id === 'directorSection';
+        card.classList.toggle('is-collapsed', !open);
+      }
+    };
+
+    apply();
+    const listener = () => apply();
+    if (typeof mobileMq.addEventListener === 'function') mobileMq.addEventListener('change', listener);
+    else mobileMq.addListener(listener);
+
+    const overflow = document.getElementById('headerOverflow');
+    if (overflow) {
+      document.addEventListener('click', (ev) => {
+        if (!overflow.open) return;
+        if (overflow.contains(ev.target)) return;
+        overflow.open = false;
+      });
+      overflow.addEventListener('click', (ev) => {
+        const btn = ev.target?.closest?.('button');
+        if (btn) overflow.open = false;
+      });
+    }
+  }
+  initMobileLayoutControls();
+
   // Inspector modals are initialized later once their DOM nodes exist.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
