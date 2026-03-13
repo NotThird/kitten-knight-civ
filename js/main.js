@@ -266,7 +266,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
     research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
-    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
+    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, incident: null, incidentSeen: 0, lastIncidentAt: 0, incidentCooldownUntil: 0, nextIncidentAt: 600 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
     feed: []
@@ -707,10 +707,128 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
     ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
     ap.seen = Math.max(0, Math.floor(Number(ap.seen ?? 0) || 0));
+    ap.incident = (ap.incident && typeof ap.incident === 'object') ? ap.incident : null;
+    ap.incidentSeen = Math.max(0, Math.floor(Number(ap.incidentSeen ?? 0) || 0));
+    ap.lastIncidentAt = Number(ap.lastIncidentAt ?? 0) || 0;
+    ap.incidentCooldownUntil = Number(ap.incidentCooldownUntil ?? 0) || 0;
+    if (!Number.isFinite(ap.nextIncidentAt)) {
+      ap.nextIncidentAt = tNow + 600;
+    }
+    ap.nextIncidentAt = Math.max(tNow + 45, Number(ap.nextIncidentAt) || (tNow + 600));
   }
 
   function rollActivePlayDelay(){
     return 60 + Math.random() * 60;
+  }
+
+  const FIELD_INCIDENTS = [
+    {
+      id: 'collapsed_bridge',
+      label: 'Collapsed Bridge',
+      desc: 'Supply bridge failed. Choose where to allocate labor tonight.',
+      choices: [
+        { id:'rebuild_fast', label:'Rebuild fast', effects:{ wood:-36, tools:-4, food:+26, threat:-8, mood:-0.02 } },
+        { id:'ration_detour', label:'Detour with ration cuts', effects:{ food:-48, wood:+18, science:+10, dissent:+0.04 } },
+      ],
+    },
+    {
+      id: 'embers_in_rain',
+      label: 'Embers in the Rain',
+      desc: 'Storm soaked fuel stores. Decide between comfort and stockpile safety.',
+      choices: [
+        { id:'burn_reserves', label:'Burn reserve timber', effects:{ wood:-52, warmth:+24, mood:+0.04, threat:-5 } },
+        { id:'cold_watch', label:'Cold watch shifts', effects:{ food:+20, science:+14, warmth:-18, dissent:+0.05 } },
+      ],
+    },
+    {
+      id: 'strange_caravan',
+      label: 'Strange Caravan',
+      desc: 'A caravan offers risky trade terms at dusk.',
+      choices: [
+        { id:'buy_map', label:'Buy star-map bundle', effects:{ food:-34, wood:-22, science:+42, tools:+6 } },
+        { id:'seize_crates', label:'Seize crates by force', effects:{ food:+54, wood:+34, threat:+16, mood:-0.05, dissent:+0.03 } },
+      ],
+    },
+    {
+      id: 'rookery_fire',
+      label: 'Rookery Fire',
+      desc: 'A workshop ember sparked a rookery fire near storage huts.',
+      choices: [
+        { id:'bucket_line', label:'Bucket line response', effects:{ food:-20, wood:-12, threat:-10, mood:+0.03 } },
+        { id:'save_tools', label:'Prioritize tool caches', effects:{ tools:+8, science:+12, food:-36, warmth:-10, dissent:+0.02 } },
+      ],
+    },
+  ];
+
+  function fieldIncidentSeed(s, salt=0){
+    const ap = s.activePlay ?? {};
+    const t = Math.floor(Number(s.t ?? 0));
+    const runMix = (Math.floor(Number(s?.legacy?.resets ?? 0)) * 2654435761) ^ (Math.floor(Number(s?.eternity?.resets ?? 0)) * 2246822519);
+    const socialMix = (Math.floor((Number(s?.social?.dissent ?? 0) || 0) * 1000) * 3266489917) ^ (Math.floor((Number(s?.social?.norms?.scarcityMindset ?? 0) || 0) * 1000) * 668265263);
+    const seenMix = Math.floor(Number(ap.incidentSeen ?? 0)) * 1597334677;
+    return (t ^ runMix ^ socialMix ^ seenMix ^ (Math.floor(Number(salt ?? 0)) * 374761393)) | 0;
+  }
+
+  function rollFieldIncidentDelay(s){
+    const rng = seededRng(fieldIncidentSeed(s, 11));
+    return 600 + Math.floor(rng() * 1201);
+  }
+
+  function spawnFieldIncident(s){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    if (ap.incident) return;
+    const nowT = Number(s.t ?? 0);
+    const rng = seededRng(fieldIncidentSeed(s, 23));
+    const idx = Math.floor(rng() * FIELD_INCIDENTS.length);
+    const base = FIELD_INCIDENTS[idx] ?? FIELD_INCIDENTS[0];
+    ap.incident = {
+      id: String(base.id),
+      label: String(base.label),
+      desc: String(base.desc),
+      choices: base.choices.map((c) => ({ id:String(c.id), label:String(c.label), effects:{ ...(c.effects ?? {}) } })),
+      spawnedAt: nowT,
+      expiresAt: nowT + 120,
+    };
+    ap.lastIncidentAt = nowT;
+    log(`Field Incident: ${base.label}. Choose a response.`);
+    playSfx('unlock');
+  }
+
+  function applyFieldIncidentChoice(s, choiceId){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    const inc = ap.incident;
+    if (!inc) return false;
+    const choice = (Array.isArray(inc.choices) ? inc.choices : []).find((c) => String(c.id) === String(choiceId));
+    if (!choice) return false;
+    const fx = (choice.effects && typeof choice.effects === 'object') ? choice.effects : {};
+
+    s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(fx.food ?? 0));
+    s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(fx.wood ?? 0));
+    s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(fx.science ?? 0));
+    s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(fx.tools ?? 0));
+    s.res.warmth = Math.max(0, Number(s.res.warmth ?? 0) + Number(fx.warmth ?? 0));
+    s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(fx.threat ?? 0));
+
+    s.social = s.social ?? { dissent:0, norms:{} };
+    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + Number(fx.dissent ?? 0));
+    const moodDelta = Number(fx.mood ?? 0);
+    if (Math.abs(moodDelta) > 0.0001) {
+      const ks = Array.isArray(s.kittens) ? s.kittens : [];
+      for (const k of ks) {
+        k.mood = clamp01(Number(k.mood ?? 0.6) + moodDelta);
+      }
+    }
+
+    log(`Field Incident resolved: ${inc.label} -> ${choice.label}.`);
+    ap.incident = null;
+    ap.incidentSeen = Math.max(0, Number(ap.incidentSeen ?? 0) + 1);
+    ap.incidentCooldownUntil = Number(s.t ?? 0) + 120;
+    ap.nextIncidentAt = Number(s.t ?? 0) + rollFieldIncidentDelay(s);
+    playSfx('milestone');
+    save();
+    return true;
   }
 
   function activePlayProdMul(s){
@@ -788,8 +906,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ap.active = null;
     }
 
+    if (ap.incident && nowT >= Number(ap.incident.expiresAt ?? 0)) {
+      log(`Field Incident missed: ${ap.incident.label}. Opportunity lost.`);
+      ap.incident = null;
+      ap.incidentCooldownUntil = nowT + 120;
+      ap.nextIncidentAt = nowT + rollFieldIncidentDelay(state);
+    }
+
     if (nowT >= Number(ap.nextAt ?? Infinity) && !ap.active && !state.paused) {
       spawnActivePlayEvent(state);
+    }
+
+    if (!ap.incident && nowT >= Number(ap.nextIncidentAt ?? Infinity) && nowT >= Number(ap.incidentCooldownUntil ?? 0) && !state.paused) {
+      spawnFieldIncident(state);
     }
 
     if (nowT >= Number(ap.boostUntil ?? 0)) {
@@ -806,6 +935,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       host.id = 'activePlayEventHost';
       host.className = 'active-play-event-host';
       document.body.appendChild(host);
+    }
+
+    if (ap.incident) {
+      const inc = ap.incident;
+      const left = Math.max(0, Number(inc.expiresAt ?? 0) - Number(state.t ?? 0));
+      const choices = (Array.isArray(inc.choices) ? inc.choices : []).map((c) => {
+        const label = escapeHtml(String(c.label ?? 'Respond'));
+        const id = escapeHtml(String(c.id ?? 'choice'));
+        return `<button class="incident-choice-btn" type="button" data-incident-choice="${id}">${label}</button>`;
+      }).join('');
+      host.innerHTML = `<div class="active-play-event incident"><div class="title">Field Incident: ${escapeHtml(String(inc.label ?? 'Incident'))}</div><div class="desc">${escapeHtml(String(inc.desc ?? 'Choose a response.'))} • ${Math.ceil(left)}s</div><div class="incident-choice-row">${choices}</div></div>`;
+      return;
     }
 
     const ev = ap.active;
@@ -11321,6 +11462,15 @@ function renderTrends(){
   document.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
+
+    const incidentChoice = target.closest('[data-incident-choice]');
+    if (incidentChoice) {
+      e.preventDefault();
+      const id = String(incidentChoice.getAttribute('data-incident-choice') ?? '');
+      if (applyFieldIncidentChoice(state, id)) render();
+      return;
+    }
+
     const hit = target.closest('#activePlayEventBtn');
     if (!hit) return;
     e.preventDefault();
