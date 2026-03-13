@@ -175,8 +175,37 @@
 </div>
 
 <script>
-// Inline data (generated at build time)
-const TASKBOARD = {
+// Live data from GitHub (always fresh)
+const REPO_BASE = 'https://raw.githubusercontent.com/NotThird/kitten-knight-civ/main/';
+const LOCAL_BASE = './';
+
+async function fetchJSON(path) {
+  // Try GitHub raw first (has project/ files), fall back to local
+  for (const base of [REPO_BASE, LOCAL_BASE]) {
+    try {
+      const r = await fetch(base + path + '?t=' + Date.now());
+      if (r.ok) return await r.json();
+    } catch(e) {}
+  }
+  return null;
+}
+
+async function loadData() {
+  document.getElementById('lastUpdate').textContent = 'Loading...';
+  const [tb, ql, hp] = await Promise.all([
+    fetchJSON('project/taskboard.json'),
+    fetchJSON('project/quality-log.json'),
+    fetchJSON('project/health.json'),
+  ]);
+  if (!tb || !ql) {
+    document.getElementById('lastUpdate').textContent = 'Error: could not load data from GitHub';
+    return;
+  }
+  init(tb, ql, hp || {});
+}
+
+// Fallback inline data (snapshot)
+const TASKBOARD_FALLBACK = {
   "version": 1,
   "iteration": 16,
   "maxIterations": 30,
@@ -1291,7 +1320,7 @@ const TASKBOARD = {
   },
   "nextId": 56
 };
-const QUALITY = {
+const QUALITY_FALLBACK = {
   "iterations": [
     {
       "iteration": 1,
@@ -1557,7 +1586,7 @@ const QUALITY = {
     "completeness"
   ]
 };
-const HEALTH = {
+const HEALTH_FALLBACK = {
   "timestamp": "2026-03-12T14:59:00-05:00",
   "iteration": 16,
   "cronHealth": {
@@ -1624,7 +1653,7 @@ const agents = [
   { name: 'Watchdog', role: 'Health', emoji: 'W', model: 'Spark' },
 ];
 
-function init() {
+function init(TASKBOARD, QUALITY, HEALTH) {
   const tb = TASKBOARD;
   const ql = QUALITY;
   const hp = HEALTH;
@@ -1706,7 +1735,7 @@ function init() {
     return `<div class="tl-item ${cls}">
       <span class="tl-score">Iter ${it.iteration}</span>
       <span class="tl-delta ${dCls}">${it.delta > 0 ? '+'+it.delta : it.delta === 0 ? '0' : it.delta}</span>
-      &rarr; <span class="tl-score">${it.overall}</span>
+       <span class="tl-score">${it.overall}</span>
       <div class="tl-note">${it.notes || ''}</div>
     </div>`;
   }).join('');
@@ -1802,7 +1831,10 @@ function drawChart() {
   });
 }
 
-init();
+// Try live fetch first, fall back to inline snapshot
+loadData().catch(() => {
+  init(TASKBOARD_FALLBACK, QUALITY_FALLBACK, HEALTH_FALLBACK);
+});
 </script>
 </body>
 </html>

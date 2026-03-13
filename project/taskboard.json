@@ -1,0 +1,1553 @@
+{
+    "version": 1,
+    "iteration": 26,
+    "maxIterations": 30,
+    "lastUpdated": "2026-03-12T23:49:52.679Z",
+    "columns": {
+        "todo": [
+            {
+                "id": "TASK-007",
+                "title": "Extract main.js monolith into proper modules",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "refactor",
+                "createdAt": "2026-03-12T05:04:00Z",
+                "description": "main.js is 540KB — a massive monolith. Extract AI logic into ai.js, social systems into social.js. Ensure parse_check still passes. Do NOT change behavior, only move code.",
+                "acceptanceCriteria": [
+                    "main.js reduced to <100KB",
+                    "ai.js exists with kitten AI logic",
+                    "social.js exists with norms/factions/coteries/rituals",
+                    "parse_check.js passes after refactor",
+                    "Game loads and runs identically"
+                ],
+                "source": "orchestrator",
+                "staleCount": 2,
+                "notes": "DEPRIORITIZED from critical to medium. Stale twice. Ship features first, refactor later. Still important but not blocking anymore."
+            },
+            {
+                "id": "TASK-021",
+                "title": "Review shipped polish bundle (TASK-015) for quality and engagement impact",
+                "assignee": "critic",
+                "priority": "medium",
+                "type": "review",
+                "createdAt": "2026-03-12T08:04:00Z",
+                "description": "TASK-015 shipped our first player-facing changes: title fix, socTrends canvas, button click animations. Review the live game and assess: Are the button animations satisfying? Does the title change render everywhere? Does the socTrends canvas actually receive data? Provide specific improvement suggestions for next visual pass.",
+                "acceptanceCriteria": [
+                    "Written assessment of each TASK-015 deliverable (title, canvas, animations)",
+                    "Specific suggestions for improving click satisfaction",
+                    "Note any visual bugs or inconsistencies found"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-018",
+                "title": "Create visual regression test suite for UI changes",
+                "assignee": "tester",
+                "priority": "medium",
+                "type": "test",
+                "createdAt": "2026-03-12T06:40:02.719Z",
+                "description": "With the pivot to shipping player-facing visual features (polish bundle, fly-up numbers, milestones), we need a way to verify UI changes without manual inspection. Create a lightweight test that loads the game in a headless context and validates key DOM elements exist and have expected CSS properties. This ensures visual features actually render and prevents regressions as multiple visual tasks land simultaneously.",
+                "acceptanceCriteria": [
+                    "Test script validates that key UI elements exist in the DOM after game init",
+                    "Test checks that CSS animation classes are properly defined in stylesheets",
+                    "Test can run via node command line without a browser (jsdom or similar)",
+                    "Test reports pass/fail with specific element names on failure",
+                    "Integrates with existing test infrastructure (parse_check, replay_test pattern)"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-022",
+                "title": "Fix mojibake encoding in patch notes content.js",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T07:11:30.255Z",
+                "description": "Critic review found UTF-8 mojibake (curly quotes rendered as garbled characters) in Patch Notes modal content. Quick fix: replace corrupted characters with proper ASCII quotes.",
+                "acceptanceCriteria": [
+                    "No mojibake characters visible in Patch Notes modal",
+                    "All quotes render correctly",
+                    "Modal opens without errors"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-029",
+                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T15:17:43.621Z",
+                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.",
+                "acceptanceCriteria": [
+                    "At least 5 secrets implemented with working triggers",
+                    "Secret discovery shows distinct visual notification",
+                    "Secrets log panel tracks found secrets",
+                    "At least 2 rare events fire during active play",
+                    "Secrets persist through save and prestige",
+                    "Mobile compatible - no hover required"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-032",
+                "title": "Validate shipped features on mobile viewport: dashboard, milestones, fly-ups",
+                "assignee": "tester",
+                "priority": "medium",
+                "type": "test",
+                "createdAt": "2026-03-12T15:50:41.747Z",
+                "description": "Three major features shipped recently (TASK-016 fly-ups, TASK-017 milestones, TASK-020 split dashboard) but none have been tested on mobile viewports. The game is mobile-first per Austin's directive. Verify all three render correctly at 375px and 768px widths, no horizontal scroll, no overlapping elements, tab switching works on touch.",
+                "acceptanceCriteria": [
+                    "Fly-up numbers visible and not clipped at 375px viewport width",
+                    "Milestone celebration overlay does not cause horizontal scroll on mobile",
+                    "Dashboard tab switching works with touch/click at 375px and 768px",
+                    "All three graph canvases render data correctly in split layout on mobile",
+                    "No console errors during normal gameplay at mobile viewport"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-040",
+                "title": "Create automated deploy checklist script (cache-bust, syntax check, test)",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T16:50:57.035Z",
+                "description": "Multiple bugs have stemmed from deploy inconsistencies: stale cache-busters, syntax errors shipping to prod, untested changes going live. A simple pre-deploy script (vanilla Node, no dependencies) that: (1) validates all JS files parse cleanly, (2) ensures cache-buster strings are consistent, (3) runs replay_test.js, (4) reports pass/fail. This is a stability investment that prevents regression. Reference: Kittens Game has a thorough build validation step that catches issues before they reach players.",
+                "acceptanceCriteria": [
+                    "Script runs via `node game/scripts/predeploy.js`",
+                    "Checks all .js files for syntax errors (exits non-zero on failure)",
+                    "Verifies cache-buster version strings are consistent across index.html",
+                    "Runs parse_check.js and replay_test.js as part of validation",
+                    "Outputs clear pass/fail summary with specific error locations"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-041",
+                "title": "Add global error boundary with player-friendly recovery UI",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.792Z",
+                "description": "Stability is at 6.5 and the 540KB monolith has no error handling for runtime failures. If any JS error occurs, the game silently breaks. Cookie Clicker wraps core loops in try-catch and shows a recovery prompt. KKC should catch unhandled errors, display a non-scary modal, and offer auto-reload. Prevents silent breakage and builds player trust.",
+                "acceptanceCriteria": [
+                    "window.onerror and unhandledrejection listeners catch all uncaught errors",
+                    "Error modal displays with friendly message and reload button",
+                    "Game state is auto-saved before reload attempt",
+                    "Error details logged to console for debugging",
+                    "No visible impact during normal gameplay"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-043",
+                "title": "Implement save integrity validation on load",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.872Z",
+                "description": "Stability gap: saves can silently corrupt if game crashes mid-write or migrations have edge cases. Antimatter Dimensions validates save structure on load and offers fallback if corrupted. KKC should validate critical save fields on load, warn if values are NaN/negative/impossible, and offer fallback to last known good save or clean start.",
+                "acceptanceCriteria": [
+                    "Save validation runs on every load checking for NaN, negative, or missing critical fields",
+                    "If validation fails, player sees modal with options: retry, use backup, or fresh start",
+                    "Auto-backup of last 2 valid saves in localStorage",
+                    "Validation covers population, resources, prestige shards, iteration count",
+                    "Console logs specific validation failures for debugging"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-047",
+                "title": "Implement save export/import with clipboard and file download",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Common incremental game expectation: let players export saves as base64 text (copy to clipboard) and import from clipboard/paste. Also offer download as .json file. Cookie Clicker, NGU IDLE, Antimatter Dimensions all have this. Improves completeness and player trust (backup before prestige).",
+                "acceptanceCriteria": [
+                    "Export button copies base64 save string to clipboard with success toast",
+                    "Import button accepts pasted base64 string and loads save after confirmation prompt",
+                    "Download button saves .json file with timestamp in filename",
+                    "Invalid import data shows clear error message without corrupting current save",
+                    "Works on mobile (clipboard API with fallback textarea)"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.381Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-048",
+                "title": "Add keyboard shortcuts for common actions and accessibility",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Completeness/polish item. Keyboard shortcuts for frequent actions (space=pause, P=prestige, S=settings). Focus indicators on all buttons. Reference: Antimatter Dimensions hotkey support.",
+                "acceptanceCriteria": [
+                    "Space bar toggles pause/play",
+                    "At least 3 keyboard shortcuts for navigation",
+                    "All buttons have visible focus indicators when tabbed to",
+                    "Keyboard shortcuts listed in help tooltip or settings panel",
+                    "Shortcuts do not fire when typing in text input fields"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.383Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-049",
+                "title": "Implement statistics and lifetime tracking panel",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
+                "acceptanceCriteria": [
+                    "Stats panel accessible from main UI showing lifetime totals",
+                    "Tracks: total resources earned, total prestiges, total time played, highest population",
+                    "Stats persist across prestige resets",
+                    "Stats panel renders cleanly on mobile viewport",
+                    "Current run stats shown alongside lifetime stats"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.383Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-052",
+                "title": "Add one-time sound discoverability nudge after 30 seconds of play",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.935Z",
+                "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept — gentle discovery of an opt-in feature.",
+                "acceptanceCriteria": [
+                    "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
+                    "Tooltip has a dismiss button and never reappears after dismissal",
+                    "Dismissal state persists in localStorage across sessions",
+                    "Tooltip does not appear if sound is already ON",
+                    "No hover dependency — works on mobile tap"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-053",
+                "title": "Add resource production rate indicators (per-second display and trend arrows)",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.969Z",
+                "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight — calculate from last 5 ticks average, update every 2s.",
+                "acceptanceCriteria": [
+                    "Each resource stat card shows production rate in per-second format",
+                    "Positive rates show green, negative show red, zero shows gray",
+                    "Rate is calculated as rolling average over last 5 game ticks",
+                    "Display updates every 2 seconds without layout shift",
+                    "Works correctly after prestige reset (rates reset to current values)"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-050",
+                "title": "Add contextual tooltip system for resource cards and key UI elements",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.998Z",
+                "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
+                "acceptanceCriteria": [
+                    "Tapping a resource card toggles an info row below it showing production sources and consumption",
+                    "Info row shows rate breakdown (e.g. 'Foragers: +2.1/s, Consumption: -0.8/s')",
+                    "Only one info row open at a time (tapping another closes the previous)",
+                    "Info row is styled consistently with dark theme",
+                    "Works on mobile without horizontal scroll"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-062",
+                "title": "Validate progressive reveal unlock sequence on fresh save",
+                "assignee": "tester",
+                "priority": "high",
+                "type": "test",
+                "createdAt": "2026-03-12T19:22:05.641Z",
+                "description": "Once TASK-051 (progressive reveal) ships, test the 5-stage unlock sequence from a fresh save. Verify stages unlock in order, UI elements appear/hide correctly, no information overload on first load. Test on mobile viewport (375px) and desktop. This is the #1 engagement gap per Arbiter review.",
+                "acceptanceCriteria": [
+                    "Fresh save shows only Stage 1 UI elements (minimal controls)",
+                    "Each stage unlock triggers correctly based on game progress milestones",
+                    "No UI elements visible before their unlock stage",
+                    "Mobile viewport (375px wide) shows clean layout at every stage",
+                    "Save/load preserves unlock progress correctly",
+                    "Transition between stages has no visual glitch or flash"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-063",
+                "title": "Implement animated number counters with easing for resource totals",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Visuals at 7.0 is weakest axis. Animated number transitions create satisfying numbers-go-up feeling. Use rAF lerp 200-400ms on main resource counters. Format large numbers with abbreviations (1.5K, 2.3M).",
+                "acceptanceCriteria": [
+                    "Resource counters animate smoothly when values change",
+                    "Animation 200-400ms with easing",
+                    "Numbers above 1000 abbreviated (1.5K, 2.3M, 1.1B)",
+                    "Full number on tap for mobile",
+                    "No perf degradation with multiple counters"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T19:55:15.499Z"
+            },
+            {
+                "id": "TASK-064",
+                "title": "Add particle effects on prestige reset and milestone unlock",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Visuals weakest axis. Key moments need VFX. Lightweight canvas/CSS particle bursts: confetti on milestone, radiant pulse on prestige reset. Pool 20-30 particles, auto-cleanup 1.5s. Respect prefers-reduced-motion.",
+                "acceptanceCriteria": [
+                    "Prestige reset triggers particle burst animation",
+                    "Milestone unlock triggers celebration effect",
+                    "Particles clean up within 2s (no leak)",
+                    "Performant on mobile",
+                    "Respects prefers-reduced-motion media query"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T19:55:15.499Z"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-074",
+                "title": "Validate event ticker and first-minute pacing on mobile and desktop",
+                "assignee": "tester",
+                "priority": "high",
+                "type": "test",
+                "createdAt": "2026-03-12T20:55:24.188Z",
+                "description": "End-to-end validation of stagnation-breaking features on 375px mobile and 1920px desktop viewports.",
+                "acceptanceCriteria": [
+                    "Event ticker visible and tappable on 375px viewport",
+                    "Event bonus activates on click/tap",
+                    "First-minute pacing triggers on fresh save",
+                    "Returning save skips pacing",
+                    "No layout overflow on mobile",
+                    "Events suppressed during first-minute pacing"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-069",
+                "title": "Implement session performance metrics and play-time statistics panel",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T21:24:22.583Z",
+                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
+                "acceptanceCriteria": [
+                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
+                    "Lifetime totals persist across prestige resets",
+                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
+                    "Data loads from existing save structure without migration"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-075",
+                "title": "Implement micro-interaction animations from TASK-057 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "description": "Implement 6 CSS micro-interactions from approved TASK-057 design: press snap, purchase confirm ring, stat gain nudge, stat spend dip, kitten arrival pop, milestone burst. CSS-only, no JS animation loops.",
+                "acceptanceCriteria": [
+                    "6 micro-animations implemented per spec",
+                    "All use CSS transitions/keyframes only",
+                    "Mobile performance verified",
+                    "Tests pass"
+                ],
+                "source": "orchestrator",
+                "createdAt": "2026-03-12T21:37:40.457Z",
+                "notes": ""
+            },
+            {
+                "id": "TASK-080",
+                "title": "Prepare deploy validation checklist for live site smoke tests",
+                "assignee": "tester",
+                "priority": "high",
+                "type": "test",
+                "description": "Ready a manual test script BEFORE TASK-066 deploy lands. Cover progressive reveal, research tree, prestige, audio, graphs.",
+                "acceptanceCriteria": [
+                    "Covers all post-last-deploy features",
+                    "Pass/fail criteria per check",
+                    "Mobile 375px checks",
+                    "Fresh + existing save scenarios",
+                    "Under 5 minutes to run"
+                ],
+                "source": "strategist",
+                "status": "todo",
+                "createdAt": "2026-03-12T21:55:36.798Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-072",
+                "title": "Implement kitten personality traits that affect production and unlock unique events",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T22:24:14.843Z",
+                "description": "Engagement gap: the game lacks meaningful differentiation between kittens. In Realm Grinder, choosing factions creates identity. In Kittens Game, leader traits matter. KKC kittens should have 4-6 personality traits (e.g. Brave, Curious, Lazy, Ambitious) assigned at birth that modify their production rates (+/-15%) and unlock trait-specific random events. A Brave kitten might trigger a quest event; a Curious one might discover a hidden resource. This creates emergent storytelling and gives players a reason to care about individual kittens. Builds on existing culture/norms system. Keep trait pool small (6 max) and effects simple (multiplier + event chance).",
+                "acceptanceCriteria": [
+                    "Each new kitten receives 1-2 random personality traits from a pool of 6",
+                    "Traits modify the kitten's production output by +/-15%",
+                    "At least 2 trait-specific random events can trigger during gameplay",
+                    "Trait info is visible on kitten detail view",
+                    "Traits persist through save/load",
+                    "No performance degradation with 50+ kittens having traits"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-081",
+                "title": "Add prestige milestone preview showing next reset rewards before committing",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T22:24:17.472Z",
+                "description": "Prestige anxiety is a known engagement killer. Antimatter Dimensions and Cookie Clicker both show what you will gain BEFORE you reset. KKC has Legacy Chronicle and Eternity Cycle but no preview of what the next reset will yield. Players should see a preview panel showing: legacy points earned, new upgrades unlockable, permanent bonuses gained. This reduces prestige anxiety (Austin directive: prestige should feel rewarding not punishing) and encourages resets at optimal moments. Simple info panel, no new mechanics needed.",
+                "acceptanceCriteria": [
+                    "Preview panel accessible from prestige section without triggering reset",
+                    "Shows legacy points that would be earned from current run",
+                    "Lists new upgrades that would become affordable after reset",
+                    "Shows permanent bonuses retained vs lost",
+                    "Panel works for both Legacy Chronicle and Eternity Cycle",
+                    "Mobile-friendly layout with no horizontal scroll"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-082",
+                "title": "Fix colony AI decisions display flashing too fast to read",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T22:36:48.909Z",
+                "description": "Player reported via in-game widget: colony AI decisions flash for ~1 second and disappear before they can be read. Investigate the event ticker / decision display duration. Likely needs minimum display time of 3-5 seconds or a persistent log panel.",
+                "acceptanceCriteria": [
+                    "AI decision notifications remain visible for at least 4 seconds",
+                    "Player can scroll back through recent decisions in a log or ticker history",
+                    "No layout shift or overlap with other UI elements"
+                ],
+                "source": "community"
+            },
+            {
+                "id": "TASK-083",
+                "title": "[BREAKTHROUGH] Implement mid-session engagement hooks from TASK-079 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T22:36:53.582Z",
+                "description": "Implement the Engagement Director system designed in TASK-079: Field Incidents, Town Directives, and Momentum Windows. Start with Field Incidents only for fastest engagement impact.",
+                "acceptanceCriteria": [
+                    "Field Incidents trigger every 10-30 minutes with player choice",
+                    "Choices have meaningful resource consequences",
+                    "Events are deterministic seeded from run state",
+                    "Rate-limited with cooldowns to avoid spam"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-076",
+                "title": "Verify live site deployment smoke test",
+                "assignee": "tester",
+                "priority": "critical",
+                "type": "test",
+                "createdAt": "2026-03-12T23:08:57.141Z",
+                "description": "Deploy fixed. Smoke test live site for all accumulated features.",
+                "acceptanceCriteria": [
+                    "Game loads without JS errors",
+                    "Golden cookies spawn and clickable",
+                    "Progressive reveal works on fresh save"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-077",
+                "title": "Implement endgame pacing curves from approved TASK-070 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T23:09:04.628Z",
+                "description": "Implement three-phase cost curves, soft caps, and breakthrough detection from TASK-070 endgame pacing design. Centralizes cost math into reusable helpers.",
+                "acceptanceCriteria": [
+                    "getUpgradeCost helper with phase detection",
+                    "Soft cap diminishing returns applied above thresholds",
+                    "Legacy and Eternity modifiers compose correctly",
+                    "Replay test still passes with identical checksums"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "title": "Implement faction diplomacy system from approved TASK-068 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Implement diplomacy panel. DEPRIORITIZED until post-ship.",
+                "acceptanceCriteria": [
+                    "Diplomacy state persists",
+                    "Influence generates per tick",
+                    "3+ actions with cooldowns",
+                    "Alliance and loyalty working",
+                    "Mobile-first UI",
+                    "Tests pass"
+                ],
+                "source": "orchestrator",
+                "id": "TASK-078",
+                "column": "todo",
+                "createdAt": "2026-03-12T23:38:15.449Z",
+                "staleCount": 0
+            }
+        ],
+        "claimed": [],
+        "review": [],
+        "done": [
+            {
+                "id": "TASK-006",
+                "title": "Post Game Forge introduction to Discord",
+                "assignee": "prophet",
+                "completedAt": "2026-03-12T06:00:00Z",
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-002",
+                "title": "Audit code health and fix syntax errors",
+                "assignee": "developer",
+                "completedAt": "2026-03-12T05:17:37Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-003",
+                "title": "Verify test scripts work and establish baseline",
+                "assignee": "developer",
+                "completedAt": "2026-03-12T05:46:39Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-001",
+                "title": "Review existing KKC game and document current mechanics",
+                "assignee": "designer",
+                "completedAt": "2026-03-12T07:04:00Z"
+            },
+            {
+                "id": "TASK-004",
+                "title": "Run full test suite and report baseline",
+                "assignee": "tester",
+                "completedAt": "2026-03-12T07:04:00Z"
+            },
+            {
+                "id": "TASK-005",
+                "title": "Initial quality assessment of KKC",
+                "assignee": "critic",
+                "completedAt": "2026-03-12T07:04:00Z"
+            },
+            {
+                "id": "TASK-012",
+                "title": "Design milestone celebration and achievement system",
+                "assignee": "designer",
+                "completedAt": "2026-03-12T06:12:53.486Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-015",
+                "title": "[BREAKTHROUGH] Ship visible polish bundle: title fix + socTrends canvas + click feedback",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-12T07:34:00Z",
+                "description": "STAGNATION BREAKER. We have shipped zero player-facing changes in 4 iterations. This task bundles 3 quick wins into one deliverable to break the logjam: (1) Fix game title — remove 'Proto' everywhere (HTML title, header, manifest). (2) Add missing socTrends canvas element in index.html. (3) Add CSS button click animations (scale bounce + color flash on .btn or equivalent). These are all surgical edits — no refactor needed. Work directly in the monolith if needed. Subsumes TASK-009 and TASK-014.",
+                "acceptanceCriteria": [
+                    "Game title says 'Kitten Knight Civ' everywhere (no Proto)",
+                    "socTrends canvas element exists in Society section",
+                    "Buttons have visible CSS click animation",
+                    "parse_check.js passes",
+                    "Game loads without errors"
+                ],
+                "source": "orchestrator",
+                "notes": "Stagnation pivot. Prioritize shipping over perfection. TASK-009 and TASK-014 merged into this.",
+                "claimedAt": "2026-03-12T06:46:17.657Z",
+                "completedAt": "2026-03-12T06:47:59.514Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T06:52:58.855Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-019",
+                "title": "Design split graph dashboard layout (Population / Society / Culture canvases)",
+                "assignee": "designer",
+                "completedAt": "2026-03-12T08:04:00Z",
+                "testVerdict": "APPROVED",
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-016",
+                "title": "[BREAKTHROUGH] Implement resource gain fly-up numbers and scarcity colors",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T07:34:00Z",
+                "description": "STAGNATION BREAKER. Visuals (4/10) is our weakest axis. Add two high-impact visual features: (1) Floating +N text on resource gains (CSS animation, absolute positioned span that fades up and out). (2) Resource text color coding based on supply level — green when abundant, yellow when low, red when critical. These create ambient visual life without requiring monolith extraction. Subsumes parts of TASK-008 and TASK-013.",
+                "acceptanceCriteria": [
+                    "Resource gains show floating +N number that animates up and fades out",
+                    "Resource values change color: green (>50% cap), yellow (10-50%), red (<10%)",
+                    "Animations use CSS only, respect prefers-reduced-motion",
+                    "Works on mobile without performance issues",
+                    "parse_check.js passes"
+                ],
+                "source": "orchestrator",
+                "notes": "Stagnation pivot. Directly targets weakest quality axis.",
+                "claimedAt": "2026-03-12T07:16:19.751Z",
+                "completedAt": "2026-03-12T07:18:38.464Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T07:23:09.867Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-011",
+                "title": "Design prestige system mechanics",
+                "assignee": "designer",
+                "completedAt": "2026-03-12T08:34:00Z",
+                "testVerdict": "APPROVED",
+                "source": "directive"
+            },
+            {
+                "id": "TASK-023",
+                "title": "Design offline progress and comeback bonus system",
+                "assignee": "designer",
+                "completedAt": "2026-03-12T09:04:00Z",
+                "testVerdict": "APPROVED",
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-010",
+                "title": "Progressive disclosure: hide advanced controls for new players",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T07:04:00Z",
+                "description": "New player experience is hostile — too many controls visible immediately. (1) Hide Advanced Controls section by default, reveal after first unlock or 2 minutes. (2) Surface the 3 Curator levers (Goal/Ethos/Intervention) prominently with one-line tooltip explanations. Austin directive: game should be self-explanatory.",
+                "acceptanceCriteria": [
+                    "Advanced Controls collapsed/hidden on fresh save",
+                    "Curator levers visible with short explanatory text",
+                    "Controls progressively reveal as player unlocks features"
+                ],
+                "source": "directive",
+                "claimedAt": "2026-03-12T07:46:24.081Z",
+                "completedAt": "2026-03-12T07:48:00.994Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T07:53:07.942Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-017",
+                "title": "Implement milestone celebration system from approved design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T06:39:51.198Z",
+                "description": "The milestone system design (done task 012) is complete and approved. Implement 15+ milestones with inline visual celebrations. Reference: Cookie Clicker golden cookie popups, Antimatter Dimensions achievement notifications. Visual tiers: spark (CSS glow pulse), surge (brief particle burst), saga (screen-wide flash), mythic (persistent glow). Implement directly in main.js per pivot strategy. This directly targets engagement and visuals axes, both critically low.",
+                "acceptanceCriteria": [
+                    "At least 10 milestones trigger on distinct game events (population thresholds, first building, first faction)",
+                    "Each milestone shows a visible inline celebration with CSS animation lasting 1-3 seconds",
+                    "Milestone history is persisted in save data and survives save/load",
+                    "No duplicate milestone alerts on reload",
+                    "Celebrations respect prefers-reduced-motion media query"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T08:16:25.205Z",
+                "completedAt": "2026-03-12T08:19:37.753Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T08:22:46.311Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-024",
+                "title": "Design discovery and secret mechanics layer",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T07:11:30.337Z",
+                "description": "Engagement needs one-more-turn hooks beyond milestones. Great incrementals hide secrets: Cookie Clicker golden cookies, Kittens Game hidden resources, Antimatter Dimensions secret achievements. Design a discovery layer for KKC: hidden achievements for unusual kitten behaviors, rare society events, easter eggs in culture system. Should integrate with existing emergent behavior rather than being scripted.",
+                "acceptanceCriteria": [
+                    "Lists 8+ discoverable secrets tied to existing mechanics",
+                    "Each secret has a trigger condition based on emergent sim behavior",
+                    "Includes at least 3 rare society events with narrative flavor",
+                    "Specifies how discoveries are surfaced to the player",
+                    "No secrets require tutorials - all emergent from play"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T08:13:11.616Z",
+                "completedAt": "2026-03-12T08:14:00.455Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T15:05:58.763Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-020",
+                "title": "Implement split graph dashboard from TASK-019 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T08:04:00Z",
+                "description": "Implement the approved 3-tab dashboard design (TASK-019). Add Population/Society/Culture+ML tab rail inside graph card. Wire series to each canvas. Persist selected tab in save state. Mobile-first: bottom tab rail, 44x44px targets, no horizontal scroll. Render only active canvas per tick. This fulfills Austin's March 5 directive and targets visuals + completeness.",
+                "acceptanceCriteria": [
+                    "3 tab buttons (Population/Society/Culture+ML) visible below graph area",
+                    "Clicking tab switches visible canvas; only one panel shown at a time",
+                    "Selected tab persists across save/load",
+                    "All 3 canvases render their assigned data series correctly",
+                    "Tab buttons are thumb-reachable on mobile (44x44px min)",
+                    "parse_check.js passes"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T15:09:01.774Z",
+                "completedAt": "2026-03-12T15:11:34.887Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T15:14:10.195Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-027",
+                "title": "Design active play event system (golden cookie moments)",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T08:09:13.336Z",
+                "description": "Engagement is stuck at 5/10. The game has strong idle simulation but zero active play hooks. Every top incremental has rare, time-limited events that reward attention: Cookie Clicker golden cookies, Kittens Game rare season resources, NGU IDLE timed challenges. Design a KKC-themed event system: wandering merchants, knight challenges, rare resource surges, faction crises. Events appear as clickable UI elements, last 10-30 seconds, give meaningful rewards. Must work on mobile. Reference: Cookie Clicker golden cookies appear every 5-15 min, give 13 cookies or 10% of bank or 7x production for 77 seconds.",
+                "acceptanceCriteria": [
+                    "Document 4-6 event types with thematic KKC flavor (kittens/knights/civilization)",
+                    "Each event has defined trigger frequency, duration, reward formula, and visual treatment",
+                    "Events reward active play without punishing idle players (missed events are fine)",
+                    "Design includes mobile-friendly tap targets (min 44x44px)",
+                    "Specify how events scale with colony size and prestige level"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T15:07:26.601Z",
+                "completedAt": "2026-03-12T15:08:40.120Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T15:36:10.721Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-025",
+                "title": "Implement Legacy Chronicle prestige system from approved design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T07:39:30.502Z",
+                "description": "The Legacy Chronicle prestige design has been approved. Highest-impact unimplemented feature for engagement and mechanics. Reference: Cookie Clicker heavenly chips, Antimatter Dimensions infinity. Follow approved design: 9 upgrades across 3 branches Lore/Honor/Harvest, log-scaled shards, anti-punishment UX. Ship incrementally: shard accumulation first, upgrade tree second.",
+                "acceptanceCriteria": [
+                    "Player can trigger prestige reset from a clearly labeled UI button",
+                    "Shards calculated from colony metrics using approved log-scale formula",
+                    "After reset colony restarts but shards persist in save data",
+                    "At least 3 upgrades from Lore branch purchasable with shards",
+                    "Prestige UI shows shard balance and available upgrades",
+                    "Reset preview shows expected shard gain before confirming"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T15:40:40.065Z",
+                "completedAt": "2026-03-12T15:44:16.813Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T15:45:30.309Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-028",
+                "title": "Design notification and pull-back system for idle returns",
+                "assignee": "designer",
+                "priority": "low",
+                "type": "design",
+                "createdAt": "2026-03-12T08:09:13.379Z",
+                "description": "Once offline progress (TASK-026) ships, we need a system to make returning feel exciting. Great idle games celebrate the player coming back: show accumulated resources dramatically, highlight what changed, surface new unlocks. This pairs with milestones (TASK-017) and offline progress. Design the welcome-back experience: animated resource tallying, 'while you were away' summary, streak bonuses for daily returns. Reference: NGU IDLE shows offline progress in a satisfying summary modal. Cookie Clicker shows accumulated cookies with fanfare.",
+                "acceptanceCriteria": [
+                    "Design welcome-back modal showing offline earnings with animated counter",
+                    "Include 'while you were away' summary of colony events (births, deaths, faction changes)",
+                    "Define daily return streak bonus (consecutive days = multiplier)",
+                    "Specify how summary adapts to short (minutes) vs long (hours/days) absences",
+                    "All UI elements work on mobile without horizontal scroll"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T15:38:43.665Z",
+                "completedAt": "2026-03-12T15:40:08.265Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T16:06:19.778Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-026",
+                "title": "Implement basic offline progress with comeback bonus",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T07:39:48.033Z",
+                "description": "Engagement is the weakest axis at 5/10. The single biggest gap per Arbiter: closing the tab means losing all progress momentum. Every successful incremental rewards returning players. Implement: on load, calculate elapsed time since last save, grant proportional resource accumulation at a reduced rate like 50 percent of active rate, show a welcome-back summary of what was earned. Reference: Cookie Clicker offline CpS, Kittens Game offline mode. Depends on TASK-023 design if available, otherwise use simple time-elapsed x production-rate x 0.5 formula. Can ship before the full design is complete.",
+                "acceptanceCriteria": [
+                    "On game load, elapsed time since last save is calculated",
+                    "Resources accumulate during offline period at 50 percent or configurable rate",
+                    "A welcome-back modal or panel shows time away and resources earned",
+                    "Offline gains are capped at a reasonable maximum like 24 hours",
+                    "Offline progress persists correctly through save/load cycle"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T16:10:41.636Z",
+                "completedAt": "2026-03-12T16:13:38.634Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T16:15:41.891Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-031",
+                "title": "Design visual theming pass: color accents and text-density reduction",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T15:50:23.266Z",
+                "description": "Critic flags visuals at 5.5 - monochrome and text-heavy. Dark theme is clean but no color hierarchy. Reference: Cookie Clicker uses golden accents, NGU IDLE color-codes tiers, Kittens Game uses subtle resource colors. Design a color accent system: resource type colors, tier colors for kittens/factions, icon suggestions to break text walls. Make UI scannable at a glance on mobile.",
+                "acceptanceCriteria": [
+                    "Define 4-6 accent colors mapped to resource types or UI categories",
+                    "Specify text-heavy sections that should use icons or visual shorthand",
+                    "All colors meet WCAG AA contrast on dark background",
+                    "No hover-dependent color changes - mobile-first"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T16:08:42.908Z",
+                "completedAt": "2026-03-12T16:09:49.375Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T16:36:00.095Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-033",
+                "title": "Implement offline progress with comeback bonus from approved designs",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T16:07:15.676Z",
+                "description": "Implement offline progress calculation and welcome-back modal from approved TASK-023 and TASK-028 designs. Without offline, the game cannot function as an idle game. Include 50 percent base rate with diminishing returns, 24h cap, tiered welcome-back modal, and daily return streak.",
+                "acceptanceCriteria": [
+                    "Closing and reopening tab after 2+ minutes shows accumulated offline gains",
+                    "Welcome-back modal displays time away and resource summary",
+                    "Offline rate is 50 percent of active rate with diminishing returns past 4h",
+                    "Daily return streak tracking persists across sessions",
+                    "Mobile modal fits within 92vw and 80vh constraints"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T16:40:32.643Z",
+                "completedAt": "2026-03-12T16:43:56.227Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T16:45:29.264Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-035",
+                "title": "Design icon and color language for resource types and UI sections",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "design",
+                "createdAt": "2026-03-12T16:19:32.264Z",
+                "description": "Visuals lowest at 5.5. Arbiter notes monochrome blue-grey UI with all panels identical. KKC needs: accent colors per resource type, subtle icons/markers, colored section borders. Feeds into TASK-034. Reference Kittens Game resource panel and Cookie Clicker store hierarchy.",
+                "acceptanceCriteria": [
+                    "Color palette defined for each resource type (minimum 6)",
+                    "Icon or marker specified per resource",
+                    "Section accent style for major UI panels",
+                    "Contrast verified against dark background",
+                    "Mobile viewport description included"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T16:38:43.866Z",
+                "completedAt": "2026-03-12T16:39:19.921Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T17:06:07.199Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-034",
+                "title": "Visual theming pass: accent colors, reduced text density, subtle glow effects",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T16:07:16.157Z",
+                "description": "Visuals is the lowest scoring axis at 5.5. Add section-specific accent colors, reduce text density in stat grids, add subtle CSS glow and pulse on important state changes. Dark theme stays but needs warmth and visual hierarchy.",
+                "acceptanceCriteria": [
+                    "Each major section has a distinct accent color in headers and borders",
+                    "Stat grid text reduced by 20 percent via progressive disclosure or grouping",
+                    "At least 3 UI elements have subtle glow or pulse animation on state change",
+                    "No bright or jarring colors - all accents are muted and dark-theme compatible"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T17:10:31.189Z",
+                "completedAt": "2026-03-12T17:12:55.190Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T17:15:26.532Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-036",
+                "title": "Design audio feedback system: click sounds, purchase chimes, milestone fanfares",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "design",
+                "createdAt": "2026-03-12T16:19:32.304Z",
+                "description": "Austin specifically wants satisfying click/purchase feedback. TASK-008 exists for Web Audio implementation but lacks a design spec. Great incrementals use layered audio: Cookie Clicker has distinct purchase tiers, NGU IDLE uses ascending chimes. Design needed: (1) what events trigger sounds, (2) sound character per event type (click=crisp tap, purchase=satisfying chime, milestone=brief fanfare, prestige=dramatic chord), (3) volume scaling approach, (4) mute/toggle UX. All generated via Web Audio API oscillators - no external audio files.",
+                "acceptanceCriteria": [
+                    "Event-to-sound mapping for minimum 6 game events",
+                    "Sound character described for each (waveform type, duration, pitch)",
+                    "Volume hierarchy defined (subtle clicks vs notable milestones)",
+                    "Mute toggle placement specified in UI",
+                    "Approach uses Web Audio API oscillators only, no audio files"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T17:08:37.396Z",
+                "completedAt": "2026-03-12T17:09:21.085Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T17:36:21.610Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-038",
+                "title": "Fix cache-buster version mismatch between main.js and CSS",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T16:50:49.878Z",
+                "description": "Arbiter review (iteration 12) identified that main.js uses ?v=2026-03-05h while CSS uses ?v=2026-03-12a. Stale JS with new CSS can cause visual or functional breaks after deploys. All asset references in index.html should use a consistent version string.",
+                "acceptanceCriteria": [
+                    "All script and stylesheet tags in index.html use the same cache-buster version string",
+                    "Version string reflects the most recent deploy date",
+                    "No mixed old/new asset loading after a fresh deploy"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T17:40:32.009Z",
+                "completedAt": "2026-03-12T17:41:12.205Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T17:45:19.842Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-037",
+                "title": "Design improved first-30-seconds experience via progressive reveal",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T16:19:32.342Z",
+                "description": "Arbiter notes new players see a wall of stats and controls. TASK-010 (progressive disclosure) shipped but Arbiter still flags this. Need a design pass on initial game state: what is visible on first load vs what unlocks. NOT a tutorial (Austin hates tutorials). Instead: start with minimal UI (colony name, a few kittens, basic resources), reveal sections as player hits natural milestones. Reference Antimatter Dimensions which starts with just 1 button and slowly reveals 8 dimensions. KKC should feel like peeling back layers.",
+                "acceptanceCriteria": [
+                    "Initial visible UI elements defined (what shows on fresh save)",
+                    "Unlock triggers for each hidden section mapped to gameplay milestones",
+                    "Minimum 4 progressive reveal stages defined",
+                    "No tutorial text or guided overlays",
+                    "Curator controls visible from start as primary interaction point"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T17:39:17.087Z",
+                "completedAt": "2026-03-12T17:39:59.437Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T18:05:59.314Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-045",
+                "title": "Implement audio feedback system from TASK-036 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:37:25.918Z",
+                "description": "Implement Web Audio oscillator SFX per TASK-036 spec. 8 event sounds, volume hierarchy, polyphony cap, Sound toggle. Default off.",
+                "acceptanceCriteria": [
+                    "playSfx handles all 8 event types with correct waveforms",
+                    "Sound toggle button visible and state persisted in save",
+                    "Polyphony capped at 6 voices and click cooldown at 14/sec",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T18:11:18.203Z",
+                "completedAt": "2026-03-12T18:16:16.189Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T18:17:49.784Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-039",
+                "title": "Design second prestige branch: Military legacy (knight combat upgrades)",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T16:50:53.027Z",
+                "description": "The Legacy Chronicle prestige system currently has only the Lore branch (3 upgrades). Great incremental games like Cookie Clicker (heavenly upgrades tree) and NGU IDLE (multiple prestige paths) offer branching prestige choices. A Military branch themed around knight combat would: (1) give prestige resets more strategic depth via branch choice, (2) unlock new mechanics tied to the knight/combat theme, (3) boost mechanics and engagement scores. Suggested upgrades: faster kitten skill gain, combat encounter bonuses, defensive structure buffs. Should feel meaningfully different from Lore branch so players want to prestige multiple times to explore both paths.",
+                "acceptanceCriteria": [
+                    "Design doc specifies 3-4 Military branch upgrades with costs and effects",
+                    "Each upgrade is thematically distinct from Lore branch upgrades",
+                    "Prestige UI mockup shows branch selection interface",
+                    "Cost curve ensures first Military upgrade is reachable within 2-3 resets",
+                    "Design doc explains how branches interact (additive, not exclusive)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T18:09:07.200Z",
+                "completedAt": "2026-03-12T18:10:46.067Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T18:36:00.340Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-046",
+                "title": "Implement icon and color language for resource types from TASK-035 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:37:25.958Z",
+                "description": "Apply emoji markers, resource tones, and panel accent rails per TASK-035 icon/color language design. Complement TASK-034 visual theming.",
+                "acceptanceCriteria": [
+                    "Resource types have distinct color tones",
+                    "Emoji markers on key resource labels",
+                    "Panel accent rails visible on section headers",
+                    "Dark theme WCAG AA contrast maintained"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T18:41:33.233Z",
+                "completedAt": "2026-03-12T18:43:56.720Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T18:47:31.403Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-042",
+                "title": "Design tech tree / research system for civilization progression",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T17:20:59.833Z",
+                "description": "Mechanics at 7 is solid but the game lacks branching progression choices. Kittens Game excels here with a tech tree where research unlocks new resource chains with meaningful trade-offs. Design a research system where the colony unlocks techs (Agriculture - - gating new buildings/mechanics. Should create interesting choices (military vs economic vs cultural branch) fitting the kitten-knight-civ theme.",
+                "acceptanceCriteria": [
+                    "Tech tree has 3+ branches with 4+ nodes each",
+                    "Each branch gates specific buildings or mechanics",
+                    "At least 2 meaningful branch-point choices",
+                    "Research costs scale with colony resources already in-game",
+                    "Design doc includes visual layout sketch for the tree UI"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T18:39:17.411Z",
+                "completedAt": "2026-03-12T18:40:53.601Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T19:06:01.049Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "title": "Implement Military Legacy branch from approved TASK-039 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "description": "Add second prestige branch (Military) with 4 upgrades: Drill Doctrine, Veteran Cadre, Fortified Timberline, War Ledger. Add branch selector tabs in Legacy panel. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "4 Military upgrades purchasable with Legacy Shards",
+                    "Branch selector (Lore/Military tabs) renders in Legacy panel",
+                    "Guard output, combat XP, palisade defense, and shard gain bonuses apply correctly",
+                    "Military shard bonus capped at +4",
+                    "Sound preference and military upgrades survive Legacy Reset",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "id": "TASK-054",
+                "createdAt": "2026-03-12T18:38:00.489Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-12T19:11:16.727Z",
+                "completedAt": "2026-03-12T19:15:41.904Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T19:17:30.967Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-056",
+                "title": "Design late-game prestige layers: Eternity reset and meta-progression",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "description": "The game currently has one prestige layer (Legacy Chronicle) with a Military branch pending. Great incrementals like Antimatter Dimensions and NGU IDLE derive massive longevity from multiple prestige tiers. Design a second prestige layer (Eternity or Epoch) that resets Legacy progress for a new currency and unlocks civilization-wide permanent upgrades (government types, cultural doctrines, legendary kittens). This gives long-term players a reason to keep resetting. Reference: AD infinity->eternity->reality pattern; Kittens Game paragon->burned paragon. Should feel thematic: kittens founding a new civilization with ancestral knowledge.",
+                "acceptanceCriteria": [
+                    "Document the reset trigger condition and what gets reset vs kept",
+                    "Define the meta-currency earned and 3-5 meta-upgrades it buys",
+                    "Describe how it interacts with existing Legacy Chronicle system",
+                    "Include at least 2 meaningful choices players make during the reset",
+                    "Estimate 3+ hours of new content depth from the layer"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T18:52:54.589Z",
+                "notes": "",
+                "claimedAt": "2026-03-12T19:09:30.624Z",
+                "completedAt": "2026-03-12T19:10:25.222Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T19:35:56.271Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-051",
+                "title": "Design late-game prestige layers: Eternity reset and meta-progression",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T18:52:21.069Z",
+                "description": "The game currently has one prestige layer (Legacy Chronicle) with a Military branch pending. Great incrementals like Antimatter Dimensions and NGU IDLE derive massive longevity from multiple prestige tiers. Design a second prestige layer (Eternity or Epoch) that resets Legacy progress for a new currency and unlocks civilization-wide permanent upgrades (government types, cultural doctrines, legendary kittens). This gives long-term players a reason to keep resetting. Reference: AD infinity- pattern; Kittens Game paragon- paragon. Should feel thematic: kittens founding a new civilization with ancestral knowledge.",
+                "acceptanceCriteria": [
+                    "Document the reset trigger condition and what gets reset vs kept",
+                    "Define the meta-currency earned and 3-5 meta-upgrades it buys",
+                    "Describe how it interacts with existing Legacy Chronicle system",
+                    "Include at least 2 meaningful choices players make during the reset",
+                    "Estimate 3+ hours of new content depth from the layer"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T19:40:19.407Z",
+                "status": "done"
+            },
+            {
+                "title": "Implement animated resource icons and panel accent color rails from TASK-035 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "description": "TASK-046 covers icon+color language. This is a reminder that visuals (6.5) is our lowest axis. Resource cards need emoji markers, color-coded accent rails per resource type, and subtle icon animations on gain. Refer to TASK-035 approved design.",
+                "acceptanceCriteria": [
+                    "Each resource type has a distinct emoji icon displayed in its stat card",
+                    "Panel sections have colored left-border accent rails",
+                    "Resource gain triggers a brief icon pulse animation",
+                    "Dark theme colors maintained - no bright/saturated tones",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "id": "TASK-055",
+                "createdAt": "2026-03-12T18:38:00.560Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-12T19:41:19.131Z",
+                "completedAt": "2026-03-12T19:43:29.654Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "status": "done"
+            },
+            {
+                "id": "TASK-076",
+                "title": "Implement progressive reveal system from TASK-037 design",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:06:40.302Z",
+                "description": "Implement 5-stage progressive reveal system. Add revealStage to state.meta, data-reveal attributes to HTML sections, CSS visibility classes, and milestone-gated stage advancement. Existing saves default to Stage 4. Fresh saves start at Stage 0 showing only header, primary resources, curator controls, and core actions. See TASK-037 design for full spec.",
+                "acceptanceCriteria": [
+                    "Fresh save shows only Stage 0 UI (header, resources, curator controls, core actions)",
+                    "Existing saves load at Stage 4 with full UI visible",
+                    "Stage advances trigger via gameplay milestones OR time fallbacks per design spec",
+                    "Each stage unlock writes one concise feed line (no tutorial popups)",
+                    "Stage 0/1 fits one mobile screen (390x844) without scrolling past curator controls",
+                    "revealStage persists in save and is monotonic (never decreases)",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T20:09:15.846Z",
+                "completedAt": "2026-03-12T20:10:10.509Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "status": "todo",
+                "staleCount": 1,
+                "testedAt": "2026-03-12T20:35:57.853Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-077",
+                "title": "Design micro-interaction and purchase animation system",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "description": "Visuals (6.5) remain the lowest quality axis. While fly-ups, scarcity colors, and section accents are shipped, the moment-to-moment purchase/click feedback is still minimal. Cookie Clicker succeeds partly because every click FEELS impactful: number pops, slight screen shake, cookie bounce. Design a lightweight CSS-only micro-interaction system for KKC: button press animations, resource card pulse on gain, purchase confirmation flash, and kitten-arrival celebration. Must be CSS transitions/animations only (no JS animation loops). Reference: Cookie Clicker cookie bounce, Realm Grinder faction select flash, Kittens Game resource highlight on trade.",
+                "acceptanceCriteria": [
+                    "Define 4+ distinct micro-animations mapped to specific game events",
+                    "All animations use CSS only (transitions, keyframes) - no requestAnimationFrame",
+                    "Specify exact timing curves and durations for each animation",
+                    "Include mobile performance considerations (prefer transform/opacity)",
+                    "Describe how animations layer with existing fly-ups and pulse FX without visual noise"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T18:52:54.591Z",
+                "notes": "",
+                "claimedAt": "2026-03-12T20:39:15.360Z",
+                "completedAt": "2026-03-12T21:36:56.406Z"
+            },
+            {
+                "id": "TASK-078",
+                "title": "Implement Eternity Cycle from TASK-056 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T19:37:13.882Z",
+                "description": "Implement Eternity prestige layer per TASK-056 spec: state.eternity, sigil formula, 5 upgrades, mandates, preservation, eligibility gates, tab rail. Mobile-first.",
+                "acceptanceCriteria": [
+                    "state.eternity initialized",
+                    "4 eligibility gates work",
+                    "Sigil formula correct",
+                    "5 upgrades purchasable",
+                    "Mandates apply modifiers",
+                    "Preservation packages work",
+                    "Tab rail renders",
+                    "Tests pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T20:41:15.952Z",
+                "completedAt": "2026-03-12T21:36:56.406Z"
+            },
+            {
+                "id": "TASK-059",
+                "title": "Implement progressive reveal system from approved TASK-061 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:36:45.878Z",
+                "description": "Implement the 5-stage progressive reveal system as specified in TASK-061 design. Add data-reveal-min attributes, state.meta.revealStage with migration, milestone and time gating, feed messages, and mobile-first layout constraints. This is the single highest-impact feature for new player retention.",
+                "acceptanceCriteria": [
+                    "Fresh save starts at Stage 0 with only core resources and curator visible",
+                    "Stages 1-4 unlock via milestone OR time fallback gates as specified",
+                    "Existing saves migrate to Stage 4",
+                    "Feed shows one-line unlock message per stage transition",
+                    "No modals or tutorial overlays",
+                    "Mobile viewport 390px fits Stage 0-1 above fold without scrolling past curator",
+                    "parse_check and replay_test pass",
+                    "Debug hooks exposed for testing"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T21:41:19.471Z",
+                "completedAt": "2026-03-12T21:42:13.597Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T21:51:10.405Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-058",
+                "title": "Design idle notification and session-end hook system",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T19:22:11.558Z",
+                "description": "Design a lightweight notification system that gives players reasons to return. KKC should notify on: resource cap reached, new cultural norm emerged, faction event occurred, prestige milestone within reach. Must respect mobile-first, dark theme, and no-tutorial philosophy. Keep it ambient: subtle glow or badge count on tab/PWA icon, not intrusive popups. This addresses the engagement gap: idle loop is solid but nothing pulls the player back.",
+                "acceptanceCriteria": [
+                    "Design doc covers at least 4 notification trigger types",
+                    "Each trigger has clear threshold/condition defined",
+                    "Visual treatment specified (tab badge, in-game indicator, PWA badge)",
+                    "Mobile PWA badge behavior documented",
+                    "No intrusive popups or permission prompts in design",
+                    "Design fits dark theme aesthetic"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T21:39:22.151Z",
+                "completedAt": "2026-03-12T21:40:18.406Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T22:06:19.187Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-066",
+                "title": "[BREAKTHROUGH] Deploy pipeline: pull-rebase-push + verify live site",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T21:07:03.091Z",
+                "description": "STAGNATION BREAKER. The live site is stale. All recent work (progressive reveal, research tree, icon rails) is invisible to players. Clone fresh, pull rebase, resolve conflicts, push, verify live site loads latest. This unblocks ALL score axes.",
+                "acceptanceCriteria": [
+                    "git push succeeds to main branch",
+                    "Live site at notthird.github.io loads with progressive reveal active",
+                    "parse_check and replay_test pass on pushed code"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T22:11:56.854Z",
+                "completedAt": "2026-03-12T22:18:15.125Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T22:19:07.723Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-079",
+                "title": "Design mid-session engagement hooks: random events, mini-quests, timed challenges",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "design",
+                "description": "Engagement drifts after 15-20 min. Golden cookies solve 1-2 min gaps. Need 10-30 min hooks: kitten quests, seasonal events, faction challenges. Ref: Kittens Game astronomical events, AD challenges, NGU adventure.",
+                "acceptanceCriteria": [
+                    "At least 2 mid-session event types with trigger logic",
+                    "Player-meaningful choices per event",
+                    "Integrates with society/culture systems",
+                    "Rewards scale with progress",
+                    "Mobile UX specified"
+                ],
+                "source": "strategist",
+                "status": "todo",
+                "createdAt": "2026-03-12T21:55:36.797Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-12T22:09:22.491Z",
+                "completedAt": "2026-03-12T22:11:14.117Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T22:36:15.888Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-067",
+                "title": "[BREAKTHROUGH] Implement clickable golden-cookie active play events",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-12T21:07:07.004Z",
+                "description": "STAGNATION BREAKER. The game is 100% passive. Add timed pop-up events (golden cookie style) that appear every 60-120s, reward clicking with resource bursts or temporary multipliers. Design already approved in TASK-027. This is the single biggest engagement ceiling lift.",
+                "acceptanceCriteria": [
+                    "Random events appear every 60-120 seconds during active play",
+                    "Clicking event gives meaningful bonus (2x production 30s or resource burst)",
+                    "Events auto-dismiss after 10s if not clicked",
+                    "Visual indicator draws attention without being annoying",
+                    "Works on mobile (tap target >= 44px)"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T22:41:38.007Z",
+                "completedAt": "2026-03-12T22:46:45.534Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T22:50:04.734Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-070",
+                "title": "Design endgame pacing curve with soft caps and breakthrough moments",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T20:24:36.673Z",
+                "description": "Design the late-game pacing curve for KKC. Currently players hit exponential walls without clear breakthrough moments. Great incrementals like Antimatter Dimensions and Cookie Clicker create a rhythm: grind wall, prestige/breakthrough, explosive growth, new wall at higher tier. Design: cost curve formulas for each resource tier, where soft caps trigger, what breakthroughs look like for each prestige layer, and how Eternity Cycle resets interact with Legacy Chronicle. Output a pacing document with recommended curve values.",
+                "acceptanceCriteria": [
+                    "Document covers resource cost curves for early, mid, and late game",
+                    "Identifies 3+ breakthrough moments where growth accelerates",
+                    "Defines soft cap thresholds and diminishing returns formula",
+                    "Maps prestige layer interactions on pacing",
+                    "Includes recommended numeric values for key thresholds"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T22:39:40.039Z",
+                "completedAt": "2026-03-12T22:40:55.336Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T23:06:42.122Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-065",
+                "title": "Implement branching research tree from approved TASK-042 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T19:06:46.647Z",
+                "description": "Implement 3-branch research tree with 4 tiers each, 2 doctrine forks, science costs, mobile tap UI. See designer output for full spec.\n\n[REJECTED 2026-03-12T20:17:43.007Z] Missing required tap detail sheet in Research panel (branch tabs exist, but no tap-driven detail UI).",
+                "acceptanceCriteria": [
+                    "state.research block added with all required fields",
+                    "12 techs defined with prereqs and costs",
+                    "Doctrine choices are irreversible and exclusive",
+                    "Research panel with branch tabs and tap detail sheet",
+                    "Offline replay handles research ticks",
+                    "Save migration for existing saves",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T23:12:07.009Z",
+                "testVerdict": "APPROVED",
+                "completedAt": "2026-03-12T23:14:25.629Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T23:19:51.104Z"
+            },
+            {
+                "id": "TASK-068",
+                "title": "Design faction diplomacy and alliance system",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T21:24:20.195Z",
+                "description": "Post-breakthrough depth for engagement and mechanics. Kittens Game excels at inter-faction dynamics. Realm Grinder makes faction choice the defining mechanic. KKC already has factions — we need player-facing diplomacy: influence relations, form alliances, trigger trade routes. Gives Curator mode meaningful levers beyond resource allocation.",
+                "acceptanceCriteria": [
+                    "Design doc specifies at least 3 diplomacy actions with resource costs",
+                    "Faction relationships affect production rates or unlock unique buildings",
+                    "System integrates with existing faction and culture mechanics",
+                    "Mobile-friendly UI approach described"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T23:10:29.756Z",
+                "completedAt": "2026-03-12T23:11:36.251Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-12T23:36:32.102Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-071",
+                "title": "Fix research tree: add tap detail sheet for mobile UX",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T20:36:51.954Z",
+                "description": "TASK-065 research tree implementation is missing the tap detail sheet required by acceptance criteria. Add a bottom-sheet or expandable detail panel when tapping a research tech on mobile.",
+                "acceptanceCriteria": [
+                    "Tapping a research tech opens a detail sheet showing description, costs, prereqs, and buy button",
+                    "Detail sheet works on 390px mobile viewport",
+                    "Sheet dismissible via tap-outside or close button",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-12T23:36:43.615Z",
+                "completedAt": "2026-03-12T23:36:43.647Z",
+                "testedAt": "2026-03-12T23:36:43.680Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-073",
+                "title": "Implement time-sequenced first-minute reveal for new players",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:55:24.146Z",
+                "description": "Complement TASK-059 progressive reveal with time-based pacing on fresh save. 0-15s: only colony feed + basic resources. 15-30s: first action button. 30-60s: trends. 60s+: full UI. Cookie Clicker starts with ONE cookie. Arbiter says wall-of-UI is the top bounce risk.",
+                "acceptanceCriteria": [
+                    "Fresh save shows only colony feed for first 15s",
+                    "Sections appear progressively through 60s with CSS transitions",
+                    "Returning players with existing save skip pacing",
+                    "Pacing state persists in save data across reloads",
+                    "No pop-in or jarring layout shifts during reveal"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-12T23:41:57.196Z",
+                "completedAt": "2026-03-12T23:44:08.741Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-12T23:49:52.679Z",
+                "testVerdict": "APPROVED"
+            }
+        ],
+        "blocked": [
+            {
+                "id": "TASK-044",
+                "title": "Design tech tree / research system for civilization progression",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "design",
+                "createdAt": "2026-03-12T17:21:06.478Z",
+                "description": "Mechanics at 7 but game lacks branching progression choices. Kittens Game excels with tech tree where research unlocks resource chains with meaningful trade-offs. Design a research system where colony unlocks techs gating new buildings and mechanics with military vs economic vs cultural branches.",
+                "acceptanceCriteria": [
+                    "Tech tree has 3+ branches with 4+ nodes each",
+                    "Each branch gates specific buildings or mechanics",
+                    "At least 2 meaningful branch-point choices",
+                    "Research costs scale with existing colony resources",
+                    "Design doc includes visual layout sketch"
+                ],
+                "source": "strategist",
+                "blockedReason": "Duplicate of TASK-042"
+            },
+            {
+                "id": "TASK-008",
+                "title": "Add Web Audio click sounds with toggle",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T05:04:00Z",
+                "description": "Audio portion of click feedback. Visual portion moved to TASK-015. Add optional Web Audio API click sounds (muted by default with toggle).",
+                "acceptanceCriteria": [
+                    "Sound toggle exists in UI (default: off)",
+                    "At least one satisfying click sound plays when enabled",
+                    "No performance regression on mobile"
+                ],
+                "source": "directive",
+                "notes": "Reduced scope — visual feedback split to TASK-015/016.",
+                "blockedReason": "Superseded by TASK-045 (audio feedback system) which is DONE. This task can be archived."
+            },
+            {
+                "id": "TASK-060",
+                "title": "Implement active play events (golden cookie moments) from TASK-027 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T19:37:19.413Z",
+                "description": "Random timed events rewarding active play: bonus drops, special traits, crisis choices, trade caravans. 10-30s clickable windows. 5+ event types. Audio integration. Mobile-friendly.",
+                "acceptanceCriteria": [
+                    "5+ distinct event types",
+                    "Random timer with configurable frequency",
+                    "Visible countdown on each event",
+                    "Click grants reward with visual feedback",
+                    "Missed events fade gracefully",
+                    "Audio chime integration",
+                    "Tests pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Duplicate of TASK-067 (golden cookie breakthrough task)"
+            },
+            {
+                "id": "TASK-061",
+                "title": "Fix git push: pull rebase repo clone and push latest changes",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "bugfix",
+                "createdAt": "2026-03-12T20:36:52.379Z",
+                "description": "Git push was rejected for TASK-065 research tree changes. Need to pull rebase the repo clone and push all pending changes so the live site updates.",
+                "acceptanceCriteria": [
+                    "git pull rebase succeeds in repo clone",
+                    "git push succeeds",
+                    "Live site reflects latest changes"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Duplicate of TASK-066 (deploy pipeline breakthrough task)"
+            },
+            {
+                "id": "TASK-030",
+                "title": "Implement active play event system from approved TASK-027 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T15:37:06.816Z",
+                "description": "Implement the 5 event types (merchant, challenge, surge, crisis, omen) with spawn scheduler, reward computation, mobile-friendly UI token, and timer ring. See TASK-027 design for full spec. Integrate into main.js with save schema additions.",
+                "acceptanceCriteria": [
+                    "Events spawn every 3-15 minutes with anti-repetition logic",
+                    "All 5 event types implemented with correct reward formulas",
+                    "Clickable token has 56x56px minimum hitbox, avoids header/footer zones",
+                    "Event stats tracked in save state",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Superseded by TASK-067 (golden cookie breakthrough)"
+            },
+            {
+                "id": "TASK-084",
+                "title": "Implement clickable event ticker with timed bonus rewards",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:55:24.104Z",
+                "description": "Key engagement breakthrough. Like Cookie Clicker golden cookies: rare clickable events appear every 60-180s. Clicking within time window grants temporary bonus. Builds on existing SFX. Arbiter identified this as gap between 7.5 and 8.5 engagement.",
+                "acceptanceCriteria": [
+                    "Clickable toast notifications at random 60-180s intervals",
+                    "Click within 10s grants 2x production for 15s",
+                    "5+ thematic event types with kitten/knight flavor",
+                    "Missed events fade without penalty",
+                    "Uses existing Web Audio SFX for alert",
+                    "Mobile tap targets min 44px"
+                ],
+                "source": "strategist",
+                "blockedReason": "Overlaps with TASK-067 (golden cookie active play events)"
+            }
+        ]
+    },
+    "meta": {
+        "totalCreated": 78,
+        "totalCompleted": 43,
+        "pendingQuestion": null
+    },
+    "nextId": 85
+}

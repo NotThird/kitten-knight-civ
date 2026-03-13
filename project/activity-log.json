@@ -1,0 +1,4 @@
+{
+  "description": "Cycle-by-cycle agent activity log. Each agent appends an entry every cycle. Watchdog reads this for health dashboard. Keep last 100 entries.",
+  "entries": []
+}
