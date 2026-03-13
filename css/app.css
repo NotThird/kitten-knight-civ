@@ -33,6 +33,10 @@
     .resource-rate.up { color: var(--good); }
     .resource-rate.down { color: var(--bad); }
     .resource-rate.flat { color: var(--muted); }
+    .resource-card { cursor: pointer; }
+    .resource-card .k::after { content: ' • tap for details'; font-size:10px; color: rgba(148,163,184,.85); }
+    .resource-detail-row { margin-top: 6px; border-top: 1px solid rgba(255,255,255,.10); padding-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.35; word-break: break-word; }
+    .resource-detail-row b { color: var(--text); font-weight: 600; }
     .stat-icon { display:inline-block; transform-origin:50% 55%; }
     .stat-icon.icon-pulse { animation: statIconPulse .5s ease-out; }
     .stat.tone-food .k { color: var(--tone-food); }

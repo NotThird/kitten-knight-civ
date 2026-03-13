@@ -2727,6 +2727,62 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return { arrow:'↓', cls:'down' };
   }
 
+  function taskCounts(s){
+    const out = Object.create(null);
+    for (const k of (s?.kittens ?? [])) {
+      const t = String(k?.task ?? '');
+      if (!t) continue;
+      out[t] = (out[t] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  function resourceBreakdownRows(s, key, rates){
+    const counts = taskCounts(s);
+    const season = seasonAt(Number(s?.t ?? 0));
+    const winterMul = (season?.name === 'Winter') ? 0.55 : 1;
+    const prodMul = toolsBonus(s) * activePlayProdMul(s) * workPaceMul(s);
+    const researchMul = libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * workPaceMul(s);
+    const workshopMul = workshopBonus(s) * activePlayProdMul(s) * workPaceMul(s);
+    const rat = getRations(s);
+    const eaters = Number(counts.Eat ?? 0);
+
+    const push = (arr, label, rate) => {
+      const n = Number(rate ?? 0);
+      if (!Number.isFinite(n) || Math.abs(n) < 0.02) return;
+      arr.push(`${label}: ${fmtRate(n)}`);
+    };
+
+    const prod = [];
+    const cons = [];
+
+    if (key === 'Food') {
+      push(prod, `Foragers (${counts.Forage ?? 0})`, Number(counts.Forage ?? 0) * 1.85 * winterMul * prodMul);
+      push(prod, `Farmers (${counts.Farm ?? 0})`, Number(counts.Farm ?? 0) * 2.35 * ((season?.name === 'Winter') ? 0.85 : 1) * prodMul);
+      push(cons, `Preservers (${counts.PreserveFood ?? 0})`, -(Number(counts.PreserveFood ?? 0) * 0.95 * workPaceMul(s)));
+      push(cons, `Eaters (${eaters})`, -(eaters * 0.95 * Number(rat?.foodUse ?? 1)));
+      push(cons, 'Spoilage/decay', Number(rates.food ?? 0) - Number(rates.jerky ?? 0) - Number(counts.Forage ?? 0) * 1.85 * winterMul * prodMul - Number(counts.Farm ?? 0) * 2.35 * ((season?.name === 'Winter') ? 0.85 : 1) * prodMul + Number(counts.PreserveFood ?? 0) * 0.95 * workPaceMul(s) + eaters * 0.95 * Number(rat?.foodUse ?? 1));
+    } else if (key === 'Wood') {
+      push(prod, `Woodcutters (${counts.ChopWood ?? 0})`, Number(counts.ChopWood ?? 0) * 1.05 * prodMul);
+      push(cons, `Firekeepers (${counts.StokeFire ?? 0})`, -(Number(counts.StokeFire ?? 0) * 0.90 * workPaceMul(s)));
+      push(cons, `Preservers (${counts.PreserveFood ?? 0})`, -(Number(counts.PreserveFood ?? 0) * 0.22 * workPaceMul(s)));
+    } else if (key === 'Science') {
+      push(prod, `Researchers (${counts.Research ?? 0})`, Number(counts.Research ?? 0) * 0.95 * researchMul);
+      push(cons, `Toolsmiths (${counts.CraftTools ?? 0})`, -(Number(counts.CraftTools ?? 0) * 0.40 * workPaceMul(s)));
+      push(cons, `Workshop builders (${counts.BuildWorkshop ?? 0})`, -(Number(counts.BuildWorkshop ?? 0) * 0.55 * workPaceMul(s)));
+      push(cons, `Library builders (${counts.BuildLibrary ?? 0})`, -(Number(counts.BuildLibrary ?? 0) * 0.65 * workPaceMul(s)));
+      push(cons, `Mentors (${counts.Mentor ?? 0})`, -(Number(counts.Mentor ?? 0) * 0.42 * workPaceMul(s)));
+    } else if (key === 'Tools') {
+      push(prod, `Toolsmiths (${counts.CraftTools ?? 0})`, Number(counts.CraftTools ?? 0) * 0.55 * workshopMul);
+      push(cons, `Library builders (${counts.BuildLibrary ?? 0})`, -(Number(counts.BuildLibrary ?? 0) * 0.35 * workPaceMul(s)));
+    } else if (key === 'Jerky') {
+      push(prod, `Preservers (${counts.PreserveFood ?? 0})`, Number(counts.PreserveFood ?? 0) * 0.72 * workPaceMul(s));
+      push(cons, `Eaters (when food low) (${eaters})`, -(eaters * 0.30));
+    }
+
+    return { prod, cons };
+  }
+
   function fmtEtaSeconds(sec){
     if (!Number.isFinite(sec) || sec <= 0) return '-';
     if (sec > 3600) return `${Math.ceil(sec/60)}m`;
@@ -7334,6 +7390,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function openCulture(){ societyUI?.openCulture?.(); }
   function closeCulture(){ societyUI?.closeCulture?.(); }
 
+  const uiResourceDetail = { openKey: '' };
+  function toggleResourceDetail(key){
+    const next = String(key || '');
+    uiResourceDetail.openKey = (uiResourceDetail.openKey === next) ? '' : next;
+    render();
+  }
+
   // Transient UI state + small listeners (sorting, debounced UI logs, stat-card clicks)
   const { uiSort, uiFilter, uiDebouncedLog, colonyCountEl: _ccEl } = initUI({
     statsEl,
@@ -7349,6 +7412,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     openStorage,
     openThreat,
     openCulture,
+    toggleResourceDetail,
   });
 
   // Trends: marker legend + filter (culture beats timeline)
@@ -10182,6 +10246,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
 
       const isResource = (k === 'Food' || k === 'Wood' || k === 'Science' || k === 'Tools' || k === 'Jerky');
+      if (isResource) {
+        d.dataset.resourceCard = '1';
+        d.dataset.resourceKey = k;
+        d.classList.add('resource-card');
+      }
       const valueClass = isResource ? resourceLevelClass(state, k, state?.res?.[k.toLowerCase()] ?? 0) : '';
       const pulseMetric = (
         k === 'Food' ? Number(state.res.food ?? 0) :
@@ -10217,7 +10286,22 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const microClass = pulseClass === 'pulse-good' ? 'micro-gain' : (pulseClass === 'pulse-warn' ? 'micro-spend' : '');
       d.classList.toggle('micro-gain', microClass === 'micro-gain');
       d.classList.toggle('micro-spend', microClass === 'micro-spend');
-      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${rateHtml}${subHtml}`;
+
+      let detailHtml = '';
+      if (isResource && uiResourceDetail.openKey === k) {
+        const rows = resourceBreakdownRows(state, k, {
+          food: foodRate,
+          wood: woodRate,
+          science: scienceRate,
+          tools: toolsRate,
+          jerky: jerkyRate,
+        });
+        const prodText = rows.prod.length ? rows.prod.join(' | ') : 'No major producers active';
+        const consText = rows.cons.length ? rows.cons.join(' | ') : 'No major consumption active';
+        detailHtml = `<div class="resource-detail-row"><div><b>Produced by:</b> ${escapeHtml(prodText)}</div><div><b>Consumed by:</b> ${escapeHtml(consText)}</div></div>`;
+      }
+
+      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${rateHtml}${subHtml}${detailHtml}`;
       statsEl.appendChild(d);
     }
 

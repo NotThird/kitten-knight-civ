@@ -10,6 +10,7 @@
  * @param {(msg:string)=>void} deps.log
  * @param {()=>void} deps.save
  * @param {()=>void} deps.render
+ * @param {(key:string)=>void} deps.toggleResourceDetail
  * @param {()=>void} deps.openSocial
  * @param {()=>void} deps.openStorage
  * @param {()=>void} deps.openThreat
@@ -26,6 +27,7 @@ export function initUI(deps){
     log,
     save,
     render,
+    toggleResourceDetail,
     openSocial,
     openStorage,
     openThreat,
@@ -47,6 +49,15 @@ export function initUI(deps){
 
   // Clickable stat cards (explainability)
   if (statsEl) statsEl.addEventListener('click', (e) => {
+    const resCard = e.target?.closest?.('[data-resource-card="1"]');
+    if (resCard) {
+      const rKey = String(resCard.dataset.resourceKey || '');
+      if (rKey) {
+        toggleResourceDetail?.(rKey);
+        return;
+      }
+    }
+
     const card = e.target?.closest?.('[data-stat]');
     if (!card) return;
     const key = String(card.dataset.stat || '');

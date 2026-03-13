@@ -181,6 +181,20 @@
       "overall": 8.6,
       "delta": 0,
       "notes": "Phase 2 Iter 12. TASK-029 (discovery/secrets) attempted by CodeSmith but REJECTED by tester — secrets wiped on prestige reset. Task still in todo, not properly moved through pipeline. 22 todo, 0 claimed. Pipeline stall at 2 consecutive 8.6 cycles. Near-stagnation warning."
+    },
+    {
+      "iteration": 13,
+      "timestamp": "2026-03-14T00:34:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8.5,
+        "engagement": 9,
+        "stability": 8.5,
+        "completeness": 8.5
+      },
+      "overall": 8.7,
+      "delta": 0.1,
+      "notes": "Phase 2 Iter 13. TASK-053 resource rate indicators shipped and verified — engagement bumped to 9 (per-second rates + trend arrows on all resource cards). Stagnation broken. 21 todo, 0 claimed. Top priorities: TASK-029 (secrets prestige fix), TASK-121 (mini-events), TASK-118 (kitten traits)."
     }
   ],
   "convergenceThreshold": 9,

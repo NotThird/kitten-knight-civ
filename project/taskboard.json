@@ -2,26 +2,9 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T23:22:58.506Z",
+    "lastUpdated": "2026-03-13T23:49:37.980Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-050",
-                "title": "Add contextual tooltip system for resource cards and key UI elements",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-12T18:22:03.998Z",
-                "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
-                "acceptanceCriteria": [
-                    "Tapping a resource card toggles an info row below it showing production sources and consumption",
-                    "Info row shows rate breakdown (e.g. 'Foragers: +2.1/s, Consumption: -0.8/s')",
-                    "Only one info row open at a time (tapping another closes the previous)",
-                    "Info row is styled consistently with dark theme",
-                    "Works on mobile without horizontal scroll"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-081",
                 "title": "Add prestige milestone preview showing next reset rewards before committing",
@@ -371,7 +354,7 @@
                 "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T15:17:43.621Z",
-                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.\n\n[REJECTED 2026-03-13T22:53:02.216Z] Secrets do not persist through prestige resets (Legacy/Eternity reset wipes state.secrets).",
+                "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
                 "acceptanceCriteria": [
                     "At least 5 secrets implemented with working triggers",
                     "Secret discovery shows distinct visual notification",
@@ -386,7 +369,28 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-050",
+                "title": "Add contextual tooltip system for resource cards and key UI elements",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.998Z",
+                "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
+                "acceptanceCriteria": [
+                    "Tapping a resource card toggles an info row below it showing production sources and consumption",
+                    "Info row shows rate breakdown (e.g. 'Foragers: +2.1/s, Consumption: -0.8/s')",
+                    "Only one info row open at a time (tapping another closes the previous)",
+                    "Info row is styled consistently with dark theme",
+                    "Works on mobile without horizontal scroll"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T23:46:19.267Z",
+                "completedAt": "2026-03-13T23:49:37.980Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
