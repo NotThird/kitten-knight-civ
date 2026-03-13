@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T23:18:14.512Z",
+    "lastUpdated": "2026-03-13T23:22:58.506Z",
     "columns": {
         "todo": [
             {
@@ -386,28 +386,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-053",
-                "title": "Add resource production rate indicators (per-second display and trend arrows)",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-12T18:22:03.969Z",
-                "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight — calculate from last 5 ticks average, update every 2s.",
-                "acceptanceCriteria": [
-                    "Each resource stat card shows production rate in per-second format",
-                    "Positive rates show green, negative show red, zero shows gray",
-                    "Rate is calculated as rolling average over last 5 game ticks",
-                    "Display updates every 2 seconds without layout shift",
-                    "Works correctly after prestige reset (rates reset to current values)"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-13T23:16:17.250Z",
-                "completedAt": "2026-03-13T23:18:14.512Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -765,13 +744,35 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T22:22:56.087Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-053",
+                "title": "Add resource production rate indicators (per-second display and trend arrows)",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.969Z",
+                "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight — calculate from last 5 ticks average, update every 2s.",
+                "acceptanceCriteria": [
+                    "Each resource stat card shows production rate in per-second format",
+                    "Positive rates show green, negative show red, zero shows gray",
+                    "Rate is calculated as rolling average over last 5 game ticks",
+                    "Display updates every 2 seconds without layout shift",
+                    "Works correctly after prestige reset (rates reset to current values)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T23:16:17.250Z",
+                "completedAt": "2026-03-13T23:18:14.512Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-13T23:22:58.506Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 117,
-        "totalCompleted": 63,
+        "totalCompleted": 64,
         "pendingQuestion": null
     },
     "nextId": 122

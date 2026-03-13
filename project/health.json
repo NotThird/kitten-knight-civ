@@ -1,26 +1,26 @@
 {
-  "timestamp": "2026-03-13T23:59:00.000Z",
-  "iteration": 11,
+  "timestamp": "2026-03-13T23:29:20.898Z",
+  "iteration": 0,
   "cronHealth": {
     "healthy": [
-      "forge-oracle-prophet",
-      "forge-forgeleader-orchestrator",
-      "forge-architect-designer",
-      "forge-codesmith-developer",
-      "forge-gauntlet-tester",
-      "forge-arbiter-critic",
-      "forge-watchdog",
-      "forge-sentinel",
-      "forge-strategist-research-planning"
+      "Forge: Oracle (Prophet)",
+      "Forge: ForgeLeader (Orchestrator)",
+      "Forge: Architect (Designer)",
+      "Forge: CodeSmith (Developer)",
+      "Forge: Gauntlet (Tester)",
+      "Forge: Arbiter (Critic)",
+      "Forge: Watchdog",
+      "Forge: Sentinel",
+      "Forge: Strategist (Research & Planning)"
     ],
     "failing": [],
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 22,
+    "todo": 21,
     "claimed": 0,
     "review": 0,
-    "done": 16,
+    "done": 17,
     "blocked": 0,
     "staleTasks": [],
     "status": "stalled"
@@ -29,25 +29,23 @@
     "lastCycleActive": [],
     "lastCycleSilent": [
       "oracle",
+      "forgeleader",
       "architect",
-      "strategist",
       "developer",
       "tester",
-      "arbiter",
-      "sentinel",
+      "critic",
       "watchdog",
-      "forgeleader"
+      "sentinel",
+      "strategist"
     ],
-    "errors": [
-      "No activity-log entries found for last cycle"
-    ]
+    "errors": []
   },
   "convergence": {
     "currentScore": 8.6,
-    "threshold": 9,
+    "threshold": 9.0,
     "consecutiveAbove": 0,
-    "iteration": 11,
+    "iteration": 12,
     "maxIterations": 50,
-    "status": "phase2-improving"
+    "status": "stalled"
   }
 }
