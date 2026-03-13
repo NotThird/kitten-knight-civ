@@ -908,6 +908,24 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     last: Object.create(null),
   };
 
+  const microUiFx = {
+    newKittenUntilById: Object.create(null),
+  };
+
+  function playMicroClass(el, className, holdMs = 520){
+    if (!(el instanceof Element)) return;
+    const cls = String(className || '').trim();
+    if (!cls) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    if (holdMs > 0) {
+      setTimeout(() => {
+        if (el && el.classList) el.classList.remove(cls);
+      }, holdMs);
+    }
+  }
+
   function statPulseClass(key, value){
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '';
@@ -9714,6 +9732,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ? `<span class="stat-icon${iconPulseClass}" aria-hidden="true">${escapeHtml(labelParts.icon)}</span> ${escapeHtml(labelParts.label)}`
         : escapeHtml(labelParts.label);
 
+      const microClass = pulseClass === 'pulse-good' ? 'micro-gain' : (pulseClass === 'pulse-warn' ? 'micro-spend' : '');
+      d.classList.toggle('micro-gain', microClass === 'micro-gain');
+      d.classList.toggle('micro-spend', microClass === 'micro-spend');
       d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
@@ -10402,6 +10423,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
         // Warn classes
         const warnClass = (health < 0.4) ? ' warn-health' : (mood < 0.3) ? ' warn-mood' : '';
+        const kittenPopUntil = Number(microUiFx.newKittenUntilById[k.id] ?? 0);
+        const kittenPopClass = (kittenPopUntil > performance.now()) ? ' kitten-pop' : '';
 
         // Top skills compact
         const topSkills = Object.entries(k.skills || {}).sort((a,b) => b[1] - a[1]).slice(0, 1);
@@ -10441,13 +10464,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         let card = existingMap.get(key);
         if (card) {
           // Reuse existing card, update content
-          card.className = `kitten-card${warnClass}`;
+          card.className = `kitten-card${warnClass}${kittenPopClass}`;
           card.innerHTML = cardHTML;
           fragment.appendChild(card);
           existingMap.delete(key);
         } else {
           card = document.createElement('div');
-          card.className = `kitten-card${warnClass}`;
+          card.className = `kitten-card${warnClass}${kittenPopClass}`;
           card.dataset.kidx = key;
           card.innerHTML = cardHTML;
           fragment.appendChild(card);
@@ -10460,6 +10483,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             try { renderRadar(radarCanvas, k); } catch (_) {}
           }
         }
+      }
+
+      const nowMs = performance.now();
+      for (const id of Object.keys(microUiFx.newKittenUntilById)) {
+        if (Number(microUiFx.newKittenUntilById[id] ?? 0) <= nowMs) delete microUiFx.newKittenUntilById[id];
       }
 
       // Clear stale cards and append new fragment
@@ -11552,13 +11580,15 @@ function renderTrends(){
     render();
   });
 
-  document.getElementById('btnAddKitten').addEventListener('click', () => {
+  document.getElementById('btnAddKitten').addEventListener('click', (e) => {
     const cost = kittenCost();
     if (state.res.food < cost) { playSfx('error'); log(`Need ${cost} food for a kitten.`); render(); return; }
     if (state.kittens.length >= housingCap(state)) { playSfx('error'); log(`No housing. Build huts.`); render(); return; }
     state.res.food -= cost;
     const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
     state.kittens.push(makeKitten(id, state.t));
+    microUiFx.newKittenUntilById[id] = performance.now() + 1400;
+    playMicroClass(e.currentTarget, 'purchase-confirm', 520);
     playSfx('kitten');
     log(`New kitten joined! (#${id})`);
     render();
@@ -12076,7 +12106,9 @@ function renderTrends(){
     if (!btn) return;
     const id = String(btn.dataset.legacyBuy || '');
     const res = buyLegacyUpgrade(id);
-    if (!res.ok && res.reason === 'cost') {
+    if (res.ok) {
+      playMicroClass(btn, 'purchase-confirm', 520);
+    } else if (res.reason === 'cost') {
       playSfx('error');
       log('Not enough Legacy Shards for that upgrade.');
     }
@@ -12112,7 +12144,9 @@ function renderTrends(){
     if (!buyBtn) return;
     const id = String(buyBtn.dataset.eternityBuy || '');
     const res = buyEternityUpgrade(id);
-    if (!res.ok && res.reason === 'cost') {
+    if (res.ok) {
+      playMicroClass(buyBtn, 'purchase-confirm', 520);
+    } else if (res.reason === 'cost') {
       playSfx('error');
       log('Not enough Sigils for that Eternity upgrade.');
     }
@@ -12145,7 +12179,9 @@ function renderTrends(){
     if (!buyBtn) return;
     const id = String(buyBtn.dataset.researchBuy || '');
     const res = buyResearchTech(id);
-    if (!res.ok) {
+    if (res.ok) {
+      playMicroClass(buyBtn, 'purchase-confirm', 520);
+    } else {
       playSfx('error');
       log('Research locked: check science/prerequisites/doctrine exclusivity.');
     }
