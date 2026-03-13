@@ -167,6 +167,20 @@
       "overall": 8.6,
       "delta": 0.1,
       "notes": "Phase 2 Iter 11. TASK-106 decision log panel shipped and verified — engagement bumped to 8.5. Colony AI decisions now visible and persistent. 22 todo, 0 claimed — pipeline stall continues. Top priorities: TASK-053 (rate indicators), TASK-121 (mini-events), TASK-118 (kitten traits). Steady progress but need implementation throughput."
+    },
+    {
+      "iteration": 12,
+      "timestamp": "2026-03-14T00:04:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8.5,
+        "engagement": 8.5,
+        "stability": 8.5,
+        "completeness": 8.5
+      },
+      "overall": 8.6,
+      "delta": 0,
+      "notes": "Phase 2 Iter 12. TASK-029 (discovery/secrets) attempted by CodeSmith but REJECTED by tester — secrets wiped on prestige reset. Task still in todo, not properly moved through pipeline. 22 todo, 0 claimed. Pipeline stall at 2 consecutive 8.6 cycles. Near-stagnation warning."
     }
   ],
   "convergenceThreshold": 9,

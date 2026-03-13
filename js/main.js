@@ -2720,6 +2720,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return `${sign}${fmt(v)}/s`;
   }
 
+  function rateTrendMeta(v){
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n) || Math.abs(n) < 0.02) return { arrow:'→', cls:'flat' };
+    if (n > 0) return { arrow:'↑', cls:'up' };
+    return { arrow:'↓', cls:'down' };
+  }
+
   function fmtEtaSeconds(sec){
     if (!Number.isFinite(sec) || sec <= 0) return '-';
     if (sec > 3600) return `${Math.ceil(sec/60)}m`;
@@ -9921,6 +9928,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const toolsRate = Number(r.tools ?? 0);
     const jerkyRate = Number(r.jerky ?? 0);
 
+    state._rateDisplay = (state._rateDisplay && typeof state._rateDisplay === 'object') ? state._rateDisplay : { nextAt: 0, values: {} };
+    if (Number(state.t ?? 0) >= Number(state._rateDisplay.nextAt ?? 0)) {
+      state._rateDisplay.values = {
+        food: foodRate,
+        wood: woodRate,
+        science: scienceRate,
+        tools: toolsRate,
+        jerky: jerkyRate,
+      };
+      state._rateDisplay.nextAt = Number(state.t ?? 0) + 2;
+    }
+    const displayRate = state._rateDisplay.values ?? {};
+
     const raidEta = (threatRate > 0.02 && state.res.threat < 100)
       ? fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate))
       : '-';
@@ -10181,10 +10201,23 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ? `<span class="stat-icon${iconPulseClass}" aria-hidden="true">${escapeHtml(labelParts.icon)}</span> ${escapeHtml(labelParts.label)}`
         : escapeHtml(labelParts.label);
 
+      const rateByStat = {
+        Food: Number(displayRate.food ?? foodRate ?? 0),
+        Wood: Number(displayRate.wood ?? woodRate ?? 0),
+        Science: Number(displayRate.science ?? scienceRate ?? 0),
+        Tools: Number(displayRate.tools ?? toolsRate ?? 0),
+        Jerky: Number(displayRate.jerky ?? jerkyRate ?? 0),
+      };
+      const resourceRate = Number(rateByStat[k] ?? 0);
+      const trend = rateTrendMeta(resourceRate);
+      const rateHtml = isResource
+        ? `<div class="resource-rate ${trend.cls}"><span class="trend">${trend.arrow}</span><span class="rate-value">${escapeHtml(fmtRate(resourceRate))}</span></div>`
+        : '';
+
       const microClass = pulseClass === 'pulse-good' ? 'micro-gain' : (pulseClass === 'pulse-warn' ? 'micro-spend' : '');
       d.classList.toggle('micro-gain', microClass === 'micro-gain');
       d.classList.toggle('micro-spend', microClass === 'micro-spend');
-      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
+      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${rateHtml}${subHtml}`;
       statsEl.appendChild(d);
     }
 

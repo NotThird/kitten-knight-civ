@@ -27,6 +27,12 @@
     .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); border-left:3px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; }
     .stat .k { font-size:12px; color:var(--muted); font-weight:600; }
     .stat .v { font-size:18px; font-weight:700; margin-top:2px; position:relative; display:inline-block; }
+    .resource-rate { margin-top:2px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:4px; min-height:16px; }
+    .resource-rate .trend { width:10px; text-align:center; display:inline-block; }
+    .resource-rate .rate-value { font-variant-numeric: tabular-nums; min-width:52px; display:inline-block; }
+    .resource-rate.up { color: var(--good); }
+    .resource-rate.down { color: var(--bad); }
+    .resource-rate.flat { color: var(--muted); }
     .stat-icon { display:inline-block; transform-origin:50% 55%; }
     .stat-icon.icon-pulse { animation: statIconPulse .5s ease-out; }
     .stat.tone-food .k { color: var(--tone-food); }

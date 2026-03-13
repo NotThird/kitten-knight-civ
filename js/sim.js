@@ -115,25 +115,31 @@ export function momentumMul(k, action){
 export function ensureRateState(s){
   if (!s._rate) s._rate = Object.create(null);
   if (!s._prevRes) s._prevRes = structuredClone(s.res);
-}
-
-export function ema(oldV, newV, alpha){
-  if (!Number.isFinite(oldV)) return newV;
-  return oldV + (newV - oldV) * alpha;
+  if (!s._rateHist) s._rateHist = Object.create(null);
 }
 
 export function updateRates(s, dt){
   ensureRateState(s);
-  const tau = 8; // seconds (higher = steadier)
-  const alpha = clamp01(dt / tau);
 
   for (const key of Object.keys(s.res)) {
     const prev = Number(s._prevRes[key] ?? 0);
     const cur = Number(s.res[key] ?? 0);
     const inst = (cur - prev) / Math.max(0.001, dt);
-    s._rate[key] = ema(s._rate[key], inst, alpha);
+
+    const hist = Array.isArray(s._rateHist[key]) ? s._rateHist[key] : [];
+    hist.push(inst);
+    if (hist.length > 5) hist.splice(0, hist.length - 5);
+    s._rateHist[key] = hist;
+
+    const sum = hist.reduce((acc, v) => acc + (Number(v) || 0), 0);
+    s._rate[key] = hist.length > 0 ? (sum / hist.length) : 0;
     s._prevRes[key] = cur;
   }
+}
+
+export function ema(oldV, newV, alpha){
+  if (!Number.isFinite(oldV)) return newV;
+  return oldV + (newV - oldV) * alpha;
 }
 
 export function ensureProjRateState(s){
