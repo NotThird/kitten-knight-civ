@@ -1,4 +1,4 @@
-﻿// content.js — player-facing strings/content (patch notes, tooltips)
+// content.js — player-facing strings/content (patch notes, tooltips)
 
 // Patch notes are cumulative: open after update to see everything since last seen version.
 export const PATCH_HISTORY = [
@@ -6,7 +6,7 @@ export const PATCH_HISTORY = [
       v: '0.9.135',
       notes: [
         'QoL/Politics: added an optional confirmation prompt for Faction negotiations (prevents misclick drift).',
-        'New toggle in Director: â€œConfirm politicsâ€. When ON, the prompt includes an exact preview of the policy deltas.',
+        'New toggle in Director: “Confirm politics”. When ON, the prompt includes an exact preview of the policy deltas.',
         'No save-breaking changes.'
       ]
     },
@@ -14,7 +14,7 @@ export const PATCH_HISTORY = [
       v: '0.9.134',
       notes: [
         'Explainability: added a Commitment stat card (coordination clarity).',
-        'Commitment exposes the hidden Discipline + Effective Autonomy â†’ task lock tendency (helps diagnose thrash).',
+        'Commitment exposes the hidden Discipline + Effective Autonomy → task lock tendency (helps diagnose thrash).',
         'No save-breaking changes.'
       ]
     },
@@ -30,7 +30,7 @@ export const PATCH_HISTORY = [
       v: '0.9.132',
       notes: [
         'QoL/Explainability: Auto Pause (danger) now uses simple trend forecasts (resource rates) so it can pause BEFORE you hit 0 (starving/freezing/raid imminent).',
-        'The pause reason now includes an ETA when it is forecast-based (ex: â€œ0 in 18sâ€).',
+        'The pause reason now includes an ETA when it is forecast-based (ex: “0 in 18s”).',
         'No save-breaking changes.'
       ]
     },
@@ -156,8 +156,8 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.116',
       notes: [
-        'NEW: Directive tools (batch): â€œMatch blocsâ€ sets each kittenâ€™s Directive to match their dominant Values bloc (Food/Safety/Progress/Social).',
-        'QoL: Director panel now shows an â€œactive directives X/Yâ€ hint so you can see how many kittens youâ€™ve specialized at a glance.',
+        'NEW: Directive tools (batch): “Match blocs” sets each kitten’s Directive to match their dominant Values bloc (Food/Safety/Progress/Social).',
+        'QoL: Director panel now shows an “active directives X/Y” hint so you can see how many kittens you’ve specialized at a glance.',
         'No save-breaking changes.'
       ]
     },
@@ -172,15 +172,15 @@ export const PATCH_HISTORY = [
       v: '0.9.114',
       notes: [
         'Explainability: Storage inspector now shows Edible (Food+Jerky) totals and clarifies that Jerky does not spoil and does not count toward the fresh-food storage cap.',
-        'QoL: Storage inspector now surfaces Edible/Kitten and a quick â€œwhat is over-cap?â€ explanation so winter-prep decisions are less confusing.',
+        'QoL: Storage inspector now surfaces Edible/Kitten and a quick “what is over-cap?” explanation so winter-prep decisions are less confusing.',
         'No save-breaking changes.'
       ]
     },
     {
       v: '0.9.113',
       notes: [
-        'NEW: Per-kitten Directive. Click a kitten row â†’ set Directive (Food/Safety/Progress/Social/Rest) to bias their scoring persistently (not a hard lock).',
-        'UI: Pref column now shows â€œDir Xâ€ when a kitten has a non-Auto directive, so you can spot your specialists at a glance.',
+        'NEW: Per-kitten Directive. Click a kitten row → set Directive (Food/Safety/Progress/Social/Rest) to bias their scoring persistently (not a hard lock).',
+        'UI: Pref column now shows “Dir X” when a kitten has a non-Auto directive, so you can spot your specialists at a glance.',
         'No save-breaking changes.'
       ]
     },
@@ -195,7 +195,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.110',
       notes: [
-        'QoL: Kitten Council now pops a â€œNEWâ€ badge and a single Event log line when a fresh council suggestion appears (so you don\'t miss bottom-up nudges while zoomed in elsewhere).',
+        'QoL: Kitten Council now pops a “NEW” badge and a single Event log line when a fresh council suggestion appears (so you don\'t miss bottom-up nudges while zoomed in elsewhere).',
         'Explainability: the log line includes the spokeskitten id + suggestion labels.',
         'No save-breaking changes.'
       ]
@@ -204,7 +204,7 @@ export const PATCH_HISTORY = [
       v: '0.9.109',
       notes: [
         'QoL: Projects panel now shows an ETA for in-progress builds (based on smoothed build progress/sec).',
-        'Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as â€œblockedâ€ (pairs with the Unblock button).',
+        'Explainability: if a build is stalled by reserve-protected inputs, the ETA shows as “blocked” (pairs with the Unblock button).',
         'No save-breaking changes.'
       ]
     },
@@ -220,7 +220,7 @@ export const PATCH_HISTORY = [
       v: '0.9.107',
       notes: [
         'AI behavior: when dissent is extreme but basics are stable, kittens are now more likely to actively organize (Socialize/Care) instead of everyone loafing.',
-        'Explainability: Decision Inspector now shows â€œstrike recoveryâ€ scoring lines when this kicks in.',
+        'Explainability: Decision Inspector now shows “strike recovery” scoring lines when this kicks in.',
         'No save-breaking changes.'
       ]
     },
@@ -275,7 +275,7 @@ export const PATCH_HISTORY = [
       v: '0.9.95',
       notes: [
         'Advisor: now surfaces active Faction Demands (with a one-click Accept/Ignore suggestion) so politics doesn\'t get missed while you\'re fighting fires.',
-        'Explainability: the Advisor recommendation explicitly keys off â€œbasics stable?â€ (food/warmth/threat) and time remaining.',
+        'Explainability: the Advisor recommendation explicitly keys off “basics stable?” (food/warmth/threat) and time remaining.',
         'No save-breaking changes.'
       ]
     },
@@ -290,8 +290,8 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.93',
       notes: [
-        'Safety Rules: added condition â€œedible < Xâ€ (counts Food + Jerky) so you can trigger overrides based on total edible stores, not just fresh food.',
-        'Explainability: the Safety Rules â€œAvailable conditionsâ€ list now calls out that edible includes jerky.',
+        'Safety Rules: added condition “edible < X” (counts Food + Jerky) so you can trigger overrides based on total edible stores, not just fresh food.',
+        'Explainability: the Safety Rules “Available conditions” list now calls out that edible includes jerky.',
         'No save-breaking changes.'
       ]
     },
@@ -322,7 +322,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.89',
       notes: [
-        'UI/Explainability: Colony table now shows a dedicated â€œFitâ€ column (policy focus-fit %) so you can quickly spot which kittens are misaligned with your current Mode + priority sliders.',
+        'UI/Explainability: Colony table now shows a dedicated “Fit” column (policy focus-fit %) so you can quickly spot which kittens are misaligned with your current Mode + priority sliders.',
         'The Fit tag is color-coded (green/yellow/red) and has a tooltip explaining why low fit can drag mood and raise dissent under strong central planning.',
         'No save-breaking changes.'
       ]
@@ -331,7 +331,7 @@ export const PATCH_HISTORY = [
       v: '0.9.88',
       notes: [
         'Civ-sim: Kittens now slowly drift their Values (Food/Safety/Progress/Social) toward what they actually do each second. Specialization becomes "sticky" over minutes, creating emergent faction shifts.',
-        'Explainability: Inspect + table tooltips show a short "drift â†’ AXIS" note when it happens, so policy changes feel traceable.',
+        'Explainability: Inspect + table tooltips show a short "drift → AXIS" note when it happens, so policy changes feel traceable.',
         'No save-breaking changes.'
       ]
     },
@@ -346,7 +346,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.86',
       notes: [
-        'Civ-sim pressure: Faction Demands now have teeth even if you ignore them by accident â€” when a Demand expires, it resolves as an automatic soft ignore (small dissent + grievance hit).',
+        'Civ-sim pressure: Faction Demands now have teeth even if you ignore them by accident — when a Demand expires, it resolves as an automatic soft ignore (small dissent + grievance hit).',
         'Explainability: the event log explicitly calls out when a demand expires, so you can connect the mood/dissent drift to politics.',
         'No save-breaking changes.'
       ]
@@ -354,7 +354,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.85',
       notes: [
-        'UI/Explainability: When a kittenâ€™s chosen task is BLOCKED by reserves/inputs and it executes a fallback (e.g. BuildHut â†’ ChopWood), the Task cell is now highlighted and tagged BLOCKED.',
+        'UI/Explainability: When a kitten’s chosen task is BLOCKED by reserves/inputs and it executes a fallback (e.g. BuildHut → ChopWood), the Task cell is now highlighted and tagged BLOCKED.',
         'This makes it easier to spot "why builders are stalling" moments and tune Reserves/Policy accordingly.',
         'No save-breaking changes.'
       ]
@@ -395,7 +395,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.80',
       notes: [
-        'UI/Explainability: Policy panel now shows per-action plan impact (without policy â†’ with policy) next to each multiplier.',
+        'UI/Explainability: Policy panel now shows per-action plan impact (without policy → with policy) next to each multiplier.',
         'This makes it easier to see which quotas actually change the colony plan (vs what is being overridden by needs/autonomy).',
         'No save-breaking changes.'
       ]
@@ -473,7 +473,7 @@ export const PATCH_HISTORY = [
       notes: [
         'Director: Discipline/Autonomy now (transparently) affect task commitment length via a Coordination multiplier.',
         'Result: fewer 1s task flaps when Discipline is high; more emergent switching/wandering when Autonomy is high.',
-        'Explainability: COMMIT decisions now display the current coord multiplier, and the Discipline hint shows "commitment xâ€¦".',
+        'Explainability: COMMIT decisions now display the current coord multiplier, and the Discipline hint shows "commitment x…".',
         'No save-breaking changes.'
       ]
     },
@@ -505,7 +505,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.67',
       notes: [
-        'NEW: Grievance (per-kitten + colony avg) â€” a slow-burn resentment meter that rises when kittens are pushed into disliked/misaligned work under strong central planning.',
+        'NEW: Grievance (per-kitten + colony avg) — a slow-burn resentment meter that rises when kittens are pushed into disliked/misaligned work under strong central planning.',
         'Dissent pressure now also includes Grievance (visible in Social inspector).',
         'Hold Council now also reduces Grievance (represents being heard).',
         'No save-breaking changes.'
@@ -597,7 +597,7 @@ export const PATCH_HISTORY = [
       v: '0.9.56',
       notes: [
         'QoL/Explainability: the Food stat now shows your storage cap and (when relevant) current spoilage multiplier in its trend line.',
-        'Food stat tooltip now explains the soft-cap â†’ spoilage mechanic in one place.',
+        'Food stat tooltip now explains the soft-cap → spoilage mechanic in one place.',
         'No save-breaking changes.'
       ]
     },
@@ -643,7 +643,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.50',
       notes: [
-        'QoL: keyboard shortcuts (when not typing): Space = Pause/Resume, 1â€“4 = Modes (Survive/Expand/Defend/Advance).',
+        'QoL: keyboard shortcuts (when not typing): Space = Pause/Resume, 1–4 = Modes (Survive/Expand/Defend/Advance).',
         'QoL: W toggles Winter Prep, C toggles Crisis Protocol.',
         'QoL: F = Hold Festival, V = Hold Council (only when not already active).',
         'No save-breaking changes.'
@@ -724,7 +724,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.39',
       notes: [
-        'NEW: Kitten Council â€” occasional bottom-up policy suggestions from individual kittens (based on likes/traits + colony status).',
+        'NEW: Kitten Council — occasional bottom-up policy suggestions from individual kittens (based on likes/traits + colony status).',
         'Accepting a council suggestion applies a small policy multiplier nudge (no hard locks).',
         'Explainability: the council panel shows who is speaking and why (mood/dissent/traits).',
         'No save-breaking changes.'
@@ -733,7 +733,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.38',
       notes: [
-        'NEW: Director Priorities sliders (Food / Safety / Progress) â€” high-level policy weights that bias individual kitten scoring (not just the colony plan).',
+        'NEW: Director Priorities sliders (Food / Safety / Progress) — high-level policy weights that bias individual kitten scoring (not just the colony plan).',
         'Explainability: the action score breakdown now includes the priority line when it applies (look in the Decision Inspector).',
         'No save-breaking changes.'
       ]
@@ -748,7 +748,7 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.36',
       notes: [
-        'NEW: Buddy bonds â€” each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
+        'NEW: Buddy bonds — each kitten gets a buddy (shown as b#id in the Traits column tooltip).',
         'When a kitten and their buddy Socialize at the same time, dissent drops a bit faster and their mood recovers slightly faster.',
         'Explainability: Buddy is shown in the Decision Inspector header.'
       ]
@@ -756,14 +756,14 @@ export const PATCH_HISTORY = [
     {
       v: '0.9.35',
       notes: [
-        'Advisor: new quick actions for social stability â€” it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
+        'Advisor: new quick actions for social stability — it can recommend (and one-click) Hold Council to reduce dissent and Hold Festival to boost mood when you can afford them.',
         'Explainability: makes the "colony is grumbling" fix path more discoverable without adding hidden automation.'
       ]
     },
     {
       v: '0.9.34',
       notes: [
-        'NEW: Auto Rations toggle â€” the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
+        'NEW: Auto Rations toggle — the Director can automatically switch Tight/Normal/Feast based on food stability and dissent (with a cooldown to avoid flapping).',
         'Explainability: Season panel shows Auto rations status + the last reason.'
       ]
     },
