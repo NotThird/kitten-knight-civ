@@ -1,17 +1,17 @@
 {
-  "timestamp": "2026-03-13T22:29:38.108Z",
-  "iteration": 10,
+  "timestamp": "2026-03-13T23:59:00.000Z",
+  "iteration": 11,
   "cronHealth": {
     "healthy": [
-      "forge-oracle-prophet-",
-      "forge-forgeleader-orchestrator-",
-      "forge-architect-designer-",
-      "forge-codesmith-developer-",
-      "forge-gauntlet-tester-",
-      "forge-arbiter-critic-",
+      "forge-oracle-prophet",
+      "forge-forgeleader-orchestrator",
+      "forge-architect-designer",
+      "forge-codesmith-developer",
+      "forge-gauntlet-tester",
+      "forge-arbiter-critic",
       "forge-watchdog",
       "forge-sentinel",
-      "forge-strategist-research-planning-"
+      "forge-strategist-research-planning"
     ],
     "failing": [],
     "disabled": []
@@ -31,8 +31,8 @@
       "oracle",
       "architect",
       "strategist",
-      "codesmith",
-      "gauntlet",
+      "developer",
+      "tester",
       "arbiter",
       "sentinel",
       "watchdog",
@@ -43,11 +43,11 @@
     ]
   },
   "convergence": {
-    "currentScore": 8.5,
+    "currentScore": 8.6,
     "threshold": 9,
     "consecutiveAbove": 0,
-    "iteration": 10,
+    "iteration": 11,
     "maxIterations": 50,
-    "status": "stalled"
+    "status": "phase2-improving"
   }
 }
