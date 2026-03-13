@@ -186,13 +186,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ];
 
   const REVEAL_STAGE_MAX = 4;
-  const REVEAL_STAGE_NAMES = ['Curator Core', 'Colony View', 'Trends', 'Systems', 'Full Civ'];
+  const REVEAL_STAGE_NAMES = ['Core', 'First Action', 'Trends', 'Systems', 'Full Civ'];
   const REVEAL_GATES = [
     null,
-    { milestone: (s) => Number(s?.kittens?.length ?? 0) >= 4, timeSec: 45 },
-    { milestone: (s) => !!(s?.unlocked?.construction), timeSec: 180 },
-    { milestone: (s) => !!(s?.unlocked?.workshop || s?.unlocked?.farm || Number(s?.res?.science ?? 0) >= 180), timeSec: 420 },
-    { milestone: (s) => !!(s?.unlocked?.security || s?.unlocked?.granary || s?.unlocked?.library || Number(s?.legacy?.resets ?? 0) >= 1), timeSec: 900 },
+    { timeSec: 15 },
+    { timeSec: 30 },
+    { timeSec: 45 },
+    { timeSec: 60 },
   ];
 
   function revealStageOf(s){
@@ -264,7 +264,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     effects: { festivalUntil: 0, councilUntil: 0 },
     legacy: { shards: 0, totalShards: 0, resets: 0, upgrades: {} },
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
-    research: { unlocked: {}, activeBranch: 'economy', doctrine: null },
+    research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
     activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
@@ -325,7 +325,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const RESEARCH_BRANCH_ORDER = ['economy', 'military', 'culture'];
 
   function ensureResearchState(s){
-    s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked: {}, activeBranch: 'economy', doctrine: null };
+    s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null };
     s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};
     s.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(s.research.activeBranch) ? s.research.activeBranch : 'economy';
     const d = String(s.research.doctrine ?? '');
@@ -333,6 +333,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     for (const tech of RESEARCH_TECHS) {
       s.research.unlocked[tech.id] = !!s.research.unlocked[tech.id];
       if (tech.doctrine && s.research.unlocked[tech.id]) s.research.doctrine = tech.doctrine;
+    }
+    const selected = String(s.research.selectedTechId ?? '');
+    const selectedExists = RESEARCH_TECHS.some((t) => t.id === selected);
+    s.research.selectedTechId = selectedExists ? selected : null;
+    if (!s.research.selectedTechId) {
+      const branchTech = RESEARCH_TECHS.find((t) => t.branch === s.research.activeBranch);
+      s.research.selectedTechId = branchTech ? branchTech.id : null;
     }
   }
 
@@ -900,6 +907,24 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const statDeltaUiFx = {
     last: Object.create(null),
   };
+
+  const microUiFx = {
+    newKittenUntilById: Object.create(null),
+  };
+
+  function playMicroClass(el, className, holdMs = 520){
+    if (!(el instanceof Element)) return;
+    const cls = String(className || '').trim();
+    if (!cls) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    if (holdMs > 0) {
+      setTimeout(() => {
+        if (el && el.classList) el.classList.remove(cls);
+      }, holdMs);
+    }
+  }
 
   function statPulseClass(key, value){
     const numeric = Number(value);
@@ -9143,7 +9168,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     for (const node of nodes) {
       const min = Math.max(0, Math.min(REVEAL_STAGE_MAX, Number(node.getAttribute('data-reveal-min') ?? 0) || 0));
       const show = stage >= min;
+      const wasVisible = node.getAttribute('data-reveal-visible') === '1';
       node.classList.toggle('reveal-hidden', !show);
+      if (show && !wasVisible) {
+        node.classList.add('reveal-enter');
+        setTimeout(() => node.classList.remove('reveal-enter'), 440);
+      }
+      node.setAttribute('data-reveal-visible', show ? '1' : '0');
       if (!show) node.setAttribute('aria-hidden', 'true');
       else node.removeAttribute('aria-hidden');
     }
@@ -9701,6 +9732,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ? `<span class="stat-icon${iconPulseClass}" aria-hidden="true">${escapeHtml(labelParts.icon)}</span> ${escapeHtml(labelParts.label)}`
         : escapeHtml(labelParts.label);
 
+      const microClass = pulseClass === 'pulse-good' ? 'micro-gain' : (pulseClass === 'pulse-warn' ? 'micro-spend' : '');
+      d.classList.toggle('micro-gain', microClass === 'micro-gain');
+      d.classList.toggle('micro-spend', microClass === 'micro-spend');
       d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
@@ -9855,24 +9889,42 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const active = state.research.activeBranch;
       const bLabel = (b) => b === 'economy' ? 'Economy' : (b === 'military' ? 'Military' : 'Culture');
       const tabs = RESEARCH_BRANCH_ORDER.map((b) => `<button class="btn ${active === b ? 'active' : ''}" data-research-tab="${b}">${bLabel(b)}</button>`).join(' ');
-      const rows = RESEARCH_TECHS.filter(t => t.branch === active)
-        .sort((a,b) => a.tier - b.tier)
-        .map((tech) => {
-          const owned = !!state.research.unlocked[tech.id];
-          const canBuy = canBuyResearchTech(state, tech);
-          const prereqs = (tech.prereqs ?? []).map((id) => RESEARCH_TECHS.find(t => t.id === id)?.name || id);
-          const reqLine = prereqs.length ? `<div class="small" style="opacity:.75">Requires: ${escapeHtml(prereqs.join(', '))}</div>` : '';
-          const doctrineTag = tech.doctrine ? `<span class="tag warn" style="margin-left:6px">Doctrine fork</span>` : '';
-          const btn = owned
-            ? '<span class="tag good">Unlocked</span>'
-            : `<button class="btn" data-research-buy="${tech.id}" ${canBuy ? '' : 'disabled'}>Research (${tech.cost} science)</button>`;
-          return `<div style="margin-bottom:8px"><div><b>T${tech.tier}.</b> ${escapeHtml(tech.name)}${doctrineTag} - ${escapeHtml(tech.desc)}</div>${reqLine}<div class="small" style="margin-top:4px">${btn}</div></div>`;
-        }).join('');
+      const branchTechs = RESEARCH_TECHS.filter(t => t.branch === active).sort((a,b) => a.tier - b.tier);
+      const selectedId = String(state.research.selectedTechId ?? '');
+      const selected = branchTechs.find((t) => t.id === selectedId) ?? branchTechs[0] ?? null;
+      if (selected && state.research.selectedTechId !== selected.id) state.research.selectedTechId = selected.id;
+      const rows = branchTechs.map((tech) => {
+        const owned = !!state.research.unlocked[tech.id];
+        const selectedClass = selected && selected.id === tech.id ? 'active' : '';
+        const status = owned ? '<span class="tag good">Unlocked</span>' : `<span class="small" style="opacity:.8">Cost ${tech.cost}</span>`;
+        return `<button class="btn ${selectedClass}" style="width:100%; text-align:left; margin-bottom:6px" data-research-select="${tech.id}"><b>T${tech.tier}.</b> ${escapeHtml(tech.name)} <span class="small" style="opacity:.7">(${tech.branch})</span> ${status}</button>`;
+      }).join('');
+
+      let detailSheet = '<div class="small" style="margin-top:8px; opacity:.75">No research available for this branch.</div>';
+      if (selected) {
+        const owned = !!state.research.unlocked[selected.id];
+        const canBuy = canBuyResearchTech(state, selected);
+        const prereqs = (selected.prereqs ?? []).map((id) => RESEARCH_TECHS.find(t => t.id === id)?.name || id);
+        const reqLine = prereqs.length ? `<div class="small" style="opacity:.75; margin-top:4px">Requires: ${escapeHtml(prereqs.join(', '))}</div>` : '<div class="small" style="opacity:.75; margin-top:4px">Requires: none</div>';
+        const doctrineTag = selected.doctrine ? `<span class="tag warn" style="margin-left:6px">Doctrine fork</span>` : '';
+        const btn = owned
+          ? '<span class="tag good">Unlocked</span>'
+          : `<button class="btn" data-research-buy="${selected.id}" ${canBuy ? '' : 'disabled'}>Research (${selected.cost} science)</button>`;
+        detailSheet =
+          `<div class="research-detail-sheet" style="margin-top:8px">` +
+          `<div><b>${escapeHtml(selected.name)}</b>${doctrineTag}</div>` +
+          `<div class="small" style="margin-top:4px">${escapeHtml(selected.desc)}</div>` +
+          `${reqLine}` +
+          `<div class="small" style="margin-top:8px">${btn}</div>` +
+          `</div>`;
+      }
+
       const doctrine = state.research.doctrine ? (state.research.doctrine === 'legion' ? 'Legion Charter' : 'Scholarium Compact') : 'none';
       researchPanelEl.innerHTML =
         `<div class="small">Science bank: <b>${fmt(state.res.science)}</b> | Doctrine: <b>${doctrine}</b></div>` +
         `<div class="row" style="gap:6px; margin-top:8px">${tabs}</div>` +
-        `<div style="margin-top:8px">${rows}</div>`;
+        `<div style="margin-top:8px">${rows}</div>` +
+        `${detailSheet}`;
     }
 
     const projLine = proj.length ? (`Projects: ${proj.join(' | ')}\n`) : '';
@@ -10371,6 +10423,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
         // Warn classes
         const warnClass = (health < 0.4) ? ' warn-health' : (mood < 0.3) ? ' warn-mood' : '';
+        const kittenPopUntil = Number(microUiFx.newKittenUntilById[k.id] ?? 0);
+        const kittenPopClass = (kittenPopUntil > performance.now()) ? ' kitten-pop' : '';
 
         // Top skills compact
         const topSkills = Object.entries(k.skills || {}).sort((a,b) => b[1] - a[1]).slice(0, 1);
@@ -10410,13 +10464,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         let card = existingMap.get(key);
         if (card) {
           // Reuse existing card, update content
-          card.className = `kitten-card${warnClass}`;
+          card.className = `kitten-card${warnClass}${kittenPopClass}`;
           card.innerHTML = cardHTML;
           fragment.appendChild(card);
           existingMap.delete(key);
         } else {
           card = document.createElement('div');
-          card.className = `kitten-card${warnClass}`;
+          card.className = `kitten-card${warnClass}${kittenPopClass}`;
           card.dataset.kidx = key;
           card.innerHTML = cardHTML;
           fragment.appendChild(card);
@@ -10429,6 +10483,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             try { renderRadar(radarCanvas, k); } catch (_) {}
           }
         }
+      }
+
+      const nowMs = performance.now();
+      for (const id of Object.keys(microUiFx.newKittenUntilById)) {
+        if (Number(microUiFx.newKittenUntilById[id] ?? 0) <= nowMs) delete microUiFx.newKittenUntilById[id];
       }
 
       // Clear stale cards and append new fragment
@@ -11521,13 +11580,15 @@ function renderTrends(){
     render();
   });
 
-  document.getElementById('btnAddKitten').addEventListener('click', () => {
+  document.getElementById('btnAddKitten').addEventListener('click', (e) => {
     const cost = kittenCost();
     if (state.res.food < cost) { playSfx('error'); log(`Need ${cost} food for a kitten.`); render(); return; }
     if (state.kittens.length >= housingCap(state)) { playSfx('error'); log(`No housing. Build huts.`); render(); return; }
     state.res.food -= cost;
     const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
     state.kittens.push(makeKitten(id, state.t));
+    microUiFx.newKittenUntilById[id] = performance.now() + 1400;
+    playMicroClass(e.currentTarget, 'purchase-confirm', 520);
     playSfx('kitten');
     log(`New kitten joined! (#${id})`);
     render();
@@ -12045,7 +12106,9 @@ function renderTrends(){
     if (!btn) return;
     const id = String(btn.dataset.legacyBuy || '');
     const res = buyLegacyUpgrade(id);
-    if (!res.ok && res.reason === 'cost') {
+    if (res.ok) {
+      playMicroClass(btn, 'purchase-confirm', 520);
+    } else if (res.reason === 'cost') {
       playSfx('error');
       log('Not enough Legacy Shards for that upgrade.');
     }
@@ -12081,7 +12144,9 @@ function renderTrends(){
     if (!buyBtn) return;
     const id = String(buyBtn.dataset.eternityBuy || '');
     const res = buyEternityUpgrade(id);
-    if (!res.ok && res.reason === 'cost') {
+    if (res.ok) {
+      playMicroClass(buyBtn, 'purchase-confirm', 520);
+    } else if (res.reason === 'cost') {
       playSfx('error');
       log('Not enough Sigils for that Eternity upgrade.');
     }
@@ -12094,6 +12159,17 @@ function renderTrends(){
       ensureResearchState(state);
       const next = String(tabBtn.dataset.researchTab || 'economy');
       state.research.activeBranch = RESEARCH_BRANCH_ORDER.includes(next) ? next : 'economy';
+      const firstTech = RESEARCH_TECHS.find((t) => t.branch === state.research.activeBranch);
+      state.research.selectedTechId = firstTech ? firstTech.id : null;
+      save();
+      render();
+      return;
+    }
+
+    const selectBtn = e.target.closest('button[data-research-select]');
+    if (selectBtn) {
+      ensureResearchState(state);
+      state.research.selectedTechId = String(selectBtn.dataset.researchSelect || '');
       save();
       render();
       return;
@@ -12103,7 +12179,9 @@ function renderTrends(){
     if (!buyBtn) return;
     const id = String(buyBtn.dataset.researchBuy || '');
     const res = buyResearchTech(id);
-    if (!res.ok) {
+    if (res.ok) {
+      playMicroClass(buyBtn, 'purchase-confirm', 520);
+    } else {
       playSfx('error');
       log('Research locked: check science/prerequisites/doctrine exclusivity.');
     }

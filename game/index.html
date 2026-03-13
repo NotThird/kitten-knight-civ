@@ -11,14 +11,14 @@
   <h1>Kitten Knight Civ</h1>
   <span class="pill" id="ver"></span>
   <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
-  <button id="btnPause" title="Shortcut: Space">Pause</button>
-  <button id="btnSound" title="Toggle sound effects (default off)">Sound: Off</button>
-  <button id="btnPatchNotes" title="What's new in this version">Patch Notes</button>
-  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)">Export Save</button>
-  <button id="btnImport" title="Paste a save string to restore">Import Save</button>
-  <button id="btnPrestige" title="Reset colony for Legacy Shards">Legacy Reset</button>
-  <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils">Eternity Reset</button>
-  <button id="btnReset" title="Resets everything">Hard Reset</button>
+  <button id="btnPause" title="Shortcut: Space" data-reveal-min="1">Pause</button>
+  <button id="btnSound" title="Toggle sound effects (default off)" data-reveal-min="4">Sound: Off</button>
+  <button id="btnPatchNotes" title="What's new in this version" data-reveal-min="4">Patch Notes</button>
+  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)" data-reveal-min="4">Export Save</button>
+  <button id="btnImport" title="Paste a save string to restore" data-reveal-min="4">Import Save</button>
+  <button id="btnPrestige" title="Reset colony for Legacy Shards" data-reveal-min="4">Legacy Reset</button>
+  <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils" data-reveal-min="4">Eternity Reset</button>
+  <button id="btnReset" title="Resets everything" data-reveal-min="4">Hard Reset</button>
   <span class="small" id="clock"></span>
 </header>
 
@@ -97,11 +97,11 @@
       </div>
 
       <div style="height:10px"></div>
-      <div class="small" data-reveal-min="1">Society feed</div>
-      <div class="log" id="feed" style="max-height:220px" data-reveal-min="1"></div>
+      <div class="small" data-reveal-min="0">Society feed</div>
+      <div class="log" id="feed" style="max-height:220px" data-reveal-min="0"></div>
 
       <div style="height:12px"></div>
-      <details id="advancedControls" data-reveal-min="2">
+      <details id="advancedControls" data-reveal-min="4">
         <summary class="small" style="cursor:pointer; user-select:none">Advanced controls (optional)</summary>
         <div style="height:10px"></div>
 
@@ -431,7 +431,7 @@
     </div>
   </section>
 
-  <section class="card" id="colonySection" data-reveal-min="1">
+  <section class="card" id="colonySection" data-reveal-min="3">
     <h2>Colony (AI decisions)</h2>
     <div class="body">
       <div class="colony-toolbar" id="colonyToolbar">
