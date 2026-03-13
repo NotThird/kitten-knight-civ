@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T21:47:45.309Z",
+    "lastUpdated": "2026-03-13T21:53:06.813Z",
     "columns": {
         "todo": [
             {
@@ -416,25 +416,6 @@
                 "claimedAt": "2026-03-13T21:40:37.850Z",
                 "completedAt": "2026-03-13T21:41:47.511Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-085",
-                "title": "Fix colony AI decisions flash bug - display too brief to read",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T17:31:04.391Z",
-                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
-                "acceptanceCriteria": [
-                    "Colony AI decision text stays visible for at least 3 seconds",
-                    "Text does not get overwritten by other UI updates",
-                    "Player can read the full decision text before it fades"
-                ],
-                "source": "directive",
-                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash.",
-                "claimedAt": "2026-03-13T21:46:14.919Z",
-                "completedAt": "2026-03-13T21:47:45.308Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -729,13 +710,34 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-13T21:34:16.334Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-085",
+                "title": "Fix colony AI decisions flash bug - display too brief to read",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T17:31:04.391Z",
+                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
+                "acceptanceCriteria": [
+                    "Colony AI decision text stays visible for at least 3 seconds",
+                    "Text does not get overwritten by other UI updates",
+                    "Player can read the full decision text before it fades"
+                ],
+                "source": "directive",
+                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash.",
+                "claimedAt": "2026-03-13T21:46:14.919Z",
+                "completedAt": "2026-03-13T21:47:45.308Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-13T21:53:06.813Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 116,
-        "totalCompleted": 60,
+        "totalCompleted": 61,
         "pendingQuestion": null
     },
     "nextId": 121

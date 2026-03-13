@@ -17,13 +17,14 @@
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 42,
+    "todo": 22,
     "claimed": 0,
-    "review": 1,
-    "done": 12,
-    "blocked": 1,
+    "review": 2,
+    "done": 13,
+    "blocked": 0,
     "staleTasks": [],
-    "status": "healthy"
+    "status": "stalled",
+    "note": "All 9 cron jobs show lastRun=never. Agents not executing despite being enabled."
   },
   "agentActivity": {
     "lastCycleActive": [],
@@ -38,8 +39,8 @@
       "sentinel",
       "strategist"
     ],
-    
-    "errors": []
+    "errors": [],
+    "note": "No agents have ever executed. Cron scheduler issue — jobs.json shows lastRun=never for all Forge: jobs."
   },
   "convergence": {
     "currentScore": 8.4,
