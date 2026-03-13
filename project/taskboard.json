@@ -2,65 +2,14 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T21:23:14.081Z",
+    "lastUpdated": "2026-03-13T21:34:16.334Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-007",
-                "title": "Extract main.js monolith into proper modules",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "refactor",
-                "createdAt": "2026-03-12T05:04:00Z",
-                "description": "main.js is 540KB — a massive monolith. Extract AI logic into ai.js, social systems into social.js. Ensure parse_check still passes. Do NOT change behavior, only move code.",
-                "acceptanceCriteria": [
-                    "main.js reduced to <100KB",
-                    "ai.js exists with kitten AI logic",
-                    "social.js exists with norms/factions/coteries/rituals",
-                    "parse_check.js passes after refactor",
-                    "Game loads and runs identically"
-                ],
-                "source": "orchestrator",
-                "staleCount": 2,
-                "notes": "DEPRIORITIZED from critical to medium. Stale twice. Ship features first, refactor later. Still important but not blocking anymore."
-            },
-            {
-                "id": "TASK-018",
-                "title": "Create visual regression test suite for UI changes",
-                "assignee": "tester",
-                "priority": "medium",
-                "type": "test",
-                "createdAt": "2026-03-12T06:40:02.719Z",
-                "description": "With the pivot to shipping player-facing visual features (polish bundle, fly-up numbers, milestones), we need a way to verify UI changes without manual inspection. Create a lightweight test that loads the game in a headless context and validates key DOM elements exist and have expected CSS properties. This ensures visual features actually render and prevents regressions as multiple visual tasks land simultaneously.",
-                "acceptanceCriteria": [
-                    "Test script validates that key UI elements exist in the DOM after game init",
-                    "Test checks that CSS animation classes are properly defined in stylesheets",
-                    "Test can run via node command line without a browser (jsdom or similar)",
-                    "Test reports pass/fail with specific element names on failure",
-                    "Integrates with existing test infrastructure (parse_check, replay_test pattern)"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-022",
-                "title": "Fix mojibake encoding in patch notes content.js",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "bugfix",
-                "createdAt": "2026-03-12T07:11:30.255Z",
-                "description": "Critic review found UTF-8 mojibake (curly quotes rendered as garbled characters) in Patch Notes modal content. Quick fix: replace corrupted characters with proper ASCII quotes.",
-                "acceptanceCriteria": [
-                    "No mojibake characters visible in Patch Notes modal",
-                    "All quotes render correctly",
-                    "Modal opens without errors"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-029",
                 "title": "Implement discovery and secret mechanics from approved TASK-024 design",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T15:17:43.621Z",
                 "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.",
@@ -75,149 +24,10 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-032",
-                "title": "Validate shipped features on mobile viewport: dashboard, milestones, fly-ups",
-                "assignee": "tester",
-                "priority": "medium",
-                "type": "test",
-                "createdAt": "2026-03-12T15:50:41.747Z",
-                "description": "Three major features shipped recently (TASK-016 fly-ups, TASK-017 milestones, TASK-020 split dashboard) but none have been tested on mobile viewports. The game is mobile-first per Austin's directive. Verify all three render correctly at 375px and 768px widths, no horizontal scroll, no overlapping elements, tab switching works on touch.",
-                "acceptanceCriteria": [
-                    "Fly-up numbers visible and not clipped at 375px viewport width",
-                    "Milestone celebration overlay does not cause horizontal scroll on mobile",
-                    "Dashboard tab switching works with touch/click at 375px and 768px",
-                    "All three graph canvases render data correctly in split layout on mobile",
-                    "No console errors during normal gameplay at mobile viewport"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-040",
-                "title": "Create automated deploy checklist script (cache-bust, syntax check, test)",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-12T16:50:57.035Z",
-                "description": "Multiple bugs have stemmed from deploy inconsistencies: stale cache-busters, syntax errors shipping to prod, untested changes going live. A simple pre-deploy script (vanilla Node, no dependencies) that: (1) validates all JS files parse cleanly, (2) ensures cache-buster strings are consistent, (3) runs replay_test.js, (4) reports pass/fail. This is a stability investment that prevents regression. Reference: Kittens Game has a thorough build validation step that catches issues before they reach players.",
-                "acceptanceCriteria": [
-                    "Script runs via `node game/scripts/predeploy.js`",
-                    "Checks all .js files for syntax errors (exits non-zero on failure)",
-                    "Verifies cache-buster version strings are consistent across index.html",
-                    "Runs parse_check.js and replay_test.js as part of validation",
-                    "Outputs clear pass/fail summary with specific error locations"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-041",
-                "title": "Add global error boundary with player-friendly recovery UI",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T17:20:59.792Z",
-                "description": "Stability is at 6.5 and the 540KB monolith has no error handling for runtime failures. If any JS error occurs, the game silently breaks. Cookie Clicker wraps core loops in try-catch and shows a recovery prompt. KKC should catch unhandled errors, display a non-scary modal, and offer auto-reload. Prevents silent breakage and builds player trust.",
-                "acceptanceCriteria": [
-                    "window.onerror and unhandledrejection listeners catch all uncaught errors",
-                    "Error modal displays with friendly message and reload button",
-                    "Game state is auto-saved before reload attempt",
-                    "Error details logged to console for debugging",
-                    "No visible impact during normal gameplay"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-043",
-                "title": "Implement save integrity validation on load",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T17:20:59.872Z",
-                "description": "Stability gap: saves can silently corrupt if game crashes mid-write or migrations have edge cases. Antimatter Dimensions validates save structure on load and offers fallback if corrupted. KKC should validate critical save fields on load, warn if values are NaN/negative/impossible, and offer fallback to last known good save or clean start.",
-                "acceptanceCriteria": [
-                    "Save validation runs on every load checking for NaN, negative, or missing critical fields",
-                    "If validation fails, player sees modal with options: retry, use backup, or fresh start",
-                    "Auto-backup of last 2 valid saves in localStorage",
-                    "Validation covers population, resources, prestige shards, iteration count",
-                    "Console logs specific validation failures for debugging"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-047",
-                "title": "Implement save export/import with clipboard and file download",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Common incremental game expectation: let players export saves as base64 text (copy to clipboard) and import from clipboard/paste. Also offer download as .json file. Cookie Clicker, NGU IDLE, Antimatter Dimensions all have this. Improves completeness and player trust (backup before prestige).",
-                "acceptanceCriteria": [
-                    "Export button copies base64 save string to clipboard with success toast",
-                    "Import button accepts pasted base64 string and loads save after confirmation prompt",
-                    "Download button saves .json file with timestamp in filename",
-                    "Invalid import data shows clear error message without corrupting current save",
-                    "Works on mobile (clipboard API with fallback textarea)"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.381Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-048",
-                "title": "Add keyboard shortcuts for common actions and accessibility",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "description": "Completeness/polish item. Keyboard shortcuts for frequent actions (space=pause, P=prestige, S=settings). Focus indicators on all buttons. Reference: Antimatter Dimensions hotkey support.",
-                "acceptanceCriteria": [
-                    "Space bar toggles pause/play",
-                    "At least 3 keyboard shortcuts for navigation",
-                    "All buttons have visible focus indicators when tabbed to",
-                    "Keyboard shortcuts listed in help tooltip or settings panel",
-                    "Shortcuts do not fire when typing in text input fields"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.383Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-049",
-                "title": "Implement statistics and lifetime tracking panel",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
-                "acceptanceCriteria": [
-                    "Stats panel accessible from main UI showing lifetime totals",
-                    "Tracks: total resources earned, total prestiges, total time played, highest population",
-                    "Stats persist across prestige resets",
-                    "Stats panel renders cleanly on mobile viewport",
-                    "Current run stats shown alongside lifetime stats"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.383Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-052",
-                "title": "Add one-time sound discoverability nudge after 30 seconds of play",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T18:22:03.935Z",
-                "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept — gentle discovery of an opt-in feature.",
-                "acceptanceCriteria": [
-                    "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
-                    "Tooltip has a dismiss button and never reappears after dismissal",
-                    "Dismissal state persists in localStorage across sessions",
-                    "Tooltip does not appear if sound is already ON",
-                    "No hover dependency — works on mobile tap"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-053",
                 "title": "Add resource production rate indicators (per-second display and trend arrows)",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T18:22:03.969Z",
                 "description": "Idle games live and die by 'numbers going up' visibility. Currently resource cards show absolute values but not production rates. Players cant tell at a glance if food is growing or shrinking. Add per-second rate display next to each resource (e.g. 'Food: 220 (+3.2/s)') and a small trend arrow (green up, red down, gray flat). Reference: Cookie Clicker shows CPS prominently. Kittens Game shows per-tick rates. NGU IDLE shows rate of change. This is a genre expectation. Keep it lightweight — calculate from last 5 ticks average, update every 2s.",
@@ -234,7 +44,7 @@
                 "id": "TASK-050",
                 "title": "Add contextual tooltip system for resource cards and key UI elements",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T18:22:03.998Z",
                 "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
@@ -248,134 +58,10 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-062",
-                "title": "Validate progressive reveal unlock sequence on fresh save",
-                "assignee": "tester",
-                "priority": "high",
-                "type": "test",
-                "createdAt": "2026-03-12T19:22:05.641Z",
-                "description": "Once TASK-051 (progressive reveal) ships, test the 5-stage unlock sequence from a fresh save. Verify stages unlock in order, UI elements appear/hide correctly, no information overload on first load. Test on mobile viewport (375px) and desktop. This is the #1 engagement gap per Arbiter review.",
-                "acceptanceCriteria": [
-                    "Fresh save shows only Stage 1 UI elements (minimal controls)",
-                    "Each stage unlock triggers correctly based on game progress milestones",
-                    "No UI elements visible before their unlock stage",
-                    "Mobile viewport (375px wide) shows clean layout at every stage",
-                    "Save/load preserves unlock progress correctly",
-                    "Transition between stages has no visual glitch or flash"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-063",
-                "title": "Implement animated number counters with easing for resource totals",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Visuals at 7.0 is weakest axis. Animated number transitions create satisfying numbers-go-up feeling. Use rAF lerp 200-400ms on main resource counters. Format large numbers with abbreviations (1.5K, 2.3M).",
-                "acceptanceCriteria": [
-                    "Resource counters animate smoothly when values change",
-                    "Animation 200-400ms with easing",
-                    "Numbers above 1000 abbreviated (1.5K, 2.3M, 1.1B)",
-                    "Full number on tap for mobile",
-                    "No perf degradation with multiple counters"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T19:55:15.499Z"
-            },
-            {
-                "id": "TASK-064",
-                "title": "Add particle effects on prestige reset and milestone unlock",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Visuals weakest axis. Key moments need VFX. Lightweight canvas/CSS particle bursts: confetti on milestone, radiant pulse on prestige reset. Pool 20-30 particles, auto-cleanup 1.5s. Respect prefers-reduced-motion.",
-                "acceptanceCriteria": [
-                    "Prestige reset triggers particle burst animation",
-                    "Milestone unlock triggers celebration effect",
-                    "Particles clean up within 2s (no leak)",
-                    "Performant on mobile",
-                    "Respects prefers-reduced-motion media query"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T19:55:15.499Z"
-            },
-            {
-                "id": "TASK-057",
-                "title": "Implement welcome-back summary screen showing offline gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T20:24:24.696Z",
-                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
-                "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
-                    "Shows resource gains and population changes during absence",
-                    "Displays current streak count",
-                    "Modal dismisses on click/tap",
-                    "No modal if offline less than 5 minutes",
-                    "Mobile-responsive layout",
-                    "Tests pass"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-074",
-                "title": "Validate event ticker and first-minute pacing on mobile and desktop",
-                "assignee": "tester",
-                "priority": "high",
-                "type": "test",
-                "createdAt": "2026-03-12T20:55:24.188Z",
-                "description": "End-to-end validation of stagnation-breaking features on 375px mobile and 1920px desktop viewports.",
-                "acceptanceCriteria": [
-                    "Event ticker visible and tappable on 375px viewport",
-                    "Event bonus activates on click/tap",
-                    "First-minute pacing triggers on fresh save",
-                    "Returning save skips pacing",
-                    "No layout overflow on mobile",
-                    "Events suppressed during first-minute pacing"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-069",
-                "title": "Implement session performance metrics and play-time statistics panel",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T21:24:22.583Z",
-                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
-                "acceptanceCriteria": [
-                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
-                    "Lifetime totals persist across prestige resets",
-                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
-                    "Data loads from existing save structure without migration"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-080",
-                "title": "Prepare deploy validation checklist for live site smoke tests",
-                "assignee": "tester",
-                "priority": "high",
-                "type": "test",
-                "description": "Ready a manual test script BEFORE TASK-066 deploy lands. Cover progressive reveal, research tree, prestige, audio, graphs.",
-                "acceptanceCriteria": [
-                    "Covers all post-last-deploy features",
-                    "Pass/fail criteria per check",
-                    "Mobile 375px checks",
-                    "Fresh + existing save scenarios",
-                    "Under 5 minutes to run"
-                ],
-                "source": "strategist",
-                "status": "todo",
-                "createdAt": "2026-03-12T21:55:36.798Z",
-                "staleCount": 0
-            },
-            {
                 "id": "TASK-081",
                 "title": "Add prestige milestone preview showing next reset rewards before committing",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-12T22:24:17.472Z",
                 "description": "Prestige anxiety is a known engagement killer. Antimatter Dimensions and Cookie Clicker both show what you will gain BEFORE you reset. KKC has Legacy Chronicle and Eternity Cycle but no preview of what the next reset will yield. Players should see a preview panel showing: legacy points earned, new upgrades unlockable, permanent bonuses gained. This reduces prestige anxiety (Austin directive: prestige should feel rewarding not punishing) and encourages resets at optimal moments. Simple info panel, no new mechanics needed.",
@@ -390,298 +76,10 @@
                 "source": "strategist"
             },
             {
-                "title": "Implement faction diplomacy system from approved TASK-068 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Implement diplomacy panel. DEPRIORITIZED until post-ship.",
-                "acceptanceCriteria": [
-                    "Diplomacy state persists",
-                    "Influence generates per tick",
-                    "3+ actions with cooldowns",
-                    "Alliance and loyalty working",
-                    "Mobile-first UI",
-                    "Tests pass"
-                ],
-                "source": "orchestrator",
-                "id": "TASK-088",
-                "column": "todo",
-                "createdAt": "2026-03-12T23:38:15.449Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-090",
-                "title": "Verify feedback widget has no cooldown and submissions work end-to-end",
-                "assignee": "tester",
-                "priority": "high",
-                "type": "test",
-                "createdAt": "2026-03-13T17:31:28.871Z",
-                "description": "Austin directive: no feedback cooldown, unlimited submissions. Tinman reportedly removed the 5-min gate. Verify: 1) feedback widget allows rapid submissions without cooldown, 2) submissions appear in Discord #game-feedback channel, 3) widget works on mobile, 4) no rate limiting or error states block submissions.",
-                "acceptanceCriteria": [
-                    "Can submit feedback twice within 30 seconds without cooldown",
-                    "Submissions appear in Discord #game-feedback",
-                    "Widget works on mobile viewport (375px)",
-                    "No error states block submission flow"
-                ],
-                "source": "directive"
-            },
-            {
-                "id": "TASK-094",
-                "title": "Fix encoding artifacts in content.js patch notes",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "bug",
-                "createdAt": "2026-03-13T18:28:55.389Z",
-                "description": "content.js has mojibake in patch notes strings (smart quotes and arrows display as garbled multi-byte sequences). File was likely saved with wrong encoding. Fix by re-saving as UTF-8 or replacing garbled sequences.",
-                "acceptanceCriteria": [
-                    "All patch note strings display correct Unicode characters",
-                    "No garbled character artifacts visible in Patch Notes modal"
-                ],
-                "source": "critic"
-            },
-            {
-                "id": "TASK-095",
-                "title": "Implement Constellation endgame goals from approved TASK-093 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T18:35:25.869Z",
-                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.",
-                "acceptanceCriteria": [
-                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
-                    "Progress bars update deterministically each tick",
-                    "Completing a goal shows A/B reward choice buttons",
-                    "Chosen rewards apply correct multipliers and bonuses",
-                    "Old saves without state.mastery load without errors",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-096",
-                "title": "Add mobile responsive breakpoints for core game layout",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T18:35:25.904Z",
-                "description": "The CSS uses a fixed 3-column grid with no media queries. Add responsive breakpoints so the game is playable on phone and tablet viewports.",
-                "acceptanceCriteria": [
-                    "Game layout stacks to single column on viewports under 768px",
-                    "All buttons and controls are tap-friendly on mobile",
-                    "Resource cards and panels remain readable on 375px width",
-                    "No horizontal scroll on any mobile viewport",
-                    "parse_check passes"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-097",
-                "title": "Remove or implement PWA service worker stub",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T18:35:25.939Z",
-                "description": "pwa.js is 10 bytes and essentially dead code. Either implement proper PWA with offline caching or remove the reference.",
-                "acceptanceCriteria": [
-                    "pwa.js either contains working service worker or is removed along with its script tag",
-                    "No console errors related to service worker registration",
-                    "parse_check passes"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-101",
-                "title": "Fix UTF-8 encoding artifacts in content.js patch notes",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "bug",
-                "description": "content.js has mojibake in patch notes",
-                "acceptanceCriteria": [
-                    "All patch notes display correct Unicode"
-                ],
-                "source": "critic",
-                "createdAt": "2026-03-13T18:58:56.032Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-105",
-                "title": "Consolidate duplicate encoding bug tasks (TASK-022, TASK-094, TASK-101) into TASK-102",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "refactor",
-                "createdAt": "2026-03-13T19:08:43.468Z",
-                "description": "There are 4 tasks all targeting the same content.js encoding artifacts: TASK-022, TASK-094, TASK-101, and TASK-102. TASK-102 is the most comprehensive (critical breakthrough). The other 3 should be closed as duplicates when TASK-102 is completed. Developer should only work TASK-102 and mark the others done with note: duplicate of TASK-102.",
-                "acceptanceCriteria": [
-                    "TASK-022, TASK-094, and TASK-101 are marked done with duplicate note after TASK-102 ships",
-                    "No duplicate encoding tasks remain in todo"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-106",
-                "title": "Implement colony AI decision log panel from TASK-099 design",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T19:35:35.603Z",
-                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
-                "acceptanceCriteria": [
-                    "Decision log panel visible on desktop below Society feed",
-                    "Decisions persist in scrollable list not ephemeral flash",
-                    "Mobile collapsed by default with details summary",
-                    "Auto-scroll to bottom unless user scrolled up",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-107",
-                "title": "Clean up duplicate encoding tasks superseded by TASK-102",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "refactor",
-                "createdAt": "2026-03-13T19:35:38.317Z",
-                "description": "TASK-102 fixed all encoding artifacts. Remove duplicates TASK-022, TASK-094, TASK-101, TASK-105 from todo.",
-                "acceptanceCriteria": [
-                    "TASK-022 TASK-094 TASK-101 TASK-105 moved to done or removed",
-                    "No duplicate encoding tasks remain in todo"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-108",
-                "title": "Add browser tab title updates showing colony status and event alerts",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T19:39:37.173Z",
-                "description": "Great idle games use the browser tab title to pull players back. Cookie Clicker shows golden cookie alerts in the title; Kittens Game shows resource warnings. KKC should update document.title with key state: population count, season changes, milestone unlocks, and unread colony AI decisions. Trivially implementable (single setInterval + document.title assignment) and massively increases re-engagement for players who leave the tab open.",
-                "acceptanceCriteria": [
-                    "Tab title updates every 5-10 seconds with current population count",
-                    "Special events (season change, milestone unlock, golden event) briefly flash in tab title",
-                    "Title reverts to normal after event notification is shown for 3 cycles",
-                    "No performance impact - uses existing game state, no new calculations",
-                    "Works correctly when tab is backgrounded"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-110",
-                "title": "Add defensive error wrapping around colony AI tick to prevent cascade failures",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T19:39:40.368Z",
-                "description": "The 540KB monolith has no error isolation between subsystems. If colony AI throws during a tick, it can cascade and break the game loop. Wrapping the AI decision cycle, society feed updates, and seasonal transitions in try-catch with fallback behavior would significantly improve stability without requiring the full modular refactor (TASK-007). This is the incremental stability win: protect the core loop from subsystem failures.",
-                "acceptanceCriteria": [
-                    "Colony AI tick wrapped in try-catch - errors logged to console but game loop continues",
-                    "Society feed update failures do not halt resource production",
-                    "Seasonal transition errors fall back to default season without crashing",
-                    "Error count tracked in a simple counter visible in Developer Mode",
-                    "No user-visible impact from caught errors - game keeps running"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-111",
-                "title": "Implement idle-away comeback multiplier from TASK-104 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Implement comeback multiplier curve and catch-up bonus from TASK-104. Apply to offline resource gains. Cap at 2x active value/hour.",
-                "acceptanceCriteria": [
-                    "Comeback multiplier matches design curve",
-                    "Catch-up bonus activates behind milestone pace",
-                    "Welcome-back screen shows multiplier",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "status": "todo",
-                "column": "todo",
-                "createdAt": "2026-03-13T20:06:26.397Z",
-                "staleCount": 0,
-                "history": [
-                    {
-                        "action": "created",
-                        "by": "orchestrator",
-                        "at": "2026-03-13T20:06:26.397Z"
-                    }
-                ]
-            },
-            {
-                "id": "TASK-114",
-                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:35:44.034Z",
-                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Auto-save fires every 60s writing to rotating backup slots",
-                    "Dirty flag set on save start cleared on clean unload",
-                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
-                    "Total localStorage usage stays under 5MB",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-115",
-                "title": "Verify mobile accordion fix on live site at 375px viewport",
-                "assignee": "tester",
-                "priority": "critical",
-                "type": "test",
-                "createdAt": "2026-03-13T20:35:44.209Z",
-                "description": "TASK-103 was reworked and tester-approved with accordion fix. TASK-112 was created before the rework. Verify on the live site whether the accordion actually works at 375px. If it works, TASK-112 can be closed as superseded.",
-                "acceptanceCriteria": [
-                    "Test at 375x812 viewport on live site",
-                    "body.mobile-accordion class is applied",
-                    "Director section open by default others collapsed",
-                    "Accordion toggle works via tap and keyboard",
-                    "localStorage persistence verified",
-                    "Report whether TASK-112 is still needed"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-116",
-                "title": "Design browser notification system for idle pull-back moments",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:39:15.379Z",
-                "description": "Engagement is the lowest-scoring axis at 8. A key pattern in top idle games is pulling players back with browser notifications on high-value events. Design a notification system that fires on golden cookie spawns, milestone unlocks, resource cap reached, colony crisis events, prestige threshold met. Must use the Notification API with player opt-in. Keep notifications rare and high-value. Mobile-first.",
-                "acceptanceCriteria": [
-                    "Design doc specifies which 4-6 game events trigger notifications",
-                    "Opt-in flow designed (prompt after first prestige, never auto-enable)",
-                    "Notification text is thematic (kitten-voiced)",
-                    "Frequency cap specified (max 1 notification per 5 minutes)",
-                    "Fallback for browsers that deny notification permission"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-117",
-                "title": "Design mini-event variety pack for active play diversity",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:39:15.423Z",
-                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
-                "acceptanceCriteria": [
-                    "3-4 new event types designed with thematic flavor text",
-                    "Each event has clear trigger conditions and probability weights",
-                    "Reward structure defined (active bonus not idle penalty)",
-                    "Visual design spec fits existing dark theme",
-                    "Events interact meaningfully with at least one existing system"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-118",
                 "title": "Implement kitten trait mechanics from TASK-091",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-13T21:05:30.454Z",
                 "description": "Implement trait effects from TASK-091 design",
@@ -712,7 +110,7 @@
                 "id": "TASK-120",
                 "title": "Add visual progress-to-next-milestone indicators on all progression systems",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-13T21:09:36.127Z",
                 "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
@@ -724,31 +122,314 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "strategist"
-            }
-        ],
-        "claimed": [],
-        "review": [
+            },
             {
-                "id": "TASK-100",
-                "title": "Design save integrity and corruption recovery UX",
+                "id": "TASK-085",
+                "title": "Fix colony AI decisions flash bug - display too brief to read",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T17:31:04.391Z",
+                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
+                "acceptanceCriteria": [
+                    "Colony AI decision text stays visible for at least 3 seconds",
+                    "Text does not get overwritten by other UI updates",
+                    "Player can read the full decision text before it fades"
+                ],
+                "source": "directive",
+                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash."
+            },
+            {
+                "id": "TASK-106",
+                "title": "Implement colony AI decision log panel from TASK-099 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T19:35:35.603Z",
+                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
+                "acceptanceCriteria": [
+                    "Decision log panel visible on desktop below Society feed",
+                    "Decisions persist in scrollable list not ephemeral flash",
+                    "Mobile collapsed by default with details summary",
+                    "Auto-scroll to bottom unless user scrolled up",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-041",
+                "title": "Add global error boundary with player-friendly recovery UI",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.792Z",
+                "description": "Stability is at 6.5 and the 540KB monolith has no error handling for runtime failures. If any JS error occurs, the game silently breaks. Cookie Clicker wraps core loops in try-catch and shows a recovery prompt. KKC should catch unhandled errors, display a non-scary modal, and offer auto-reload. Prevents silent breakage and builds player trust.",
+                "acceptanceCriteria": [
+                    "window.onerror and unhandledrejection listeners catch all uncaught errors",
+                    "Error modal displays with friendly message and reload button",
+                    "Game state is auto-saved before reload attempt",
+                    "Error details logged to console for debugging",
+                    "No visible impact during normal gameplay"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-052",
+                "title": "Add one-time sound discoverability nudge after 30 seconds of play",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.935Z",
+                "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept — gentle discovery of an opt-in feature.",
+                "acceptanceCriteria": [
+                    "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
+                    "Tooltip has a dismiss button and never reappears after dismissal",
+                    "Dismissal state persists in localStorage across sessions",
+                    "Tooltip does not appear if sound is already ON",
+                    "No hover dependency — works on mobile tap"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-063",
+                "title": "Implement animated number counters with easing for resource totals",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Visuals at 7.0 is weakest axis. Animated number transitions create satisfying numbers-go-up feeling. Use rAF lerp 200-400ms on main resource counters. Format large numbers with abbreviations (1.5K, 2.3M).",
+                "acceptanceCriteria": [
+                    "Resource counters animate smoothly when values change",
+                    "Animation 200-400ms with easing",
+                    "Numbers above 1000 abbreviated (1.5K, 2.3M, 1.1B)",
+                    "Full number on tap for mobile",
+                    "No perf degradation with multiple counters"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T19:55:15.499Z"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-095",
+                "title": "Implement Constellation endgame goals from approved TASK-093 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T18:35:25.869Z",
+                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.",
+                "acceptanceCriteria": [
+                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
+                    "Progress bars update deterministically each tick",
+                    "Completing a goal shows A/B reward choice buttons",
+                    "Chosen rewards apply correct multipliers and bonuses",
+                    "Old saves without state.mastery load without errors",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-111",
+                "title": "Implement idle-away comeback multiplier from TASK-104 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Implement comeback multiplier curve and catch-up bonus from TASK-104. Apply to offline resource gains. Cap at 2x active value/hour.",
+                "acceptanceCriteria": [
+                    "Comeback multiplier matches design curve",
+                    "Catch-up bonus activates behind milestone pace",
+                    "Welcome-back screen shows multiplier",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "status": "todo",
+                "column": "todo",
+                "createdAt": "2026-03-13T20:06:26.397Z",
+                "staleCount": 0,
+                "history": [
+                    {
+                        "action": "created",
+                        "by": "orchestrator",
+                        "at": "2026-03-13T20:06:26.397Z"
+                    }
+                ]
+            },
+            {
+                "id": "TASK-117",
+                "title": "Design mini-event variety pack for active play diversity",
                 "assignee": "designer",
                 "priority": "medium",
                 "type": "feature",
-                "createdAt": "2026-03-13T18:39:31.243Z",
-                "description": "TASK-043 (save integrity validation) and TASK-041 (error boundary) both need a UX design for how the game communicates save problems to the player. Currently state.js handles migration silently. Design the player-facing experience for: corrupted save detected, version mismatch migration, manual backup/restore prompts, and graceful degradation. Reference: Antimatter Dimensions shows a clear modal when save issues occur with options (load backup, reset, export). This is stability infrastructure.",
+                "createdAt": "2026-03-13T20:39:15.423Z",
+                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
                 "acceptanceCriteria": [
-                    "Spec covers 4 scenarios: corruption, version mismatch, storage full, import failure",
-                    "Each scenario has a specific UI description (modal, toast, inline)",
-                    "Player always has a non-destructive escape path (never forced data loss)",
-                    "Design includes automatic backup cadence recommendation",
-                    "Compatible with existing dark theme and progressive reveal"
+                    "3-4 new event types designed with thematic flavor text",
+                    "Each event has clear trigger conditions and probability weights",
+                    "Reward structure defined (active bonus not idle penalty)",
+                    "Visual design spec fits existing dark theme",
+                    "Events interact meaningfully with at least one existing system"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-064",
+                "title": "Add particle effects on prestige reset and milestone unlock",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Visuals weakest axis. Key moments need VFX. Lightweight canvas/CSS particle bursts: confetti on milestone, radiant pulse on prestige reset. Pool 20-30 particles, auto-cleanup 1.5s. Respect prefers-reduced-motion.",
+                "acceptanceCriteria": [
+                    "Prestige reset triggers particle burst animation",
+                    "Milestone unlock triggers celebration effect",
+                    "Particles clean up within 2s (no leak)",
+                    "Performant on mobile",
+                    "Respects prefers-reduced-motion media query"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-13T21:10:45.473Z",
-                "completedAt": "2026-03-13T21:11:46.954Z",
-                "outputPath": "agents/designer/output/latest-design.md"
+                "createdAt": "2026-03-12T19:55:15.499Z"
+            },
+            {
+                "id": "TASK-043",
+                "title": "Implement save integrity validation on load",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.872Z",
+                "description": "Stability gap: saves can silently corrupt if game crashes mid-write or migrations have edge cases. Antimatter Dimensions validates save structure on load and offers fallback if corrupted. KKC should validate critical save fields on load, warn if values are NaN/negative/impossible, and offer fallback to last known good save or clean start.",
+                "acceptanceCriteria": [
+                    "Save validation runs on every load checking for NaN, negative, or missing critical fields",
+                    "If validation fails, player sees modal with options: retry, use backup, or fresh start",
+                    "Auto-backup of last 2 valid saves in localStorage",
+                    "Validation covers population, resources, prestige shards, iteration count",
+                    "Console logs specific validation failures for debugging"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-047",
+                "title": "Implement save export/import with clipboard and file download",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Common incremental game expectation: let players export saves as base64 text (copy to clipboard) and import from clipboard/paste. Also offer download as .json file. Cookie Clicker, NGU IDLE, Antimatter Dimensions all have this. Improves completeness and player trust (backup before prestige).",
+                "acceptanceCriteria": [
+                    "Export button copies base64 save string to clipboard with success toast",
+                    "Import button accepts pasted base64 string and loads save after confirmation prompt",
+                    "Download button saves .json file with timestamp in filename",
+                    "Invalid import data shows clear error message without corrupting current save",
+                    "Works on mobile (clipboard API with fallback textarea)"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.381Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-049",
+                "title": "Implement statistics and lifetime tracking panel",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
+                "acceptanceCriteria": [
+                    "Stats panel accessible from main UI showing lifetime totals",
+                    "Tracks: total resources earned, total prestiges, total time played, highest population",
+                    "Stats persist across prestige resets",
+                    "Stats panel renders cleanly on mobile viewport",
+                    "Current run stats shown alongside lifetime stats"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.383Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-069",
+                "title": "Implement session performance metrics and play-time statistics panel",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T21:24:22.583Z",
+                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
+                "acceptanceCriteria": [
+                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
+                    "Lifetime totals persist across prestige resets",
+                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
+                    "Data loads from existing save structure without migration"
+                ],
+                "source": "strategist"
+            },
+            {
+                "title": "Implement faction diplomacy system from approved TASK-068 design",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Implement diplomacy panel. DEPRIORITIZED until post-ship.",
+                "acceptanceCriteria": [
+                    "Diplomacy state persists",
+                    "Influence generates per tick",
+                    "3+ actions with cooldowns",
+                    "Alliance and loyalty working",
+                    "Mobile-first UI",
+                    "Tests pass"
+                ],
+                "source": "orchestrator",
+                "id": "TASK-088",
+                "column": "todo",
+                "createdAt": "2026-03-12T23:38:15.449Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-110",
+                "title": "Add defensive error wrapping around colony AI tick to prevent cascade failures",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T19:39:40.368Z",
+                "description": "The 540KB monolith has no error isolation between subsystems. If colony AI throws during a tick, it can cascade and break the game loop. Wrapping the AI decision cycle, society feed updates, and seasonal transitions in try-catch with fallback behavior would significantly improve stability without requiring the full modular refactor (TASK-007). This is the incremental stability win: protect the core loop from subsystem failures.",
+                "acceptanceCriteria": [
+                    "Colony AI tick wrapped in try-catch - errors logged to console but game loop continues",
+                    "Society feed update failures do not halt resource production",
+                    "Seasonal transition errors fall back to default season without crashing",
+                    "Error count tracked in a simple counter visible in Developer Mode",
+                    "No user-visible impact from caught errors - game keeps running"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-114",
+                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:35:44.034Z",
+                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Auto-save fires every 60s writing to rotating backup slots",
+                    "Dirty flag set on save start cleared on clean unload",
+                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
+                    "Total localStorage usage stays under 5MB",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
             }
         ],
+        "claimed": [],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -1019,30 +700,35 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T21:23:14.081Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-100",
+                "title": "Design save integrity and corruption recovery UX",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T18:39:31.243Z",
+                "description": "TASK-043 (save integrity validation) and TASK-041 (error boundary) both need a UX design for how the game communicates save problems to the player. Currently state.js handles migration silently. Design the player-facing experience for: corrupted save detected, version mismatch migration, manual backup/restore prompts, and graceful degradation. Reference: Antimatter Dimensions shows a clear modal when save issues occur with options (load backup, reset, export). This is stability infrastructure.",
+                "acceptanceCriteria": [
+                    "Spec covers 4 scenarios: corruption, version mismatch, storage full, import failure",
+                    "Each scenario has a specific UI description (modal, toast, inline)",
+                    "Player always has a non-destructive escape path (never forced data loss)",
+                    "Design includes automatic backup cadence recommendation",
+                    "Compatible with existing dark theme and progressive reveal"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T21:10:45.473Z",
+                "completedAt": "2026-03-13T21:11:46.954Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-13T21:34:16.334Z",
+                "testVerdict": "APPROVED"
             }
         ],
-        "blocked": [
-            {
-                "id": "TASK-085",
-                "title": "Fix colony AI decisions flash bug - display too brief to read",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T17:31:04.391Z",
-                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
-                "acceptanceCriteria": [
-                    "Colony AI decision text stays visible for at least 3 seconds",
-                    "Text does not get overwritten by other UI updates",
-                    "Player can read the full decision text before it fades"
-                ],
-                "source": "directive",
-                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash."
-            }
-        ]
+        "blocked": []
     },
     "meta": {
         "totalCreated": 116,
-        "totalCompleted": 59,
+        "totalCompleted": 60,
         "pendingQuestion": null
     },
     "nextId": 121
