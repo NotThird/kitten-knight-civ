@@ -7096,7 +7096,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const mobileMq = (typeof window.matchMedia === 'function')
       ? window.matchMedia('(max-width: 479px)')
       : null;
-    const isMobile = () => (mobileMq ? mobileMq.matches : window.innerWidth <= 479);
+    const isMobile = () => {
+      if (mobileMq && mobileMq.matches) return true;
+      const vv = Number(window.visualViewport?.width || 0);
+      const iw = Number(window.innerWidth || 0);
+      const cw = Number(document.documentElement?.clientWidth || 0);
+      const width = Math.min(...[vv, iw, cw].filter((v) => Number.isFinite(v) && v > 0));
+      return (Number.isFinite(width) ? width : iw) <= 479;
+    };
     const accordionIds = ['directorSection', 'colonySection', 'safetySection'];
     const storageKey = 'kkc_mobile_accordion_v1';
     const cards = accordionIds
@@ -7108,6 +7115,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const raw = window.localStorage.getItem(storageKey);
       if (raw) persisted = JSON.parse(raw) || {};
     } catch (_err) { persisted = {}; }
+
+    const getCardHeading = (card) => {
+      if (!card) return null;
+      const first = card.firstElementChild;
+      if (first && first.tagName === 'H2') return first;
+      return card.querySelector('h2');
+    };
 
     const setExpanded = (card, heading) => {
       if (!heading) return;
@@ -7122,7 +7136,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     for (const card of cards){
-      const heading = card.querySelector(':scope > h2');
+      const heading = getCardHeading(card);
       if (!heading) continue;
       heading.setAttribute('role', 'button');
       heading.setAttribute('tabindex', '0');
@@ -7146,7 +7160,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const mobile = isMobile();
       document.body.classList.toggle('mobile-accordion', mobile);
       for (const card of cards){
-        const heading = card.querySelector(':scope > h2');
+        const heading = getCardHeading(card);
         if (!mobile) {
           card.classList.remove('is-collapsed');
           setExpanded(card, heading);
