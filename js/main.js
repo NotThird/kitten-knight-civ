@@ -10727,15 +10727,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         let displayTask = k.task ?? '';
         let displayKind = String(d?.kind ?? 'score');
         let displayFallback = k._fallbackTo || '';
+        let displayWhy = String(k.why ?? '');
 
         if (cached && (now - cached.setAt) < DISPLAY_HOLD_MS) {
           // Hold the cached display values
           displayTask = cached.task;
           displayKind = cached.kind;
           displayFallback = cached.fallback;
-        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind) {
-          // New decision or cache expired with a change — update cache
-          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, setAt: now };
+          displayWhy = String(cached.why ?? displayWhy);
+        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind || displayFallback !== cached.fallback || displayWhy !== String(cached.why ?? '')) {
+          // New decision/explanation or cache expired with a change — update cache
+          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, why: displayWhy, setAt: now };
         }
         // else: cache expired but nothing changed — refresh timer
         else { displayCache[cacheKey].setAt = now; }
@@ -10806,7 +10808,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           <div class="kc-footer">
             ${traits.length ? `<div class="kc-traits">${escapeHtml(traits.join(', '))}</div>` : ''}
             ${buddyStr ? `<div class="kc-buddy">${buddyStr}</div>` : ''}
-            <div class="kc-why">${escapeHtml(k.why ?? '')}</div>
+            <div class="kc-why">${escapeHtml(displayWhy)}</div>
           </div>
         `;
 

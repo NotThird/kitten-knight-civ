@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T21:34:16.334Z",
+    "lastUpdated": "2026-03-13T21:47:45.309Z",
     "columns": {
         "todo": [
             {
@@ -122,22 +122,6 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "strategist"
-            },
-            {
-                "id": "TASK-085",
-                "title": "Fix colony AI decisions flash bug - display too brief to read",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T17:31:04.391Z",
-                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
-                "acceptanceCriteria": [
-                    "Colony AI decision text stays visible for at least 3 seconds",
-                    "Text does not get overwritten by other UI updates",
-                    "Player can read the full decision text before it fades"
-                ],
-                "source": "directive",
-                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash."
             },
             {
                 "id": "TASK-106",
@@ -269,23 +253,6 @@
                         "at": "2026-03-13T20:06:26.397Z"
                     }
                 ]
-            },
-            {
-                "id": "TASK-117",
-                "title": "Design mini-event variety pack for active play diversity",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:39:15.423Z",
-                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
-                "acceptanceCriteria": [
-                    "3-4 new event types designed with thematic flavor text",
-                    "Each event has clear trigger conditions and probability weights",
-                    "Reward structure defined (active bonus not idle penalty)",
-                    "Visual design spec fits existing dark theme",
-                    "Events interact meaningfully with at least one existing system"
-                ],
-                "source": "strategist"
             },
             {
                 "id": "TASK-064",
@@ -429,7 +396,47 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-117",
+                "title": "Design mini-event variety pack for active play diversity",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:39:15.423Z",
+                "description": "Currently the game has golden cookie events for active play but needs more variety. Design 3-4 new mini-event types fitting KKC theme: e.g. Wandering Knight (recruit high-skill kitten), Festival (temporary production boost), Bandit Raid (defend or lose resources), Diplomatic Envoy (trade with faction). Each event should last 10-30 seconds, have clear visual indicator, reward active players without punishing idle ones.",
+                "acceptanceCriteria": [
+                    "3-4 new event types designed with thematic flavor text",
+                    "Each event has clear trigger conditions and probability weights",
+                    "Reward structure defined (active bonus not idle penalty)",
+                    "Visual design spec fits existing dark theme",
+                    "Events interact meaningfully with at least one existing system"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T21:40:37.850Z",
+                "completedAt": "2026-03-13T21:41:47.511Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-085",
+                "title": "Fix colony AI decisions flash bug - display too brief to read",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T17:31:04.391Z",
+                "description": "Austin bug report via in-game widget: colony AI decisions flash for about 1 second and disappear before user can read them. Needs investigation - either the display duration is too short, the element is being removed/hidden too quickly, or another UI update is overwriting it. The visual throttle was set to 3s but may not be working correctly.",
+                "acceptanceCriteria": [
+                    "Colony AI decision text stays visible for at least 3 seconds",
+                    "Text does not get overwritten by other UI updates",
+                    "Player can read the full decision text before it fades"
+                ],
+                "source": "directive",
+                "blockedReason": "Superseded by TASK-106 (decision log panel). TASK-106 is the proper fix - persistent log instead of ephemeral flash.",
+                "claimedAt": "2026-03-13T21:46:14.919Z",
+                "completedAt": "2026-03-13T21:47:45.308Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
