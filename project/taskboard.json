@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T21:18:05.981Z",
+    "lastUpdated": "2026-03-13T21:23:14.081Z",
     "columns": {
         "todo": [
             {
@@ -747,25 +747,6 @@
                 "claimedAt": "2026-03-13T21:10:45.473Z",
                 "completedAt": "2026-03-13T21:11:46.954Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-086",
-                "title": "Build agent pipeline visibility into forge.html dashboard",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T17:31:18.152Z",
-                "description": "Austin wants better visibility into the agent pipeline - what each agent is doing, task progress, recent activity. The forge dashboard at forge.html needs a section showing: which agents ran recently, what tasks they claimed/completed, current pipeline status, and iteration history. Data sources: health.json, taskboard.json, quality-log.json, activity-log.json.",
-                "acceptanceCriteria": [
-                    "forge.html shows which agents ran in the last cycle",
-                    "forge.html shows current pipeline status (tasks per column)",
-                    "forge.html shows quality score trend over iterations",
-                    "Dashboard updates when data files change"
-                ],
-                "source": "directive",
-                "claimedAt": "2026-03-13T21:16:14.507Z",
-                "completedAt": "2026-03-13T21:18:05.981Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1017,6 +998,27 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-13T21:04:32.207Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-086",
+                "title": "Build agent pipeline visibility into forge.html dashboard",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T17:31:18.152Z",
+                "description": "Austin wants better visibility into the agent pipeline - what each agent is doing, task progress, recent activity. The forge dashboard at forge.html needs a section showing: which agents ran recently, what tasks they claimed/completed, current pipeline status, and iteration history. Data sources: health.json, taskboard.json, quality-log.json, activity-log.json.",
+                "acceptanceCriteria": [
+                    "forge.html shows which agents ran in the last cycle",
+                    "forge.html shows current pipeline status (tasks per column)",
+                    "forge.html shows quality score trend over iterations",
+                    "Dashboard updates when data files change"
+                ],
+                "source": "directive",
+                "claimedAt": "2026-03-13T21:16:14.507Z",
+                "completedAt": "2026-03-13T21:18:05.981Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-13T21:23:14.081Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1040,7 +1042,7 @@
     },
     "meta": {
         "totalCreated": 116,
-        "totalCompleted": 58,
+        "totalCompleted": 59,
         "pendingQuestion": null
     },
     "nextId": 121
