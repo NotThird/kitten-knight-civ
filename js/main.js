@@ -7093,7 +7093,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function initMobileLayoutControls(){
-    const mobileMq = window.matchMedia('(max-width: 479px)');
+    const mobileMq = (typeof window.matchMedia === 'function')
+      ? window.matchMedia('(max-width: 479px)')
+      : null;
+    const isMobile = () => (mobileMq ? mobileMq.matches : window.innerWidth <= 479);
     const accordionIds = ['directorSection', 'colonySection', 'safetySection'];
     const storageKey = 'kkc_mobile_accordion_v1';
     const cards = accordionIds
@@ -7106,10 +7109,16 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (raw) persisted = JSON.parse(raw) || {};
     } catch (_err) { persisted = {}; }
 
+    const setExpanded = (card, heading) => {
+      if (!heading) return;
+      heading.setAttribute('aria-expanded', card.classList.contains('is-collapsed') ? 'false' : 'true');
+    };
+
     const persist = () => {
       const next = {};
       for (const card of cards) next[card.id] = !card.classList.contains('is-collapsed');
       try { window.localStorage.setItem(storageKey, JSON.stringify(next)); } catch (_err) {}
+      persisted = next;
     };
 
     for (const card of cards){
@@ -7118,37 +7127,48 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       heading.setAttribute('role', 'button');
       heading.setAttribute('tabindex', '0');
       heading.addEventListener('click', () => {
-        if (!mobileMq.matches) return;
+        if (!isMobile()) return;
         card.classList.toggle('is-collapsed');
+        setExpanded(card, heading);
         persist();
       });
       heading.addEventListener('keydown', (ev) => {
-        if (!mobileMq.matches) return;
+        if (!isMobile()) return;
         if (ev.key !== 'Enter' && ev.key !== ' ') return;
         ev.preventDefault();
         card.classList.toggle('is-collapsed');
+        setExpanded(card, heading);
         persist();
       });
     }
 
     const apply = () => {
-      document.body.classList.toggle('mobile-accordion', mobileMq.matches);
+      const mobile = isMobile();
+      document.body.classList.toggle('mobile-accordion', mobile);
       for (const card of cards){
-        if (!mobileMq.matches) {
+        const heading = card.querySelector(':scope > h2');
+        if (!mobile) {
           card.classList.remove('is-collapsed');
+          setExpanded(card, heading);
           continue;
         }
         const open = Object.prototype.hasOwnProperty.call(persisted, card.id)
           ? !!persisted[card.id]
           : card.id === 'directorSection';
         card.classList.toggle('is-collapsed', !open);
+        setExpanded(card, heading);
       }
+      if (mobile) persist();
     };
 
     apply();
     const listener = () => apply();
-    if (typeof mobileMq.addEventListener === 'function') mobileMq.addEventListener('change', listener);
-    else mobileMq.addListener(listener);
+    if (mobileMq) {
+      if (typeof mobileMq.addEventListener === 'function') mobileMq.addEventListener('change', listener);
+      else mobileMq.addListener(listener);
+    } else {
+      window.addEventListener('resize', listener);
+    }
 
     const overflow = document.getElementById('headerOverflow');
     if (overflow) {
