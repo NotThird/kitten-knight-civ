@@ -10818,15 +10818,101 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#39;');
   }
+  function phaseFromLevel(level, p1, p2){
+    const lv = Math.max(0, Number(level ?? 0) || 0);
+    if (lv < p1) return 'early';
+    if (lv < p2) return 'mid';
+    return 'late';
+  }
+
+  function applySoftCap(value, threshold, tailPow){
+    const v = Math.max(0, Number(value ?? 0) || 0);
+    const th = Math.max(1, Number(threshold ?? 1) || 1);
+    const pow = Math.max(0.15, Number(tailPow ?? 0.6) || 0.6);
+    if (v <= th) return v;
+    return th + Math.pow(v - th, pow);
+  }
+
+  function getUpgradeCost(baseCost, level, opts){
+    const cfg = opts && typeof opts === 'object' ? opts : {};
+    const base = Math.max(1, Number(baseCost ?? 1) || 1);
+    const lv = Math.max(0, Number(level ?? 0) || 0);
+    const p1 = Math.max(1, Number(cfg.phase1At ?? 18) || 18);
+    const p2 = Math.max(p1 + 1, Number(cfg.phase2At ?? 48) || 48);
+    const earlyMul = Math.max(1.01, Number(cfg.earlyMul ?? 1.16) || 1.16);
+    const midMul = Math.max(1.01, Number(cfg.midMul ?? 1.19) || 1.19);
+    const lateMul = Math.max(1.01, Number(cfg.lateMul ?? 1.23) || 1.23);
+
+    const phase = phaseFromLevel(lv, p1, p2);
+    let expo = 0;
+    if (phase === 'early') {
+      expo = lv;
+    } else if (phase === 'mid') {
+      expo = p1 + (lv - p1);
+    } else {
+      expo = p1 + (p2 - p1) + (lv - p2);
+    }
+
+    const phaseGrowth =
+      (phase === 'early') ? Math.pow(earlyMul, expo)
+      : (phase === 'mid') ? Math.pow(earlyMul, p1) * Math.pow(midMul, lv - p1)
+      : Math.pow(earlyMul, p1) * Math.pow(midMul, p2 - p1) * Math.pow(lateMul, lv - p2);
+
+    const softCapAt = Math.max(10, Number(cfg.softCapAt ?? 2000) || 2000);
+    const softTailPow = Math.max(0.15, Number(cfg.softTailPow ?? 0.62) || 0.62);
+    const afterSoftCap = applySoftCap(base * phaseGrowth, softCapAt, softTailPow);
+
+    const legacyMul = Math.max(0.1, Number(cfg.legacyMul ?? 1) || 1);
+    const eternityMul = Math.max(0.1, Number(cfg.eternityMul ?? 1) || 1);
+    const breakthroughMul = Math.max(0.1, Number(cfg.breakthroughMul ?? 1) || 1);
+
+    return {
+      phase,
+      raw: base * phaseGrowth,
+      cost: Math.max(1, Math.floor(afterSoftCap * legacyMul * eternityMul * breakthroughMul)),
+    };
+  }
+
+  function getPacingBreakthroughs(s){
+    const legacyResets = Math.max(0, Number(s?.legacy?.resets ?? 0) || 0);
+    const eternityResets = Math.max(0, Number(s?.eternity?.resets ?? 0) || 0);
+    const totalShards = Math.max(0, Number(s?.legacy?.totalShards ?? 0) || 0);
+    const unlockedTechs = Object.values(s?.research?.unlocked ?? {}).filter(Boolean).length;
+    return {
+      legacyMomentum: legacyResets >= 2,
+      shardMastery: totalShards >= 80,
+      doctrineLift: unlockedTechs >= 10,
+      eternityEcho: eternityResets >= 1,
+    };
+  }
+
   function kittenCost(){
-    // Aquarium pacing: early population growth should be easy.
-    // Old: 60 * 1.27^(n-3). New: cheaper base + gentler curve.
     const n = Math.max(0, Number(state.kittens?.length ?? 0));
     const expo = Math.max(0, n - 3);
-    const base = 35;
-    const mult = 1.20;
-    const cost = base * Math.pow(mult, expo);
-    return Math.max(10, Math.floor(cost));
+    const legacyResets = Math.max(0, Number(state?.legacy?.resets ?? 0) || 0);
+    const eternityResets = Math.max(0, Number(state?.eternity?.resets ?? 0) || 0);
+    const breakthroughs = getPacingBreakthroughs(state);
+
+    let breakthroughMul = 1;
+    if (breakthroughs.legacyMomentum) breakthroughMul *= 0.97;
+    if (breakthroughs.shardMastery) breakthroughMul *= 0.96;
+    if (breakthroughs.doctrineLift) breakthroughMul *= 0.96;
+    if (breakthroughs.eternityEcho) breakthroughMul *= 0.92;
+
+    const { cost } = getUpgradeCost(35, expo, {
+      phase1At: 16,
+      phase2At: 46,
+      earlyMul: 1.16,
+      midMul: 1.20,
+      lateMul: 1.24,
+      softCapAt: 1700,
+      softTailPow: 0.60,
+      legacyMul: Math.pow(0.988, legacyResets),
+      eternityMul: Math.pow(0.95, eternityResets),
+      breakthroughMul,
+    });
+
+    return Math.max(10, cost);
   }
 
   function renderTank(){
