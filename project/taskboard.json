@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T22:19:58.988Z",
+    "lastUpdated": "2026-03-13T22:22:56.087Z",
     "columns": {
         "todo": [
             {
@@ -396,28 +396,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-106",
-                "title": "Implement colony AI decision log panel from TASK-099 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-13T19:35:35.603Z",
-                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
-                "acceptanceCriteria": [
-                    "Decision log panel visible on desktop below Society feed",
-                    "Decisions persist in scrollable list not ephemeral flash",
-                    "Mobile collapsed by default with details summary",
-                    "Auto-scroll to bottom unless user scrolled up",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-13T22:16:52.251Z",
-                "completedAt": "2026-03-13T22:19:58.988Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -753,13 +732,35 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-13T22:04:37.361Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-106",
+                "title": "Implement colony AI decision log panel from TASK-099 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T19:35:35.603Z",
+                "description": "Build Decision Log panel per approved TASK-099 spec. Supersedes TASK-085 flash bug by giving decisions a persistent readable home.",
+                "acceptanceCriteria": [
+                    "Decision log panel visible on desktop below Society feed",
+                    "Decisions persist in scrollable list not ephemeral flash",
+                    "Mobile collapsed by default with details summary",
+                    "Auto-scroll to bottom unless user scrolled up",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-13T22:16:52.251Z",
+                "completedAt": "2026-03-13T22:19:58.988Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-13T22:22:56.087Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 117,
-        "totalCompleted": 62,
+        "totalCompleted": 63,
         "pendingQuestion": null
     },
     "nextId": 122
