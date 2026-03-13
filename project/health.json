@@ -1,26 +1,26 @@
 {
-  "timestamp": "2026-03-13T20:29:00.000Z",
+  "timestamp": "2026-03-13T20:59:24.477Z",
   "iteration": 0,
   "cronHealth": {
     "healthy": [
-      "Forge: Oracle",
-      "Forge: ForgeLeader",
-      "Forge: Architect",
-      "Forge: CodeSmith",
-      "Forge: Gauntlet",
-      "Forge: Arbiter",
-      "Forge: Watchdog",
-      "Forge: Sentinel",
-      "Forge: Strategist"
+      "oracle-prophet",
+      "forgeleader-orchestrator",
+      "architect-designer",
+      "codesmith-developer",
+      "gauntlet-tester",
+      "arbiter-critic",
+      "watchdog",
+      "sentinel",
+      "strategist-research-planning"
     ],
     "failing": [],
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 40,
+    "todo": 42,
     "claimed": 0,
     "review": 1,
-    "done": 8,
+    "done": 10,
     "blocked": 0,
     "staleTasks": [],
     "status": "healthy"
@@ -29,22 +29,22 @@
     "lastCycleActive": [],
     "lastCycleSilent": [
       "oracle",
-      "forgeleader",
       "architect",
-      "codesmith",
-      "gauntlet",
-      "arbiter",
+      "developer",
+      "tester",
+      "critic",
       "watchdog",
       "sentinel",
-      "strategist"
+      "strategist",
+      "forgeleader"
     ],
     "errors": []
   },
   "convergence": {
-    "currentScore": 8.2,
-    "threshold": 8.0,
-    "consecutiveAbove": 7,
-    "iteration": 6,
+    "currentScore": 8.4,
+    "threshold": 8,
+    "consecutiveAbove": 8,
+    "iteration": 7,
     "maxIterations": 50,
     "status": "converging"
   }
