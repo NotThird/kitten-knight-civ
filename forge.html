@@ -204,11 +204,13 @@ async function loadData() {
   init(tb, ql, hp || {});
 }
 
-// Fallback inline data (snapshot)
+// Minimal fallback data — live fetch from GitHub is the primary data source.
+// Watchdog publishes fresh data every cycle via publish-dashboard.js.
+// This fallback only used if GitHub raw fetch fails completely.
 const TASKBOARD_FALLBACK = {
   "version": 1,
-  "iteration": 16,
-  "maxIterations": 30,
+  "iteration": 0,
+  "maxIterations": 50,
   "lastUpdated": "2026-03-12T19:55:15.499Z",
   "columns": {
     "todo": [
@@ -1706,7 +1708,7 @@ function init(TASKBOARD, QUALITY, HEALTH) {
   document.getElementById('axesCard').innerHTML = `<div class="card-title" style="margin-bottom:8px">Current Scores</div>${axesHtml}`;
 
   // Score chart
-  drawChart();
+  drawChart(ql);
 
   // Agents
   const healthySet = new Set((hp.cronHealth?.healthy || []).map(s => s.replace('forge-', '')));
@@ -1756,7 +1758,7 @@ function renderTaskList(elId, tasks) {
   </div>`).join('');
 }
 
-function drawChart() {
+function drawChart(qualityData) {
   const canvas = document.getElementById('scoreChart');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -1766,7 +1768,7 @@ function drawChart() {
   ctx.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
   const pad = { t: 10, r: 10, b: 24, l: 32 };
-  const iters = QUALITY.iterations;
+  const iters = qualityData?.iterations || [];
   if (!iters.length) return;
 
   const xStep = (W - pad.l - pad.r) / Math.max(iters.length - 1, 1);
