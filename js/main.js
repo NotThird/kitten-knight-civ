@@ -443,21 +443,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return base * researchPalisadeMul(s);
   }
 
-
-    const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
-    const sci = Math.max(0, Number(s?.res?.science ?? 0));
-    const builds = Math.max(0,
-      Number(s?.res?.huts ?? 0) +
-      Number(s?.res?.palisade ?? 0) * 1.5 +
-      Number(s?.res?.granaries ?? 0) * 2 +
-      Number(s?.res?.workshops ?? 0) * 3 +
-      Number(s?.res?.libraries ?? 0) * 4
-    );
-    const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
-    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s));
-    return Math.max(0, gained + legacyWarLedgerBonus(s));
-  }
-
   function performLegacyReset(){
     ensureLegacyState(state);
     const gain = computeLegacyShardGain(state);
