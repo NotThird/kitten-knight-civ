@@ -10292,6 +10292,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // ── Colony Kitten Cards ───────────────────────────────────────────────────
     // Sorting + filtering is purely UI/QoL: it does not affect simulation and is not saved.
 
+    // Visual throttle: hold displayed decision/task for ≥3s so cards don't flash.
+    if (!window._kittenDisplayCache) window._kittenDisplayCache = {};
+    const displayCache = window._kittenDisplayCache;
+    const DISPLAY_HOLD_MS = 3000;
+
     const entries = state.kittens.map((k, idx) => ({ k, idx }));
 
     function sortValFor(k, key){
@@ -10390,14 +10395,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const bloc = dominantValueAxis(k);
 
         const d = (k && typeof k === 'object') ? (k._lastDecision ?? null) : null;
-        const kind = String(d?.kind ?? 'score');
-        const decLabel = (kind === 'rule') ? 'RULE' : (kind === 'emergency') ? 'EMERG' : (kind === 'commit') ? 'COMMIT' : '';
-        const blockedFresh = !!k._fallbackTo;
+
+        // Visual throttle: hold decision display for DISPLAY_HOLD_MS so labels don't flash
+        const cacheKey = k.id;
+        const now = performance.now();
+        const cached = displayCache[cacheKey];
+        let displayTask = k.task ?? '';
+        let displayKind = String(d?.kind ?? 'score');
+        let displayFallback = k._fallbackTo || '';
+
+        if (cached && (now - cached.setAt) < DISPLAY_HOLD_MS) {
+          // Hold the cached display values
+          displayTask = cached.task;
+          displayKind = cached.kind;
+          displayFallback = cached.fallback;
+        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind) {
+          // New decision or cache expired with a change — update cache
+          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, setAt: now };
+        }
+        // else: cache expired but nothing changed — refresh timer
+        else { displayCache[cacheKey].setAt = now; }
+
+        const decLabel = (displayKind === 'rule') ? 'RULE' : (displayKind === 'emergency') ? 'EMERG' : (displayKind === 'commit') ? 'COMMIT' : '';
+        const blockedFresh = !!displayFallback;
 
         // Task display
-        let taskText = escapeHtml(k.task ?? '');
-        if (k._mentor && k.task === 'Mentor') taskText += ` → #${k._mentor.id}`;
-        if (k._fallbackTo) taskText += ` → ${escapeHtml(k._fallbackTo)}`;
+        let taskText = escapeHtml(displayTask);
+        if (k._mentor && displayTask === 'Mentor') taskText += ` → #${k._mentor.id}`;
+        if (displayFallback) taskText += ` → ${escapeHtml(displayFallback)}`;
 
         // Badges
         let badges = '';
