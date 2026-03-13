@@ -234,6 +234,16 @@ export function migrateState(s, {
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 
+  // Discovery + secrets migration (TASK-029)
+  s.secrets = (s.secrets && typeof s.secrets === 'object') ? s.secrets : {};
+  s.secrets.found = (s.secrets.found && typeof s.secrets.found === 'object') ? s.secrets.found : {};
+  s.secrets.log = Array.isArray(s.secrets.log) ? s.secrets.log : [];
+  s.secrets.rareSeen = Math.max(0, Math.floor(Number(s.secrets.rareSeen ?? 0) || 0));
+  s.secrets.nextRareAt = Number(s.secrets.nextRareAt ?? 0) || 0;
+  s.secrets.banner = (s.secrets.banner && typeof s.secrets.banner === 'object') ? s.secrets.banner : null;
+  const SECRET_LOG_MAX = 80;
+  if (s.secrets.log.length > SECRET_LOG_MAX) s.secrets.log = s.secrets.log.slice(-SECRET_LOG_MAX);
+
   // Social layer migration (includes persistent norms / society memory).
   s.social = (s.social && typeof s.social === 'object') ? s.social : { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 };
   if (!('dissent' in s.social)) s.social.dissent = 0;

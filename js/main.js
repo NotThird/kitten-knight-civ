@@ -280,6 +280,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
     activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, incident: null, incidentSeen: 0, lastIncidentAt: 0, incidentCooldownUntil: 0, nextIncidentAt: 600 },
+    secrets: { found: {}, log: [], rareSeen: 0, nextRareAt: 180, banner: null },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
     feed: [],
@@ -922,6 +923,74 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     if (nowT >= Number(ap.boostUntil ?? 0)) {
       ap.boostMul = 1;
+    }
+  }
+
+  function ensureSecretsState(s){
+    s.secrets = (s.secrets && typeof s.secrets === 'object') ? s.secrets : {};
+    s.secrets.found = (s.secrets.found && typeof s.secrets.found === 'object') ? s.secrets.found : {};
+    s.secrets.log = Array.isArray(s.secrets.log) ? s.secrets.log : [];
+    s.secrets.rareSeen = Math.max(0, Math.floor(Number(s.secrets.rareSeen ?? 0) || 0));
+    s.secrets.nextRareAt = Number(s.secrets.nextRareAt ?? 0) || (Number(s.t ?? 0) + 180);
+    s.secrets.banner = (s.secrets.banner && typeof s.secrets.banner === 'object') ? s.secrets.banner : null;
+    if (s.secrets.log.length > 80) s.secrets.log = s.secrets.log.slice(-80);
+  }
+
+  function revealSecret(s, id, title, detail){
+    ensureSecretsState(s);
+    const key = String(id || '');
+    if (!key || s.secrets.found[key]) return false;
+    s.secrets.found[key] = { at: Number(s.t ?? 0), title: String(title ?? key), detail: String(detail ?? '') };
+    s.secrets.log.push(`[${fmt(s.t)}] ${title} — ${detail}`);
+    if (s.secrets.log.length > 80) s.secrets.log.splice(0, s.secrets.log.length - 80);
+    const msg = `✨ Discovery: ${title}. ${detail}`;
+    feed(msg);
+    log(msg);
+    s.secrets.banner = { text: `${title} discovered!`, until: Number(s.t ?? 0) + 8 };
+    playSfx('milestone');
+    return true;
+  }
+
+  function tickSecretsSystem(s){
+    ensureSecretsState(s);
+    const nowT = Number(s.t ?? 0);
+
+    if (nowT >= 360) revealSecret(s, 'first_winter', 'First Winter Survived', 'The colony endured a full winter cycle.');
+    if (Number(s.res?.food ?? 0) >= 500) revealSecret(s, 'stockpile_500', 'Granary Whisper', 'Fresh food crossed 500.');
+    if (Number(s.res?.science ?? 0) >= 250) revealSecret(s, 'science_250', 'Stargazer Notes', 'Scholars mapped hidden constellations.');
+    if (Number(s.legacy?.resets ?? 0) >= 1) revealSecret(s, 'legacy_reset', 'Echo Archive', 'Legacy memories now echo across runs.');
+    if (Number(s.res?.jerky ?? 0) >= 40) revealSecret(s, 'jerky_cache', 'Smokehouse Lore', 'Preserved rations unlocked deep storage techniques.');
+
+    const inWinter = String(seasonAt(s.t)?.name ?? '') === 'Winter';
+    if (inWinter && nowT > 360) revealSecret(s, 'moon_rites', 'Moon Rites', 'Winter gatherings strengthen colony resolve.');
+
+    // Rare events (lightweight, deterministic cadence)
+    if (!s.paused && nowT >= Number(s.secrets.nextRareAt ?? Infinity)) {
+      const pool = [
+        { id:'rare_caravan', title:'Moonlit Caravan', text:'A hidden trader left rare supplies.', fx:{ food:32, science:18, tools:4 } },
+        { id:'rare_relic', title:'Buried Relic', text:'Scouts uncovered a relic cache beneath old palisades.', fx:{ wood:28, science:22, threat:-10 } },
+      ];
+      const pick = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+      s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(pick.fx.food ?? 0));
+      s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(pick.fx.wood ?? 0));
+      s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(pick.fx.science ?? 0));
+      s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(pick.fx.tools ?? 0));
+      s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(pick.fx.threat ?? 0));
+      s.secrets.rareSeen = Math.max(0, Number(s.secrets.rareSeen ?? 0) + 1);
+      s.secrets.nextRareAt = nowT + (210 + Math.floor(Math.random() * 180));
+      const parts = [];
+      if (pick.fx.food) parts.push(`${pick.fx.food > 0 ? '+' : ''}${fmt(pick.fx.food)} food`);
+      if (pick.fx.wood) parts.push(`${pick.fx.wood > 0 ? '+' : ''}${fmt(pick.fx.wood)} wood`);
+      if (pick.fx.science) parts.push(`${pick.fx.science > 0 ? '+' : ''}${fmt(pick.fx.science)} science`);
+      if (pick.fx.tools) parts.push(`${pick.fx.tools > 0 ? '+' : ''}${fmt(pick.fx.tools)} tools`);
+      if (pick.fx.threat) parts.push(`${pick.fx.threat > 0 ? '+' : ''}${fmt(pick.fx.threat)} threat`);
+      const msg = `✨ Rare event: ${pick.title} — ${pick.text} (${parts.join(', ')}).`;
+      s.secrets.log.push(`[${fmt(s.t)}] ${pick.title} — ${pick.text}`);
+      if (s.secrets.log.length > 80) s.secrets.log.splice(0, s.secrets.log.length - 80);
+      feed(msg);
+      log(msg);
+      s.secrets.banner = { text: `${pick.title}!`, until: nowT + 8 };
+      playSfx('unlock');
     }
   }
 
@@ -6514,6 +6583,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     tryAdvanceRevealStage(state);
     tickPressures(dt);
     tickActivePlayEvents();
+    tickSecretsSystem(state);
 
     // Trends sampling (charts): 1Hz, last ~2 minutes
     state._trend = state._trend ?? { t:[], food:[], warmth:[], threat:[], science:[], dissent:[] };
@@ -10199,6 +10269,24 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       projectsEl.innerHTML = projHtml.length
         ? projHtml.join('')
         : `<span class="small">No active build projects yet. Unlock Construction via Science, then nudge build tasks with policy or Project focus.</span>`;
+    }
+
+    const secretsPanelEl = el('secretsPanel');
+    if (secretsPanelEl) {
+      ensureSecretsState(state);
+      const found = Object.values(state.secrets?.found ?? {});
+      const foundCount = found.length;
+      const recent = (Array.isArray(state.secrets?.log) ? state.secrets.log : []).slice(-5).reverse();
+      const banner = (state.secrets?.banner && Number(state.t ?? 0) < Number(state.secrets.banner.until ?? 0))
+        ? `<div class="tag good" style="margin-bottom:6px">${escapeHtml(String(state.secrets.banner.text ?? 'Discovery!'))}</div>`
+        : '';
+      const rows = recent.length
+        ? recent.map((x)=>`<div class="small" style="margin-top:4px">${escapeHtml(String(x))}</div>`).join('')
+        : '<div class="small" style="opacity:.75">No discoveries yet. Keep playing to surface hidden milestones.</div>';
+      secretsPanelEl.innerHTML =
+        banner +
+        `<div class="small">Discovered: <b>${foundCount}</b> | Rare events seen: <b>${fmt(state.secrets?.rareSeen ?? 0)}</b></div>` +
+        `<div class="small" style="margin-top:6px">Recent:</div>${rows}`;
     }
 
     const legacyPanelEl = el('legacyPanel');

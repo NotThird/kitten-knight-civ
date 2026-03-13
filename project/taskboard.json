@@ -2,27 +2,9 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T22:22:56.087Z",
+    "lastUpdated": "2026-03-13T22:50:00.273Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-029",
-                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-12T15:17:43.621Z",
-                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.",
-                "acceptanceCriteria": [
-                    "At least 5 secrets implemented with working triggers",
-                    "Secret discovery shows distinct visual notification",
-                    "Secrets log panel tracks found secrets",
-                    "At least 2 rare events fire during active play",
-                    "Secrets persist through save and prestige",
-                    "Mobile compatible - no hover required"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-053",
                 "title": "Add resource production rate indicators (per-second display and trend arrows)",
@@ -82,10 +64,15 @@
                 "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-13T21:05:30.454Z",
-                "description": "Implement trait effects from TASK-091 design",
+                "description": "Implement kitten trait mechanical effects per TASK-091 design. Each of the 6 traits (Brave, Curious, Lazy, Greedy, Gentle, Stubborn) needs production/combat/social modifiers applied in sim.js. Traits should surface in the decision log (e.g. Brave Whiskers volunteers for Guard). Reference TASK-091 output in agents/designer/output/ for exact multiplier values. Key: no trait should be strictly better than another — every trait has tradeoffs.",
                 "acceptanceCriteria": [
-                    "Traits have mechanical effects",
-                    "Cap at 1.45x"
+                    "Each of the 6 traits applies at least 2 mechanical effects (production modifier + behavior bias)",
+                    "Trait effects are visible in colony AI decision log messages (trait-flavored text)",
+                    "No single trait is strictly dominant — each has a downside or tradeoff",
+                    "Combined trait multipliers are capped at 1.45x per resource",
+                    "Traits influence task assignment probability in ai.js (e.g. Brave kittens prefer Guard)",
+                    "parse_check and replay_test pass with trait mechanics active",
+                    "Progressive reveal: trait effects only show after player has 4+ kittens"
                 ],
                 "source": "orchestrator"
             },
@@ -396,7 +383,29 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-029",
+                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T15:17:43.621Z",
+                "description": "Discovery secrets design approved. 10 secrets with emergent triggers and 4 rare events. Next engagement unlock after prestige and offline. Implement secret detection engine and UI reveal animations.",
+                "acceptanceCriteria": [
+                    "At least 5 secrets implemented with working triggers",
+                    "Secret discovery shows distinct visual notification",
+                    "Secrets log panel tracks found secrets",
+                    "At least 2 rare events fire during active play",
+                    "Secrets persist through save and prestige",
+                    "Mobile compatible - no hover required"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T22:46:23.525Z",
+                "completedAt": "2026-03-13T22:50:00.273Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
