@@ -39,9 +39,7 @@
       "strategist"
     ],
     
-    "errors": [
-      "activity-log.json has no entries this cycle"
-    ]
+    "errors": []
   },
   "convergence": {
     "currentScore": 8.4,
