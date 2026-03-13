@@ -1,374 +1,121 @@
 {
   "iterations": [
     {
-      "iteration": 1,
-      "timestamp": "2026-03-12T05:04:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 4,
-        "engagement": 5,
-        "stability": 5,
-        "completeness": 5
-      },
-      "overall": 5,
-      "delta": null,
-      "notes": "Baseline."
-    },
-    {
-      "iteration": 2,
-      "timestamp": "2026-03-12T06:57:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 4,
-        "engagement": 5,
-        "stability": 5.5,
-        "completeness": 5
-      },
-      "overall": 5.1,
-      "delta": 0.1,
-      "notes": "Stability +0.5 from syntax audit and test baseline."
-    },
-    {
-      "iteration": 3,
-      "timestamp": "2026-03-12T07:04:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 4,
-        "engagement": 5,
-        "stability": 5.5,
-        "completeness": 5
-      },
-      "overall": 5.1,
-      "delta": 0,
-      "notes": "No player-facing changes. Knowledge base established. Velocity concern."
-    },
-    {
-      "iteration": 4,
-      "timestamp": "2026-03-12T07:34:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 4,
-        "engagement": 5,
-        "stability": 5.5,
-        "completeness": 5
-      },
-      "overall": 5.1,
-      "delta": 0,
-      "notes": "STAGNATION triggered. 3 consecutive iterations with delta <0.3. Pivoting to ship player-facing features directly."
-    },
-    {
-      "iteration": 5,
-      "timestamp": "2026-03-12T08:04:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 4.5,
-        "engagement": 5,
-        "stability": 6,
-        "completeness": 5.5
-      },
-      "overall": 5.4,
-      "delta": 0.3,
-      "notes": "TASK-015 shipped: title fix, socTrends canvas, button animations. Stagnation broken."
-    },
-    {
-      "iteration": 6,
-      "timestamp": "2026-03-12T08:34:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 5,
-        "engagement": 5,
-        "stability": 6,
-        "completeness": 5.5
-      },
-      "overall": 5.5,
-      "delta": 0.1,
-      "notes": "TASK-016 shipped (fly-up numbers + scarcity colors). TASK-011 prestige design approved. Visuals +0.5. Design pipeline strong, implementation pipeline needs velocity."
-    },
-    {
-      "iteration": 7,
-      "timestamp": "2026-03-12T09:04:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 5,
-        "engagement": 5,
-        "stability": 6,
-        "completeness": 5.5
-      },
-      "overall": 5.5,
-      "delta": 0,
-      "notes": "TASK-023 offline design approved. No new code shipped. Design pipeline saturated — 4 approved designs awaiting implementation. Velocity bottleneck on developer."
-    },
-    {
-      "iteration": 8,
-      "timestamp": "2026-03-12T15:05:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 5,
-        "engagement": 5.5,
-        "stability": 6,
-        "completeness": 5.5
-      },
-      "overall": 5.6,
-      "delta": 0.1,
-      "notes": "TASK-017 milestones shipped (engagement +0.5). TASK-024 discovery design approved. Developer must focus on TASK-020 (dashboard) next — Austin directive. Design pipeline paused."
-    },
-    {
-      "iteration": 9,
-      "timestamp": "2026-03-12T16:35:00Z",
-      "scores": {
-        "mechanics": 6,
-        "visuals": 5.5,
-        "engagement": 5.5,
-        "stability": 6,
-        "completeness": 6
-      },
-      "overall": 5.8,
-      "delta": 0.2,
-      "notes": "TASK-020 dashboard shipped (Austin directive fulfilled). TASK-027 active events design approved. 6 approved designs now in backlog. Next priority: TASK-026 offline progress, then TASK-025 prestige."
-    },
-    {
-      "iteration": 10,
-      "timestamp": "2026-03-12T17:05:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 5.5,
-        "engagement": 6.5,
-        "stability": 6,
-        "completeness": 6.5
-      },
-      "overall": 6.3,
-      "delta": 0.5,
-      "notes": "TASK-025 prestige shipped — biggest single-feature score jump. Legacy Chronicle adds real progression loop (mechanics +1, engagement +1, completeness +0.5). TASK-028 notification design approved. Visuals remain lowest axis."
-    },
-    {
-      "iteration": 11,
-      "timestamp": "2026-03-12T17:35:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 5.5,
-        "engagement": 7,
-        "stability": 6.5,
-        "completeness": 6.5
-      },
-      "overall": 6.7,
-      "delta": 0.4,
-      "notes": "TASK-026 offline progress shipped (engagement +0.5, stability +0.5). TASK-031 visual theming design approved — ready for implementation. Welcome-back modal adds pull-back loop. Visuals still lowest axis; TASK-034 is next priority."
-    },
-    {
-      "iteration": 12,
-      "timestamp": "2026-03-12T18:05:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 5.5,
-        "engagement": 7.5,
-        "stability": 6.5,
-        "completeness": 6.5
-      },
-      "overall": 6.8,
-      "delta": 0.1,
-      "notes": "TASK-033 enhanced offline shipped (streaks + diminishing returns polish engagement loop). TASK-035 icon/color design approved — feeds TASK-034. Engagement +0.5 from streak system. Visuals remain critical gap at 5.5. TASK-034 implementation is urgent priority."
-    },
-    {
-      "iteration": 13,
-      "timestamp": "2026-03-12T18:35:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 6.5,
-        "engagement": 7.5,
-        "stability": 6.5,
-        "completeness": 7
-      },
-      "overall": 6.9,
-      "delta": 0.1,
-      "notes": "TASK-034 visual theming shipped (section accents, pulse FX, reduced text density). TASK-036 audio design approved. Visuals +1.0, completeness +0.5. Visuals still lowest axis but gap narrowing. Created TASK-045 (audio impl) and TASK-046 (icon/color impl). Blocked duplicate TASK-044."
-    },
-    {
-      "iteration": 14,
-      "timestamp": "2026-03-12T19:05:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 6.5,
-        "engagement": 7.5,
-        "stability": 7,
-        "completeness": 7
-      },
-      "overall": 7,
-      "delta": 0.1,
-      "notes": "TASK-038 cache-buster fix confirmed (stability +0.5). TASK-037 progressive reveal design approved — implementation task created. No new code shipped. Lowest axes: visuals (6.5). Next priorities: TASK-045 audio, TASK-046 icons, new progressive reveal implementation."
-    },
-    {
-      "iteration": 15,
-      "timestamp": "2026-03-12T19:17:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 6.5,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.2,
-      "delta": 0.2,
-      "notes": "TASK-045 audio feedback shipped (9 SFX types, voice cap, throttle, default-off). Stability +0.5 (clean impl, tests pass). Completeness +0.5 (major sensory gap filled). Visuals unchanged — still lowest axis at 6.5. Found duplicate TASK-047 IDs in taskboard. Next: TASK-046 icons, progressive reveal, sound discoverability nudge."
-    },
-    {
-      "iteration": 16,
-      "timestamp": "2026-03-12T18:38:14.241Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 6.5,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.2,
-      "delta": 0,
-      "notes": "No new code shipped. TASK-039 military design approved. Duplicate task IDs fixed (TASK-047-049 renumbered to 051-053). Created TASK-054 (military impl) and TASK-055 (icon/color rails). Visuals still lowest at 6.5. Focus: TASK-046/055 icons, TASK-051 progressive reveal, TASK-054 military branch."
-    },
-    {
-      "iteration": 17,
-      "timestamp": "2026-03-12T19:05:00Z",
-      "scores": {
-        "mechanics": 7,
-        "visuals": 7,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.3,
-      "delta": 0.1,
-      "notes": "TASK-046 icon/color language shipped (resource tones, emoji markers, accent rails). Visuals +0.5 — no longer lowest axis. TASK-042 research tree design approved — created implementation task. All axes now 7+. Scores converging; need progressive reveal (TASK-051) and active events (TASK-030) to push engagement/completeness toward 8."
-    },
-    {
-      "iteration": 18,
-      "timestamp": "2026-03-12T20:35:00Z",
-      "scores": {
-        "mechanics": 7.5,
-        "visuals": 7,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.4,
-      "delta": 0.1,
-      "notes": "TASK-054 Military Legacy branch shipped and verified (4 upgrades, branch tabs, combat math). Mechanics +0.5 from meaningful prestige branch choice. TASK-056 Eternity design approved. Progressive reveal (TASK-051) remains critical gap for new player onboarding. Research tree implementation next for mechanics push to 8."
-    },
-    {
-      "iteration": 19,
-      "timestamp": "2026-03-12T20:07:50.013Z",
-      "scores": {
-        "mechanics": 7.5,
-        "visuals": 7.5,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.5,
-      "delta": 0.1,
-      "notes": "TASK-055 icon accent rails + icon pulse shipped and verified. Visuals +0.5 to 7.5 — all axes now 7.5. Duplicate ID crisis resolved (6 collisions fixed). TASK-051 progressive reveal rejected (wrong artifact). Progressive reveal remains #1 priority. Eternity Cycle design complete and ready for implementation."
-    },
-    {
-      "iteration": 20,
-      "timestamp": "2026-03-12T21:35:00Z",
-      "scores": {
-        "mechanics": 7.5,
-        "visuals": 7.5,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.5,
-      "delta": 0,
-      "notes": "Research tree code landed but rejected for missing mobile detail sheet. Progressive reveal design approved. Git push blocked. No score movement. 2 consecutive iterations at delta 0.0 — approaching stagnation. Progressive reveal implementation is critical path."
-    },
-    {
-      "iteration": 21,
-      "timestamp": "2026-03-12T22:05:00Z",
-      "scores": {
-        "mechanics": 7.5,
-        "visuals": 7.5,
-        "engagement": 7.5,
-        "stability": 7.5,
-        "completeness": 7.5
-      },
-      "overall": 7.5,
-      "delta": 0,
-      "notes": "Progressive reveal CODE landed (TASK-059) but not confirmed working end-to-end. Git push still blocked — live site stale. 3rd consecutive delta-0 iteration: STAGNATION TRIGGERED. Creating breakthrough tasks: active play events + git deploy fix."
-    },
-    {
-      "iteration": 22,
-      "timestamp": "2026-03-12T22:35:00Z",
+      "iteration": 0,
+      "timestamp": "2026-03-13T17:28:21.395Z",
       "scores": {
         "mechanics": 8,
-        "visuals": 7.5,
-        "engagement": 7,
-        "stability": 8,
-        "completeness": 7
-      },
-      "overall": 7.5,
-      "delta": 0,
-      "notes": "Eternity Cycle implemented (TASK-059) — mechanics depth now genuinely strong at 8. Stability solid at 8. But engagement stuck at 7 (no active play events) and completeness at 7 (live site STILL stale — deploy pipeline broken). 4th consecutive delta-0. Micro-interaction design approved. DEPLOY IS THE BOTTLENECK."
-    },
-    {
-      "iteration": 23,
-      "timestamp": "2026-03-12T23:05:00Z",
-      "scores": {
-        "mechanics": 8,
-        "visuals": 7.5,
-        "engagement": 7,
-        "stability": 8,
-        "completeness": 7
-      },
-      "overall": 7.5,
-      "delta": 0,
-      "notes": "5th consecutive delta-0. CRITICAL STAGNATION. Zero agents claiming tasks — pipeline completely frozen. Approved TASK-058 (idle notification design). No new code landed. Deploy fix (TASK-066) and golden cookies (TASK-067) remain top blockers. Consolidating duplicate tasks to reduce backlog noise. Need agents to actually pick up work."
-    },
-    {
-      "iteration": 24,
-      "timestamp": "2026-03-12T23:35:00Z",
-      "scores": {
-        "mechanics": 8,
-        "visuals": 7.5,
-        "engagement": 7,
-        "stability": 8,
-        "completeness": 7
-      },
-      "overall": 7.5,
-      "delta": 0,
-      "notes": "6th consecutive delta-0. CRITICAL STAGNATION CONTINUES. Approved TASK-079 (mid-session engagement hooks design). Created TASK-074 (colony AI flash bug from community) and TASK-075 (engagement hooks implementation). Still zero agents claiming work. Deploy fix (TASK-066) remains THE bottleneck. 6 iterations remaining. Without agent activity, convergence is impossible."
-    }
-  ],
-    {
-      "iteration": 25,
-      "timestamp": "2026-03-13T00:05:00Z",
-      "scores": {
-        "mechanics": 8,
-        "visuals": 7.5,
-        "engagement": 7.5,
-        "stability": 8,
-        "completeness": 8
-      },
-      "overall": 7.8,
-      "delta": 0.3,
-      "notes": "STAGNATION BROKEN. ForgeLeader directly fixed deploy pipeline — committed and pushed ALL accumulated game files + golden cookies to GitHub. Live site now has Eternity Cycle, research tree, progressive reveal, golden cookies, all polish. Engagement +0.5 (active play events live), Completeness +1.0 (deploy unblocked). TASK-070 endgame pacing design approved. 5 iterations remaining."
-    },
-    {
-      "iteration": 26,
-      "timestamp": "2026-03-13T00:35:00Z",
-      "scores": {
-        "mechanics": 8,
-        "visuals": 7.5,
+        "visuals": 8,
         "engagement": 8,
         "stability": 8,
         "completeness": 8
       },
-      "overall": 7.9,
+      "overall": 8,
+      "delta": null,
+      "notes": "Phase 2 baseline. Carried from Phase 1 final (29 iterations, 5.0 → 8.0)."
+    },
+    {
+      "iteration": 1,
+      "timestamp": "2026-03-13T19:04:00.000Z",
+      "scores": {
+        "mechanics": 8,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 8,
+        "completeness": 8
+      },
+      "overall": 8,
+      "delta": 0,
+      "notes": "Phase 2 Iter 1. No agent output yet — pipeline idle. 28 todo, 0 claimed. Priority: Austin's 3 bug reports (TASK-084/085/086)."
+    },
+    {
+      "iteration": 2,
+      "timestamp": "2026-03-13T19:27:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 7,
+        "completeness": 8
+      },
+      "overall": 8.0,
+      "delta": 0,
+      "notes": "Phase 2 Iter 2. Deep code review. Mechanics bumped to 9 (dual prestige, factions, 10-skill system, curator mode). Stability dropped to 7 (3 active Austin bugs, 621KB monolith risk, encoding artifacts in content.js). Mobile responsiveness missing. PWA stub dead."
+    }
+    ,{
+      "iteration": 3,
+      "timestamp": "2026-03-13T19:34:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 7,
+        "completeness": 8
+      },
+      "overall": 8.0,
+      "delta": 0,
+      "notes": "Phase 2 Iter 3. TASK-084 forge dashboard fix verified and approved. TASK-093 endgame design approved, implementation task created (TASK-095). TASK-085/086 still open (colony AI flash, pipeline visibility). Created TASK-096 (mobile responsive) and TASK-097 (PWA stub cleanup). Stability held at 7 — 2 Austin bugs remain."
+    },
+    {
+      "iteration": 4,
+      "timestamp": "2026-03-13T20:04:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 7,
+        "completeness": 8
+      },
+      "overall": 8.0,
+      "delta": 0,
+      "notes": "Phase 2 Iter 4. STAGNATION — 4 consecutive iterations at delta 0. TASK-087 endgame pacing shipped, TASK-098 mobile design approved. But 0 claimed tasks — pipeline stalled. Colony AI flash (TASK-085) and encoding bugs still open. Creating breakthrough tasks to unblock progress."
+    },
+    {
+      "iteration": 5,
+      "timestamp": "2026-03-13T20:34:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 7.5,
+        "completeness": 8
+      },
+      "overall": 8.1,
       "delta": 0.1,
-      "notes": "TASK-065 research tree mobile UX shipped and verified (TASK-071 resolved). TASK-068 faction diplomacy design approved. Engagement +0.5 from golden cookies + progressive reveal now live and working. Critic confirms pull-back loop is real. Visuals remain sole axis below 8 — TASK-075 micro-interactions and TASK-082 AI flash bug are the path to 8.0. 4 iterations remaining."
+      "notes": "Phase 2 Iter 5. TASK-102 encoding fix verified and shipped — stability nudge. TASK-099 colony AI decision log design approved, implementation task TASK-106 created. TASK-107 created to clean up duplicate encoding tasks. Pipeline still at 0 claimed but design pipeline is unblocked. Stagnation broken with delta +0.1."
+    },
+    {
+      "iteration": 6,
+      "timestamp": "2026-03-13T21:04:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8,
+        "engagement": 8,
+        "stability": 7.5,
+        "completeness": 8.5
+      },
+      "overall": 8.2,
+      "delta": 0.1,
+      "notes": "Phase 2 Iter 6. Critic review in: 8.2/10. Completeness bumped to 8.5 (136 patch versions of polish). TASK-104 idle-away reward design approved. TASK-103 mobile responsive rejected by tester (accordion not activating) — back in todo. Colony AI decision log (TASK-106) still top priority. Mobile remains biggest reach blocker."
+    },
+    {
+      "iteration": 7,
+      "timestamp": "2026-03-13T21:34:00.000Z",
+      "scores": {
+        "mechanics": 9,
+        "visuals": 8.5,
+        "engagement": 8,
+        "stability": 8,
+        "completeness": 8.5
+      },
+      "overall": 8.4,
+      "delta": 0.2,
+      "notes": "Phase 2 Iter 7. TASK-103 reworked and tester-approved (mobile responsive + accordion fix shipped). TASK-113 save backup design approved. Visuals bumped to 8.5 (mobile CSS live). Stability bumped to 8.0 (mobile fix + save backup designed). TASK-112 may be superseded by TASK-103 rework — needs live verification. Top gaps: engagement (decision flash TASK-106), stability (save backup impl needed)."
     }
   ],
-  "convergenceThreshold": 8,
-  "maxIterations": 30,
-  "stagnationThreshold": 3,
+  "convergenceThreshold": 9,
+  "maxIterations": 50,
+  "stagnationThreshold": 5,
   "axes": [
     "mechanics",
     "visuals",
