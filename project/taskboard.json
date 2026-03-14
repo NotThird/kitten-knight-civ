@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T02:18:03.907Z",
+    "lastUpdated": "2026-03-14T02:23:45.559Z",
     "columns": {
         "todo": [
             {
@@ -227,32 +227,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-029",
-                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-12T15:17:43.621Z",
-                "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
-                "acceptanceCriteria": [
-                    "At least 5 secrets implemented with working triggers",
-                    "Secret discovery shows distinct visual notification",
-                    "Secrets log panel tracks found secrets",
-                    "At least 2 rare events fire during active play",
-                    "Secrets persist through save and prestige",
-                    "Mobile compatible - no hover required"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T02:16:23.492Z",
-                "testVerdict": "REJECTED",
-                "blockedReason": "Depends on TASK-122 (prestige secrets persistence fix). Complete TASK-122 first, then unblock this task.",
-                "column": "todo",
-                "completedAt": "2026-03-14T02:18:03.907Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -720,6 +695,31 @@
                 "completedAt": "2026-03-14T01:46:46.367Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T01:52:51.257Z"
+            },
+            {
+                "id": "TASK-029",
+                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-12T15:17:43.621Z",
+                "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
+                "acceptanceCriteria": [
+                    "At least 5 secrets implemented with working triggers",
+                    "Secret discovery shows distinct visual notification",
+                    "Secrets log panel tracks found secrets",
+                    "At least 2 rare events fire during active play",
+                    "Secrets persist through save and prestige",
+                    "Mobile compatible - no hover required"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T02:16:23.492Z",
+                "testVerdict": "APPROVED",
+                "blockedReason": "Depends on TASK-122 (prestige secrets persistence fix). Complete TASK-122 first, then unblock this task.",
+                "column": "todo",
+                "completedAt": "2026-03-14T02:18:03.907Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T02:23:45.559Z"
             }
         ],
         "blocked": [
@@ -853,7 +853,7 @@
     },
     "meta": {
         "totalCreated": 120,
-        "totalCompleted": 68,
+        "totalCompleted": 69,
         "pendingQuestion": null
     },
     "nextId": 125
