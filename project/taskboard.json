@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T03:18:34.904Z",
+    "lastUpdated": "2026-03-14T03:22:46.670Z",
     "columns": {
         "todo": [
             {
@@ -257,26 +257,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-126",
-                "title": "Prestige preview: Render preview panel in reset confirmation UI",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.161Z",
-                "description": "Step 2 of TASK-081. Show prestige preview data in a panel when player clicks Legacy or Eternity reset button. Use getPrestigePreview fn from step 1.",
-                "acceptanceCriteria": [
-                    "Preview panel appears showing gains before reset",
-                    "Panel is mobile-responsive and dark-themed",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T03:16:13.384Z",
-                "completedAt": "2026-03-14T03:18:34.904Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -789,6 +770,26 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T02:52:46.664Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-126",
+                "title": "Prestige preview: Render preview panel in reset confirmation UI",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.161Z",
+                "description": "Step 2 of TASK-081. Show prestige preview data in a panel when player clicks Legacy or Eternity reset button. Use getPrestigePreview fn from step 1.",
+                "acceptanceCriteria": [
+                    "Preview panel appears showing gains before reset",
+                    "Panel is mobile-responsive and dark-themed",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T03:16:13.384Z",
+                "completedAt": "2026-03-14T03:18:34.904Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T03:22:46.670Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -922,7 +923,7 @@
     },
     "meta": {
         "totalCreated": 124,
-        "totalCompleted": 70,
+        "totalCompleted": 71,
         "pendingQuestion": null
     },
     "nextId": 129
