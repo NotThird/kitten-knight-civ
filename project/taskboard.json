@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T04:48:26.680Z",
+    "lastUpdated": "2026-03-14T04:52:54.558Z",
     "columns": {
         "todo": [
             {
@@ -221,28 +221,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-120",
-                "title": "Add visual progress-to-next-milestone indicators on all progression systems",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T21:09:36.127Z",
-                "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
-                "acceptanceCriteria": [
-                    "At least 3 progression systems show next-milestone progress indicators",
-                    "Progress bars update in real-time as resources change",
-                    "Milestone name or reward preview shown on hover or tap",
-                    "Indicators collapse gracefully on mobile",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T04:46:26.453Z",
-                "completedAt": "2026-03-14T04:48:26.680Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -820,6 +799,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T04:22:48.354Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-120",
+                "title": "Add visual progress-to-next-milestone indicators on all progression systems",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:09:36.127Z",
+                "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
+                "acceptanceCriteria": [
+                    "At least 3 progression systems show next-milestone progress indicators",
+                    "Progress bars update in real-time as resources change",
+                    "Milestone name or reward preview shown on hover or tap",
+                    "Indicators collapse gracefully on mobile",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T04:46:26.453Z",
+                "completedAt": "2026-03-14T04:48:26.680Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T04:52:54.558Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -953,7 +954,7 @@
     },
     "meta": {
         "totalCreated": 125,
-        "totalCompleted": 73,
+        "totalCompleted": 74,
         "pendingQuestion": null
     },
     "nextId": 132
