@@ -133,6 +133,13 @@
       "taskId": "TASK-111",
       "action": "completed",
       "notes": "Added offline comeback multiplier + catch-up bonus with 2x cap and modal surfacing."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T10:49:31.225Z",
+      "taskId": "TASK-114",
+      "action": "completed",
+      "notes": "Added 60s autosave backup rotation + crash recovery modal with restore/continue/fresh options"
     }
   ]
 }

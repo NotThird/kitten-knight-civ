@@ -12,7 +12,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
-const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
+  const SAVE_BACKUP_PREFIX = `${SAVE_KEY}:backup:`;
+  const SAVE_BACKUP_META_KEY = `${SAVE_KEY}:backupMeta`;
+  const SAVE_DIRTY_KEY = `${SAVE_KEY}:dirty`;
+  const SAVE_BACKUP_SLOT_COUNT = 3;
+  const SAVE_BACKUP_MAX_BYTES = 4.8 * 1024 * 1024;
+  const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
 
   // --- Living Skill Registry (DCC-inspired) ─────────────────────────────────
   // Every micro-action is a skill. Skills are discovered organically and impact the simulation.
@@ -2491,6 +2496,11 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
   function rule(name, cond, act){
     return { id: crypto.randomUUID?.() ?? String(Math.random()), enabled:true, name, cond, act };
   }
+
+  const hadDirtySession = (() => {
+    try { return localStorage.getItem(SAVE_DIRTY_KEY) === '1'; }
+    catch { return false; }
+  })();
 
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
@@ -6786,9 +6796,12 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
       }
     }
 
-    // Autosave
+    // Autosave (60s) + rotating backup snapshot.
     state._saveTimer = (state._saveTimer ?? 0) + dt;
-    if (state._saveTimer >= 2) { state._saveTimer = 0; save(); }
+    if (state._saveTimer >= 60) {
+      state._saveTimer = 0;
+      save({ backup: true });
+    }
   }
 
   // --- Offline gains (incremental QoL)
@@ -6863,6 +6876,84 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
   const trendPanels = Array.from(document.querySelectorAll('[data-trend-panel]'));
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
+
+  function showCrashRecoveryModal(){
+    const backup = readNewestBackup();
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(4, 8, 12, 0.74)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '9999';
+
+    const panel = document.createElement('div');
+    panel.style.width = 'min(560px, 92vw)';
+    panel.style.background = '#10151c';
+    panel.style.border = '1px solid rgba(124, 205, 255, 0.36)';
+    panel.style.borderRadius = '14px';
+    panel.style.padding = '18px';
+    panel.style.boxShadow = '0 16px 44px rgba(0, 0, 0, 0.55)';
+    panel.innerHTML = [
+      '<h3 style="margin:0 0 8px 0;color:#cce6ff;font-size:1.05rem;">Recovery Available</h3>',
+      '<p style="margin:0 0 8px 0;color:#d8e6f7;line-height:1.45;">The previous session appears to have ended unexpectedly.</p>',
+      `<p style="margin:0 0 14px 0;color:#9fb5ca;font-size:0.9rem;">Backup found: ${backup ? 'yes' : 'no'}${backup?.at ? ` • ${new Date(backup.at).toLocaleString()}` : ''}</p>`,
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;">',
+      `<button class="btn" data-recovery="restore" ${backup ? '' : 'disabled'}>Restore Backup</button>`,
+      '<button class="btn" data-recovery="continue">Continue Current Save</button>',
+      '<button class="btn" data-recovery="fresh">Fresh Start</button>',
+      '</div>'
+    ].join('');
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    panel.addEventListener('click', (e) => {
+      const btn = e.target?.closest?.('button[data-recovery]');
+      if (!btn) return;
+      const action = String(btn.dataset.recovery || '');
+
+      if (action === 'restore') {
+        if (!backup?.raw) return;
+        try {
+          localStorage.setItem(SAVE_KEY, backup.raw);
+          const restored = load();
+          if (restored) {
+            state = restored;
+            ensureMilestonesState(state);
+            ensureLegacyState(state);
+            ensureEternityState(state);
+            ensureMasteryState(state);
+            ensureResearchState(state);
+            ensureAudioState(state);
+            ensureActivePlayState(state);
+            log('Recovery: restored latest rotating backup.');
+          }
+        } catch {}
+      } else if (action === 'fresh') {
+        if (!confirm('Start fresh? This clears current save and backups.')) return;
+        try { localStorage.removeItem(SAVE_KEY); } catch {}
+        clearBackupSaves();
+        state = defaultState();
+        ensureMilestonesState(state);
+        ensureLegacyState(state);
+        ensureEternityState(state);
+        ensureMasteryState(state);
+        ensureResearchState(state);
+        ensureAudioState(state);
+        ensureActivePlayState(state);
+        log('Recovery: started a fresh colony.');
+      } else {
+        log('Recovery: continued with current save.');
+      }
+
+      clearDirtyOnCleanUnload();
+      overlay.remove();
+      render();
+      save();
+    });
+  }
 
   function ensureCurator(s){
     s.director = s.director ?? {};
@@ -12751,8 +12842,85 @@ function renderTrends(){
   });
 
   // --- Save/Load
-  function save(){
+  function getBackupMeta(){
+    try {
+      const raw = localStorage.getItem(SAVE_BACKUP_META_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== 'object') return { nextSlot: 0, slots: [] };
+      const nextSlot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Math.floor(Number(parsed.nextSlot ?? 0) || 0)));
+      const slots = Array.isArray(parsed.slots) ? parsed.slots : [];
+      return { nextSlot, slots };
+    } catch {
+      return { nextSlot: 0, slots: [] };
+    }
+  }
+
+  function setBackupMeta(meta){
+    try { localStorage.setItem(SAVE_BACKUP_META_KEY, JSON.stringify(meta)); } catch {}
+  }
+
+  function rotateBackupSave(){
+    try {
+      const snapshot = localStorage.getItem(SAVE_KEY);
+      if (!snapshot) return;
+      const bytes = new Blob([snapshot]).size;
+      const projected = bytes * (SAVE_BACKUP_SLOT_COUNT + 1);
+      if (projected > SAVE_BACKUP_MAX_BYTES) return;
+
+      const meta = getBackupMeta();
+      const slot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Number(meta.nextSlot ?? 0) || 0));
+      localStorage.setItem(`${SAVE_BACKUP_PREFIX}${slot}`, snapshot);
+
+      const slots = Array.isArray(meta.slots) ? meta.slots.slice() : [];
+      const filtered = slots.filter((x) => Number(x?.slot) !== slot);
+      filtered.push({ slot, at: Date.now() });
+      filtered.sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0));
+
+      setBackupMeta({
+        nextSlot: (slot + 1) % SAVE_BACKUP_SLOT_COUNT,
+        slots: filtered,
+      });
+    } catch {}
+  }
+
+  function readNewestBackup(){
+    try {
+      const meta = getBackupMeta();
+      const slots = Array.isArray(meta.slots) ? meta.slots.slice().sort((a, b) => Number(b.at ?? 0) - Number(a.at ?? 0)) : [];
+      for (const entry of slots) {
+        const slot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Number(entry?.slot) || 0));
+        const raw = localStorage.getItem(`${SAVE_BACKUP_PREFIX}${slot}`);
+        if (raw) return { raw, slot, at: Number(entry?.at ?? 0) || 0 };
+      }
+      for (let slot = SAVE_BACKUP_SLOT_COUNT - 1; slot >= 0; slot -= 1) {
+        const raw = localStorage.getItem(`${SAVE_BACKUP_PREFIX}${slot}`);
+        if (raw) return { raw, slot, at: 0 };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function clearBackupSaves(){
+    try {
+      for (let i = 0; i < SAVE_BACKUP_SLOT_COUNT; i += 1) localStorage.removeItem(`${SAVE_BACKUP_PREFIX}${i}`);
+      localStorage.removeItem(SAVE_BACKUP_META_KEY);
+    } catch {}
+  }
+
+  function markDirtyOnSaveStart(){
+    try { localStorage.setItem(SAVE_DIRTY_KEY, '1'); } catch {}
+  }
+
+  function clearDirtyOnCleanUnload(){
+    try { localStorage.setItem(SAVE_DIRTY_KEY, '0'); } catch {}
+  }
+
+  function save(opts = {}){
+    markDirtyOnSaveStart();
     saveGame(state, { GAME_VERSION, SAVE_KEY, LOG_MAX });
+    if (opts.backup === true) rotateBackupSave();
   }
 
   function load(){
@@ -12809,6 +12977,13 @@ function renderTrends(){
         save();
       }
     }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    clearDirtyOnCleanUnload();
+  });
+  window.addEventListener('pagehide', () => {
+    clearDirtyOnCleanUnload();
   });
 
   let last = now();
@@ -12966,6 +13141,7 @@ function renderTrends(){
   soundNudgeRuntime.activeSeconds = Math.max(0, Number(state?.t ?? 0) || 0);
 
   render();
+  if (hadDirtySession) showCrashRecoveryModal();
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
   maybeShowOfflineSummary();

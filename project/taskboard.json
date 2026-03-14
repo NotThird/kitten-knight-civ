@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T10:22:50.540Z",
+    "lastUpdated": "2026-03-14T10:49:25.820Z",
     "columns": {
         "todo": [
             {
@@ -42,23 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-114",
-                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:35:44.034Z",
-                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. Stability axis at 8.5 — this directly addresses the convergence gap.",
-                "acceptanceCriteria": [
-                    "Auto-save fires every 60s writing to rotating backup slots",
-                    "Dirty flag set on save start cleared on clean unload",
-                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
-                    "Total localStorage usage stays under 5MB",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
             },
             {
                 "id": "TASK-123",
@@ -237,6 +220,26 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-114",
+                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:35:44.034Z",
+                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. Stability axis at 8.5 — this directly addresses the convergence gap.",
+                "acceptanceCriteria": [
+                    "Auto-save fires every 60s writing to rotating backup slots",
+                    "Dirty flag set on save start cleared on clean unload",
+                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
+                    "Total localStorage usage stays under 5MB",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T10:46:23.617Z",
+                "completedAt": "2026-03-14T10:49:25.820Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
