@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T08:18:08.340Z",
+    "lastUpdated": "2026-03-14T08:22:39.725Z",
     "columns": {
         "todo": [
             {
@@ -238,28 +238,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-136",
-                "title": "Implement visual hierarchy tier system from TASK-134 design",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T07:36:49.672Z",
-                "description": "Apply the 3-tier visual weight system designed in TASK-134. Add CSS tokens for tier backgrounds, borders, shadows. Assign tier-primary to colony tank and resource dashboard, tier-secondary to event log and trends, tier-tertiary to safety and settings. Must preserve dark theme.",
-                "acceptanceCriteria": [
-                    "3 tier CSS classes added with distinct visual weight",
-                    "Colony tank and resource area use tier-primary styling",
-                    "Event log and settings use tier-secondary or tertiary",
-                    "Dark theme consistency maintained",
-                    "parse_check.js and replay_test.js pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T08:16:22.787Z",
-                "completedAt": "2026-03-14T08:18:08.340Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -1012,6 +991,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T07:52:53.861Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-136",
+                "title": "Implement visual hierarchy tier system from TASK-134 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:36:49.672Z",
+                "description": "Apply the 3-tier visual weight system designed in TASK-134. Add CSS tokens for tier backgrounds, borders, shadows. Assign tier-primary to colony tank and resource dashboard, tier-secondary to event log and trends, tier-tertiary to safety and settings. Must preserve dark theme.",
+                "acceptanceCriteria": [
+                    "3 tier CSS classes added with distinct visual weight",
+                    "Colony tank and resource area use tier-primary styling",
+                    "Event log and settings use tier-secondary or tertiary",
+                    "Dark theme consistency maintained",
+                    "parse_check.js and replay_test.js pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T08:16:22.787Z",
+                "completedAt": "2026-03-14T08:18:08.340Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T08:22:39.725Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1108,7 +1109,7 @@
     },
     "meta": {
         "totalCreated": 133,
-        "totalCompleted": 81,
+        "totalCompleted": 82,
         "pendingQuestion": null
     },
     "nextId": 140
