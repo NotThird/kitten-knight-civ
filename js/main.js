@@ -1446,8 +1446,69 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Kept outside save data to preserve replay/save determinism.
   const resourceUiFx = {
     last: null,
-    popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] }
+    popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] },
+    counters: Object.create(null),
   };
+
+  function formatCompactResourceNumber(n){
+    const v = Number(n ?? 0);
+    if (!Number.isFinite(v)) return '0';
+    const sign = v < 0 ? '-' : '';
+    const abs = Math.abs(v);
+    const units = [
+      { div: 1e12, suf: 'T' },
+      { div: 1e9, suf: 'B' },
+      { div: 1e6, suf: 'M' },
+      { div: 1e3, suf: 'K' },
+    ];
+    for (const u of units) {
+      if (abs >= u.div) {
+        const scaled = abs / u.div;
+        const digits = scaled >= 100 ? 0 : (scaled >= 10 ? 1 : 2);
+        return `${sign}${scaled.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')}${u.suf}`;
+      }
+    }
+    return fmt(v);
+  }
+
+  function formatFullResourceNumber(n){
+    const v = Number(n ?? 0);
+    if (!Number.isFinite(v)) return '0';
+    const hasFrac = Math.abs(v % 1) > 0.001;
+    return v.toLocaleString(undefined, {
+      minimumFractionDigits: hasFrac ? 1 : 0,
+      maximumFractionDigits: hasFrac ? 1 : 0,
+    });
+  }
+
+  function animatedResourceValue(key, target){
+    const k = String(key || '');
+    const t = Number(target ?? 0);
+    if (!k || !Number.isFinite(t)) return t;
+
+    const nowMs = now();
+    const durMs = 320;
+    let c = resourceUiFx.counters[k];
+    if (!c) {
+      c = { from: t, to: t, startAt: nowMs, durMs };
+      resourceUiFx.counters[k] = c;
+      return t;
+    }
+
+    if (Math.abs(t - c.to) > 0.0001) {
+      const elapsed = Math.max(0, Math.min(1, (nowMs - c.startAt) / Math.max(1, c.durMs)));
+      const eased = 1 - Math.pow(1 - elapsed, 3);
+      const current = c.from + (c.to - c.from) * eased;
+      c.from = current;
+      c.to = t;
+      c.startAt = nowMs;
+      c.durMs = durMs;
+    }
+
+    const p = Math.max(0, Math.min(1, (nowMs - c.startAt) / Math.max(1, c.durMs)));
+    const e = 1 - Math.pow(1 - p, 3);
+    return c.from + (c.to - c.from) * e;
+  }
 
   const statDeltaUiFx = {
     last: Object.create(null),
@@ -10641,6 +10702,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     const visibleStats = stats.filter(([key]) => revealStage >= Number(statRevealMin[key] ?? 0));
+    const resourceRawByStat = {
+      Food: Number(state.res.food ?? 0),
+      Wood: Number(state.res.wood ?? 0),
+      Science: Number(state.res.science ?? 0),
+      Tools: Number(state.res.tools ?? 0),
+      Jerky: Number(state.res.jerky ?? 0),
+    };
 
     const statLabelMeta = {
       'Food': { icon: '🍖', tone: 'food' },
@@ -10779,6 +10847,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       d.classList.toggle('micro-gain', microClass === 'micro-gain');
       d.classList.toggle('micro-spend', microClass === 'micro-spend');
 
+      const rawResource = Number(resourceRawByStat[k]);
+      const valueDisplay = isResource
+        ? formatCompactResourceNumber(animatedResourceValue(k, rawResource))
+        : v;
+
       let detailHtml = '';
       if (isResource && uiResourceDetail.openKey === k) {
         const rows = resourceBreakdownRows(state, k, {
@@ -10790,10 +10863,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         });
         const prodText = rows.prod.length ? rows.prod.join(' | ') : 'No major producers active';
         const consText = rows.cons.length ? rows.cons.join(' | ') : 'No major consumption active';
-        detailHtml = `<div class="resource-detail-row"><div><b>Produced by:</b> ${escapeHtml(prodText)}</div><div><b>Consumed by:</b> ${escapeHtml(consText)}</div></div>`;
+        detailHtml = `<div class="resource-detail-row"><div><b>Current total:</b> ${escapeHtml(formatFullResourceNumber(rawResource))}</div><div><b>Produced by:</b> ${escapeHtml(prodText)}</div><div><b>Consumed by:</b> ${escapeHtml(consText)}</div></div>`;
       }
 
-      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${rateHtml}${subHtml}${detailHtml}`;
+      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${valueDisplay}${flyupHtml}</div>${rateHtml}${subHtml}${detailHtml}`;
       statsEl.appendChild(d);
     }
 

@@ -56,6 +56,13 @@
       "taskId": "TASK-120",
       "action": "completed",
       "notes": "Added next-milestone progress indicators to Legacy, Eternity, and Research panels with reward previews."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T05:18:42.970Z",
+      "taskId": "TASK-063",
+      "action": "completed",
+      "notes": "Animated resource counters with easing + K/M/B/T abbreviations + full value on tap detail"
     }
   ]
 }
