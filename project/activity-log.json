@@ -28,6 +28,13 @@
       "taskId": "TASK-125",
       "action": "completed",
       "notes": "Added getPrestigePreview data helper for legacy points, unlocks, and eternity progress."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T03:18:39.066Z",
+      "taskId": "TASK-126",
+      "action": "completed",
+      "notes": "Added prestige preview modal for legacy/eternity reset confirmation using getPrestigePreview data"
     }
   ]
 }

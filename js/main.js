@@ -8199,6 +8199,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const offlineBodyEl = el('offlineBody');
   const btnOfflineCloseEl = el('btnOfflineClose');
 
+  const prestigeModalEl = el('prestigeModal');
+  const prestigeEyebrowEl = el('prestigeEyebrow');
+  const prestigeTitleEl = el('prestigeTitle');
+  const prestigeSubEl = el('prestigeSub');
+  const prestigeBodyEl = el('prestigePreviewBody');
+  const btnPrestigePreviewCloseEl = el('btnPrestigePreviewClose');
+  const btnPrestigePreviewCancelEl = el('btnPrestigePreviewCancel');
+  const btnPrestigePreviewConfirmEl = el('btnPrestigePreviewConfirm');
+
   const patchNotesUI = initPatchNotes({
     gameVersion: GAME_VERSION,
     patchHistory: PATCH_HISTORY,
@@ -8238,9 +8247,99 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     offlineModalEl.classList.remove('hidden');
   }
 
+  let prestigePreviewResolve = null;
+
+  function closePrestigePreviewModal(confirmed){
+    if (!prestigeModalEl) return;
+    prestigeModalEl.classList.add('hidden');
+    if (prestigePreviewResolve) {
+      const resolve = prestigePreviewResolve;
+      prestigePreviewResolve = null;
+      resolve(!!confirmed);
+    }
+  }
+
+  function renderPrestigeUnlockList(items, emptyText){
+    if (!Array.isArray(items) || items.length === 0) return `<li>${emptyText}</li>`;
+    return items.slice(0, 6).map((item) => {
+      const rankNote = Number.isFinite(item?.nextRank) && Number.isFinite(item?.maxRank)
+        ? ` (rank ${fmt(item.nextRank)}/${fmt(item.maxRank)})`
+        : '';
+      return `<li><b>${item.name}</b> - cost ${fmt(item.cost)}${rankNote}</li>`;
+    }).join('');
+  }
+
+  function openPrestigePreviewModal(kind){
+    if (!prestigeModalEl || !prestigeTitleEl || !prestigeSubEl || !prestigeBodyEl || !btnPrestigePreviewConfirmEl) {
+      return Promise.resolve(confirm(kind === 'eternity'
+        ? 'Eternity Reset now?'
+        : 'Legacy Reset now?'));
+    }
+
+    const preview = getPrestigePreview(state);
+    const legacyUnlocks = preview?.newUnlocks?.legacy ?? [];
+    const eternityUnlocks = preview?.newUnlocks?.eternity ?? [];
+    const gate = preview?.eternityProgress ?? { gateCount: 0, gates: {}, ready: false, sigilGain: 0 };
+
+    if (kind === 'eternity') {
+      prestigeEyebrowEl.textContent = 'Eternity Cycle';
+      prestigeTitleEl.textContent = 'Confirm Eternity Reset';
+      prestigeSubEl.textContent = 'Legacy shards, legacy upgrades, and research reset. Eternity upgrades, mandate, preserve package, and sigils persist.';
+      btnPrestigePreviewConfirmEl.textContent = 'Confirm Eternity Reset';
+      prestigeBodyEl.innerHTML = [
+        '<div class="prestigePreviewGrid">',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>Reset Gain</h4>',
+        `    <div class="prestigeGain">+${fmt(gate.sigilGain)} Ancestral Sigils</div>`,
+        `    <div class="small">Gate progress: ${fmt(gate.gateCount)}/4 met</div>`,
+        `    <div class="small">Legacy resets ${gate.gates?.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates?.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates?.doctrine ? 'yes' : 'no'} | population ${gate.gates?.population ? 'yes' : 'no'}</div>`,
+        '  </section>',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>Affordable After Reset</h4>',
+        `    <ul class="prestigeList">${renderPrestigeUnlockList(eternityUnlocks, 'No new Eternity upgrades immediately affordable.')}</ul>`,
+        '  </section>',
+        '</div>'
+      ].join('');
+    } else {
+      prestigeEyebrowEl.textContent = 'Legacy Chronicle';
+      prestigeTitleEl.textContent = 'Confirm Legacy Reset';
+      prestigeSubEl.textContent = 'Colony resources, buildings, and population reset. Legacy upgrades and shard balance persist.';
+      btnPrestigePreviewConfirmEl.textContent = 'Confirm Legacy Reset';
+      prestigeBodyEl.innerHTML = [
+        '<div class="prestigePreviewGrid">',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>Reset Gain</h4>',
+        `    <div class="prestigeGain">+${fmt(preview.legacyPoints)} Legacy Shards</div>`,
+        `    <div class="small">Potential sigils after this run: +${fmt(gate.sigilGain)} (${fmt(gate.gateCount)}/4 gates met)</div>`,
+        '  </section>',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>Affordable After Reset</h4>',
+        `    <ul class="prestigeList">${renderPrestigeUnlockList(legacyUnlocks, 'No new Legacy upgrades immediately affordable.')}</ul>`,
+        '  </section>',
+        '</div>',
+        '<section class="prestigePreviewCard">',
+        '  <h4>Eternity Readiness</h4>',
+        `  <div class="small">Legacy resets ${gate.gates?.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates?.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates?.doctrine ? 'yes' : 'no'} | population ${gate.gates?.population ? 'yes' : 'no'}</div>`,
+        '</section>'
+      ].join('');
+    }
+
+    prestigeModalEl.classList.remove('hidden');
+    return new Promise((resolve) => {
+      prestigePreviewResolve = resolve;
+    });
+  }
+
   if (btnOfflineCloseEl) btnOfflineCloseEl.addEventListener('click', closeOfflineModal);
   if (offlineModalEl) offlineModalEl.addEventListener('click', (e) => {
     if (e.target === offlineModalEl) closeOfflineModal();
+  });
+
+  if (btnPrestigePreviewCloseEl) btnPrestigePreviewCloseEl.addEventListener('click', () => closePrestigePreviewModal(false));
+  if (btnPrestigePreviewCancelEl) btnPrestigePreviewCancelEl.addEventListener('click', () => closePrestigePreviewModal(false));
+  if (btnPrestigePreviewConfirmEl) btnPrestigePreviewConfirmEl.addEventListener('click', () => closePrestigePreviewModal(true));
+  if (prestigeModalEl) prestigeModalEl.addEventListener('click', (e) => {
+    if (e.target === prestigeModalEl) closePrestigePreviewModal(false);
   });
 
   // --- Inspect modal (explainability)
@@ -13167,16 +13266,16 @@ function renderTrends(){
   });
 
   const prestigeBtn = document.getElementById('btnPrestige');
-  if (prestigeBtn) prestigeBtn.addEventListener('click', () => {
+  if (prestigeBtn) prestigeBtn.addEventListener('click', async () => {
     const gain = computeLegacyShardGain(state);
     if (gain <= 0) { playSfx('error'); log('Legacy Reset unavailable: build up your colony first.'); return; }
-    const ok = confirm(`Legacy Reset now?\n\nYou will gain +${fmt(gain)} Legacy Shards.\nYour colony resources/buildings/population reset.\nLegacy upgrades and shard balance persist.`);
+    const ok = await openPrestigePreviewModal('legacy');
     if (!ok) return;
     performLegacyReset();
   });
 
   const eternityBtn = document.getElementById('btnEternity');
-  if (eternityBtn) eternityBtn.addEventListener('click', () => {
+  if (eternityBtn) eternityBtn.addEventListener('click', async () => {
     const gate = eternityGateStatus(state);
     const gain = computeEternitySigilGain(state);
     if (!gate.ok || gain <= 0) {
@@ -13184,7 +13283,7 @@ function renderTrends(){
       log(`Eternity Reset locked (${gate.count}/4 gates met).`);
       return;
     }
-    const ok = confirm(`Eternity Reset now?\n\nYou will gain +${fmt(gain)} Ancestral Sigils.\nLegacy shards/upgrades/research reset.\nEternity upgrades, mandate, and sigils persist.`);
+    const ok = await openPrestigePreviewModal('eternity');
     if (!ok) return;
     performEternityReset();
   });

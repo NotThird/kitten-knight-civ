@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T02:52:46.664Z",
+    "lastUpdated": "2026-03-14T03:18:34.904Z",
     "columns": {
         "todo": [
             {
@@ -226,21 +226,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-126",
-                "title": "Prestige preview: Render preview panel in reset confirmation UI",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.161Z",
-                "description": "Step 2 of TASK-081. Show prestige preview data in a panel when player clicks Legacy or Eternity reset button. Use getPrestigePreview fn from step 1.",
-                "acceptanceCriteria": [
-                    "Preview panel appears showing gains before reset",
-                    "Panel is mobile-responsive and dark-themed",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-127",
                 "title": "Animated counters: Add easing number animation to resource totals",
                 "assignee": "developer",
@@ -272,7 +257,26 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-126",
+                "title": "Prestige preview: Render preview panel in reset confirmation UI",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.161Z",
+                "description": "Step 2 of TASK-081. Show prestige preview data in a panel when player clicks Legacy or Eternity reset button. Use getPrestigePreview fn from step 1.",
+                "acceptanceCriteria": [
+                    "Preview panel appears showing gains before reset",
+                    "Panel is mobile-responsive and dark-themed",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T03:16:13.384Z",
+                "completedAt": "2026-03-14T03:18:34.904Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
