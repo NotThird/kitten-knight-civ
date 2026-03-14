@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T10:18:39.119Z",
+    "lastUpdated": "2026-03-14T10:22:50.540Z",
     "columns": {
         "todo": [
             {
@@ -237,35 +237,6 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-111",
-                "title": "Implement idle-away comeback multiplier from TASK-104 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "description": "Implement comeback multiplier curve and catch-up bonus from TASK-104. Apply to offline resource gains. Cap at 2x active value/hour.",
-                "acceptanceCriteria": [
-                    "Comeback multiplier matches design curve",
-                    "Catch-up bonus activates behind milestone pace",
-                    "Welcome-back screen shows multiplier",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "status": "todo",
-                "column": "todo",
-                "createdAt": "2026-03-13T20:06:26.397Z",
-                "staleCount": 0,
-                "history": [
-                    {
-                        "action": "created",
-                        "by": "orchestrator",
-                        "at": "2026-03-13T20:06:26.397Z"
-                    }
-                ],
-                "claimedAt": "2026-03-14T10:16:20.453Z",
-                "completedAt": "2026-03-14T10:18:39.119Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1064,6 +1035,37 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T08:53:06.828Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-111",
+                "title": "Implement idle-away comeback multiplier from TASK-104 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "description": "Implement comeback multiplier curve and catch-up bonus from TASK-104. Apply to offline resource gains. Cap at 2x active value/hour.",
+                "acceptanceCriteria": [
+                    "Comeback multiplier matches design curve",
+                    "Catch-up bonus activates behind milestone pace",
+                    "Welcome-back screen shows multiplier",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "status": "todo",
+                "column": "todo",
+                "createdAt": "2026-03-13T20:06:26.397Z",
+                "staleCount": 0,
+                "history": [
+                    {
+                        "action": "created",
+                        "by": "orchestrator",
+                        "at": "2026-03-13T20:06:26.397Z"
+                    }
+                ],
+                "claimedAt": "2026-03-14T10:16:20.453Z",
+                "completedAt": "2026-03-14T10:18:39.119Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T10:22:50.540Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1160,7 +1162,7 @@
     },
     "meta": {
         "totalCreated": 135,
-        "totalCompleted": 83,
+        "totalCompleted": 84,
         "pendingQuestion": null
     },
     "nextId": 142
