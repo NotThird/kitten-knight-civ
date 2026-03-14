@@ -7763,6 +7763,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     const top = gainRows.length > 0 ? gainRows[0] : null;
     const quality = totalGain >= 250 ? 'Huge haul' : totalGain >= 75 ? 'Solid gains' : totalGain > 0 ? 'Small gains' : 'Quiet return';
+    const longReturn = away >= (60 * 60);
+
+    const topKey = String(top?.key ?? '');
+    const flavorLine = !longReturn
+      ? ''
+      : (topKey === 'science')
+        ? 'The archive lanterns stayed lit while you were gone; fresh theories now crowd the scribe tables.'
+        : ((topKey === 'wood' || topKey === 'tools')
+          ? 'Workshops rang through the night; beams were set and tool racks filled for the next building push.'
+          : ((topKey === 'food' || topKey === 'jerky')
+            ? 'Storehouses swelled and the nursery warmed; the colony is ready to welcome new paws.'
+            : 'Your campfires held steady and the colony kept watch, turning quiet hours into momentum.'));
 
     offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at ${(OFFLINE_RATE * 100).toFixed(0)}% base x${comebackMul.toFixed(2)} comeback${catchUpBonusPct > 0 ? ` (+${catchUpBonusPct.toFixed(0)}% catch-up)` : ''}${capped ? ' (capped at 24h)' : ''}.`;
 
@@ -7778,14 +7790,22 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           .join('')
       : '<div>-</div>';
 
+    const cardEl = offlineModalEl.querySelector('.modalCard');
+    if (cardEl) {
+      cardEl.classList.remove('offline-enter');
+      void cardEl.offsetWidth;
+      cardEl.classList.add('offline-enter');
+    }
+
     offlineBodyEl.innerHTML = [
       `<div><strong>Welcome-back summary</strong></div>`,
+      longReturn && flavorLine ? `<div class="offline-narrative">${escapeHtml(flavorLine)}</div>` : '',
       `<div>${summaryLine}</div>`,
       `<div>${streakLine}</div>`,
       '<div style="height:8px"></div>',
       '<div><strong>Resource breakdown</strong></div>',
       breakdown
-    ].join('');
+    ].filter(Boolean).join('');
 
     offlineModalEl.classList.remove('hidden');
   }

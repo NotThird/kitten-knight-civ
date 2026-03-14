@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T13:22:51.611Z",
+    "lastUpdated": "2026-03-14T13:49:02.645Z",
     "columns": {
         "todo": [
             {
@@ -42,22 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-139",
-                "title": "Make offline progress modal celebratory with narrative beat",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T08:10:34.335Z",
-                "description": "Arbiter notes the welcome-back modal reads like a log entry rather than a treasure chest opening. When returning after 1h+, the modal should include a brief narrative line. Reference: NGU IDLE offline summary feels rewarding. Add a colony-themed flavor sentence before the stats, and consider a brief CSS entrance animation (fade+scale). This is Tier 2/3 work targeting engagement and visual feel.",
-                "acceptanceCriteria": [
-                    "Offline progress modal includes a thematic narrative sentence before showing stats",
-                    "Narrative varies based on what happened (building vs research vs population growth)",
-                    "Modal has a brief entrance animation (fade-in or scale-up, CSS only)",
-                    "Returns under 1 hour show simpler summary without narrative flourish"
-                ],
-                "source": "strategist"
             },
             {
                 "id": "TASK-140",
@@ -247,6 +231,25 @@
                 "claimedAt": "2026-03-14T12:41:56.510Z",
                 "completedAt": "2026-03-14T12:43:42.845Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-139",
+                "title": "Make offline progress modal celebratory with narrative beat",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:10:34.335Z",
+                "description": "Arbiter notes the welcome-back modal reads like a log entry rather than a treasure chest opening. When returning after 1h+, the modal should include a brief narrative line. Reference: NGU IDLE offline summary feels rewarding. Add a colony-themed flavor sentence before the stats, and consider a brief CSS entrance animation (fade+scale). This is Tier 2/3 work targeting engagement and visual feel.",
+                "acceptanceCriteria": [
+                    "Offline progress modal includes a thematic narrative sentence before showing stats",
+                    "Narrative varies based on what happened (building vs research vs population growth)",
+                    "Modal has a brief entrance animation (fade-in or scale-up, CSS only)",
+                    "Returns under 1 hour show simpler summary without narrative flourish"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T13:46:24.965Z",
+                "completedAt": "2026-03-14T13:49:02.645Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
