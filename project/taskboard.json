@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T02:23:45.559Z",
+    "lastUpdated": "2026-03-14T02:47:28.501Z",
     "columns": {
         "todo": [
             {
@@ -224,10 +224,74 @@
                     "Confirmation text uses positive framing (what you gain first, then what resets)"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-126",
+                "title": "Prestige preview: Render preview panel in reset confirmation UI",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.161Z",
+                "description": "Step 2 of TASK-081. Show prestige preview data in a panel when player clicks Legacy or Eternity reset button. Use getPrestigePreview fn from step 1.",
+                "acceptanceCriteria": [
+                    "Preview panel appears showing gains before reset",
+                    "Panel is mobile-responsive and dark-themed",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-127",
+                "title": "Animated counters: Add easing number animation to resource totals",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.196Z",
+                "description": "Step 1 of TASK-063. When resource values change, animate the number transition with easing instead of instant update. Target food, wood, gold, science displays.",
+                "acceptanceCriteria": [
+                    "Resource numbers animate smoothly on change",
+                    "Animation completes in under 500ms",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-128",
+                "title": "Session milestones: Award escalating bonuses for continuous play time",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.230Z",
+                "description": "Step 1 of TASK-119. Track session duration. At 5, 15, 30, 60 min milestones, grant escalating resource bonuses with celebration UI.",
+                "acceptanceCriteria": [
+                    "Session timer tracks play duration since load",
+                    "Milestone bonuses trigger at defined thresholds with visual feedback",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-125",
+                "title": "Prestige preview: Add data function calculating next-reset gains",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.126Z",
+                "description": "Step 1 of TASK-081. Add getPrestigePreview fn to main.js returning legacyPoints, newUnlocks, eternityProgress. Pure data, no UI.",
+                "acceptanceCriteria": [
+                    "getPrestigePreview fn exists and returns correct preview object",
+                    "Values match actual reset logic",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T02:46:18.301Z",
+                "completedAt": "2026-03-14T02:47:28.501Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -852,9 +916,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 120,
+        "totalCreated": 124,
         "totalCompleted": 69,
         "pendingQuestion": null
     },
-    "nextId": 125
+    "nextId": 129
 }

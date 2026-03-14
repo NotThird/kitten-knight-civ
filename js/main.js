@@ -629,6 +629,70 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return Math.max(0, gained + legacyWarLedgerBonus(s));
   }
 
+  function getPrestigePreview(s){
+    ensureLegacyState(s);
+    ensureResearchState(s);
+    ensureEternityState(s);
+
+    const legacyPoints = computeLegacyShardGain(s);
+    const legacyShardsAfterReset = Math.max(0, Number(s.legacy?.shards ?? 0)) + legacyPoints;
+    const sigilsAfterReset = Math.max(0, Number(s.eternity?.sigils ?? 0)) + computeEternitySigilGain(s);
+
+    const legacyUnlocks = [
+      ...LEGACY_LORE_UPGRADES.map((up) => ({
+        id: up.id,
+        name: up.name,
+        currency: 'legacy',
+        cost: up.cost,
+        affordableNow: !s.legacy.upgrades[up.id] && legacyShardsAfterReset >= up.cost,
+      })),
+      ...LEGACY_MILITARY_UPGRADES.map((up) => {
+        const rank = legacyUpgradeRank(s, up.id);
+        return {
+          id: up.id,
+          name: up.name,
+          currency: 'legacy',
+          cost: up.cost,
+          affordableNow: rank < up.maxRank && legacyShardsAfterReset >= up.cost,
+          nextRank: rank + 1,
+          maxRank: up.maxRank,
+        };
+      }),
+    ].filter((up) => up.affordableNow);
+
+    const eternityUnlocks = ETERNITY_UPGRADES
+      .map((up) => {
+        const rank = eternityUpgradeRank(s, up.id);
+        return {
+          id: up.id,
+          name: up.name,
+          currency: 'eternity',
+          cost: up.cost,
+          affordableNow: rank < up.maxRank && sigilsAfterReset >= up.cost,
+          nextRank: rank + 1,
+          maxRank: up.maxRank,
+        };
+      })
+      .filter((up) => up.affordableNow);
+
+    const eternityGate = eternityGateStatus(s);
+    const eternitySigils = computeEternitySigilGain(s);
+
+    return {
+      legacyPoints,
+      newUnlocks: {
+        legacy: legacyUnlocks,
+        eternity: eternityUnlocks,
+      },
+      eternityProgress: {
+        gateCount: eternityGate.count,
+        gates: eternityGate.gates,
+        ready: eternityGate.ok,
+        sigilGain: eternitySigils,
+      },
+    };
+  }
+
   function performEternityReset(){
     ensureLegacyState(state);
     ensureResearchState(state);

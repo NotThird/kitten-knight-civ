@@ -21,6 +21,13 @@
       "taskId": "TASK-029",
       "action": "completed",
       "notes": "Expanded secrets triggers and rare event pool; parse_check + replay_test passed."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T02:47:33.769Z",
+      "taskId": "TASK-125",
+      "action": "completed",
+      "notes": "Added getPrestigePreview data helper for legacy points, unlocks, and eternity progress."
     }
   ]
 }
