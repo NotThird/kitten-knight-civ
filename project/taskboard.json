@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T00:53:30.184Z",
+    "lastUpdated": "2026-03-14T01:17:05.884Z",
     "columns": {
         "todo": [
             {
@@ -58,23 +58,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-041",
-                "title": "Add global error boundary with player-friendly recovery UI",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T17:20:59.792Z",
-                "description": "Stability is at 6.5 and the 540KB monolith has no error handling for runtime failures. If any JS error occurs, the game silently breaks. Cookie Clicker wraps core loops in try-catch and shows a recovery prompt. KKC should catch unhandled errors, display a non-scary modal, and offer auto-reload. Prevents silent breakage and builds player trust.",
-                "acceptanceCriteria": [
-                    "window.onerror and unhandledrejection listeners catch all uncaught errors",
-                    "Error modal displays with friendly message and reload button",
-                    "Game state is auto-saved before reload attempt",
-                    "Error details logged to console for debugging",
-                    "No visible impact during normal gameplay"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-052",
                 "title": "Add one-time sound discoverability nudge after 30 seconds of play",
                 "assignee": "developer",
@@ -95,9 +78,9 @@
                 "id": "TASK-063",
                 "title": "Implement animated number counters with easing for resource totals",
                 "assignee": "developer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
-                "description": "Visuals at 7.0 is weakest axis. Animated number transitions create satisfying numbers-go-up feeling. Use rAF lerp 200-400ms on main resource counters. Format large numbers with abbreviations (1.5K, 2.3M).",
+                "description": "Visuals at 7.0 is weakest axis per Arbiter review. Animated number transitions are the single highest-impact visual improvement. Use rAF lerp 200-400ms on main resource counters. Reference: Cookie Clicker and Antimatter Dimensions both use smooth counter animations. Format large numbers with abbreviations (1.5K, 2.3M). Addresses the spreadsheet-with-personality critique.",
                 "acceptanceCriteria": [
                     "Resource counters animate smoothly when values change",
                     "Animation 200-400ms with easing",
@@ -172,40 +155,6 @@
                 ]
             },
             {
-                "id": "TASK-064",
-                "title": "Add particle effects on prestige reset and milestone unlock",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "description": "Visuals weakest axis. Key moments need VFX. Lightweight canvas/CSS particle bursts: confetti on milestone, radiant pulse on prestige reset. Pool 20-30 particles, auto-cleanup 1.5s. Respect prefers-reduced-motion.",
-                "acceptanceCriteria": [
-                    "Prestige reset triggers particle burst animation",
-                    "Milestone unlock triggers celebration effect",
-                    "Particles clean up within 2s (no leak)",
-                    "Performant on mobile",
-                    "Respects prefers-reduced-motion media query"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T19:55:15.499Z"
-            },
-            {
-                "id": "TASK-043",
-                "title": "Implement save integrity validation on load",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-12T17:20:59.872Z",
-                "description": "Stability gap: saves can silently corrupt if game crashes mid-write or migrations have edge cases. Antimatter Dimensions validates save structure on load and offers fallback if corrupted. KKC should validate critical save fields on load, warn if values are NaN/negative/impossible, and offer fallback to last known good save or clean start.",
-                "acceptanceCriteria": [
-                    "Save validation runs on every load checking for NaN, negative, or missing critical fields",
-                    "If validation fails, player sees modal with options: retry, use backup, or fresh start",
-                    "Auto-backup of last 2 valid saves in localStorage",
-                    "Validation covers population, resources, prestige shards, iteration count",
-                    "Console logs specific validation failures for debugging"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-047",
                 "title": "Implement save export/import with clipboard and file download",
                 "assignee": "developer",
@@ -222,40 +171,6 @@
                 "source": "strategist",
                 "createdAt": "2026-03-12T17:51:26.381Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-049",
-                "title": "Implement statistics and lifetime tracking panel",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
-                "acceptanceCriteria": [
-                    "Stats panel accessible from main UI showing lifetime totals",
-                    "Tracks: total resources earned, total prestiges, total time played, highest population",
-                    "Stats persist across prestige resets",
-                    "Stats panel renders cleanly on mobile viewport",
-                    "Current run stats shown alongside lifetime stats"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.383Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-069",
-                "title": "Implement session performance metrics and play-time statistics panel",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-12T21:24:22.583Z",
-                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
-                "acceptanceCriteria": [
-                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
-                    "Lifetime totals persist across prestige resets",
-                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
-                    "Data loads from existing save structure without migration"
-                ],
-                "source": "strategist"
             },
             {
                 "title": "Implement faction diplomacy system from approved TASK-068 design",
@@ -276,64 +191,29 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-110",
-                "title": "Add defensive error wrapping around colony AI tick to prevent cascade failures",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "bugfix",
-                "createdAt": "2026-03-13T19:39:40.368Z",
-                "description": "The 540KB monolith has no error isolation between subsystems. If colony AI throws during a tick, it can cascade and break the game loop. Wrapping the AI decision cycle, society feed updates, and seasonal transitions in try-catch with fallback behavior would significantly improve stability without requiring the full modular refactor (TASK-007). This is the incremental stability win: protect the core loop from subsystem failures.",
-                "acceptanceCriteria": [
-                    "Colony AI tick wrapped in try-catch - errors logged to console but game loop continues",
-                    "Society feed update failures do not halt resource production",
-                    "Seasonal transition errors fall back to default season without crashing",
-                    "Error count tracked in a simple counter visible in Developer Mode",
-                    "No user-visible impact from caught errors - game keeps running"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-114",
-                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:35:44.034Z",
-                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Auto-save fires every 60s writing to rotating backup slots",
-                    "Dirty flag set on save start cleared on clean unload",
-                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
-                    "Total localStorage usage stays under 5MB",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-029",
-                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-12T15:17:43.621Z",
-                "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
-                "acceptanceCriteria": [
-                    "At least 5 secrets implemented with working triggers",
-                    "Secret discovery shows distinct visual notification",
-                    "Secrets log panel tracks found secrets",
-                    "At least 2 rare events fire during active play",
-                    "Secrets persist through save and prestige",
-                    "Mobile compatible - no hover required"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-13T22:46:23.525Z",
-                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-122",
+                "title": "Fix prestige reset to preserve secrets.found state",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-14T01:06:47.543Z",
+                "description": "ROOT CAUSE: performLegacyReset() and performEternityReset() in game/js/state.js call defaultState() which creates a fresh state object, wiping state.secrets. FIX: In both reset functions, save state.secrets before reset and restore it after. Pattern: const savedSecrets = JSON.parse(JSON.stringify(state.secrets || {})); then after reset: state.secrets = savedSecrets; This is a ~10 line fix in state.js. Must fix BEFORE TASK-029 can be re-attempted.",
+                "acceptanceCriteria": [
+                    "state.secrets.found persists through Legacy Chronicle reset",
+                    "state.secrets.found persists through Eternity Cycle reset",
+                    "No regression in existing prestige rewards"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T01:16:14.289Z",
+                "completedAt": "2026-03-14T01:17:05.884Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -783,12 +663,160 @@
                 "testVerdict": "APPROVED"
             }
         ],
-        "blocked": []
+        "blocked": [
+            {
+                "id": "TASK-041",
+                "title": "Add global error boundary with player-friendly recovery UI",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.792Z",
+                "description": "Stability is at 6.5 and the 540KB monolith has no error handling for runtime failures. If any JS error occurs, the game silently breaks. Cookie Clicker wraps core loops in try-catch and shows a recovery prompt. KKC should catch unhandled errors, display a non-scary modal, and offer auto-reload. Prevents silent breakage and builds player trust.",
+                "acceptanceCriteria": [
+                    "window.onerror and unhandledrejection listeners catch all uncaught errors",
+                    "Error modal displays with friendly message and reload button",
+                    "Game state is auto-saved before reload attempt",
+                    "Error details logged to console for debugging",
+                    "No visible impact during normal gameplay"
+                ],
+                "source": "strategist",
+                "blockedReason": "Tier 5 infrastructure — priority stack violation. Focus on gameplay tasks first."
+            },
+            {
+                "id": "TASK-110",
+                "title": "Add defensive error wrapping around colony AI tick to prevent cascade failures",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "bugfix",
+                "createdAt": "2026-03-13T19:39:40.368Z",
+                "description": "The 540KB monolith has no error isolation between subsystems. If colony AI throws during a tick, it can cascade and break the game loop. Wrapping the AI decision cycle, society feed updates, and seasonal transitions in try-catch with fallback behavior would significantly improve stability without requiring the full modular refactor (TASK-007). This is the incremental stability win: protect the core loop from subsystem failures.",
+                "acceptanceCriteria": [
+                    "Colony AI tick wrapped in try-catch - errors logged to console but game loop continues",
+                    "Society feed update failures do not halt resource production",
+                    "Seasonal transition errors fall back to default season without crashing",
+                    "Error count tracked in a simple counter visible in Developer Mode",
+                    "No user-visible impact from caught errors - game keeps running"
+                ],
+                "source": "strategist",
+                "blockedReason": "Tier 5 infrastructure — priority stack violation. Focus on gameplay tasks first."
+            },
+            {
+                "id": "TASK-043",
+                "title": "Implement save integrity validation on load",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T17:20:59.872Z",
+                "description": "Stability gap: saves can silently corrupt if game crashes mid-write or migrations have edge cases. Antimatter Dimensions validates save structure on load and offers fallback if corrupted. KKC should validate critical save fields on load, warn if values are NaN/negative/impossible, and offer fallback to last known good save or clean start.",
+                "acceptanceCriteria": [
+                    "Save validation runs on every load checking for NaN, negative, or missing critical fields",
+                    "If validation fails, player sees modal with options: retry, use backup, or fresh start",
+                    "Auto-backup of last 2 valid saves in localStorage",
+                    "Validation covers population, resources, prestige shards, iteration count",
+                    "Console logs specific validation failures for debugging"
+                ],
+                "source": "strategist",
+                "blockedReason": "Tier 5 infrastructure — priority stack violation. Focus on gameplay tasks first."
+            },
+            {
+                "id": "TASK-114",
+                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:35:44.034Z",
+                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Auto-save fires every 60s writing to rotating backup slots",
+                    "Dirty flag set on save start cleared on clean unload",
+                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
+                    "Total localStorage usage stays under 5MB",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Tier 5 infrastructure — save backup is QoL/infrastructure, not gameplay."
+            },
+            {
+                "id": "TASK-069",
+                "title": "Implement session performance metrics and play-time statistics panel",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "createdAt": "2026-03-12T21:24:22.583Z",
+                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
+                "acceptanceCriteria": [
+                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
+                    "Lifetime totals persist across prestige resets",
+                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
+                    "Data loads from existing save structure without migration"
+                ],
+                "source": "strategist",
+                "blockedReason": "Tier 5 infrastructure — statistics/metrics panel is not gameplay."
+            },
+            {
+                "id": "TASK-029",
+                "title": "Implement discovery and secret mechanics from approved TASK-024 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-12T15:17:43.621Z",
+                "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
+                "acceptanceCriteria": [
+                    "At least 5 secrets implemented with working triggers",
+                    "Secret discovery shows distinct visual notification",
+                    "Secrets log panel tracks found secrets",
+                    "At least 2 rare events fire during active play",
+                    "Secrets persist through save and prestige",
+                    "Mobile compatible - no hover required"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T22:46:23.525Z",
+                "testVerdict": "REJECTED",
+                "blockedReason": "Depends on TASK-122 (prestige secrets persistence fix). Complete TASK-122 first, then unblock this task."
+            },
+            {
+                "id": "TASK-049",
+                "title": "Implement statistics and lifetime tracking panel",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
+                "acceptanceCriteria": [
+                    "Stats panel accessible from main UI showing lifetime totals",
+                    "Tracks: total resources earned, total prestiges, total time played, highest population",
+                    "Stats persist across prestige resets",
+                    "Stats panel renders cleanly on mobile viewport",
+                    "Current run stats shown alongside lifetime stats"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T17:51:26.383Z",
+                "staleCount": 0,
+                "blockedReason": "Tier 5 infrastructure — statistics panel is not gameplay. Deprioritized per priority stack."
+            },
+            {
+                "id": "TASK-064",
+                "title": "Add particle effects on prestige reset and milestone unlock",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Visuals weakest axis. Key moments need VFX. Lightweight canvas/CSS particle bursts: confetti on milestone, radiant pulse on prestige reset. Pool 20-30 particles, auto-cleanup 1.5s. Respect prefers-reduced-motion.",
+                "acceptanceCriteria": [
+                    "Prestige reset triggers particle burst animation",
+                    "Milestone unlock triggers celebration effect",
+                    "Particles clean up within 2s (no leak)",
+                    "Performant on mobile",
+                    "Respects prefers-reduced-motion media query"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-12T19:55:15.499Z",
+                "blockedReason": "Tier 5 visual polish — particle effects are not gameplay mechanics. Deprioritized per priority stack."
+            }
+        ]
     },
     "meta": {
-        "totalCreated": 117,
+        "totalCreated": 118,
         "totalCompleted": 67,
         "pendingQuestion": null
     },
-    "nextId": 122
+    "nextId": 123
 }

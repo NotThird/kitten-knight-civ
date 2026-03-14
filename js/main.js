@@ -466,6 +466,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const prior = structuredClone(state.legacy);
     const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
     const priorEternity = structuredClone(state.eternity ?? { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' });
+    const priorSecretsFound = structuredClone(state.secrets?.found ?? {});
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -479,6 +480,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     fresh.legacy = prior;
     fresh.eternity = priorEternity;
     fresh.research = priorResearch;
+    fresh.secrets.found = priorSecretsFound;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
     fresh.legacy.resets += 1;
