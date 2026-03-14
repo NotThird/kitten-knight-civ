@@ -168,6 +168,13 @@
       "taskId": "TASK-135",
       "action": "completed",
       "notes": "Added always-visible tank legend and zone-based dot color key with dynamic counts."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T13:17:32.058Z",
+      "taskId": "TASK-138",
+      "action": "completed",
+      "notes": "Added significant-gain fly-up variant with larger 1.65s CSS animation while keeping routine tick fly-ups unchanged."
     }
   ]
 }

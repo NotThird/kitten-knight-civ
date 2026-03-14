@@ -1,8 +1,10 @@
 {
   "timestamp": "2026-03-14T13:03:17.942Z",
-  "iteration": 23,
+  "iteration": 25,
   "cronHealth": {
-    "healthy": [
+    "healthy": [],
+    "failing": [],
+    "disabled": [
       "Oracle (Prophet)",
       "ForgeLeader (Orchestrator)",
       "Architect (Designer)",
@@ -12,9 +14,7 @@
       "Watchdog",
       "Sentinel",
       "Strategist (Research & Planning)"
-    ],
-    "failing": [],
-    "disabled": []
+    ]
   },
   "pipelineHealth": {
     "todo": 10,
@@ -23,7 +23,7 @@
     "done": 3,
     "blocked": 5,
     "staleTasks": [],
-    "status": "stalled"
+    "status": "idle"
   },
   "agentActivity": {
     "lastCycleActive": [
@@ -47,6 +47,6 @@
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "phase2-improving"
+    "status": "converged"
   }
 }

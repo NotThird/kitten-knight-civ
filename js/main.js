@@ -1118,6 +1118,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return 'resource-ok';
   }
 
+  function significantFlyupThreshold(key){
+    if (key === 'Food') return 12;
+    if (key === 'Wood') return 8;
+    if (key === 'Science') return 5;
+    if (key === 'Tools') return 2;
+    if (key === 'Jerky') return 2;
+    return 10;
+  }
+
   function updateResourceFlyups(s){
     const nowMs = Date.now();
     const snap = currentResourceSnapshot(s);
@@ -1131,7 +1140,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const delta = cur - prev;
       if (delta > 0.095) {
         const arr = resourceUiFx.popups[key] ?? [];
-        arr.push({ amount: delta, until: nowMs + 1200 });
+        const significant = delta >= significantFlyupThreshold(key);
+        arr.push({ amount: delta, until: nowMs + (significant ? 1700 : 1200), significant });
         if (arr.length > 4) arr.splice(0, arr.length - 4);
         resourceUiFx.popups[key] = arr;
       }
@@ -10046,7 +10056,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       );
       const pulseClass = statPulseClass(k, pulseMetric);
       const flyups = (resourceUiFx.popups?.[k] ?? []);
-      const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
+      const flyupHtml = flyups.map((p, i) => {
+        const sigClass = p?.significant ? ' significant' : '';
+        return `<span class="resource-flyup${sigClass}" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`;
+      }).join('');
       const labelParts = statDisplayParts(k);
       const iconPulseClass = (isResource && flyups.length > 0 && labelParts.icon) ? ' icon-pulse' : '';
       const labelHtml = labelParts.icon

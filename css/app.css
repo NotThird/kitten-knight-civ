@@ -251,6 +251,16 @@
       animation-delay: calc(var(--flyup-index, 0) * 70ms);
     }
 
+    .resource-flyup.significant {
+      font-size: 14px;
+      font-weight: 800;
+      color: #86efac;
+      text-shadow: 0 2px 8px rgba(52,211,153,.45), 0 1px 4px rgba(0,0,0,.65);
+      animation-name: resourceFlyupSignificant;
+      animation-duration: 1.65s;
+      animation-timing-function: cubic-bezier(.16,.84,.19,1);
+    }
+
     /* Discoverability: some stat cards are clickable (inspectors). */
     .stat.inspectable { cursor:pointer; position:relative; border-color: rgba(125,211,252,.20); }
     .stat.inspectable:hover { background: rgba(125,211,252,.06); border-color: rgba(125,211,252,.35); }
@@ -314,6 +324,13 @@
       0% { opacity: 0; transform: translateY(0px) scale(.95); }
       20% { opacity: 1; }
       100% { opacity: 0; transform: translateY(-18px) scale(1); }
+    }
+
+    @keyframes resourceFlyupSignificant {
+      0% { opacity: 0; transform: translateY(0px) scale(.88); }
+      18% { opacity: 1; transform: translateY(-4px) scale(1.12); }
+      55% { opacity: 1; transform: translateY(-14px) scale(1.03); }
+      100% { opacity: 0; transform: translateY(-30px) scale(1); }
     }
 
     .milestone-burst-layer {
