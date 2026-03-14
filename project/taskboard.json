@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T00:49:49.378Z",
+    "lastUpdated": "2026-03-14T00:53:30.184Z",
     "columns": {
         "todo": [
             {
@@ -333,28 +333,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-121",
-                "title": "Implement mini-event variety pack from TASK-117 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-13T22:05:09.406Z",
-                "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
-                "acceptanceCriteria": [
-                    "4 event types spawn with weighted selection and anti-repeat",
-                    "Each event has unique accent color and icon on dark theme",
-                    "Rewards apply correctly including training buff and production boost",
-                    "Boost stacking capped at 2.2x with duration extension rules",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T00:46:26.405Z",
-                "completedAt": "2026-03-14T00:49:49.378Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -780,13 +759,35 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T00:22:48.825Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-121",
+                "title": "Implement mini-event variety pack from TASK-117 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T22:05:09.406Z",
+                "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
+                "acceptanceCriteria": [
+                    "4 event types spawn with weighted selection and anti-repeat",
+                    "Each event has unique accent color and icon on dark theme",
+                    "Rewards apply correctly including training buff and production boost",
+                    "Boost stacking capped at 2.2x with duration extension rules",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T00:46:26.405Z",
+                "completedAt": "2026-03-14T00:49:49.378Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T00:53:30.184Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 117,
-        "totalCompleted": 66,
+        "totalCompleted": 67,
         "pendingQuestion": null
     },
     "nextId": 122
