@@ -1,29 +1,29 @@
 {
-  "timestamp": "2026-03-14T14:00:00.000Z",
-  "iteration": 25,
+  "timestamp": "2026-03-14T12:33:11.863Z",
+  "iteration": 23,
   "cronHealth": {
-    "healthy": [],
+    "healthy": [
+      "Oracle (Prophet)",
+      "ForgeLeader (Orchestrator)",
+      "Architect (Designer)",
+      "CodeSmith (Developer)",
+      "Gauntlet (Tester)",
+      "Arbiter (Critic)",
+      "Watchdog",
+      "Sentinel",
+      "Strategist (Research & Planning)"
+    ],
     "failing": [],
-    "disabled": [
-      "Forge: Oracle (Prophet)",
-      "Forge: ForgeLeader (Orchestrator)",
-      "Forge: Architect (Designer)",
-      "Forge: CodeSmith (Developer)",
-      "Forge: Gauntlet (Tester)",
-      "Forge: Arbiter (Critic)",
-      "Forge: Watchdog",
-      "Forge: Sentinel",
-      "Forge: Strategist (Research & Planning)"
-    ]
+    "disabled": []
   },
   "pipelineHealth": {
     "todo": 12,
     "claimed": 0,
-    "review": 1,
-    "done": 1,
+    "review": 2,
+    "done": 2,
     "blocked": 5,
-    "staleTasks": ["TASK-057 (rejected, duplicates TASK-139)", "TASK-095 (rejected, needs rework)", "TASK-123 (rejected, needs rework)"],
-    "status": "idle"
+    "staleTasks": [],
+    "status": "stalled"
   },
   "agentActivity": {
     "lastCycleActive": [
@@ -31,22 +31,24 @@
     ],
     "lastCycleSilent": [
       "oracle",
-      "leader",
       "architect",
       "tester",
-      "critic",
-      "watchdog",
+      "arbiter",
       "sentinel",
-      "strategist"
+      "strategist",
+      "leader",
+      "watchdog"
     ],
     "errors": []
   },
   "convergence": {
     "currentScore": 9.2,
-    "threshold": 9.0,
+    "threshold": 9,
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "shipped"
+    "status": "phase2-improving",
+    "axisFlags": [],
+    "trend": 0.1999999999999993
   }
 }
