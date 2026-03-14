@@ -209,6 +209,23 @@ export function migrateState(s, {
   s.eternity.upgrades.et_civil_codex = Math.max(0, Math.min(1, Math.floor(Number(s.eternity.upgrades.et_civil_codex ?? 0) || 0)));
   s.eternity.upgrades.et_epoch_engine = Math.max(0, Math.min(3, Math.floor(Number(s.eternity.upgrades.et_epoch_engine ?? 0) || 0)));
 
+  // Constellation mastery migration (TASK-095)
+  s.mastery = (s.mastery && typeof s.mastery === 'object') ? s.mastery : {};
+  s.mastery.unlocked = !!s.mastery.unlocked;
+  s.mastery.completed = (s.mastery.completed && typeof s.mastery.completed === 'object') ? s.mastery.completed : {};
+  s.mastery.choices = (s.mastery.choices && typeof s.mastery.choices === 'object') ? s.mastery.choices : {};
+  s.mastery.bonuses = (s.mastery.bonuses && typeof s.mastery.bonuses === 'object') ? s.mastery.bonuses : {};
+  for (const id of ['shard_hoarder', 'cycle_keeper', 'scholar_house']) {
+    s.mastery.completed[id] = !!s.mastery.completed[id];
+    const choice = String(s.mastery.choices[id] ?? '');
+    s.mastery.choices[id] = (choice === 'A' || choice === 'B') ? choice : '';
+  }
+  s.mastery.bonuses.legacyGainMul = Math.max(1, Number(s.mastery.bonuses.legacyGainMul ?? 1) || 1);
+  s.mastery.bonuses.legacyFlatBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.legacyFlatBonus ?? 0) || 0));
+  s.mastery.bonuses.eternityGainMul = Math.max(1, Number(s.mastery.bonuses.eternityGainMul ?? 1) || 1);
+  s.mastery.bonuses.researchMul = Math.max(1, Number(s.mastery.bonuses.researchMul ?? 1) || 1);
+  s.mastery.bonuses.resetScienceBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.resetScienceBonus ?? 0) || 0));
+
   // Research tree migration (TASK-065)
   s.research = (s.research && typeof s.research === 'object') ? s.research : { unlocked:{}, activeBranch:'economy', doctrine:null };
   s.research.unlocked = (s.research.unlocked && typeof s.research.unlocked === 'object') ? s.research.unlocked : {};

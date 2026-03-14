@@ -2,27 +2,9 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T09:22:53.535Z",
+    "lastUpdated": "2026-03-14T09:50:30.446Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-095",
-                "title": "Implement Constellation endgame goals from approved TASK-093 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T18:35:25.869Z",
-                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.",
-                "acceptanceCriteria": [
-                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
-                    "Progress bars update deterministically each tick",
-                    "Completing a goal shows A/B reward choice buttons",
-                    "Chosen rewards apply correct multipliers and bonuses",
-                    "Old saves without state.mastery load without errors",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
             {
                 "id": "TASK-111",
                 "title": "Implement idle-away comeback multiplier from TASK-104 design",
@@ -261,6 +243,27 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-095",
+                "title": "Implement Constellation endgame goals from approved TASK-093 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T18:35:25.869Z",
+                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.",
+                "acceptanceCriteria": [
+                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
+                    "Progress bars update deterministically each tick",
+                    "Completing a goal shows A/B reward choice buttons",
+                    "Chosen rewards apply correct multipliers and bonuses",
+                    "Old saves without state.mastery load without errors",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T09:46:29.349Z",
+                "completedAt": "2026-03-14T09:50:30.446Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [

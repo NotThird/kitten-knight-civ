@@ -426,8 +426,10 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
   }
 
   function legacyResearchMul(s){
+    ensureMasteryState(s);
     const base = legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
-    return base * researchScienceMul(s) * eternityMandateMul(s, 'research');
+    const masteryMul = Math.max(1, Number(s?.mastery?.bonuses?.researchMul ?? 1));
+    return base * researchScienceMul(s) * eternityMandateMul(s, 'research') * masteryMul;
   }
 
   function legacyGuardOutputMul(s){
@@ -467,6 +469,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const prior = structuredClone(state.legacy);
     const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
     const priorEternity = structuredClone(state.eternity ?? { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' });
+    const priorMastery = structuredClone(state.mastery ?? {});
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -479,6 +482,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.legacy = prior;
     fresh.eternity = priorEternity;
+    fresh.mastery = priorMastery;
     fresh.research = priorResearch;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
@@ -487,6 +491,8 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     if (legacyHas(fresh, 'lore_scribes')) {
       keep.science += 25;
     }
+    ensureMasteryState(fresh);
+    keep.science += Math.max(0, Number(fresh.mastery.bonuses.resetScienceBonus ?? 0));
 
     fresh.res.food += keep.food;
     fresh.res.wood += keep.wood;
@@ -497,6 +503,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     ensureMilestonesState(state);
     ensureLegacyState(state);
     ensureEternityState(state);
+    ensureMasteryState(state);
     ensureResearchState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
@@ -555,6 +562,64 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     }
   }
 
+  function ensureMasteryState(s){
+    s.mastery = (s.mastery && typeof s.mastery === 'object') ? s.mastery : {};
+    s.mastery.unlocked = !!s.mastery.unlocked;
+    s.mastery.completed = (s.mastery.completed && typeof s.mastery.completed === 'object') ? s.mastery.completed : {};
+    s.mastery.choices = (s.mastery.choices && typeof s.mastery.choices === 'object') ? s.mastery.choices : {};
+    s.mastery.bonuses = (s.mastery.bonuses && typeof s.mastery.bonuses === 'object') ? s.mastery.bonuses : {};
+    for (const id of ['shard_hoarder', 'cycle_keeper', 'scholar_house']) {
+      s.mastery.completed[id] = !!s.mastery.completed[id];
+      const choice = String(s.mastery.choices[id] ?? '');
+      s.mastery.choices[id] = (choice === 'A' || choice === 'B') ? choice : '';
+    }
+    s.mastery.bonuses.legacyGainMul = Math.max(1, Number(s.mastery.bonuses.legacyGainMul ?? 1) || 1);
+    s.mastery.bonuses.legacyFlatBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.legacyFlatBonus ?? 0) || 0));
+    s.mastery.bonuses.eternityGainMul = Math.max(1, Number(s.mastery.bonuses.eternityGainMul ?? 1) || 1);
+    s.mastery.bonuses.researchMul = Math.max(1, Number(s.mastery.bonuses.researchMul ?? 1) || 1);
+    s.mastery.bonuses.resetScienceBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.resetScienceBonus ?? 0) || 0));
+  }
+
+  function masteryGoalDefs(){
+    return [
+      { id:'shard_hoarder', name:'Shard Hoarder', cur: Math.max(0, Number(state?.legacy?.totalShards ?? 0)), req:120, rewardA:'+15% Legacy shard gains', rewardB:'+1 flat shard per Legacy reset' },
+      { id:'cycle_keeper', name:'Cycle Keeper', cur: Math.max(0, Number(state?.eternity?.resets ?? 0)), req:6, rewardA:'+15% Sigils per Eternity reset', rewardB:'+20 science on each prestige reset' },
+      { id:'scholar_house', name:'Scholar House', cur: Object.values(state?.research?.unlocked ?? {}).filter(Boolean).length, req:12, rewardA:'+10% research output', rewardB:'+20 science on each prestige reset' },
+    ];
+  }
+
+  function masteryVisible(s){
+    return Math.max(0, Number(s?.eternity?.resets ?? 0)) >= 2;
+  }
+
+  function applyMasteryChoice(goalId, choice){
+    ensureMasteryState(state);
+    const pick = String(choice ?? '');
+    if (pick !== 'A' && pick !== 'B') return;
+    if (state.mastery.choices[goalId]) return;
+    const defs = masteryGoalDefs();
+    const goal = defs.find(g => g.id === goalId);
+    if (!goal) return;
+    if (goal.cur < goal.req) return;
+    state.mastery.completed[goalId] = true;
+    state.mastery.choices[goalId] = pick;
+    if (goalId === 'shard_hoarder') {
+      if (pick === 'A') state.mastery.bonuses.legacyGainMul = Math.max(1, Number(state.mastery.bonuses.legacyGainMul ?? 1) * 1.15);
+      if (pick === 'B') state.mastery.bonuses.legacyFlatBonus = Math.max(0, Number(state.mastery.bonuses.legacyFlatBonus ?? 0)) + 1;
+    }
+    if (goalId === 'cycle_keeper') {
+      if (pick === 'A') state.mastery.bonuses.eternityGainMul = Math.max(1, Number(state.mastery.bonuses.eternityGainMul ?? 1) * 1.15);
+      if (pick === 'B') state.mastery.bonuses.resetScienceBonus = Math.max(0, Number(state.mastery.bonuses.resetScienceBonus ?? 0)) + 20;
+    }
+    if (goalId === 'scholar_house') {
+      if (pick === 'A') state.mastery.bonuses.researchMul = Math.max(1, Number(state.mastery.bonuses.researchMul ?? 1) * 1.10);
+      if (pick === 'B') state.mastery.bonuses.resetScienceBonus = Math.max(0, Number(state.mastery.bonuses.resetScienceBonus ?? 0)) + 20;
+    }
+    log(`Constellation reward claimed: ${goal.name} [${pick}].`);
+    save();
+    render();
+  }
+
   function eternityUpgradeRank(s, id){
     ensureEternityState(s);
     const cfg = ETERNITY_UPGRADES.find(u => u.id === id);
@@ -601,6 +666,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
   }
 
   function computeEternitySigilGain(s){
+    ensureMasteryState(s);
     const gate = eternityGateStatus(s);
     if (!gate.ok) return 0;
     const resets = Math.max(0, Number(s.legacy?.resets ?? 0));
@@ -608,11 +674,12 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const techs = Object.values(s.research?.unlocked ?? {}).filter(Boolean).length;
     const epochRank = eternityUpgradeRank(s, 'et_epoch_engine');
     const base = Math.floor(Math.sqrt(shards) / 3 + resets * 0.6 + techs * 0.35);
-    const mul = 1 + (0.08 * epochRank);
+    const mul = (1 + (0.08 * epochRank)) * Math.max(1, Number(s?.mastery?.bonuses?.eternityGainMul ?? 1));
     return Math.max(0, Math.floor(base * mul));
   }
 
   function computeLegacyShardGain(s){
+    ensureMasteryState(s);
     const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
     const sci = Math.max(0, Number(s?.res?.science ?? 0));
     const builds = Math.max(0,
@@ -624,8 +691,10 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     );
     const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
     const etMul = eternityHas(s, 'et_sigil_lens') ? 1.12 : 1.00;
-    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s) * etMul);
-    return Math.max(0, gained + legacyWarLedgerBonus(s));
+    const masteryMul = Math.max(1, Number(s?.mastery?.bonuses?.legacyGainMul ?? 1));
+    const masteryFlat = Math.max(0, Number(s?.mastery?.bonuses?.legacyFlatBonus ?? 0));
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s) * etMul * masteryMul);
+    return Math.max(0, gained + legacyWarLedgerBonus(s) + masteryFlat);
   }
 
   function performEternityReset(){
@@ -637,6 +706,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     if (!gate.ok || gain <= 0) return { ok:false, reason:'locked' };
 
     const priorEt = structuredClone(state.eternity);
+    const priorMastery = structuredClone(state.mastery ?? {});
     const pkg = PRESERVATION_PACKAGES.find(p => p.id === priorEt.preserve) ?? PRESERVATION_PACKAGES[0];
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * pkg.keep.food),
@@ -648,9 +718,12 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.eternity = priorEt;
+    fresh.mastery = priorMastery;
     fresh.eternity.sigils += gain;
     fresh.eternity.totalSigils += gain;
     fresh.eternity.resets += 1;
+    ensureMasteryState(fresh);
+    keep.science += Math.max(0, Number(fresh.mastery.bonuses.resetScienceBonus ?? 0));
     fresh.res.food += keep.food;
     fresh.res.wood += keep.wood;
     fresh.res.science += keep.science;
@@ -661,6 +734,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     ensureLegacyState(state);
     ensureResearchState(state);
     ensureEternityState(state);
+    ensureMasteryState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
     save();
@@ -2422,6 +2496,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
   ensureMilestonesState(state);
   ensureLegacyState(state);
   ensureEternityState(state);
+  ensureMasteryState(state);
   ensureResearchState(state);
   ensureAudioState(state);
   ensureActivePlayState(state);
@@ -10198,19 +10273,34 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
       `Raid at threat ≥ 100.` + planLine;
 
     // Goals that actually matter
-    const goals = [
-      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
-      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
-      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
-      { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
-      { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
-      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
-      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
-      { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
-      { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
-      { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
-    ];
-    goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
+    ensureMasteryState(state);
+    if (masteryVisible(state)) {
+      state.mastery.unlocked = true;
+      const cards = masteryGoalDefs().map((g) => {
+        const pct = Math.max(0, Math.min(1, (g.req > 0 ? g.cur / g.req : 0)));
+        const done = pct >= 1;
+        const picked = String(state.mastery.choices[g.id] ?? '');
+        const rewardRow = done && !picked
+          ? `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-mastery-choice="${g.id}:A">A ${escapeHtml(g.rewardA)}</button><button class="btn" data-mastery-choice="${g.id}:B">B ${escapeHtml(g.rewardB)}</button></div>`
+          : `<div class="small" style="margin-top:6px; opacity:.85">${picked ? `Reward chosen: ${picked}` : `Rewards: A ${g.rewardA} | B ${g.rewardB}`}</div>`;
+        return `<div class="tier-secondary-block" style="padding:8px; border-radius:10px; margin-bottom:8px"><div class="small"><b>${escapeHtml(g.name)}</b> ${done ? '<span class="tag good">Complete</span>' : ''}</div><div class="small" style="margin-top:4px">${fmt(g.cur)} / ${fmt(g.req)}</div><div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>${rewardRow}</div>`;
+      }).join('');
+      goalsEl.innerHTML = `<div class="small" style="margin-bottom:6px">Constellation Mastery</div>${cards}`;
+    } else {
+      const goals = [
+        { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
+        { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
+        { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
+        { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
+        { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
+        { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
+        { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
+        { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
+        { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
+        { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
+      ];
+      goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
+    }
 
     renderAdvisor(state, targets);
     renderGovLog(state);
@@ -12303,6 +12393,15 @@ function renderTrends(){
     log(`Reserves set to recommended (${String(rr?.season?.name ?? '')}): food≥${rr.food}, wood≥${rr.wood}, science≥${rr.science}, tools≥${rr.tools}`);
     save();
     render();
+  });
+
+  const goalsPanel = document.getElementById('goals');
+  if (goalsPanel) goalsPanel.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mastery-choice]');
+    if (!btn) return;
+    const raw = String(btn.dataset.masteryChoice || '');
+    const [goalId, pick] = raw.split(':');
+    applyMasteryChoice(goalId, pick);
   });
 
   const legacyPanel = document.getElementById('legacyPanel');

@@ -119,6 +119,13 @@
       "taskId": "TASK-057",
       "action": "completed",
       "notes": "Implemented welcome-back summary screen with ranked offline gains breakdown and streak summary."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T09:50:36.815Z",
+      "taskId": "TASK-095",
+      "action": "completed",
+      "notes": "Implemented first Constellation mastery slice: 3 goal cards, deterministic progress bars, A/B reward choices, persistent bonus hooks."
     }
   ]
 }
