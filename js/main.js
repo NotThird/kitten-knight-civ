@@ -1101,6 +1101,66 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
   }
 
+  const sessionMilestoneDefs = [
+    { id:'session-5m', sec:5 * 60, title:'Settling In', desc:'Session milestone: +35 food, +20 wood.', tier:'spark', reward:{ food:35, wood:20 } },
+    { id:'session-15m', sec:15 * 60, title:'Steady Rhythm', desc:'Session milestone: +70 food, +40 wood, +18 science.', tier:'surge', reward:{ food:70, wood:40, science:18 } },
+    { id:'session-30m', sec:30 * 60, title:'Colony Momentum', desc:'Session milestone: +130 food, +80 wood, +40 science, +18 tools.', tier:'saga', reward:{ food:130, wood:80, science:40, tools:18 } },
+    { id:'session-60m', sec:60 * 60, title:'Unbroken Watch', desc:'Session milestone: +240 food, +160 wood, +95 science, +42 tools.', tier:'mythic', reward:{ food:240, wood:160, science:95, tools:42 } },
+  ];
+
+  function ensureSessionMilestonesState(s){
+    const nowT = Number(s?.t ?? 0) || 0;
+    s._sessionMilestones = (s._sessionMilestones && typeof s._sessionMilestones === 'object') ? s._sessionMilestones : {};
+    if (!Number.isFinite(Number(s._sessionMilestones.startedAt ?? NaN))) s._sessionMilestones.startedAt = nowT;
+    s._sessionMilestones.unlocked = (s._sessionMilestones.unlocked && typeof s._sessionMilestones.unlocked === 'object') ? s._sessionMilestones.unlocked : {};
+    s._sessionMilestones.elapsedSec = Math.max(0, nowT - Number(s._sessionMilestones.startedAt ?? nowT));
+  }
+
+  function applySessionMilestoneReward(s, reward){
+    const r = (reward && typeof reward === 'object') ? reward : {};
+    for (const key of ['food','wood','science','tools']) {
+      const add = Math.max(0, Number(r[key] ?? 0) || 0);
+      if (add <= 0) continue;
+      s.res[key] = Math.max(0, Number(s?.res?.[key] ?? 0) + add);
+    }
+  }
+
+  function unlockSessionMilestone(s, def){
+    ensureSessionMilestonesState(s);
+    const id = String(def?.id ?? '');
+    if (!id || s._sessionMilestones.unlocked[id]) return false;
+
+    s._sessionMilestones.unlocked[id] = Number(s?.t ?? 0) || 0;
+    applySessionMilestoneReward(s, def?.reward);
+
+    const title = String(def?.title ?? 'Session Milestone');
+    const desc = String(def?.desc ?? '');
+    feed(`${title}: ${desc}`);
+    playSfx('milestone');
+
+    const nowMs = Date.now();
+    milestoneUiFx.active.push({
+      id,
+      title,
+      desc,
+      tier: String(def?.tier ?? 'spark'),
+      until: nowMs + milestoneDurationMsForTier(String(def?.tier ?? 'spark')),
+    });
+    if (milestoneUiFx.active.length > 4) milestoneUiFx.active.splice(0, milestoneUiFx.active.length - 4);
+
+    return true;
+  }
+
+  function tickSessionMilestones(s){
+    ensureSessionMilestonesState(s);
+    const elapsedSec = Number(s?._sessionMilestones?.elapsedSec ?? 0) || 0;
+
+    for (const def of sessionMilestoneDefs) {
+      if (s._sessionMilestones.unlocked?.[def.id]) continue;
+      if (elapsedSec >= Number(def?.sec ?? Infinity)) unlockSessionMilestone(s, def);
+    }
+  }
+
   function ensureMilestoneLayer(){
     if (milestoneUiFx.layer && document.body.contains(milestoneUiFx.layer)) return milestoneUiFx.layer;
     const d = document.createElement('div');
@@ -6564,6 +6624,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
+    tickSessionMilestones(state);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;

@@ -42,6 +42,7 @@ export function saveGame(state, { GAME_VERSION, SAVE_KEY } = {}) {
   delete s._coterieRepFx;
   delete s._projRate;
   delete s._prevProj;
+  delete s._sessionMilestones;
 
   // Strip transient UI/debug keys (avoid save bloat)
   if (Array.isArray(s.kittens)) {
