@@ -10751,6 +10751,20 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const decLabel = (displayKind === 'rule') ? 'RULE' : (displayKind === 'emergency') ? 'EMERG' : (displayKind === 'commit') ? 'COMMIT' : '';
         const blockedFresh = !!displayFallback;
 
+        // Trait effect indicator: show when current task aligns (boost) or conflicts (penalty vibe) with trait bias.
+        const taskForTrait = String(displayTask || '');
+        const hasTraitBias = traits.some((id) => {
+          const def = TRAIT_DEFS.find(t => t.id === id);
+          return !!def?.bias && Object.keys(def.bias).length > 0;
+        });
+        const traitBoostActive = traits.some((id) => {
+          const def = TRAIT_DEFS.find(t => t.id === id);
+          return Number(def?.bias?.[taskForTrait] ?? 0) > 0;
+        });
+        const traitPenaltyActive = hasTraitBias && !traitBoostActive && !!taskForTrait;
+        const traitFxClass = traitBoostActive ? ' is-positive' : (traitPenaltyActive ? ' is-negative' : '');
+        const traitFxLabel = traitBoostActive ? 'Trait boost active' : (traitPenaltyActive ? 'Trait mismatch active' : '');
+
         // Task display
         let taskText = escapeHtml(displayTask);
         if (k._mentor && displayTask === 'Mentor') taskText += ` → #${k._mentor.id}`;
@@ -10789,7 +10803,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
         const cardHTML = `
           <div class="kc-header">
-            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span></span>
+            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span>${traitFxClass ? ` <span class="kc-trait-fx${traitFxClass}" title="${traitFxLabel}"></span>` : ''}</span>
             <span class="kc-role">${escapeHtml(k.role ?? '-')}</span>
           </div>
           <div class="kc-task${blockedFresh ? ' blocked' : ''}">

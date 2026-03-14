@@ -147,6 +147,13 @@
       "taskId": "TASK-137",
       "action": "completed",
       "notes": "Tightened desktop card/layout spacing and reduced orphan whitespace via CSS compaction."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T11:48:20.774Z",
+      "taskId": "TASK-123",
+      "action": "completed",
+      "notes": "Added real-time trait effect indicators (green boost / amber mismatch) to kitten cards."
     }
   ]
 }

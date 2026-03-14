@@ -517,6 +517,12 @@
 .kc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
 .kc-name   { font-size:13px; font-weight:700; color:var(--text); }
 .kc-role   { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+.kc-trait-fx {
+  display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:6px;
+  vertical-align:middle; box-shadow:0 0 0 1px rgba(255,255,255,.15) inset;
+}
+.kc-trait-fx.is-positive { background:#34d399; box-shadow:0 0 0 1px rgba(16,185,129,.25) inset, 0 0 8px rgba(52,211,153,.45); }
+.kc-trait-fx.is-negative { background:#fbbf24; box-shadow:0 0 0 1px rgba(245,158,11,.2) inset, 0 0 8px rgba(251,191,36,.35); }
 
 .kc-task       { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
 .kc-task-label { font-size:12px; font-weight:600; color:var(--accent); }
