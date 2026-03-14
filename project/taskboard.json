@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T00:19:52.815Z",
+    "lastUpdated": "2026-03-14T00:22:48.825Z",
     "columns": {
         "todo": [
             {
@@ -350,30 +350,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-118",
-                "title": "Implement kitten trait mechanics from TASK-091",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-13T21:05:30.454Z",
-                "description": "Implement kitten trait mechanical effects per TASK-091 design. Each of the 6 traits (Brave, Curious, Lazy, Greedy, Gentle, Stubborn) needs production/combat/social modifiers applied in sim.js. Traits should surface in the decision log (e.g. Brave Whiskers volunteers for Guard). Reference TASK-091 output in agents/designer/output/ for exact multiplier values. Key: no trait should be strictly better than another — every trait has tradeoffs.",
-                "acceptanceCriteria": [
-                    "Each of the 6 traits applies at least 2 mechanical effects (production modifier + behavior bias)",
-                    "Trait effects are visible in colony AI decision log messages (trait-flavored text)",
-                    "No single trait is strictly dominant — each has a downside or tradeoff",
-                    "Combined trait multipliers are capped at 1.45x per resource",
-                    "Traits influence task assignment probability in ai.js (e.g. Brave kittens prefer Guard)",
-                    "parse_check and replay_test pass with trait mechanics active",
-                    "Progressive reveal: trait effects only show after player has 4+ kittens"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T00:16:19.422Z",
-                "completedAt": "2026-03-14T00:19:52.815Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -775,13 +752,37 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T23:53:00.437Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-118",
+                "title": "Implement kitten trait mechanics from TASK-091",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:05:30.454Z",
+                "description": "Implement kitten trait mechanical effects per TASK-091 design. Each of the 6 traits (Brave, Curious, Lazy, Greedy, Gentle, Stubborn) needs production/combat/social modifiers applied in sim.js. Traits should surface in the decision log (e.g. Brave Whiskers volunteers for Guard). Reference TASK-091 output in agents/designer/output/ for exact multiplier values. Key: no trait should be strictly better than another — every trait has tradeoffs.",
+                "acceptanceCriteria": [
+                    "Each of the 6 traits applies at least 2 mechanical effects (production modifier + behavior bias)",
+                    "Trait effects are visible in colony AI decision log messages (trait-flavored text)",
+                    "No single trait is strictly dominant — each has a downside or tradeoff",
+                    "Combined trait multipliers are capped at 1.45x per resource",
+                    "Traits influence task assignment probability in ai.js (e.g. Brave kittens prefer Guard)",
+                    "parse_check and replay_test pass with trait mechanics active",
+                    "Progressive reveal: trait effects only show after player has 4+ kittens"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T00:16:19.422Z",
+                "completedAt": "2026-03-14T00:19:52.815Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T00:22:48.825Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 117,
-        "totalCompleted": 65,
+        "totalCompleted": 66,
         "pendingQuestion": null
     },
     "nextId": 122
