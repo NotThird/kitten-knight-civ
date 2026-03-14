@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T10:49:25.820Z",
+    "lastUpdated": "2026-03-14T10:58:39.172Z",
     "columns": {
         "todo": [
             {
@@ -197,6 +197,20 @@
                 "source": "orchestrator",
                 "claimedAt": "2026-03-14T09:46:29.349Z",
                 "testVerdict": "REJECTED"
+            },
+            {
+                "id": "TASK-142",
+                "title": "Fix UTF-8 encoding artifacts in content.js",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "bug",
+                "createdAt": "2026-03-14T10:58:39.172Z",
+                "description": "content.js has BOM/encoding mojibake visible in Patch Notes modal. Curly quotes render as garbled text, arrows as corrupted chars. Fix: re-save as UTF-8 without BOM, replace corrupted characters with ASCII equivalents.",
+                "acceptanceCriteria": [
+                    "All patch note strings render correctly in-browser",
+                    "No mojibake artifacts in PATCH_HISTORY entries"
+                ],
+                "source": "critic"
             }
         ],
         "claimed": [],
@@ -220,26 +234,6 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-114",
-                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:35:44.034Z",
-                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. Stability axis at 8.5 — this directly addresses the convergence gap.",
-                "acceptanceCriteria": [
-                    "Auto-save fires every 60s writing to rotating backup slots",
-                    "Dirty flag set on save start cleared on clean unload",
-                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
-                    "Total localStorage usage stays under 5MB",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T10:46:23.617Z",
-                "completedAt": "2026-03-14T10:49:25.820Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1069,6 +1063,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T10:22:50.540Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-114",
+                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:35:44.034Z",
+                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. Stability axis at 8.5 — this directly addresses the convergence gap.",
+                "acceptanceCriteria": [
+                    "Auto-save fires every 60s writing to rotating backup slots",
+                    "Dirty flag set on save start cleared on clean unload",
+                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
+                    "Total localStorage usage stays under 5MB",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T10:46:23.617Z",
+                "completedAt": "2026-03-14T10:49:25.820Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T10:52:59.244Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1164,9 +1180,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 135,
-        "totalCompleted": 84,
+        "totalCreated": 136,
+        "totalCompleted": 85,
         "pendingQuestion": null
     },
-    "nextId": 142
+    "nextId": 143
 }
