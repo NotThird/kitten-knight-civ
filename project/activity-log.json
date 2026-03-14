@@ -161,6 +161,13 @@
       "taskId": "TASK-129",
       "action": "completed",
       "notes": "Added emoji kitten avatars in colony tank and themed kitten/knight stat icons."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T12:49:02.164Z",
+      "taskId": "TASK-135",
+      "action": "completed",
+      "notes": "Added always-visible tank legend and zone-based dot color key with dynamic counts."
     }
   ]
 }

@@ -6870,6 +6870,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
+  const tankLegendEl = el('tankLegend');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendTabRailEl = el('trendTabRail');
   const trendTabButtons = Array.from(document.querySelectorAll('[data-trend-tab]'));
@@ -10915,6 +10916,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Canvas HUDs
     renderTank();
+    renderTankLegend();
     renderTrends();
     syncGraphDashboardUI();
     if (state.director.graphTab === 'population') renderPopTrends();
@@ -10946,6 +10948,41 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return Math.max(10, Math.floor(cost));
   }
 
+  function tankZoneForTask(task){
+    const t = String(task || '');
+    if (t === 'StokeFire' || t === 'Eat' || t === 'Rest' || t === 'Care' || t === 'Socialize') return 'Hearth';
+    if (t === 'Forage' || t === 'ChopWood' || t === 'Guard') return 'Forest';
+    if (t === 'Farm') return 'Fields';
+    if (t === 'Research' || t === 'Mentor') return 'Study';
+    if (t.startsWith('Build') || t === 'CraftTools' || t === 'PreserveFood') return 'Stock';
+    return 'Hearth';
+  }
+
+  function renderTankLegend(){
+    if (!tankLegendEl) return;
+    const legendDefs = [
+      { id:'Hearth', label:'Hearth', dotColor:'rgba(251,191,36,.98)' },
+      { id:'Stock', label:'Stock', dotColor:'rgba(125,211,252,.98)' },
+      { id:'Forest', label:'Forest', dotColor:'rgba(52,211,153,.98)' },
+      { id:'Fields', label:'Fields', dotColor:'rgba(34,211,238,.98)' },
+      { id:'Study', label:'Study', dotColor:'rgba(167,139,250,.98)' },
+    ];
+
+    const counts = Object.create(null);
+    for (const d of legendDefs) counts[d.id] = 0;
+    for (const k of (state.kittens ?? [])) {
+      const zoneId = tankZoneForTask(k?._fallbackTo || k?.task);
+      counts[zoneId] = (Number(counts[zoneId] ?? 0) || 0) + 1;
+    }
+
+    const active = legendDefs.filter(d => Number(counts[d.id] ?? 0) > 0);
+    const rows = (active.length ? active : legendDefs).map(d => {
+      const n = Number(counts[d.id] ?? 0) || 0;
+      return `<span class="tank-legend-item" title="${escapeHtml(d.label)} zone"><span class="tank-legend-swatch" style="background:${d.dotColor}"></span><span class="tank-legend-zone">${escapeHtml(d.label)}</span><span class="small">${n}</span></span>`;
+    });
+    tankLegendEl.innerHTML = rows.join('');
+  }
+
   function renderTank(){
     if (!tankEl) return;
     const ctx = tankEl.getContext('2d');
@@ -10959,11 +10996,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Zones (no pathing): kittens snap to task zones so it feels like an aquarium.
     const zones = [
-      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)' },
-      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)' },
-      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)' },
-      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)' },
-      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)' },
+      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)', dotColor:'rgba(251,191,36,.98)' },
+      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)', dotColor:'rgba(125,211,252,.98)' },
+      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)', dotColor:'rgba(52,211,153,.98)' },
+      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)', dotColor:'rgba(34,211,238,.98)' },
+      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)', dotColor:'rgba(167,139,250,.98)' },
     ];
 
     ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
@@ -10978,16 +11015,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ctx.fillStyle = 'rgba(148,163,184,.95)';
       ctx.fillText(z.id, z.x + 6, z.y + 6);
     }
-
-    const taskZone = (task) => {
-      const t = String(task || '');
-      if (t === 'StokeFire' || t === 'Eat' || t === 'Rest' || t === 'Care' || t === 'Socialize') return 'Hearth';
-      if (t === 'Forage' || t === 'ChopWood' || t === 'Guard') return 'Forest';
-      if (t === 'Farm') return 'Fields';
-      if (t === 'Research' || t === 'Mentor') return 'Study';
-      if (t.startsWith('Build') || t === 'CraftTools' || t === 'PreserveFood') return 'Stock';
-      return 'Hearth';
-    };
 
     // Place kittens as dots in their zone.
     // Visual throttle: hold rendered zone for a short window so dots don't thrash/flicker
@@ -11006,7 +11033,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const kid = Number(k?.id ?? 0);
       if (!Number.isFinite(kid) || kid <= 0) continue;
 
-      const rawZone = taskZone(k?._fallbackTo || k?.task);
+      const rawZone = tankZoneForTask(k?._fallbackTo || k?.task);
       const nextZone = zoneSet.has(rawZone) ? rawZone : 'Hearth';
       const nameRaw = String(k?.name ?? '').trim();
       const safeName = nameRaw || `#${kid}`;
@@ -11051,8 +11078,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           ctx.fillText('🐱', px - 6, py - 8);
         }
 
-        // Fallback/anchor: keep a tiny dot under the emoji so low-color-font devices still show kittens.
-        ctx.fillStyle = 'rgba(217,226,239,.92)';
+        // Fallback/anchor: colored dot communicates zone type even if emoji does not render.
+        ctx.fillStyle = z.dotColor || 'rgba(217,226,239,.92)';
         ctx.beginPath();
         ctx.arc(px, py + 2, 2.2, 0, Math.PI*2);
         ctx.fill();

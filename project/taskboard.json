@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T12:23:06.678Z",
+    "lastUpdated": "2026-03-14T12:48:57.853Z",
     "columns": {
         "todo": [
             {
@@ -42,22 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-135",
-                "title": "Add colony tank zone legend and dot color key",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T07:10:14.034Z",
-                "description": "Arbiter notes colony tank has no legend, no zone labels visible by default, and dot colors are unexplained. First-time players see colored dots bouncing with no context. Add a compact always-visible legend showing what each dot color represents and label zones. Tier 2 visual clarity improvement that supports the no-tutorial philosophy: the legend teaches through presence. Reference: Realm Grinder shows faction colors in a sidebar key.",
-                "acceptanceCriteria": [
-                    "Colony tank displays a compact legend showing dot color meanings",
-                    "Zone labels are visible by default, not hover-only",
-                    "Legend does not obscure tank content or add clutter",
-                    "Legend updates dynamically if new dot types appear via progressive reveal"
-                ],
-                "source": "strategist"
             },
             {
                 "id": "TASK-138",
@@ -198,23 +182,6 @@
                 "source": "strategist",
                 "testVerdict": "REJECTED",
                 "reworkNote": "Indicator shows amber even without active negative modifier. Must only indicate when trait IS actively modifying output."
-            },
-            {
-                "id": "TASK-145",
-                "title": "Design kitten personality-driven events and social dynamics",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T12:10:34.312Z",
-                "description": "The 6-trait personality system exists but the colony tank feels underutilized. Rather than just visual polish, deepen what personalities DO. Reference: Dwarf Fortress moods/relationships, Rimworld social dynamics. Design kitten-to-kitten interactions driven by trait compatibility: rivalries, mentorships, alliances. These create emergent mini-narratives in the colony feed. Example: a Brave+Loyal kitten mentors a Timid one, eventually the Timid kitten gains courage. Tier 1 mechanics — makes the colony feel alive with emergent stories.",
-                "acceptanceCriteria": [
-                    "Design doc defines at least 5 trait-driven interaction types (rivalry, mentorship, alliance, etc.)",
-                    "Specifies trait compatibility matrix (which traits attract/repel)",
-                    "Defines how interactions appear in colony feed with narrative text",
-                    "Includes mechanical effects (stat bonuses from mentorship, penalties from rivalry)",
-                    "Interactions emerge organically from proximity in colony tank, not random"
-                ],
-                "source": "strategist"
             }
         ],
         "claimed": [],
@@ -258,6 +225,45 @@
                 "claimedAt": "2026-03-14T12:11:58.237Z",
                 "completedAt": "2026-03-14T12:13:20.232Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-145",
+                "title": "Design kitten personality-driven events and social dynamics",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T12:10:34.312Z",
+                "description": "The 6-trait personality system exists but the colony tank feels underutilized. Rather than just visual polish, deepen what personalities DO. Reference: Dwarf Fortress moods/relationships, Rimworld social dynamics. Design kitten-to-kitten interactions driven by trait compatibility: rivalries, mentorships, alliances. These create emergent mini-narratives in the colony feed. Example: a Brave+Loyal kitten mentors a Timid one, eventually the Timid kitten gains courage. Tier 1 mechanics — makes the colony feel alive with emergent stories.",
+                "acceptanceCriteria": [
+                    "Design doc defines at least 5 trait-driven interaction types (rivalry, mentorship, alliance, etc.)",
+                    "Specifies trait compatibility matrix (which traits attract/repel)",
+                    "Defines how interactions appear in colony feed with narrative text",
+                    "Includes mechanical effects (stat bonuses from mentorship, penalties from rivalry)",
+                    "Interactions emerge organically from proximity in colony tank, not random"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T12:41:56.510Z",
+                "completedAt": "2026-03-14T12:43:42.845Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-135",
+                "title": "Add colony tank zone legend and dot color key",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:10:14.034Z",
+                "description": "Arbiter notes colony tank has no legend, no zone labels visible by default, and dot colors are unexplained. First-time players see colored dots bouncing with no context. Add a compact always-visible legend showing what each dot color represents and label zones. Tier 2 visual clarity improvement that supports the no-tutorial philosophy: the legend teaches through presence. Reference: Realm Grinder shows faction colors in a sidebar key.",
+                "acceptanceCriteria": [
+                    "Colony tank displays a compact legend showing dot color meanings",
+                    "Zone labels are visible by default, not hover-only",
+                    "Legend does not obscure tank content or add clutter",
+                    "Legend updates dynamically if new dot types appear via progressive reveal"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T12:46:20.082Z",
+                "completedAt": "2026-03-14T12:48:57.853Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
