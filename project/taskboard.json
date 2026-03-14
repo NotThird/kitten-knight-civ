@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T23:49:37.980Z",
+    "lastUpdated": "2026-03-13T23:53:00.437Z",
     "columns": {
         "todo": [
             {
@@ -369,28 +369,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-050",
-                "title": "Add contextual tooltip system for resource cards and key UI elements",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-12T18:22:03.998Z",
-                "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
-                "acceptanceCriteria": [
-                    "Tapping a resource card toggles an info row below it showing production sources and consumption",
-                    "Info row shows rate breakdown (e.g. 'Foragers: +2.1/s, Consumption: -0.8/s')",
-                    "Only one info row open at a time (tapping another closes the previous)",
-                    "Info row is styled consistently with dark theme",
-                    "Works on mobile without horizontal scroll"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-13T23:46:19.267Z",
-                "completedAt": "2026-03-13T23:49:37.980Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -770,13 +749,35 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-13T23:22:58.506Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-050",
+                "title": "Add contextual tooltip system for resource cards and key UI elements",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.998Z",
+                "description": "The game must be self-explanatory (Austin directive: no tutorials). Resource cards currently show label + number but no explanation of what drives production or what the resource is used for. Add a tap-to-reveal info panel (not hover tooltip) on each resource card that shows: what produces it, what consumes it, current rate breakdown. This replaces a tutorial by making info discoverable in-context. Reference: Kittens Game has expandable resource detail. Realm Grinder shows production breakdown on click. Mobile-first: tap toggles a small detail row below the card.",
+                "acceptanceCriteria": [
+                    "Tapping a resource card toggles an info row below it showing production sources and consumption",
+                    "Info row shows rate breakdown (e.g. 'Foragers: +2.1/s, Consumption: -0.8/s')",
+                    "Only one info row open at a time (tapping another closes the previous)",
+                    "Info row is styled consistently with dark theme",
+                    "Works on mobile without horizontal scroll"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-13T23:46:19.267Z",
+                "completedAt": "2026-03-13T23:49:37.980Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-13T23:53:00.437Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": []
     },
     "meta": {
         "totalCreated": 117,
-        "totalCompleted": 64,
+        "totalCompleted": 65,
         "pendingQuestion": null
     },
     "nextId": 122
