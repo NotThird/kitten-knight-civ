@@ -638,6 +638,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!gate.ok || gain <= 0) return { ok:false, reason:'locked' };
 
     const priorEt = structuredClone(state.eternity);
+    const priorSecretsFound = structuredClone(state.secrets?.found ?? {});
     const pkg = PRESERVATION_PACKAGES.find(p => p.id === priorEt.preserve) ?? PRESERVATION_PACKAGES[0];
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * pkg.keep.food),
@@ -649,6 +650,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.eternity = priorEt;
+    fresh.secrets.found = priorSecretsFound;
     fresh.eternity.sigils += gain;
     fresh.eternity.totalSigils += gain;
     fresh.eternity.resets += 1;

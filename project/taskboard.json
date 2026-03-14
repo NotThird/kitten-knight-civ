@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T01:23:02.413Z",
+    "lastUpdated": "2026-03-14T01:46:46.367Z",
     "columns": {
         "todo": [
             {
@@ -193,6 +193,42 @@
                 "staleCount": 0
             },
             {
+                "id": "TASK-123",
+                "title": "Add visual indicators for active kitten trait effects",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T01:39:50.738Z",
+                "description": "Critic review notes: traits have real mechanical impact but the UI only shows trait names with a percentage on hover. Add subtle per-kitten visual cues when a trait is actively boosting or penalizing output. A small colored dot or icon next to the kitten name (green for positive trait active, amber for negative). This makes the personality system feel alive and teaches players organically without a tutorial. Tier 2: visual feel.",
+                "acceptanceCriteria": [
+                    "Each kitten displays a visible indicator when their trait is actively modifying output",
+                    "Positive traits show a distinct visual (green dot or arrow-up) vs negative traits (amber dot or arrow-down)",
+                    "Indicators update in real-time as trait effects apply during simulation ticks",
+                    "No performance regression - indicators use CSS only, no heavy JS animation"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-124",
+                "title": "Add prestige reset confirmation dialog with gain summary",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T01:40:03.777Z",
+                "description": "Critic notes prestige is a 'leap of faith' - players hesitate to reset because they cannot see what they gain vs lose. Complements TASK-081 (milestone preview). Add a confirmation dialog when clicking Legacy Reset or Eternity Reset that shows: what you will gain (legacy points, unlocks), what you will lose (resources, buildings), and net benefit. Reference: Antimatter Dimensions shows 'You will gain X IP' prominently. NGU IDLE shows rebirth gains clearly. This directly addresses the #1 engagement gap for mid-to-late game retention per critic review.",
+                "acceptanceCriteria": [
+                    "Legacy Reset button shows a confirmation modal before executing",
+                    "Modal displays: legacy points to gain, lore/military branch bonuses, resources that will reset",
+                    "Eternity Reset shows similar confirmation with eternity-specific gains",
+                    "Player can cancel the reset from the confirmation dialog",
+                    "Confirmation text uses positive framing (what you gain first, then what resets)"
+                ],
+                "source": "strategist"
+            }
+        ],
+        "claimed": [],
+        "review": [
+            {
                 "id": "TASK-122",
                 "title": "Fix prestige reset to preserve secrets.found state",
                 "assignee": "developer",
@@ -206,12 +242,12 @@
                     "No regression in existing prestige rewards"
                 ],
                 "source": "orchestrator",
-                "claimedAt": "2026-03-14T01:16:14.289Z",
-                "testVerdict": "REJECTED"
+                "claimedAt": "2026-03-14T01:46:10.889Z",
+                "testVerdict": "REJECTED",
+                "completedAt": "2026-03-14T01:46:46.367Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
-        "claimed": [],
-        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -812,9 +848,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 118,
+        "totalCreated": 120,
         "totalCompleted": 67,
         "pendingQuestion": null
     },
-    "nextId": 123
+    "nextId": 125
 }
