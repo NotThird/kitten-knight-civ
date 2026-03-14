@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T11:17:55.265Z",
+    "lastUpdated": "2026-03-14T11:22:40.900Z",
     "columns": {
         "todo": [
             {
@@ -235,7 +235,9 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
+            }
+        ],
+        "done": [
             {
                 "id": "TASK-137",
                 "title": "Polish layout gaps: tighten card spacing and remove orphan whitespace",
@@ -253,10 +255,11 @@
                 "source": "orchestrator",
                 "claimedAt": "2026-03-14T11:16:23.694Z",
                 "completedAt": "2026-03-14T11:17:55.265Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T11:22:40.900Z",
+                "testVerdict": "APPROVED"
             }
         ],
-        "done": [],
         "blocked": [
             {
                 "id": "TASK-041",
@@ -351,7 +354,7 @@
     },
     "meta": {
         "totalCreated": 137,
-        "totalCompleted": 85,
+        "totalCompleted": 86,
         "pendingQuestion": null
     },
     "nextId": 144
