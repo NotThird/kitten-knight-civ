@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T11:52:50.465Z",
+    "lastUpdated": "2026-03-14T12:18:00.882Z",
     "columns": {
         "todo": [
             {
@@ -42,22 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-129",
-                "title": "Add emoji-based kitten avatars to colony tank and stat cards",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T04:39:58.615Z",
-                "description": "Visual identity improvement (Arbiter review #3). The game has deep mechanics but looks like a monitoring dashboard. Adding simple emoji-based kitten avatars (cat face emoji or CSS pixel-art sprites) to the colony tank canvas and to stat card headers would give the game a more playful, recognizable identity. No heavy sprite sheets needed — CSS art or emoji glyphs work. Reference: Cookie Clicker uses simple cookie imagery everywhere to reinforce identity. Kittens Game uses minimal text but has a clear cat theme. KKC needs its kittens to be VISIBLE, not just described in text. This directly addresses the Visuals axis (8.5 - 9.0).",
-                "acceptanceCriteria": [
-                    "Colony tank canvas renders at least simple cat-face shapes or emoji for each kitten",
-                    "At least 2 stat cards include thematic kitten/knight emoji or icons in headers",
-                    "Visual additions work on mobile without layout breakage",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "strategist"
             },
             {
                 "id": "TASK-135",
@@ -143,8 +127,8 @@
                     "Tests pass"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-14T09:16:19.563Z",
-                "testVerdict": "REJECTED"
+                "testVerdict": "REJECTED",
+                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships."
             },
             {
                 "id": "TASK-095",
@@ -163,8 +147,8 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "orchestrator",
-                "claimedAt": "2026-03-14T09:46:29.349Z",
-                "testVerdict": "REJECTED"
+                "testVerdict": "REJECTED",
+                "reworkNote": "CodeSmith used goalsEl instead of masteryPanel. Next attempt must match AC element names exactly."
             },
             {
                 "id": "TASK-142",
@@ -212,8 +196,25 @@
                     "No performance regression - indicators use CSS only, no heavy JS animation"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-14T11:46:21.229Z",
-                "testVerdict": "REJECTED"
+                "testVerdict": "REJECTED",
+                "reworkNote": "Indicator shows amber even without active negative modifier. Must only indicate when trait IS actively modifying output."
+            },
+            {
+                "id": "TASK-145",
+                "title": "Design kitten personality-driven events and social dynamics",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T12:10:34.312Z",
+                "description": "The 6-trait personality system exists but the colony tank feels underutilized. Rather than just visual polish, deepen what personalities DO. Reference: Dwarf Fortress moods/relationships, Rimworld social dynamics. Design kitten-to-kitten interactions driven by trait compatibility: rivalries, mentorships, alliances. These create emergent mini-narratives in the colony feed. Example: a Brave+Loyal kitten mentors a Timid one, eventually the Timid kitten gains courage. Tier 1 mechanics — makes the colony feel alive with emergent stories.",
+                "acceptanceCriteria": [
+                    "Design doc defines at least 5 trait-driven interaction types (rivalry, mentorship, alliance, etc.)",
+                    "Specifies trait compatibility matrix (which traits attract/repel)",
+                    "Defines how interactions appear in colony feed with narrative text",
+                    "Includes mechanical effects (stat bonuses from mentorship, penalties from rivalry)",
+                    "Interactions emerge organically from proximity in colony tank, not random"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
@@ -237,6 +238,45 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-144",
+                "title": "Design achievement gallery and completion tracker system",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T12:10:32.152Z",
+                "description": "Critic identified no persistent trophy case or completion percentage. Games like Cookie Clicker (shadow achievements), NGU IDLE (adventure achievements), and Realm Grinder (faction-specific trophies) use achievement galleries as long-term engagement drivers. Design a gallery panel showing discovered secrets, milestones reached, prestige milestones, and completion percentage. Should integrate with progressive reveal so achievements tease undiscovered content. Tier 1 engagement — gives completionists a reason to keep playing.",
+                "acceptanceCriteria": [
+                    "Design doc specifies gallery layout with categories (secrets, milestones, prestige, misc)",
+                    "Includes completion percentage calculation formula",
+                    "Specifies how undiscovered achievements are teased (silhouette, hint text, or ???)",
+                    "Defines at least 15 achievable milestones across all game systems",
+                    "Integrates with existing discovery/secrets system without duplication"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T12:11:58.237Z",
+                "completedAt": "2026-03-14T12:13:20.232Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-129",
+                "title": "Add emoji-based kitten avatars to colony tank and stat cards",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T04:39:58.615Z",
+                "description": "Visual identity improvement (Arbiter review #3). The game has deep mechanics but looks like a monitoring dashboard. Adding simple emoji-based kitten avatars (cat face emoji or CSS pixel-art sprites) to the colony tank canvas and to stat card headers would give the game a more playful, recognizable identity. No heavy sprite sheets needed — CSS art or emoji glyphs work. Reference: Cookie Clicker uses simple cookie imagery everywhere to reinforce identity. Kittens Game uses minimal text but has a clear cat theme. KKC needs its kittens to be VISIBLE, not just described in text. This directly addresses the Visuals axis (8.5 - 9.0).",
+                "acceptanceCriteria": [
+                    "Colony tank canvas renders at least simple cat-face shapes or emoji for each kitten",
+                    "At least 2 stat cards include thematic kitten/knight emoji or icons in headers",
+                    "Visual additions work on mobile without layout breakage",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T12:16:16.914Z",
+                "completedAt": "2026-03-14T12:18:00.882Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -355,9 +395,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 137,
+        "totalCreated": 139,
         "totalCompleted": 86,
         "pendingQuestion": null
     },
-    "nextId": 144
+    "nextId": 146
 }

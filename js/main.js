@@ -9946,6 +9946,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'Food Cap': { icon: '📦', tone: 'food' },
       'Spoilage': { icon: '🧪', tone: 'threat' },
       'Edible/Kitten': { icon: '🐾', tone: 'food' },
+      'Autonomy': { icon: '🐈', tone: 'science' },
+      'Focus-fit': { icon: '😺', tone: 'science' },
+      'Commitment': { icon: '🛡️', tone: 'tools' },
       'Legacy Shards': { icon: '💠', tone: 'legacy' },
       'Legacy Preview': { icon: '✨', tone: 'legacy' },
     };
@@ -11040,13 +11043,24 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const ny = Math.floor(i / 4);
         const px = z.x + 20 + nx * 22;
         const py = z.y + 28 + ny * 18;
-        ctx.fillStyle = 'rgba(217,226,239,.95)';
+
+        // TASK-129: give kittens visible identity in the tank (emoji-first with shape fallback).
+        const useEmoji = true;
+        if (useEmoji) {
+          ctx.font = '13px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+          ctx.fillText('🐱', px - 6, py - 8);
+        }
+
+        // Fallback/anchor: keep a tiny dot under the emoji so low-color-font devices still show kittens.
+        ctx.fillStyle = 'rgba(217,226,239,.92)';
         ctx.beginPath();
-        ctx.arc(px, py, 4, 0, Math.PI*2);
+        ctx.arc(px, py + 2, 2.2, 0, Math.PI*2);
         ctx.fill();
+
+        ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
         ctx.fillStyle = 'rgba(217,226,239,.75)';
         const short = String(k?.name ?? `#${k?.id ?? '?'}`).split(/\s+/).slice(-1)[0] || String(k?.name ?? `#${k?.id ?? '?'}`);
-        ctx.fillText(short, px + 6, py - 6);
+        ctx.fillText(short, px + 8, py - 6);
       }
       if (arr.length > showN) {
         ctx.fillStyle = 'rgba(148,163,184,.85)';

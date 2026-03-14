@@ -1,8 +1,10 @@
 {
-  "timestamp": "2026-03-14T07:03:14.4403283-05:00",
-  "iteration": 23,
+  "timestamp": "2026-03-14T14:00:00.000Z",
+  "iteration": 25,
   "cronHealth": {
-    "healthy": [
+    "healthy": [],
+    "failing": [],
+    "disabled": [
       "Forge: Oracle (Prophet)",
       "Forge: ForgeLeader (Orchestrator)",
       "Forge: Architect (Designer)",
@@ -12,9 +14,7 @@
       "Forge: Watchdog",
       "Forge: Sentinel",
       "Forge: Strategist (Research & Planning)"
-    ],
-    "failing": [],
-    "disabled": []
+    ]
   },
   "pipelineHealth": {
     "todo": 12,
@@ -22,8 +22,8 @@
     "review": 1,
     "done": 1,
     "blocked": 5,
-    "staleTasks": [],
-    "status": "healthy"
+    "staleTasks": ["TASK-057 (rejected, duplicates TASK-139)", "TASK-095 (rejected, needs rework)", "TASK-123 (rejected, needs rework)"],
+    "status": "idle"
   },
   "agentActivity": {
     "lastCycleActive": [
@@ -47,6 +47,6 @@
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "phase2-improving"
+    "status": "shipped"
   }
 }

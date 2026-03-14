@@ -154,6 +154,13 @@
       "taskId": "TASK-123",
       "action": "completed",
       "notes": "Added real-time trait effect indicators (green boost / amber mismatch) to kitten cards."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T12:18:07.041Z",
+      "taskId": "TASK-129",
+      "action": "completed",
+      "notes": "Added emoji kitten avatars in colony tank and themed kitten/knight stat icons."
     }
   ]
 }
