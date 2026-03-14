@@ -1,19 +1,20 @@
 {
-  "timestamp": "2026-03-13T19:03:18.0202467-05:00",
-  "iteration": 13,
+  "timestamp": "2026-03-14T00:08:26.561Z",
+  "iteration": 14,
   "cronHealth": {
     "healthy": [
-      "Forge: Oracle (Prophet)",
       "Forge: ForgeLeader (Orchestrator)",
       "Forge: Architect (Designer)",
       "Forge: CodeSmith (Developer)",
       "Forge: Gauntlet (Tester)",
-      "Forge: Arbiter (Critic)",
       "Forge: Watchdog",
       "Forge: Sentinel",
       "Forge: Strategist (Research & Planning)"
     ],
-    "failing": [],
+    "failing": [
+      "Forge: Oracle (Prophet) — 2 consecutive errors",
+      "Forge: Arbiter (Critic) — 1 error on last run"
+    ],
     "disabled": []
   },
   "pipelineHealth": {
@@ -23,13 +24,14 @@
     "done": 18,
     "blocked": 0,
     "staleTasks": [],
-    "status": "stalled"
+    "status": "stalled",
+    "notes": "CodeSmith runs but not claiming tasks. Top 3 tasks promoted to critical priority to force pickup."
   },
   "agentActivity": {
     "lastCycleActive": [],
     "lastCycleSilent": [
       "oracle",
-      "forgaleader",
+      "forgeleader",
       "architect",
       "developer",
       "gauntlet",
@@ -38,14 +40,18 @@
       "sentinel",
       "strategist"
     ],
-    "errors": []
+    "errors": [
+      "Oracle: 2 consecutive errors (Discord read failure)",
+      "Arbiter: 1 error on last run"
+    ]
   },
   "convergence": {
     "currentScore": 8.7,
-    "threshold": 9.0,
+    "threshold": 9,
     "consecutiveAbove": 0,
-    "iteration": 13,
+    "iteration": 14,
     "maxIterations": 50,
-    "status": "stalled"
+    "status": "stalled",
+    "notes": "2 consecutive iterations with no delta. Near-stagnation."
   }
 }

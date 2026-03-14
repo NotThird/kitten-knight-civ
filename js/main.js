@@ -1381,19 +1381,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // 1) decision bias (which jobs they prefer)
   // 2) direct per-action output modifier (+/-15%) on productive actions.
   const TRAIT_DEFS = [
-    { id:'Brave', desc:'Bold in danger. Better at guarding and crisis runs.', bias:{ Guard:12, BuildPalisade:7 }, prod:{ Guard:0.15, BuildPalisade:0.15 } },
-    { id:'Curious', desc:'Always investigating. Better at research/mentoring.', bias:{ Research:11, Mentor:8 }, prod:{ Research:0.15, Mentor:0.15 } },
-    { id:'Lazy', desc:'Conserves effort. Slower output, but less fatigue.', bias:{ Rest:6, Loaf:8 }, prod:{ '*':-0.15 } },
-    { id:'Ambitious', desc:'Pushes hard for growth. Better at build/craft work.', bias:{ BuildHut:8, BuildGranary:8, BuildWorkshop:8, BuildLibrary:8, CraftTools:10 }, prod:{ BuildHut:0.15, BuildGranary:0.15, BuildWorkshop:0.15, BuildLibrary:0.15, CraftTools:0.15 } },
-    { id:'Forager', desc:'Wilderness specialist. Better at food/wood gathering.', bias:{ Forage:9, Farm:8, ChopWood:8, PreserveFood:7 }, prod:{ Forage:0.15, Farm:0.15, ChopWood:0.15, PreserveFood:0.15 } },
-    { id:'Caretaker', desc:'Community-first. Better at social and care duties.', bias:{ Socialize:10, Care:10 }, prod:{ Socialize:0.15, Care:0.15 } },
+    { id:'Brave', desc:'Bold in danger. Strong guard instincts, but less patient in study halls.', bias:{ Guard:12, BuildPalisade:8, Research:-4 }, prod:{ Guard:0.15, BuildPalisade:0.12, Research:-0.08 } },
+    { id:'Curious', desc:'Constantly investigating. Great for knowledge work, weaker under direct threat.', bias:{ Research:12, Mentor:8, Guard:-5 }, prod:{ Research:0.15, Mentor:0.12, Guard:-0.08 } },
+    { id:'Lazy', desc:'Conserves effort. Tires a little slower, but output is lower when working hard.', bias:{ Rest:8, Loaf:9, Guard:-4 }, prod:{ '*':-0.12, Rest:0.08, Loaf:0.08 } },
+    { id:'Greedy', desc:'Resource-chasing opportunist. Excellent at gains, poor at communal duties.', bias:{ Forage:8, CraftTools:10, Socialize:-6, Care:-4 }, prod:{ Forage:0.12, CraftTools:0.15, Socialize:-0.10, Care:-0.08 } },
+    { id:'Gentle', desc:'Soft-hearted and cooperative. Great with care and morale, hesitant in combat roles.', bias:{ Care:11, Socialize:10, Guard:-7, BuildPalisade:-5 }, prod:{ Care:0.15, Socialize:0.15, Guard:-0.10 } },
+    { id:'Stubborn', desc:'Determined and relentless. Pushes projects through, resists collaboration pivots.', bias:{ BuildHut:8, BuildGranary:8, BuildWorkshop:9, BuildLibrary:9, Socialize:-5, Mentor:-4 }, prod:{ BuildHut:0.12, BuildGranary:0.12, BuildWorkshop:0.15, BuildLibrary:0.15, Socialize:-0.06, Research:-0.08 } },
   ];
   const TRAIT_DEF_BY_ID = Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, t]));
 
   function normalizeTraitId(id){
     const v = String(id ?? '').trim();
     if (TRAIT_DEF_BY_ID[v]) return v;
-    const map = { Studious: 'Curious', Builder: 'Ambitious' };
+    const map = { Studious: 'Curious', Builder: 'Stubborn', Ambitious: 'Stubborn', Forager: 'Greedy', Caretaker: 'Gentle' };
     return map[v] ?? null;
   }
 
@@ -1411,7 +1411,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function genTraits(id){
     const rng = seededRng((id * 1103515245 + 12345) | 0);
-    const pick1 = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Forager';
+    const pick1 = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Curious';
     const wantTwo = rng() < 0.38;
     if (!wantTwo) return [pick1];
     const rest = TRAIT_DEFS.map(t => t.id).filter(t => t !== pick1);
@@ -1433,6 +1433,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function traitSummary(k){
     const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
     if (!traits.length) return '-';
+    if (!traitEffectsVisible(state)) return traits.join(', ');
     return traits.map((id) => {
       const d = TRAIT_DEF_BY_ID[id];
       if (!d?.prod) return id;
@@ -1443,6 +1444,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (worst < 0 && best <= 0) return `${id} (${Math.round(worst * 100)}%)`;
       return id;
     }).join(', ');
+  }
+
+  function traitEffectsVisible(s){
+    const pop = Array.isArray(s?.kittens) ? s.kittens.length : 0;
+    return pop >= 4;
+  }
+
+  function traitFlavorReasonForTask(s, k, task){
+    if (!traitEffectsVisible(s)) return '';
+    const action = String(task ?? '');
+    if (!action) return '';
+
+    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
+    for (const id of traits) {
+      const def = TRAIT_DEF_BY_ID[id];
+      const bias = Number(def?.bias?.[action] ?? 0) || 0;
+      if (bias <= 0) continue;
+
+      if (id === 'Brave' && (action === 'Guard' || action === 'BuildPalisade')) return 'Brave instinct: volunteers for danger duty';
+      if (id === 'Curious' && (action === 'Research' || action === 'Mentor')) return 'Curious streak: chases new ideas';
+      if (id === 'Lazy' && (action === 'Rest' || action === 'Loaf')) return 'Lazy streak: conserves energy';
+      if (id === 'Greedy' && (action === 'Forage' || action === 'CraftTools')) return 'Greedy streak: chases high-yield work';
+      if (id === 'Gentle' && (action === 'Care' || action === 'Socialize')) return 'Gentle instinct: prioritizes harmony';
+      if (id === 'Stubborn' && (action === 'BuildHut' || action === 'BuildGranary' || action === 'BuildWorkshop' || action === 'BuildLibrary')) return 'Stubborn streak: sticks to the build plan';
+      return `${id} trait influence`;
+    }
+
+    return '';
   }
 
   // --- Names (civ-sim readability)
@@ -1480,12 +1509,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     const t = Array.isArray(traits) ? traits : [];
-    if (t.includes('Forager'))   { v.Food += 0.18; v.Safety += 0.05; v.Progress -= 0.10; v.Social -= 0.05; }
-    if (t.includes('Brave'))     { v.Safety += 0.22; v.Progress -= 0.05; }
-    if (t.includes('Curious'))   { v.Progress += 0.26; v.Social -= 0.05; }
-    if (t.includes('Ambitious')) { v.Progress += 0.20; v.Food += 0.06; v.Social -= 0.04; }
-    if (t.includes('Caretaker')) { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.06; }
-    if (t.includes('Lazy'))      { v.Social += 0.10; v.Progress -= 0.08; }
+    if (t.includes('Brave'))    { v.Safety += 0.24; v.Progress -= 0.06; }
+    if (t.includes('Curious'))  { v.Progress += 0.26; v.Safety -= 0.05; }
+    if (t.includes('Lazy'))     { v.Social += 0.12; v.Progress -= 0.10; }
+    if (t.includes('Greedy'))   { v.Food += 0.18; v.Progress += 0.08; v.Social -= 0.10; }
+    if (t.includes('Gentle'))   { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.07; }
+    if (t.includes('Stubborn')) { v.Progress += 0.16; v.Safety += 0.04; v.Social -= 0.08; }
 
     // Normalize + clamp.
     for (const k of VALUE_AXES) v[k] = Math.max(0.03, Number(v[k] ?? 0));
@@ -1598,9 +1627,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function traitInfoList(k){
     const arr = Array.isArray(k?.traits) ? k.traits : [];
     const out = [];
+    const reveal = traitEffectsVisible(state);
     for (const id of arr) {
       const def = TRAIT_DEFS.find(t => t.id === id);
-      out.push(def ? `${def.id}: ${def.desc}` : String(id));
+      if (!reveal) out.push(def ? def.id : String(id));
+      else out.push(def ? `${def.id}: ${def.desc}` : String(id));
     }
     return out;
   }
@@ -3585,7 +3616,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const toTask = String(newTask ?? 'Idle').trim() || 'Idle';
     const who = String(k.name ?? `#${k.id ?? '?'}`).trim() || `#${k.id ?? '?'}`;
     const because = whyShort ? ` (${whyShort})` : '';
-    pushDecisionLog(s, `${who}: ${fromTask} -> ${toTask}${because}`);
+    const traitFlavor = traitFlavorReasonForTask(s, k, newTask);
+    const traitSuffix = traitFlavor ? ` | ${traitFlavor}` : '';
+    pushDecisionLog(s, `${who}: ${fromTask} -> ${toTask}${because}${traitSuffix}`);
   }
 
   // Log mood band crossings (called at end of mood update)
@@ -3882,6 +3915,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
     if (!traits.length) return;
 
+    const showReasons = traitEffectsVisible(state);
     for (const id of traits) {
       const def = TRAIT_DEFS.find(t => t.id === id);
       if (!def?.bias) continue;
@@ -3889,7 +3923,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const add = Number(def.bias[row.action] ?? 0);
         if (!add) continue;
         row.score += add;
-        row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
+        if (showReasons) row.reasons.push(`trait ${def.id} -> ${add >= 0 ? '+' : ''}${add.toFixed(0)}`);
       }
     }
   }

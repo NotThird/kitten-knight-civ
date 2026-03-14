@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-13T23:53:00.437Z",
+    "lastUpdated": "2026-03-14T00:19:52.815Z",
     "columns": {
         "todo": [
             {
@@ -22,25 +22,6 @@
                     "Mobile-friendly layout with no horizontal scroll"
                 ],
                 "source": "strategist"
-            },
-            {
-                "id": "TASK-118",
-                "title": "Implement kitten trait mechanics from TASK-091",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T21:05:30.454Z",
-                "description": "Implement kitten trait mechanical effects per TASK-091 design. Each of the 6 traits (Brave, Curious, Lazy, Greedy, Gentle, Stubborn) needs production/combat/social modifiers applied in sim.js. Traits should surface in the decision log (e.g. Brave Whiskers volunteers for Guard). Reference TASK-091 output in agents/designer/output/ for exact multiplier values. Key: no trait should be strictly better than another — every trait has tradeoffs.",
-                "acceptanceCriteria": [
-                    "Each of the 6 traits applies at least 2 mechanical effects (production modifier + behavior bias)",
-                    "Trait effects are visible in colony AI decision log messages (trait-flavored text)",
-                    "No single trait is strictly dominant — each has a downside or tradeoff",
-                    "Combined trait multipliers are capped at 1.45x per resource",
-                    "Traits influence task assignment probability in ai.js (e.g. Brave kittens prefer Guard)",
-                    "parse_check and replay_test pass with trait mechanics active",
-                    "Progressive reveal: trait effects only show after player has 4+ kittens"
-                ],
-                "source": "orchestrator"
             },
             {
                 "id": "TASK-119",
@@ -334,7 +315,7 @@
                 "id": "TASK-121",
                 "title": "Implement mini-event variety pack from TASK-117 design",
                 "assignee": "developer",
-                "priority": "high",
+                "priority": "critical",
                 "type": "feature",
                 "createdAt": "2026-03-13T22:05:09.406Z",
                 "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
@@ -351,7 +332,7 @@
                 "id": "TASK-029",
                 "title": "Implement discovery and secret mechanics from approved TASK-024 design",
                 "assignee": "developer",
-                "priority": "high",
+                "priority": "critical",
                 "type": "feature",
                 "createdAt": "2026-03-12T15:17:43.621Z",
                 "description": "PREVIOUSLY REJECTED — fix required before re-implementing. Issue: performLegacyReset() and performEternityReset() in state.js create fresh defaultState() which wipes state.secrets. Fix: carry secrets.found through reset functions (same pattern used for legacy and eternity objects). Then implement remaining discovery/secrets per TASK-024 design: 10 secrets with emergent triggers, 4 rare events, secret detection engine, UI reveal animations.",
@@ -369,7 +350,30 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-118",
+                "title": "Implement kitten trait mechanics from TASK-091",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:05:30.454Z",
+                "description": "Implement kitten trait mechanical effects per TASK-091 design. Each of the 6 traits (Brave, Curious, Lazy, Greedy, Gentle, Stubborn) needs production/combat/social modifiers applied in sim.js. Traits should surface in the decision log (e.g. Brave Whiskers volunteers for Guard). Reference TASK-091 output in agents/designer/output/ for exact multiplier values. Key: no trait should be strictly better than another — every trait has tradeoffs.",
+                "acceptanceCriteria": [
+                    "Each of the 6 traits applies at least 2 mechanical effects (production modifier + behavior bias)",
+                    "Trait effects are visible in colony AI decision log messages (trait-flavored text)",
+                    "No single trait is strictly dominant — each has a downside or tradeoff",
+                    "Combined trait multipliers are capped at 1.45x per resource",
+                    "Traits influence task assignment probability in ai.js (e.g. Brave kittens prefer Guard)",
+                    "parse_check and replay_test pass with trait mechanics active",
+                    "Progressive reveal: trait effects only show after player has 4+ kittens"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T00:16:19.422Z",
+                "completedAt": "2026-03-14T00:19:52.815Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
