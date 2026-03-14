@@ -23,14 +23,14 @@
 </header>
 
 <main>
-  <section class="card" id="directorSection">
+  <section class="card tier-primary" id="directorSection">
     <h2>Director</h2>
     <div class="body">
-      <div class="grid2" id="stats"></div>
+      <div class="grid2 tier-primary-block" id="stats"></div>
 
       <!-- Curator mode: minimal "aquarium" levers. Advanced controls are tucked away below. -->
       <div style="height:10px"></div>
-      <div class="row" style="align-items:flex-start; gap:10px; flex-wrap:wrap">
+      <div class="row tier-secondary-block" style="align-items:flex-start; gap:10px; flex-wrap:wrap">
         <div class="small" style="min-width:100%">Curator</div>
         <label class="small">Culture goal
           <select id="curatorGoal" title="High-level colony intent. This drives the Director automation (mode/priorities/doctrine) so you can mostly watch the society run.">
@@ -60,7 +60,7 @@
       </div>
 
       <div style="height:10px"></div>
-      <canvas id="tank" width="380" height="190" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
+      <canvas class="tier-primary-block" id="tank" width="380" height="190" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px"></canvas>
 
       <div style="height:10px"></div>
       <div class="small" data-reveal-min="2">Trends (last ~2 minutes)</div>
@@ -68,7 +68,7 @@
       <canvas id="trends" width="380" height="220" style="width:100%; max-width:100%; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:12px" data-reveal-min="2"></canvas>
       <div class="small" id="mlHint" style="margin-top:6px; opacity:.85" data-reveal-min="3"></div>
       <div style="height:12px"></div>
-      <div class="trendPanels" id="trendPanels" data-reveal-min="3">
+      <div class="trendPanels tier-primary-block" id="trendPanels" data-reveal-min="3">
         <section class="trendPanel" id="trendPanelPopulation" data-trend-panel="population">
           <div class="small">Population trends (last ~2 minutes)</div>
           <div class="small" id="popLegend" style="margin:6px 0; opacity:.90"></div>
@@ -90,7 +90,7 @@
           <div class="small" id="culHint" style="margin-top:6px; opacity:.85"></div>
         </section>
       </div>
-      <div class="trendTabRail" id="trendTabRail" role="tablist" aria-label="Trend dashboards" data-reveal-min="3">
+      <div class="trendTabRail tier-primary-block" id="trendTabRail" role="tablist" aria-label="Trend dashboards" data-reveal-min="3">
         <button class="trendTab active" id="trendTabPopulation" data-trend-tab="population" role="tab" aria-selected="true">Population</button>
         <button class="trendTab" id="trendTabSociety" data-trend-tab="society" role="tab" aria-selected="false">Society</button>
         <button class="trendTab" id="trendTabCulture" data-trend-tab="culture" role="tab" aria-selected="false">Culture + ML</button>
@@ -98,10 +98,10 @@
 
       <div style="height:10px"></div>
       <div class="small" data-reveal-min="0">Society feed</div>
-      <div class="log" id="feed" style="max-height:220px" data-reveal-min="0"></div>
+      <div class="log tier-secondary-block" id="feed" style="max-height:220px" data-reveal-min="0"></div>
 
       <div style="height:12px"></div>
-      <details id="advancedControls" data-reveal-min="4">
+      <details class="tier-tertiary-block" id="advancedControls" data-reveal-min="4">
         <summary class="small" style="cursor:pointer; user-select:none">Advanced controls (optional)</summary>
         <div style="height:10px"></div>
 
@@ -425,13 +425,13 @@
       </details>
 
       <div style="height:10px"></div>
-      <div class="small">Event log</div>
-      <div class="log" id="log"></div>
+      <div class="small tier-secondary-block">Event log</div>
+      <div class="log tier-secondary-block" id="log"></div>
       </details>
     </div>
   </section>
 
-  <section class="card" id="colonySection" data-reveal-min="3">
+  <section class="card tier-secondary" id="colonySection" data-reveal-min="3">
     <h2>Colony (AI decisions)</h2>
     <div class="body">
       <div class="colony-toolbar" id="colonyToolbar">
@@ -463,7 +463,7 @@
   </section>
 
   <!-- Safety Rules hidden from UI (still functional in JS) -->
-  <section class="card" id="safetySection" style="display:none">
+  <section class="card tier-tertiary" id="safetySection" style="display:none">
     <h2>Safety Rules (Hard Overrides)</h2>
     <div class="body">
       <div class="small" style="margin-bottom:8px">Guardrails. If a rule matches, it wins immediately. <b>Read-only</b> in Curator mode.</div>

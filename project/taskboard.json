@@ -1,8 +1,8 @@
 {
     "version": 1,
-    "iteration": 22,
+    "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T07:52:53.861Z",
+    "lastUpdated": "2026-03-14T08:18:08.340Z",
     "columns": {
         "todo": [
             {
@@ -124,6 +124,23 @@
                 "staleCount": 0
             },
             {
+                "id": "TASK-114",
+                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T20:35:44.034Z",
+                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. Stability axis at 8.5 — this directly addresses the convergence gap.",
+                "acceptanceCriteria": [
+                    "Auto-save fires every 60s writing to rotating backup slots",
+                    "Dirty flag set on save start cleared on clean unload",
+                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
+                    "Total localStorage usage stays under 5MB",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
                 "id": "TASK-123",
                 "title": "Add visual indicators for active kitten trait effects",
                 "assignee": "developer",
@@ -172,23 +189,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-136",
-                "title": "Implement visual hierarchy tier system from TASK-134 design",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T07:36:49.672Z",
-                "description": "Apply the 3-tier visual weight system designed in TASK-134. Add CSS tokens for tier backgrounds, borders, shadows. Assign tier-primary to colony tank and resource dashboard, tier-secondary to event log and trends, tier-tertiary to safety and settings. Must preserve dark theme.",
-                "acceptanceCriteria": [
-                    "3 tier CSS classes added with distinct visual weight",
-                    "Colony tank and resource area use tier-primary styling",
-                    "Event log and settings use tier-secondary or tertiary",
-                    "Dark theme consistency maintained",
-                    "parse_check.js and replay_test.js pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-137",
                 "title": "Polish layout gaps: tighten card spacing and remove orphan whitespace",
                 "assignee": "developer",
@@ -203,10 +203,63 @@
                     "parse_check.js passes"
                 ],
                 "source": "orchestrator"
+            },
+            {
+                "id": "TASK-138",
+                "title": "Enhance resource fly-up animations for significant gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:10:27.891Z",
+                "description": "Arbiter review notes the +X fly-up popups are small and fast. For significant gains (building complete, active event claimed, prestige bonuses), fly-ups should be larger, slower, and more satisfying. Reference: Cookie Clicker golden cookie popups scale with value. Keep it CSS-only - bigger font-size, slower translateY, maybe a brief scale-up pulse. This is Tier 2 (visual feel) work that directly targets the visuals axis (8.5).",
+                "acceptanceCriteria": [
+                    "Significant gains (building completion, event claims) show larger fly-up text than routine +1 ticks",
+                    "Fly-up animation duration is at least 1.5s for significant gains vs current speed",
+                    "No new JS animation libraries - CSS transitions/keyframes only",
+                    "Normal per-tick fly-ups remain unchanged"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-139",
+                "title": "Make offline progress modal celebratory with narrative beat",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:10:34.335Z",
+                "description": "Arbiter notes the welcome-back modal reads like a log entry rather than a treasure chest opening. When returning after 1h+, the modal should include a brief narrative line. Reference: NGU IDLE offline summary feels rewarding. Add a colony-themed flavor sentence before the stats, and consider a brief CSS entrance animation (fade+scale). This is Tier 2/3 work targeting engagement and visual feel.",
+                "acceptanceCriteria": [
+                    "Offline progress modal includes a thematic narrative sentence before showing stats",
+                    "Narrative varies based on what happened (building vs research vs population growth)",
+                    "Modal has a brief entrance animation (fade-in or scale-up, CSS only)",
+                    "Returns under 1 hour show simpler summary without narrative flourish"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-136",
+                "title": "Implement visual hierarchy tier system from TASK-134 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:36:49.672Z",
+                "description": "Apply the 3-tier visual weight system designed in TASK-134. Add CSS tokens for tier backgrounds, borders, shadows. Assign tier-primary to colony tank and resource dashboard, tier-secondary to event log and trends, tier-tertiary to safety and settings. Must preserve dark theme.",
+                "acceptanceCriteria": [
+                    "3 tier CSS classes added with distinct visual weight",
+                    "Colony tank and resource area use tier-primary styling",
+                    "Event log and settings use tier-secondary or tertiary",
+                    "Dark theme consistency maintained",
+                    "parse_check.js and replay_test.js pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T08:16:22.787Z",
+                "completedAt": "2026-03-14T08:18:08.340Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -1017,24 +1070,6 @@
                 "blockedReason": "Tier 5 infrastructure — priority stack violation. Focus on gameplay tasks first."
             },
             {
-                "id": "TASK-114",
-                "title": "Implement save backup rotation and crash recovery from TASK-113 design",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-13T20:35:44.034Z",
-                "description": "TASK-113 design approved. Implement auto-save every 60s with 3 rotating backup slots in localStorage, crash detection via dirty flag, recovery modal on load. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Auto-save fires every 60s writing to rotating backup slots",
-                    "Dirty flag set on save start cleared on clean unload",
-                    "Recovery modal appears on crash detection with Restore and Continue and Fresh Start options",
-                    "Total localStorage usage stays under 5MB",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "blockedReason": "Tier 5 infrastructure — save backup is QoL/infrastructure, not gameplay."
-            },
-            {
                 "id": "TASK-069",
                 "title": "Implement session performance metrics and play-time statistics panel",
                 "assignee": "developer",
@@ -1050,25 +1085,6 @@
                 ],
                 "source": "strategist",
                 "blockedReason": "Tier 5 infrastructure — statistics/metrics panel is not gameplay."
-            },
-            {
-                "id": "TASK-049",
-                "title": "Implement statistics and lifetime tracking panel",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "description": "Every great incremental tracks lifetime stats: total resources, prestiges, time played, peak population, fastest prestige. Adds completeness depth and gives players goals. Reference: Cookie Clicker stats, NGU IDLE. Display in Stats tab, persist across prestiges.",
-                "acceptanceCriteria": [
-                    "Stats panel accessible from main UI showing lifetime totals",
-                    "Tracks: total resources earned, total prestiges, total time played, highest population",
-                    "Stats persist across prestige resets",
-                    "Stats panel renders cleanly on mobile viewport",
-                    "Current run stats shown alongside lifetime stats"
-                ],
-                "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.383Z",
-                "staleCount": 0,
-                "blockedReason": "Tier 5 infrastructure — statistics panel is not gameplay. Deprioritized per priority stack."
             },
             {
                 "id": "TASK-064",
@@ -1091,9 +1107,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 131,
+        "totalCreated": 133,
         "totalCompleted": 81,
         "pendingQuestion": null
     },
-    "nextId": 138
+    "nextId": 140
 }
