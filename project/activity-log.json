@@ -84,6 +84,13 @@
       "taskId": "TASK-132",
       "action": "completed",
       "notes": "Stabilized tank kitten circle indicators with zone hold cache, deterministic ordering, and non-transparent canvas redraw."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T07:17:33.573Z",
+      "taskId": "TASK-133",
+      "action": "completed",
+      "notes": "Desktop layout overhaul: 2-column shell + director internal lanes to reduce dead space and scroll depth"
     }
   ]
 }

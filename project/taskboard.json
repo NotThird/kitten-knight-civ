@@ -1,8 +1,8 @@
 {
     "version": 1,
-    "iteration": 0,
+    "iteration": 22,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T06:53:35.972Z",
+    "lastUpdated": "2026-03-14T07:17:29.429Z",
     "columns": {
         "todo": [
             {
@@ -171,6 +171,45 @@
                 "source": "strategist"
             },
             {
+                "id": "TASK-135",
+                "title": "Add colony tank zone legend and dot color key",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:10:14.034Z",
+                "description": "Arbiter notes colony tank has no legend, no zone labels visible by default, and dot colors are unexplained. First-time players see colored dots bouncing with no context. Add a compact always-visible legend showing what each dot color represents and label zones. Tier 2 visual clarity improvement that supports the no-tutorial philosophy: the legend teaches through presence. Reference: Realm Grinder shows faction colors in a sidebar key.",
+                "acceptanceCriteria": [
+                    "Colony tank displays a compact legend showing dot color meanings",
+                    "Zone labels are visible by default, not hover-only",
+                    "Legend does not obscure tank content or add clutter",
+                    "Legend updates dynamically if new dot types appear via progressive reveal"
+                ],
+                "source": "strategist"
+            }
+        ],
+        "claimed": [],
+        "review": [
+            {
+                "id": "TASK-134",
+                "title": "Design visual hierarchy system: differentiate primary vs secondary panels",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:10:10.990Z",
+                "description": "Arbiter review flags all card sections use identical styling. Colony tank gets no more visual prominence than the event log. Design a visual hierarchy where primary content (colony tank, resource dashboard) feels dominant while secondary panels (event log, safety, settings) recede. Reference: Cookie Clicker separates cookie area from store visually. Kittens Game uses font size and spacing hierarchy. Keep minimal: subtle border weights, background opacity tiers, font size differences. Must work with dark theme.",
+                "acceptanceCriteria": [
+                    "Define 2-3 visual weight tiers (primary, secondary, tertiary) with specific CSS properties for each",
+                    "Colony tank and resource area designated as primary tier",
+                    "Event log, safety panel, settings designated as secondary or tertiary",
+                    "All tiers maintain dark theme consistency",
+                    "Design includes spacing and padding differences between tiers"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T07:11:52.926Z",
+                "completedAt": "2026-03-14T07:13:24.617Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
                 "id": "TASK-133",
                 "title": "Layout overhaul: eliminate dead space, improve panel organization",
                 "assignee": "developer",
@@ -187,11 +226,12 @@
                     "Stats, tank, and feed are visible without scrolling on a 1080p screen",
                     "parse_check.js and replay_test.js pass"
                 ],
-                "source": "directive"
+                "source": "directive",
+                "claimedAt": "2026-03-14T07:16:13.379Z",
+                "completedAt": "2026-03-14T07:17:29.429Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
-        "claimed": [],
-        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -1010,9 +1050,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 127,
+        "totalCreated": 129,
         "totalCompleted": 78,
         "pendingQuestion": null
     },
-    "nextId": 134
+    "nextId": 136
 }
