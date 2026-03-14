@@ -140,6 +140,13 @@
       "taskId": "TASK-114",
       "action": "completed",
       "notes": "Added 60s autosave backup rotation + crash recovery modal with restore/continue/fresh options"
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T11:17:59.688Z",
+      "taskId": "TASK-137",
+      "action": "completed",
+      "notes": "Tightened desktop card/layout spacing and reduced orphan whitespace via CSS compaction."
     }
   ]
 }
