@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T05:53:09.699Z",
+    "lastUpdated": "2026-03-14T06:17:58.731Z",
     "columns": {
         "todo": [
             {
@@ -140,21 +140,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-127",
-                "title": "Animated counters: Add easing number animation to resource totals",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.196Z",
-                "description": "Step 1 of TASK-063. When resource values change, animate the number transition with easing instead of instant update. Target food, wood, gold, science displays.",
-                "acceptanceCriteria": [
-                    "Resource numbers animate smoothly on change",
-                    "Animation completes in under 500ms",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-128",
                 "title": "Session milestones: Award escalating bonuses for continuous play time",
                 "assignee": "developer",
@@ -187,7 +172,26 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-127",
+                "title": "Animated counters: Add easing number animation to resource totals",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.196Z",
+                "description": "Step 1 of TASK-063. When resource values change, animate the number transition with easing instead of instant update. Target food, wood, gold, science displays.",
+                "acceptanceCriteria": [
+                    "Resource numbers animate smoothly on change",
+                    "Animation completes in under 500ms",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T06:16:21.344Z",
+                "completedAt": "2026-03-14T06:17:58.731Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",

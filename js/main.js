@@ -1499,7 +1499,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Kept outside save data to preserve replay/save determinism.
   const resourceUiFx = {
     last: null,
-    popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] },
+    popups: { Food: [], Wood: [], Gold: [], Science: [], Tools: [], Jerky: [] },
     counters: Object.create(null),
   };
 
@@ -10738,7 +10738,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const statRevealMin = {
       'Legacy Shards': 3, 'Legacy Preview': 3,
       'Food': 0, 'Edible': 1, 'Wood': 0, 'Warmth': 0, 'Threat': 0,
-      'Science': 2, 'Tools': 2, 'Prod x': 3,
+      'Science': 2, 'Gold': 3, 'Tools': 2, 'Prod x': 3,
       'Huts': 1, 'Palisade': 1, 'Granaries': 2, 'Workshops': 2, 'Libraries': 3,
       'Industry x': 3, 'Research x': 3,
       'Food Cap': 2, 'Spoilage': 2, 'Edible/Kitten': 1,
@@ -10754,6 +10754,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ['Warmth', fmt(state.res.warmth)],
       ['Threat', fmt(state.res.threat)],
       ['Science', fmt(state.res.science)],
+      ['Gold', fmt(state.res.gold ?? 0)],
       ['Tools', fmt(state.res.tools ?? 0)],
       ['Prod x', fmt(toolsBonus(state)) + 'x'],
       ['Huts', fmt(state.res.huts)],
@@ -10789,6 +10790,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       Food: Number(state.res.food ?? 0),
       Wood: Number(state.res.wood ?? 0),
       Science: Number(state.res.science ?? 0),
+      Gold: Number(state.res.gold ?? 0),
       Tools: Number(state.res.tools ?? 0),
       Jerky: Number(state.res.jerky ?? 0),
     };
@@ -10800,6 +10802,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'Warmth': { icon: '🔥', tone: 'warmth' },
       'Threat': { icon: '⚠️', tone: 'threat' },
       'Science': { icon: '🔬', tone: 'science' },
+      'Gold': { icon: '🪙', tone: 'gold' },
       'Tools': { icon: '⚒️', tone: 'tools' },
       'Jerky': { icon: '🥓', tone: 'food' },
       'Food Cap': { icon: '📦', tone: 'food' },
@@ -10888,7 +10891,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
 
-      const isResource = (k === 'Food' || k === 'Wood' || k === 'Science' || k === 'Tools' || k === 'Jerky');
+      const isResource = (k === 'Food' || k === 'Wood' || k === 'Gold' || k === 'Science' || k === 'Tools' || k === 'Jerky');
       if (isResource) {
         d.dataset.resourceCard = '1';
         d.dataset.resourceKey = k;
@@ -10916,6 +10919,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const rateByStat = {
         Food: Number(displayRate.food ?? foodRate ?? 0),
         Wood: Number(displayRate.wood ?? woodRate ?? 0),
+        Gold: Number(displayRate.gold ?? 0),
         Science: Number(displayRate.science ?? scienceRate ?? 0),
         Tools: Number(displayRate.tools ?? toolsRate ?? 0),
         Jerky: Number(displayRate.jerky ?? jerkyRate ?? 0),

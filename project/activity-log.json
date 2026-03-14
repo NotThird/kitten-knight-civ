@@ -70,6 +70,13 @@
       "taskId": "TASK-124",
       "action": "completed",
       "notes": "Added prestige confirmation gain/loss summaries with legacy branch bonus visibility and positive framing."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T06:18:02.951Z",
+      "taskId": "TASK-127",
+      "action": "completed",
+      "notes": "Extended animated resource counters to include Gold stat card with existing 320ms easing path."
     }
   ]
 }
