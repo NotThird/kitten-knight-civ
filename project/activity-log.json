@@ -14,6 +14,13 @@
       "taskId": "TASK-122",
       "action": "completed",
       "notes": "Patched performEternityReset to preserve state.secrets.found across reset; parse_check PASS"
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T02:18:09.533Z",
+      "taskId": "TASK-029",
+      "action": "completed",
+      "notes": "Expanded secrets triggers and rare event pool; parse_check + replay_test passed."
     }
   ]
 }

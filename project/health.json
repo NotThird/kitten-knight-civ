@@ -49,7 +49,7 @@
                                      ]
                       },
     "convergence":  {
-                        "currentScore":  0,
+                        "currentScore":  8.8,
                         "threshold":  9,
                         "consecutiveAbove":  0,
                         "iteration":  17,

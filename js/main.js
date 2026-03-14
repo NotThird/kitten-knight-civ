@@ -1107,21 +1107,29 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (Number(s.res?.science ?? 0) >= 250) revealSecret(s, 'science_250', 'Stargazer Notes', 'Scholars mapped hidden constellations.');
     if (Number(s.legacy?.resets ?? 0) >= 1) revealSecret(s, 'legacy_reset', 'Echo Archive', 'Legacy memories now echo across runs.');
     if (Number(s.res?.jerky ?? 0) >= 40) revealSecret(s, 'jerky_cache', 'Smokehouse Lore', 'Preserved rations unlocked deep storage techniques.');
+    if (Number(s.pop?.kittens ?? 0) >= 24) revealSecret(s, 'moonlit_colony', 'Moonlit Colony', 'Twenty-four kittens now call the valley home.');
+    if (Number(s.res?.gold ?? 0) >= 120) revealSecret(s, 'coin_hoard', 'Coin Hoard', 'A gleaming reserve of trade coin now anchors diplomacy.');
+    if (Number(s.eternity?.resets ?? 0) >= 1) revealSecret(s, 'eternity_echo', 'Eternity Echo', 'Fragments from prior eternities whisper in the archive.');
 
     const inWinter = String(seasonAt(s.t)?.name ?? '') === 'Winter';
     if (inWinter && nowT > 360) revealSecret(s, 'moon_rites', 'Moon Rites', 'Winter gatherings strengthen colony resolve.');
+    if (inWinter && Number(s.res?.warmth ?? 0) >= 120) revealSecret(s, 'ember_ceremony', 'Ember Ceremony', 'A midnight fire rite carried the colony through bitter cold.');
 
     // Rare events (lightweight, deterministic cadence)
     if (!s.paused && nowT >= Number(s.secrets.nextRareAt ?? Infinity)) {
       const pool = [
         { id:'rare_caravan', title:'Moonlit Caravan', text:'A hidden trader left rare supplies.', fx:{ food:32, science:18, tools:4 } },
         { id:'rare_relic', title:'Buried Relic', text:'Scouts uncovered a relic cache beneath old palisades.', fx:{ wood:28, science:22, threat:-10 } },
+        { id:'rare_skyshard', title:'Skyshard Fall', text:'A luminous shard struck nearby and infused your workshops.', fx:{ science:26, tools:8, gold:14 } },
+        { id:'rare_haven', title:'Hidden Haven', text:'Scouts found a sheltered glade packed with winter stores.', fx:{ food:44, warmth:20, threat:-6 } },
       ];
       const pick = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
       s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(pick.fx.food ?? 0));
       s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(pick.fx.wood ?? 0));
       s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(pick.fx.science ?? 0));
       s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(pick.fx.tools ?? 0));
+      s.res.gold = Math.max(0, Number(s.res.gold ?? 0) + Number(pick.fx.gold ?? 0));
+      s.res.warmth = Math.max(0, Number(s.res.warmth ?? 0) + Number(pick.fx.warmth ?? 0));
       s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(pick.fx.threat ?? 0));
       s.secrets.rareSeen = Math.max(0, Number(s.secrets.rareSeen ?? 0) + 1);
       s.secrets.nextRareAt = nowT + (210 + Math.floor(Math.random() * 180));
@@ -1130,6 +1138,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (pick.fx.wood) parts.push(`${pick.fx.wood > 0 ? '+' : ''}${fmt(pick.fx.wood)} wood`);
       if (pick.fx.science) parts.push(`${pick.fx.science > 0 ? '+' : ''}${fmt(pick.fx.science)} science`);
       if (pick.fx.tools) parts.push(`${pick.fx.tools > 0 ? '+' : ''}${fmt(pick.fx.tools)} tools`);
+      if (pick.fx.gold) parts.push(`${pick.fx.gold > 0 ? '+' : ''}${fmt(pick.fx.gold)} gold`);
+      if (pick.fx.warmth) parts.push(`${pick.fx.warmth > 0 ? '+' : ''}${fmt(pick.fx.warmth)} warmth`);
       if (pick.fx.threat) parts.push(`${pick.fx.threat > 0 ? '+' : ''}${fmt(pick.fx.threat)} threat`);
       const msg = `✨ Rare event: ${pick.title} — ${pick.text} (${parts.join(', ')}).`;
       s.secrets.log.push(`[${fmt(s.t)}] ${pick.title} — ${pick.text}`);
