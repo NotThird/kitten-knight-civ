@@ -695,6 +695,42 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
   }
 
+  function renderNextMilestoneStrip(opts){
+    const o = opts && typeof opts === 'object' ? opts : {};
+    const label = escapeHtml(String(o.label ?? 'Next milestone'));
+    const reward = escapeHtml(String(o.reward ?? ''));
+    const pct = Math.max(0, Math.min(100, Number(o.pct ?? 0) || 0));
+    const hint = escapeHtml(String(o.hint ?? ''));
+    return (
+      `<div class="small" style="margin-top:6px" title="${hint}">` +
+      `<div style="display:flex; justify-content:space-between; gap:8px"><span>${label}</span><span>${pct.toFixed(0)}%</span></div>` +
+      `<div style="height:6px; border-radius:999px; background:rgba(255,255,255,.12); margin-top:4px; overflow:hidden"><div style="height:100%; width:${pct.toFixed(1)}%; background:linear-gradient(90deg,#67e8f9,#818cf8)"></div></div>` +
+      `<div style="opacity:.8; margin-top:3px">${reward}</div>` +
+      `</div>`
+    );
+  }
+
+  function nextLegacyMilestone(s, activeBranch){
+    const ups = activeBranch === 'military' ? LEGACY_MILITARY_UPGRADES : LEGACY_LORE_UPGRADES;
+    for (const up of ups) {
+      if (activeBranch === 'military') {
+        const rank = legacyUpgradeRank(s, up.id);
+        if (rank < up.maxRank) return { name: up.name, cost: up.cost, reward: up.desc };
+      } else if (!s.legacy?.upgrades?.[up.id]) {
+        return { name: up.name, cost: up.cost, reward: up.desc };
+      }
+    }
+    return null;
+  }
+
+  function nextEternityGateLabel(gates){
+    if (!gates?.legacyResets) return 'Legacy resets gate';
+    if (!gates?.shardMastery) return 'Shard mastery gate';
+    if (!gates?.doctrine) return 'Doctrine gate';
+    if (!gates?.population) return 'Population gate';
+    return 'All gates ready';
+  }
+
   function performEternityReset(){
     ensureLegacyState(state);
     ensureResearchState(state);
@@ -10886,10 +10922,20 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
       const warLedger = legacyWarLedgerBonus(state);
       const milSummary = `<div class="small" style="margin-top:4px">Military shard bonus: <b>+${warLedger}</b> (cap +4)</div>`;
+      const nextLegacy = nextLegacyMilestone(state, activeBranch);
+      const legacyProgressStrip = nextLegacy
+        ? renderNextMilestoneStrip({
+          label: `Legacy next: ${nextLegacy.name} (${fmt(Math.max(0, nextLegacy.cost - state.legacy.shards))} shards to go)`,
+          reward: `Reward preview: ${nextLegacy.reward}`,
+          pct: (Math.max(0, Number(state.legacy?.shards ?? 0)) / Math.max(1, Number(nextLegacy.cost ?? 1))) * 100,
+          hint: `Progress to ${nextLegacy.name}. Cost ${fmt(nextLegacy.cost)} shards.`,
+        })
+        : renderNextMilestoneStrip({ label:'Legacy branch complete', reward:'All upgrades in this branch purchased.', pct:100, hint:'No remaining upgrades in active branch.' });
 
       legacyPanelEl.innerHTML =
         `<div class="small">Shard bank: <b>${fmt(state.legacy.shards)}</b> | total earned: ${fmt(state.legacy.totalShards)} | resets: ${fmt(state.legacy.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(preview)}</b> shards now.</div>` +
+        legacyProgressStrip +
         `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="legacy">Preview Legacy Reset</button></div>` +
         milSummary +
         tabsHtml +
@@ -10915,10 +10961,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const mandateTabs = ETERNITY_MANDATES.map((m) => `<button class="btn ${state.eternity.mandate === m.id ? 'active' : ''}" data-eternity-mandate="${m.id}">${escapeHtml(m.name)}</button>`).join(' ');
       const preserveTabs = PRESERVATION_PACKAGES.map((p) => `<button class="btn ${state.eternity.preserve === p.id ? 'active' : ''}" data-eternity-preserve="${p.id}">${escapeHtml(p.name)}</button>`).join(' ');
       const gateLine = `Gates: legacy resets ${gate.gates.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates.doctrine ? 'yes' : 'no'} | population ${gate.gates.population ? 'yes' : 'no'}`;
+      const gateProgressStrip = renderNextMilestoneStrip({
+        label: `Eternity gates: ${fmt(gate.count)}/4`,
+        reward: `Next gate target: ${nextEternityGateLabel(gate.gates)}`,
+        pct: (Math.max(0, Number(gate.count ?? 0)) / 4) * 100,
+        hint: 'Eternity unlock requires all 4 gates. This bar tracks readiness.',
+      });
 
       eternityPanelEl.innerHTML =
         `<div class="small">Sigils bank: <b>${fmt(state.eternity.sigils)}</b> | total earned: ${fmt(state.eternity.totalSigils)} | resets: ${fmt(state.eternity.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(gain)}</b> sigils. ${escapeHtml(gateLine)}</div>` +
+        gateProgressStrip +
         `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="eternity">Preview Eternity Reset</button></div>` +
         `<div class="small" style="margin-top:6px">Mandates (tab rail):</div><div class="row" style="gap:6px; margin-top:4px">${mandateTabs}</div>` +
         `<div class="small" style="margin-top:6px">Preservation package:</div><div class="row" style="gap:6px; margin-top:4px">${preserveTabs}</div>` +
@@ -10962,8 +11015,27 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
 
       const doctrine = state.research.doctrine ? (state.research.doctrine === 'legion' ? 'Legion Charter' : 'Scholarium Compact') : 'none';
+      let researchProgressStrip = '';
+      if (selected) {
+        const owned = !!state.research.unlocked[selected.id];
+        const prereqIds = Array.isArray(selected.prereqs) ? selected.prereqs : [];
+        const prereqsMet = prereqIds.every((id) => !!state.research.unlocked[id]);
+        const science = Math.max(0, Number(state.res.science ?? 0));
+        const cost = Math.max(1, Number(selected.cost ?? 1));
+        researchProgressStrip = owned
+          ? renderNextMilestoneStrip({ label:`Research unlocked: ${selected.name}`, reward:'Pick another tech for a new milestone.', pct:100, hint:'This tech is complete.' })
+          : renderNextMilestoneStrip({
+            label: `Research next: ${selected.name}`,
+            reward: prereqsMet ? `Unlock reward: ${selected.desc}` : `Prereq needed before unlock (${prereqIds.length} total)`,
+            pct: prereqsMet ? (science / cost) * 100 : 0,
+            hint: prereqsMet
+              ? `Progress to ${selected.name}: ${fmt(science)}/${fmt(cost)} science.`
+              : `Locked by prerequisites: ${(prereqIds.join(', ') || 'none')}.`,
+          });
+      }
       researchPanelEl.innerHTML =
         `<div class="small">Science bank: <b>${fmt(state.res.science)}</b> | Doctrine: <b>${doctrine}</b></div>` +
+        researchProgressStrip +
         `<div class="row" style="gap:6px; margin-top:8px">${tabs}</div>` +
         `<div style="margin-top:8px">${rows}</div>` +
         `${detailSheet}`;

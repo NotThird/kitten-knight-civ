@@ -2,26 +2,9 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T04:22:48.354Z",
+    "lastUpdated": "2026-03-14T04:48:26.680Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-120",
-                "title": "Add visual progress-to-next-milestone indicators on all progression systems",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T21:09:36.127Z",
-                "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
-                "acceptanceCriteria": [
-                    "At least 3 progression systems show next-milestone progress indicators",
-                    "Progress bars update in real-time as resources change",
-                    "Milestone name or reward preview shown on hover or tap",
-                    "Indicators collapse gracefully on mobile",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-052",
                 "title": "Add one-time sound discoverability nudge after 30 seconds of play",
@@ -219,10 +202,47 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "orchestrator"
+            },
+            {
+                "id": "TASK-129",
+                "title": "Add emoji-based kitten avatars to colony tank and stat cards",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T04:39:58.615Z",
+                "description": "Visual identity improvement (Arbiter review #3). The game has deep mechanics but looks like a monitoring dashboard. Adding simple emoji-based kitten avatars (cat face emoji or CSS pixel-art sprites) to the colony tank canvas and to stat card headers would give the game a more playful, recognizable identity. No heavy sprite sheets needed — CSS art or emoji glyphs work. Reference: Cookie Clicker uses simple cookie imagery everywhere to reinforce identity. Kittens Game uses minimal text but has a clear cat theme. KKC needs its kittens to be VISIBLE, not just described in text. This directly addresses the Visuals axis (8.5 - 9.0).",
+                "acceptanceCriteria": [
+                    "Colony tank canvas renders at least simple cat-face shapes or emoji for each kitten",
+                    "At least 2 stat cards include thematic kitten/knight emoji or icons in headers",
+                    "Visual additions work on mobile without layout breakage",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-120",
+                "title": "Add visual progress-to-next-milestone indicators on all progression systems",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:09:36.127Z",
+                "description": "Engagement and completeness improvement. Players need clear visual indicators showing how close they are to the next unlock in every progression system - research tree, prestige, eternity, faction rank. Pattern from Antimatter Dimensions: each dimension shows progress toward next threshold. Realm Grinder: faction progress bars with named tiers. Implementation: for each system that has thresholds, add a small progress bar or percentage showing distance to next milestone. This gives players constant micro-goals and answers 'what should I do next' without a tutorial.",
+                "acceptanceCriteria": [
+                    "At least 3 progression systems show next-milestone progress indicators",
+                    "Progress bars update in real-time as resources change",
+                    "Milestone name or reward preview shown on hover or tap",
+                    "Indicators collapse gracefully on mobile",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T04:46:26.453Z",
+                "completedAt": "2026-03-14T04:48:26.680Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -932,9 +952,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 124,
+        "totalCreated": 125,
         "totalCompleted": 73,
         "pendingQuestion": null
     },
-    "nextId": 129
+    "nextId": 132
 }

@@ -49,6 +49,13 @@
       "taskId": "TASK-119",
       "action": "completed",
       "notes": "Added session milestone timer, 4 escalating rewards, and top-level progress bar UI with celebration hooks."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T04:48:31.697Z",
+      "taskId": "TASK-120",
+      "action": "completed",
+      "notes": "Added next-milestone progress indicators to Legacy, Eternity, and Research panels with reward previews."
     }
   ]
 }
