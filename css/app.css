@@ -108,8 +108,8 @@
     }
 
     /* Discoverability: some stat cards are clickable (inspectors). */
-    .stat.inspectable { cursor:pointer; position:relative; border-color: rgba(125,211,252,.20); }
-    .stat.inspectable:hover { background: rgba(125,211,252,.06); border-color: rgba(125,211,252,.35); }
+    .stat.inspectable { cursor:pointer; position:relative; }
+    .stat.inspectable:hover { background: rgba(125,211,252,.06); }
     .stat.inspectable::after {
       content: none;
     }
