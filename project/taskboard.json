@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T03:48:02.668Z",
+    "lastUpdated": "2026-03-14T03:53:13.933Z",
     "columns": {
         "todo": [
             {
@@ -239,29 +239,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-081",
-                "title": "Add prestige milestone preview showing next reset rewards before committing",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-12T22:24:17.472Z",
-                "description": "Prestige anxiety is a known engagement killer. Antimatter Dimensions and Cookie Clicker both show what you will gain BEFORE you reset. KKC has Legacy Chronicle and Eternity Cycle but no preview of what the next reset will yield. Players should see a preview panel showing: legacy points earned, new upgrades unlockable, permanent bonuses gained. This reduces prestige anxiety (Austin directive: prestige should feel rewarding not punishing) and encourages resets at optimal moments. Simple info panel, no new mechanics needed.",
-                "acceptanceCriteria": [
-                    "Preview panel accessible from prestige section without triggering reset",
-                    "Shows legacy points that would be earned from current run",
-                    "Lists new upgrades that would become affordable after reset",
-                    "Shows permanent bonuses retained vs lost",
-                    "Panel works for both Legacy Chronicle and Eternity Cycle",
-                    "Mobile-friendly layout with no horizontal scroll"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T03:46:19.747Z",
-                "completedAt": "2026-03-14T03:48:02.668Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -794,6 +772,29 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T03:22:46.670Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-081",
+                "title": "Add prestige milestone preview showing next reset rewards before committing",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-12T22:24:17.472Z",
+                "description": "Prestige anxiety is a known engagement killer. Antimatter Dimensions and Cookie Clicker both show what you will gain BEFORE you reset. KKC has Legacy Chronicle and Eternity Cycle but no preview of what the next reset will yield. Players should see a preview panel showing: legacy points earned, new upgrades unlockable, permanent bonuses gained. This reduces prestige anxiety (Austin directive: prestige should feel rewarding not punishing) and encourages resets at optimal moments. Simple info panel, no new mechanics needed.",
+                "acceptanceCriteria": [
+                    "Preview panel accessible from prestige section without triggering reset",
+                    "Shows legacy points that would be earned from current run",
+                    "Lists new upgrades that would become affordable after reset",
+                    "Shows permanent bonuses retained vs lost",
+                    "Panel works for both Legacy Chronicle and Eternity Cycle",
+                    "Mobile-friendly layout with no horizontal scroll"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T03:46:19.747Z",
+                "completedAt": "2026-03-14T03:48:02.668Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T03:53:13.933Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -927,7 +928,7 @@
     },
     "meta": {
         "totalCreated": 124,
-        "totalCompleted": 71,
+        "totalCompleted": 72,
         "pendingQuestion": null
     },
     "nextId": 129
