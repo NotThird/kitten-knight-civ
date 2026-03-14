@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T11:48:16.281Z",
+    "lastUpdated": "2026-03-14T11:52:50.465Z",
     "columns": {
         "todo": [
             {
@@ -196,6 +196,24 @@
                     "Does not conflict with existing SFX system"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-123",
+                "title": "Add visual indicators for active kitten trait effects",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T01:39:50.738Z",
+                "description": "Critic review notes: traits have real mechanical impact but the UI only shows trait names with a percentage on hover. Add subtle per-kitten visual cues when a trait is actively boosting or penalizing output. A small colored dot or icon next to the kitten name (green for positive trait active, amber for negative). This makes the personality system feel alive and teaches players organically without a tutorial. Tier 2: visual feel.\n\n[REJECTED 2026-03-14T11:52:50.465Z] Indicator can show amber mismatch without an active negative trait modifier; acceptance criterion requires active trait effect indication.",
+                "acceptanceCriteria": [
+                    "Each kitten displays a visible indicator when their trait is actively modifying output",
+                    "Positive traits show a distinct visual (green dot or arrow-up) vs negative traits (amber dot or arrow-down)",
+                    "Indicators update in real-time as trait effects apply during simulation ticks",
+                    "No performance regression - indicators use CSS only, no heavy JS animation"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T11:46:21.229Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -219,25 +237,6 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-123",
-                "title": "Add visual indicators for active kitten trait effects",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T01:39:50.738Z",
-                "description": "Critic review notes: traits have real mechanical impact but the UI only shows trait names with a percentage on hover. Add subtle per-kitten visual cues when a trait is actively boosting or penalizing output. A small colored dot or icon next to the kitten name (green for positive trait active, amber for negative). This makes the personality system feel alive and teaches players organically without a tutorial. Tier 2: visual feel.",
-                "acceptanceCriteria": [
-                    "Each kitten displays a visible indicator when their trait is actively modifying output",
-                    "Positive traits show a distinct visual (green dot or arrow-up) vs negative traits (amber dot or arrow-down)",
-                    "Indicators update in real-time as trait effects apply during simulation ticks",
-                    "No performance regression - indicators use CSS only, no heavy JS animation"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T11:46:21.229Z",
-                "completedAt": "2026-03-14T11:48:16.281Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
