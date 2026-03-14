@@ -2,28 +2,9 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T08:53:06.828Z",
+    "lastUpdated": "2026-03-14T09:17:28.608Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-057",
-                "title": "Implement welcome-back summary screen showing offline gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T20:24:24.696Z",
-                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
-                "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
-                    "Shows resource gains and population changes during absence",
-                    "Displays current streak count",
-                    "Modal dismisses on click/tap",
-                    "No modal if offline less than 5 minutes",
-                    "Mobile-responsive layout",
-                    "Tests pass"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-095",
                 "title": "Implement Constellation endgame goals from approved TASK-093 design",
@@ -239,7 +220,50 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-141",
+                "title": "Design third prestige layer for post-Eternity progression",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T09:10:31.014Z",
+                "description": "After Eternity Cycle, players hit a ceiling with no further meta-progression. Design a third prestige layer that resets Eternity progress for powerful permanent bonuses. Reference: Antimatter Dimensions Reality layer, NGU IDLE sadistic mode. Should introduce new mechanics (not just bigger multipliers) - e.g. unlocking new resource types, mutator modifiers for runs, or civilization archetypes that change gameplay. Must feel thematic (kittens ascending to legendary status). Keep scope reasonable for vanilla JS.",
+                "acceptanceCriteria": [
+                    "Design doc specifies reset conditions and what is preserved vs reset",
+                    "At least 2 new mechanics unlocked by third prestige (not just stat boosts)",
+                    "Progression curve ensures 3+ hours of Eternity play before first third-prestige reset",
+                    "Thematic integration with kitten/knight/civ identity",
+                    "Design accounts for save migration from existing players"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T09:11:56.583Z",
+                "completedAt": "2026-03-14T09:12:43.286Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T09:16:19.563Z",
+                "completedAt": "2026-03-14T09:17:28.608Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -1131,9 +1155,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 134,
+        "totalCreated": 135,
         "totalCompleted": 83,
         "pendingQuestion": null
     },
-    "nextId": 141
+    "nextId": 142
 }

@@ -112,6 +112,13 @@
       "taskId": "TASK-052",
       "action": "completed",
       "notes": "Added one-time sound discoverability nudge after 30s active play with localStorage dismissal persistence and mobile-safe dismiss UI."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T09:17:32.339Z",
+      "taskId": "TASK-057",
+      "action": "completed",
+      "notes": "Implemented welcome-back summary screen with ranked offline gains breakdown and streak summary."
     }
   ]
 }

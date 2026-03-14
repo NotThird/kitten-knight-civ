@@ -7562,6 +7562,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
 
   function openOfflineModal(summary){
     if (!offlineModalEl || !offlineSubEl || !offlineBodyEl) return;
+
     const away = Number(summary?.away ?? 0) || 0;
     const sim = Number(summary?.simulated ?? 0) || 0;
     const capped = !!summary?.capped;
@@ -7569,17 +7570,43 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const streak = Math.max(0, Number(summary?.streak ?? 0) || 0);
     const streakBonusPct = Math.max(0, Number(summary?.streakBonusPct ?? 0) || 0);
     const tier = String(summary?.tier ?? 'Welcome back');
-    const items = [];
-    for (const k of ['food','jerky','wood','science','tools']) {
-      const v = Number(gains[k] ?? 0);
-      if (v > 0.001) items.push(`${k}: +${fmt(v)}`);
+
+    const gainRows = [];
+    let totalGain = 0;
+    for (const key of ['food','jerky','wood','science','tools']) {
+      const v = Number(gains[key] ?? 0);
+      if (v > 0.001) {
+        gainRows.push({ key, value: v });
+        totalGain += v;
+      }
     }
+    gainRows.sort((a, b) => b.value - a.value);
+
+    const top = gainRows.length > 0 ? gainRows[0] : null;
+    const quality = totalGain >= 250 ? 'Huge haul' : totalGain >= 75 ? 'Solid gains' : totalGain > 0 ? 'Small gains' : 'Quiet return';
 
     offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at 50% base rate${capped ? ' (capped at 24h)' : ''}.`;
+
+    const streakLine = `Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}`;
+    const summaryLine = top
+      ? `Top gain: ${top.key} +${fmt(top.value)} | Total gained: ${fmt(totalGain)} (${quality})`
+      : 'No meaningful gains this time.';
+
+    const breakdown = gainRows.length
+      ? gainRows
+          .slice(0, 5)
+          .map((row, idx) => `<div>${idx + 1}. ${row.key}: +${fmt(row.value)}</div>`)
+          .join('')
+      : '<div>-</div>';
+
     offlineBodyEl.innerHTML = [
-      `<div>Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}</div>`,
-      items.length ? items.map((line) => `<div>${line}</div>`).join('') : '<div>No meaningful gains this time.</div>'
-    ].join('<div style="height:8px"></div>');
+      `<div><strong>Welcome-back summary</strong></div>`,
+      `<div>${summaryLine}</div>`,
+      `<div>${streakLine}</div>`,
+      '<div style="height:8px"></div>',
+      '<div><strong>Resource breakdown</strong></div>',
+      breakdown
+    ].join('');
 
     offlineModalEl.classList.remove('hidden');
   }
