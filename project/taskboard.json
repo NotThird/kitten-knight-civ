@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T01:46:46.367Z",
+    "lastUpdated": "2026-03-14T01:52:51.257Z",
     "columns": {
         "todo": [
             {
@@ -227,27 +227,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-122",
-                "title": "Fix prestige reset to preserve secrets.found state",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "bugfix",
-                "createdAt": "2026-03-14T01:06:47.543Z",
-                "description": "ROOT CAUSE: performLegacyReset() and performEternityReset() in game/js/state.js call defaultState() which creates a fresh state object, wiping state.secrets. FIX: In both reset functions, save state.secrets before reset and restore it after. Pattern: const savedSecrets = JSON.parse(JSON.stringify(state.secrets || {})); then after reset: state.secrets = savedSecrets; This is a ~10 line fix in state.js. Must fix BEFORE TASK-029 can be re-attempted.\n\n[REJECTED 2026-03-14T01:23:02.413Z] Criterion 2 failed: performEternityReset() still wipes state.secrets.found; only Legacy reset was patched.",
-                "acceptanceCriteria": [
-                    "state.secrets.found persists through Legacy Chronicle reset",
-                    "state.secrets.found persists through Eternity Cycle reset",
-                    "No regression in existing prestige rewards"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T01:46:10.889Z",
-                "testVerdict": "REJECTED",
-                "completedAt": "2026-03-14T01:46:46.367Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -695,6 +675,26 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T00:53:30.184Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-122",
+                "title": "Fix prestige reset to preserve secrets.found state",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-14T01:06:47.543Z",
+                "description": "ROOT CAUSE: performLegacyReset() and performEternityReset() in game/js/state.js call defaultState() which creates a fresh state object, wiping state.secrets. FIX: In both reset functions, save state.secrets before reset and restore it after. Pattern: const savedSecrets = JSON.parse(JSON.stringify(state.secrets || {})); then after reset: state.secrets = savedSecrets; This is a ~10 line fix in state.js. Must fix BEFORE TASK-029 can be re-attempted.\n\n[REJECTED 2026-03-14T01:23:02.413Z] Criterion 2 failed: performEternityReset() still wipes state.secrets.found; only Legacy reset was patched.",
+                "acceptanceCriteria": [
+                    "state.secrets.found persists through Legacy Chronicle reset",
+                    "state.secrets.found persists through Eternity Cycle reset",
+                    "No regression in existing prestige rewards"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T01:46:10.889Z",
+                "testVerdict": "APPROVED",
+                "completedAt": "2026-03-14T01:46:46.367Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T01:52:51.257Z"
             }
         ],
         "blocked": [
@@ -849,7 +849,7 @@
     },
     "meta": {
         "totalCreated": 120,
-        "totalCompleted": 67,
+        "totalCompleted": 68,
         "pendingQuestion": null
     },
     "nextId": 125
