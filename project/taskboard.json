@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T14:48:37.224Z",
+    "lastUpdated": "2026-03-14T14:52:56.061Z",
     "columns": {
         "todo": [
             {
@@ -152,30 +152,6 @@
                 "claimedAt": "2026-03-14T14:41:51.449Z",
                 "completedAt": "2026-03-14T14:42:29.800Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-057",
-                "title": "Implement welcome-back summary screen showing offline gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T20:24:24.696Z",
-                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
-                "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
-                    "Shows resource gains and population changes during absence",
-                    "Displays current streak count",
-                    "Modal dismisses on click/tap",
-                    "No modal if offline less than 5 minutes",
-                    "Mobile-responsive layout",
-                    "Tests pass"
-                ],
-                "source": "strategist",
-                "testVerdict": "REJECTED",
-                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships.",
-                "claimedAt": "2026-03-14T14:46:26.852Z",
-                "completedAt": "2026-03-14T14:48:37.224Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -351,6 +327,31 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T14:22:48.824Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist",
+                "testVerdict": "APPROVED",
+                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships.",
+                "claimedAt": "2026-03-14T14:46:26.852Z",
+                "completedAt": "2026-03-14T14:48:37.224Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T14:52:56.061Z"
             }
         ],
         "blocked": [
@@ -447,7 +448,7 @@
     },
     "meta": {
         "totalCreated": 140,
-        "totalCompleted": 93,
+        "totalCompleted": 94,
         "pendingQuestion": null
     },
     "nextId": 147
