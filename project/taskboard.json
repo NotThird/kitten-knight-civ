@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T00:22:48.825Z",
+    "lastUpdated": "2026-03-14T00:49:49.378Z",
     "columns": {
         "todo": [
             {
@@ -312,23 +312,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-121",
-                "title": "Implement mini-event variety pack from TASK-117 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-13T22:05:09.406Z",
-                "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
-                "acceptanceCriteria": [
-                    "4 event types spawn with weighted selection and anti-repeat",
-                    "Each event has unique accent color and icon on dark theme",
-                    "Rewards apply correctly including training buff and production boost",
-                    "Boost stacking capped at 2.2x with duration extension rules",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-029",
                 "title": "Implement discovery and secret mechanics from approved TASK-024 design",
                 "assignee": "developer",
@@ -350,7 +333,28 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-121",
+                "title": "Implement mini-event variety pack from TASK-117 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-13T22:05:09.406Z",
+                "description": "Implement 4 weighted active-play event types per TASK-117 design. Replace fixed event types with weighted catalog, add anti-repeat, per-event accent colors and icons.",
+                "acceptanceCriteria": [
+                    "4 event types spawn with weighted selection and anti-repeat",
+                    "Each event has unique accent color and icon on dark theme",
+                    "Rewards apply correctly including training buff and production boost",
+                    "Boost stacking capped at 2.2x with duration extension rules",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T00:46:26.405Z",
+                "completedAt": "2026-03-14T00:49:49.378Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",

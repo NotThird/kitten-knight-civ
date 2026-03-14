@@ -706,6 +706,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.active = (ap.active && typeof ap.active === 'object') ? ap.active : null;
     ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
     ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
+    ap.lastEventId = String(ap.lastEventId ?? '');
+    ap.trainingBuffUntil = Number(ap.trainingBuffUntil ?? 0) || 0;
+    ap.trainingBuffMul = Math.max(1, Number(ap.trainingBuffMul ?? 1) || 1);
     ap.seen = Math.max(0, Math.floor(Number(ap.seen ?? 0) || 0));
     ap.incident = (ap.incident && typeof ap.incident === 'object') ? ap.incident : null;
     ap.incidentSeen = Math.max(0, Math.floor(Number(ap.incidentSeen ?? 0) || 0));
@@ -831,10 +834,136 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return true;
   }
 
+  const ACTIVE_PLAY_EVENTS = [
+    {
+      id:'wandering_knight',
+      label:'Wandering Knight',
+      icon:'⚔️',
+      accent:'#7aa2ff',
+      desc:'A veteran knight offers to train your colony for a short tour.',
+      cta:'training buff + science',
+      duration:16,
+      condition:(s)=>Number(s?.kittens?.length ?? 0) >= 6,
+      weight:(s)=>1.0 + Math.max(0, Math.min(0.5, 1 - averageMood01(s))),
+      reward:(s)=>{
+        const nowT = Number(s?.t ?? 0);
+        const out = [];
+        const training = applyTimedMultiplier(s, 'trainingBuffMul', 'trainingBuffUntil', 1.25, 45, 2.2);
+        out.push(`training ${training.mul.toFixed(2)}x (${Math.max(1, Math.ceil(training.until - nowT))}s)`);
+        s.res.science = Math.max(0, Number(s.res.science ?? 0) + 6);
+        out.push('+6 science');
+        return out;
+      },
+    },
+    {
+      id:'lantern_festival',
+      label:'Lantern Festival',
+      icon:'🏮',
+      accent:'#f5b041',
+      desc:'The camp glows with lanterns; spirits rise and work flows.',
+      cta:'production boost + mood',
+      duration:20,
+      condition:(s)=>Number(s?.res?.food ?? 0) >= 40 || Number(s?.res?.warmth ?? 0) >= 30,
+      weight:(s)=>1.2 + 0.2 * clamp01((Number(s?.social?.norms?.mutualAid ?? 0) - 0.4) / 0.6),
+      reward:(s)=>{
+        const nowT = Number(s?.t ?? 0);
+        const out = [];
+        const boost = applyTimedMultiplier(s, 'boostMul', 'boostUntil', 1.65, 30, 2.2);
+        out.push(`production ${boost.mul.toFixed(2)}x (${Math.max(1, Math.ceil(boost.until - nowT))}s)`);
+        const ks = Array.isArray(s.kittens) ? s.kittens : [];
+        for (const k of ks) k.mood = clamp01(Number(k.mood ?? 0.6) + 0.04);
+        out.push('+mood pulse');
+        return out;
+      },
+    },
+    {
+      id:'bandit_scouts',
+      label:'Bandit Scouts Spotted',
+      icon:'🛡️',
+      accent:'#ef5350',
+      desc:'Scouts circle the outskirts. Intercept now for supplies and safer roads.',
+      cta:'reduce threat + resources',
+      duration:14,
+      condition:(s)=>Number(s?.res?.threat ?? 0) >= 12,
+      weight:(s)=>0.9 + Math.max(0, Math.min(0.8, (Number(s?.res?.threat ?? 0) - 12) / 30)),
+      reward:(s)=>{
+        const out = [];
+        s.res.threat = Math.max(0, Number(s.res.threat ?? 0) - 8);
+        out.push('-8 threat');
+        const scaled = scaledBurstRewards(s, { wood:18, tools:10 });
+        s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + scaled.wood);
+        s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + scaled.tools);
+        out.push(`+${fmt(scaled.wood)} wood`, `+${fmt(scaled.tools)} tools`);
+        return out;
+      },
+    },
+    {
+      id:'diplomatic_envoy',
+      label:'Diplomatic Envoy',
+      icon:'🤝',
+      accent:'#b388ff',
+      desc:'An envoy requests audience, offering favorable exchange terms.',
+      cta:'science + food + lower dissent',
+      duration:24,
+      condition:(s)=>Number(s?.social?.coteries?.length ?? 0) > 0,
+      weight:(s)=>0.8 + 0.3 * clamp01(1 - Number(s?.social?.dissent ?? 0)),
+      reward:(s)=>{
+        const out = [];
+        const scaled = scaledBurstRewards(s, { science:14, food:14 });
+        s.res.science = Math.max(0, Number(s.res.science ?? 0) + scaled.science);
+        s.res.food = Math.max(0, Number(s.res.food ?? 0) + scaled.food);
+        s.social = s.social ?? { dissent:0 };
+        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - 0.03);
+        out.push(`+${fmt(scaled.science)} science`, `+${fmt(scaled.food)} food`, '-dissent');
+        return out;
+      },
+    },
+  ];
+
+  function averageMood01(s){
+    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (!ks.length) return 0.55;
+    let sum = 0;
+    for (const k of ks) sum += clamp01(Number(k?.mood ?? 0.55));
+    return clamp01(sum / ks.length);
+  }
+
+  function scaledBurstRewards(s, burst){
+    const pop = Math.max(1, Number(s?.kittens?.length ?? 1));
+    const popFactor = Math.min(1.75, 1 + 0.025 * pop);
+    const out = {};
+    for (const [key, val] of Object.entries(burst ?? {})) out[key] = Math.max(0, Number(val ?? 0) * popFactor);
+    return out;
+  }
+
+  function applyTimedMultiplier(s, mulKey, untilKey, newMul, newDurationSec, hardCap){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    const nowT = Number(s?.t ?? 0);
+    const curUntil = Number(ap[untilKey] ?? 0);
+    const curMul = Math.max(1, Number(ap[mulKey] ?? 1));
+    const isActive = nowT < curUntil;
+    const nextMul = Math.min(Number(hardCap ?? 2.2), Math.max(curMul, Number(newMul ?? 1)));
+    if (isActive) {
+      const ext = Math.min(Number(newDurationSec ?? 0), 15);
+      ap[untilKey] = curUntil + ext;
+    } else {
+      ap[untilKey] = nowT + Math.max(1, Number(newDurationSec ?? 0));
+    }
+    ap[mulKey] = Math.max(1, nextMul);
+    return { mul: ap[mulKey], until: Number(ap[untilKey] ?? nowT) };
+  }
+
   function activePlayProdMul(s){
     const ap = s?.activePlay;
     if (!ap) return 1;
     return (Number(s?.t ?? 0) < Number(ap.boostUntil ?? 0)) ? Math.max(1, Number(ap.boostMul ?? 1) || 1) : 1;
+  }
+
+  function activePlayTrainingMul(s){
+    const ap = s?.activePlay;
+    if (!ap) return 1;
+    return (Number(s?.t ?? 0) < Number(ap.trainingBuffUntil ?? 0)) ? Math.max(1, Number(ap.trainingBuffMul ?? 1) || 1) : 1;
   }
 
   function spawnActivePlayEvent(s){
@@ -842,27 +971,48 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ap = s.activePlay;
     if (ap.active) return;
     const nowT = Number(s.t ?? 0);
-    const types = [
-      { id:'sunbeam_cache', label:'Sunbeam Cache', reward:'burst', burst:{ food: 26, wood: 14 } },
-      { id:'scholar_scroll', label:'Scholar Scroll', reward:'burst', burst:{ science: 20, tools: 5 } },
-      { id:'forge_surge', label:'Forge Surge', reward:'boost', mul: 2.0, duration: 30 },
-      { id:'harvest_blessing', label:'Harvest Blessing', reward:'boost', mul: 1.8, duration: 30 },
-      { id:'knight_tithe', label:'Knight Tithe', reward:'burst', burst:{ food: 14, wood: 20, science: 8 } },
-    ];
-    const pick = types[Math.floor(Math.random() * types.length)] ?? types[0];
+    const eligible = [];
+
+    for (const base of ACTIVE_PLAY_EVENTS) {
+      let ok = false;
+      try { ok = !!base.condition(s); } catch (_) { ok = false; }
+      if (!ok) continue;
+      let w = 0;
+      try { w = Math.max(0, Number(base.weight(s)) || 0); } catch (_) { w = 0; }
+      if (String(ap.lastEventId ?? '') === String(base.id)) w *= 0.35;
+      if (w <= 0) continue;
+      eligible.push({ ...base, _weight: w });
+    }
+
+    if (!eligible.length) {
+      ap.nextAt = nowT + rollActivePlayDelay();
+      return;
+    }
+
+    const total = eligible.reduce((acc, e) => acc + Number(e._weight ?? 0), 0);
+    let roll = Math.random() * Math.max(0.0001, total);
+    let pick = eligible[0];
+    for (const e of eligible) {
+      roll -= Number(e._weight ?? 0);
+      if (roll <= 0) { pick = e; break; }
+    }
+
+    const evDuration = Math.max(10, Math.min(30, Number(pick.duration ?? 16)));
     ap.active = {
       id: String(pick.id),
       label: String(pick.label),
-      reward: String(pick.reward),
-      burst: pick.burst ? { ...pick.burst } : null,
-      mul: Number(pick.mul ?? 1),
-      duration: Number(pick.duration ?? 0),
+      icon: String(pick.icon ?? '✨'),
+      accent: String(pick.accent ?? '#7aa2ff'),
+      desc: String(pick.desc ?? 'Opportunity awaits.'),
+      cta: String(pick.cta ?? 'Claim reward'),
+      duration: evDuration,
       spawnedAt: nowT,
-      expiresAt: nowT + 10,
+      expiresAt: nowT + evDuration,
     };
     ap.nextAt = nowT + rollActivePlayDelay();
+    ap.lastEventId = String(pick.id);
     playSfx('unlock');
-    log(`Active event: ${pick.label} appeared (10s).`);
+    log(`Active event: ${pick.label} appeared (${evDuration}s).`);
   }
 
   function claimActivePlayEvent(s){
@@ -871,27 +1021,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ev = ap.active;
     if (!ev) return false;
 
-    const pop = Math.max(1, Number(s.kittens?.length ?? 1));
-    if (ev.reward === 'boost') {
-      ap.boostMul = Math.max(1.6, Number(ev.mul ?? 2));
-      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0), Number(s.t ?? 0) + Math.max(15, Number(ev.duration ?? 30)));
-      log(`${ev.label}: production surge active (${ap.boostMul.toFixed(2)}x for ${Math.max(1, Math.ceil(ap.boostUntil - Number(s.t ?? 0)))}s).`);
-    } else {
-      const burst = ev.burst ?? { food: 18, wood: 10 };
-      const food = Math.max(0, Number(burst.food ?? 0) * (1 + pop * 0.04));
-      const wood = Math.max(0, Number(burst.wood ?? 0) * (1 + pop * 0.03));
-      const science = Math.max(0, Number(burst.science ?? 0) * (1 + pop * 0.03));
-      const tools = Math.max(0, Number(burst.tools ?? 0) * (1 + pop * 0.02));
-      s.res.food = Number(s.res.food ?? 0) + food;
-      s.res.wood = Number(s.res.wood ?? 0) + wood;
-      s.res.science = Number(s.res.science ?? 0) + science;
-      s.res.tools = Number(s.res.tools ?? 0) + tools;
-      log(`${ev.label}: cache recovered (+${fmt(food)} food, +${fmt(wood)} wood${science > 0 ? `, +${fmt(science)} science` : ''}${tools > 0 ? `, +${fmt(tools)} tools` : ''}).`);
-    }
+    const def = ACTIVE_PLAY_EVENTS.find((x) => String(x.id) === String(ev.id));
+    const details = (def && typeof def.reward === 'function') ? def.reward(s) : [];
 
     ap.active = null;
     ap.seen = Math.max(0, Number(ap.seen ?? 0) + 1);
     playSfx('milestone');
+    if (Array.isArray(details) && details.length) {
+      log(`${ev.label}: ${details.join(', ')}.`);
+    } else {
+      log(`${ev.label}: reward claimed.`);
+    }
     save();
     return true;
   }
@@ -923,6 +1063,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     if (nowT >= Number(ap.boostUntil ?? 0)) {
       ap.boostMul = 1;
+    }
+    if (nowT >= Number(ap.trainingBuffUntil ?? 0)) {
+      ap.trainingBuffMul = 1;
     }
   }
 
@@ -1019,16 +1162,25 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     const ev = ap.active;
     const boostLeft = Math.max(0, Number(ap.boostUntil ?? 0) - Number(state.t ?? 0));
+    const trainingLeft = Math.max(0, Number(ap.trainingBuffUntil ?? 0) - Number(state.t ?? 0));
     if (!ev) {
-      host.innerHTML = boostLeft > 0
-        ? `<div class="active-play-event active"><div class="title">Momentum Surge</div><div class="desc">${Number(ap.boostMul ?? 1).toFixed(2)}x production • ${Math.ceil(boostLeft)}s</div></div>`
+      const lines = [];
+      if (boostLeft > 0) lines.push(`${Number(ap.boostMul ?? 1).toFixed(2)}x production • ${Math.ceil(boostLeft)}s`);
+      if (trainingLeft > 0) lines.push(`${Number(ap.trainingBuffMul ?? 1).toFixed(2)}x training • ${Math.ceil(trainingLeft)}s`);
+      host.innerHTML = lines.length
+        ? `<div class="active-play-event active"><div class="title">Momentum Effects</div><div class="desc">${escapeHtml(lines.join(' | '))}</div></div>`
         : '';
       return;
     }
 
     const left = Math.max(0, Number(ev.expiresAt ?? 0) - Number(state.t ?? 0));
-    const cta = (ev.reward === 'boost') ? `${Number(ev.mul ?? 2).toFixed(1)}x production` : 'Claim cache';
-    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event" type="button"><div class="title">${ev.label}</div><div class="desc">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
+    const evId = String(ev.id ?? '').replace(/[^a-z0-9_-]/gi, '');
+    const icon = escapeHtml(String(ev.icon ?? '✨'));
+    const label = escapeHtml(String(ev.label ?? 'Active Event'));
+    const desc = escapeHtml(String(ev.desc ?? 'Tap to claim reward'));
+    const cta = escapeHtml(String(ev.cta ?? 'reward'));
+    const accent = escapeHtml(String(ev.accent ?? '#7aa2ff'));
+    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event event-${evId}" style="--event-accent:${accent}" type="button"><div class="title"><span class="event-icon" aria-hidden="true">${icon}</span><span class="event-name">${label}</span></div><div class="desc" title="${desc}">${desc}</div><div class="cta">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
   }
 
   function audioCtx(){
@@ -3561,15 +3713,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Main XP function: distributes XP across micro-skills for a task, or awards directly.
   // Signature: gainSkillXP(state, kitten, taskOrSkill, amount)
   function gainSkillXP(s, k, taskOrSkill, amt){
+    const trainingMul = activePlayTrainingMul(s);
+    const totalAmt = Number(amt ?? 0) * trainingMul;
     const entries = TASK_SKILL_MAP[taskOrSkill];
     if (entries) {
       // Distribute across micro-skills based on TASK_SKILL_MAP rates
       for (const [skillId, rate] of entries) {
-        awardMicroSkillXP(s, k, skillId, amt * rate);
+        awardMicroSkillXP(s, k, skillId, totalAmt * rate);
       }
     } else {
       // Direct skill/category XP (backward compat for Mentor target teaching, etc.)
-      awardMicroSkillXP(s, k, taskOrSkill, amt);
+      awardMicroSkillXP(s, k, taskOrSkill, totalAmt);
     }
   }
 
