@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 22,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T07:49:15.312Z",
+    "lastUpdated": "2026-03-14T07:52:53.861Z",
     "columns": {
         "todo": [
             {
@@ -206,26 +206,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-128",
-                "title": "Session milestones: Award escalating bonuses for continuous play time",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.230Z",
-                "description": "Step 1 of TASK-119. Track session duration. At 5, 15, 30, 60 min milestones, grant escalating resource bonuses with celebration UI.",
-                "acceptanceCriteria": [
-                    "Session timer tracks play duration since load",
-                    "Milestone bonuses trigger at defined thresholds with visual feedback",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T07:46:16.975Z",
-                "completedAt": "2026-03-14T07:49:15.312Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -958,6 +939,26 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-14T07:35:54.341Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-128",
+                "title": "Session milestones: Award escalating bonuses for continuous play time",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.230Z",
+                "description": "Step 1 of TASK-119. Track session duration. At 5, 15, 30, 60 min milestones, grant escalating resource bonuses with celebration UI.",
+                "acceptanceCriteria": [
+                    "Session timer tracks play duration since load",
+                    "Milestone bonuses trigger at defined thresholds with visual feedback",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T07:46:16.975Z",
+                "completedAt": "2026-03-14T07:49:15.312Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T07:52:53.861Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1091,7 +1092,7 @@
     },
     "meta": {
         "totalCreated": 131,
-        "totalCompleted": 80,
+        "totalCompleted": 81,
         "pendingQuestion": null
     },
     "nextId": 138
