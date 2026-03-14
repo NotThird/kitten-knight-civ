@@ -7645,6 +7645,8 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const streak = Math.max(0, Number(summary?.streak ?? 0) || 0);
     const streakBonusPct = Math.max(0, Number(summary?.streakBonusPct ?? 0) || 0);
     const tier = String(summary?.tier ?? 'Welcome back');
+    const comebackMul = Math.max(1, Number(summary?.comebackMul ?? 1) || 1);
+    const catchUpBonusPct = Math.max(0, Number(summary?.catchUpBonusPct ?? 0) || 0);
 
     const gainRows = [];
     let totalGain = 0;
@@ -7660,7 +7662,7 @@ const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
     const top = gainRows.length > 0 ? gainRows[0] : null;
     const quality = totalGain >= 250 ? 'Huge haul' : totalGain >= 75 ? 'Solid gains' : totalGain > 0 ? 'Small gains' : 'Quiet return';
 
-    offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at 50% base rate${capped ? ' (capped at 24h)' : ''}.`;
+    offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at ${(OFFLINE_RATE * 100).toFixed(0)}% base x${comebackMul.toFixed(2)} comeback${catchUpBonusPct > 0 ? ` (+${catchUpBonusPct.toFixed(0)}% catch-up)` : ''}${capped ? ' (capped at 24h)' : ''}.`;
 
     const streakLine = `Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}`;
     const summaryLine = top
@@ -12848,6 +12850,25 @@ function renderTrends(){
     save();
   }
 
+  function computeOfflineComebackMul(awaySec){
+    const hours = Math.max(0, Number(awaySec ?? 0) || 0) / 3600;
+    if (hours <= 0) return 1;
+    if (hours <= 8) {
+      return 1 + (0.75 * (hours / 8));
+    }
+    const tail = 1 - Math.exp(-(hours - 8) / 8);
+    return Math.min(2, 1.75 + (0.25 * tail));
+  }
+
+  function computeOfflineCatchUpBonus(s){
+    const expectedUnlocks = unlockDefs.reduce((acc, def) => {
+      return acc + ((Number(s?.t ?? 0) >= Number(def.at ?? Infinity)) ? 1 : 0);
+    }, 0);
+    const unlocked = unlockDefs.reduce((acc, def) => acc + (s?.unlocked?.[def.id] ? 1 : 0), 0);
+    const behind = Math.max(0, expectedUnlocks - unlocked);
+    return Math.min(25, behind * 8);
+  }
+
   function applyOfflineProgressOnBoot(){
     const away = Number(state?._offlinePending ?? 0) || 0;
     if (away < 3) { state._offlinePending = 0; return; }
@@ -12855,7 +12876,13 @@ function renderTrends(){
     const effectiveAway = away <= OFFLINE_KNEE_SEC
       ? away
       : (OFFLINE_KNEE_SEC + Math.sqrt((away - OFFLINE_KNEE_SEC) * OFFLINE_KNEE_SEC));
-    const simSeconds = Math.min(24 * 60 * 60, effectiveAway) * OFFLINE_RATE;
+    const comebackMulRaw = computeOfflineComebackMul(away);
+    const catchUpBonusPctRaw = computeOfflineCatchUpBonus(state);
+    const catchUpMulRaw = 1 + (catchUpBonusPctRaw / 100);
+    const totalBonusMul = Math.min(2, comebackMulRaw * catchUpMulRaw);
+    const comebackMul = Math.min(2, comebackMulRaw);
+    const catchUpBonusPct = Math.max(0, (totalBonusMul / Math.max(1, comebackMul) - 1) * 100);
+    const simSeconds = Math.min(24 * 60 * 60, effectiveAway) * OFFLINE_RATE * totalBonusMul;
     if (simSeconds < 1) {
       state._offlinePending = 0;
       state._offlineWasCapped = false;
@@ -12873,8 +12900,10 @@ function renderTrends(){
       state.meta.offlineReturnStreak = streak;
     }
 
-    const streakBonusPct = Math.min(25, Math.max(0, (streak - 1) * 5));
-    const streakBonusMul = 1 + (streakBonusPct / 100);
+    const streakBonusPctRaw = Math.min(25, Math.max(0, (streak - 1) * 5));
+    const streakBonusMulRaw = 1 + (streakBonusPctRaw / 100);
+    const combinedBonusMul = Math.min(2, totalBonusMul * streakBonusMulRaw);
+    const streakBonusPct = Math.max(0, (combinedBonusMul / Math.max(1, totalBonusMul) - 1) * 100);
 
     const keys = ['food','jerky','wood','science','tools'];
     const liveState = state;
@@ -12905,7 +12934,7 @@ function renderTrends(){
 
     const gains = {};
     for (const k of keys) {
-      const add = perSec[k] * simSeconds * streakBonusMul;
+      const add = perSec[k] * simSeconds * (combinedBonusMul / Math.max(1, totalBonusMul));
       gains[k] = add;
       state.res[k] = Math.max(0, Number(state.res?.[k] ?? 0) + add);
     }
@@ -12913,12 +12942,14 @@ function renderTrends(){
     const capped = !!state._offlineWasCapped;
     const tier = away >= (8 * 60 * 60) ? 'Legendary return' : away >= (2 * 60 * 60) ? 'Recharged return' : away >= (15 * 60) ? 'Rested return' : 'Quick return';
     log(
-      `Offline progress: away ${fmt(away)}s, effective ${fmt(effectiveAway)}s, simulated ${fmt(simSeconds)}s at 50% base` +
-      (streakBonusPct > 0 ? ` (+${streakBonusPct}% streak bonus)` : '') +
+      `Offline progress: away ${fmt(away)}s, effective ${fmt(effectiveAway)}s, simulated ${fmt(simSeconds)}s at ${(OFFLINE_RATE * 100).toFixed(0)}% base x${comebackMul.toFixed(2)}` +
+      (catchUpBonusPct > 0 ? ` (+${catchUpBonusPct.toFixed(0)}% catch-up)` : '') +
+      (streakBonusPct > 0 ? ` (+${streakBonusPct.toFixed(0)}% streak)` : '') +
+      (combinedBonusMul >= 1.999 ? ' (capped at 2x active value/hour).' : '') +
       (capped ? ' (capped at 24h).' : '.')
     );
 
-    state._offlineSummary = { away, simulated: simSeconds, capped, gains, tier, streak, streakBonusPct };
+    state._offlineSummary = { away, simulated: simSeconds, capped, gains, tier, streak, streakBonusPct, comebackMul, catchUpBonusPct };
     state._offlinePending = 0;
     state._offlineWasCapped = false;
     state._suppressedLogCount = 0;

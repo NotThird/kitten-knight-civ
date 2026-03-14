@@ -126,6 +126,13 @@
       "taskId": "TASK-095",
       "action": "completed",
       "notes": "Implemented first Constellation mastery slice: 3 goal cards, deterministic progress bars, A/B reward choices, persistent bonus hooks."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T10:18:45.355Z",
+      "taskId": "TASK-111",
+      "action": "completed",
+      "notes": "Added offline comeback multiplier + catch-up bonus with 2x cap and modal surfacing."
     }
   ]
 }
