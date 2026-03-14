@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T04:20:31.856Z",
+    "lastUpdated": "2026-03-14T04:22:48.354Z",
     "columns": {
         "todo": [
             {
@@ -222,28 +222,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-119",
-                "title": "Add session milestone rewards with escalating bonuses for continuous play",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-13T21:09:21.818Z",
-                "description": "BREAKTHROUGH TASK for engagement axis - currently 8, target 9. The game lacks session-level goals that reward continuous play. Pattern from Cookie Clicker: sugar lumps accumulate during active sessions. NGU IDLE: daily spin rewards scale with consecutive days. Implementation: track current session duration. At 5min, 15min, 30min, 1hr milestones, award escalating bonuses - resource burst, temporary production multiplier, or unique cosmetic unlock. Show a milestone tracker bar at the top of screen. This creates short-term goals layered on top of the existing idle loop, directly addressing the one-more-turn feeling. Keep it simple: milestone thresholds plus reward table plus UI indicator.",
-                "acceptanceCriteria": [
-                    "Session timer tracks continuous play time accurately",
-                    "At least 4 milestone thresholds trigger with escalating rewards",
-                    "Milestone progress bar visible in main UI",
-                    "Rewards feel meaningful - minimum 2x current production for 60s at first milestone",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T04:16:14.452Z",
-                "completedAt": "2026-03-14T04:20:31.856Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -799,6 +778,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T03:53:13.933Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-119",
+                "title": "Add session milestone rewards with escalating bonuses for continuous play",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-13T21:09:21.818Z",
+                "description": "BREAKTHROUGH TASK for engagement axis - currently 8, target 9. The game lacks session-level goals that reward continuous play. Pattern from Cookie Clicker: sugar lumps accumulate during active sessions. NGU IDLE: daily spin rewards scale with consecutive days. Implementation: track current session duration. At 5min, 15min, 30min, 1hr milestones, award escalating bonuses - resource burst, temporary production multiplier, or unique cosmetic unlock. Show a milestone tracker bar at the top of screen. This creates short-term goals layered on top of the existing idle loop, directly addressing the one-more-turn feeling. Keep it simple: milestone thresholds plus reward table plus UI indicator.",
+                "acceptanceCriteria": [
+                    "Session timer tracks continuous play time accurately",
+                    "At least 4 milestone thresholds trigger with escalating rewards",
+                    "Milestone progress bar visible in main UI",
+                    "Rewards feel meaningful - minimum 2x current production for 60s at first milestone",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T04:16:14.452Z",
+                "completedAt": "2026-03-14T04:20:31.856Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T04:22:48.354Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -932,7 +933,7 @@
     },
     "meta": {
         "totalCreated": 124,
-        "totalCompleted": 72,
+        "totalCompleted": 73,
         "pendingQuestion": null
     },
     "nextId": 129
