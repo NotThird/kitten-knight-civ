@@ -29,7 +29,7 @@
     .session-milestone-bar { margin-top:6px; height:8px; border-radius:999px; background:rgba(255,255,255,.09); overflow:hidden; }
     .session-milestone-fill { height:100%; background:linear-gradient(90deg, rgba(52,211,153,.95), rgba(125,211,252,.95)); }
     .session-milestone-sub { margin-top:5px; font-size:11px; color:var(--muted); }
-    .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); border-left:3px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; }
+    .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:8px; }
     .stat .k { font-size:12px; color:var(--muted); font-weight:600; }
     .stat .v { font-size:18px; font-weight:700; margin-top:2px; position:relative; display:inline-block; }
     .resource-rate { margin-top:2px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:4px; min-height:16px; }
@@ -39,25 +39,25 @@
     .resource-rate.down { color: var(--bad); }
     .resource-rate.flat { color: var(--muted); }
     .resource-card { cursor: pointer; }
-    .resource-card .k::after { content: ' • tap for details'; font-size:10px; color: rgba(148,163,184,.85); }
+    .resource-card .k::after { content: none; }
     .resource-detail-row { margin-top: 6px; border-top: 1px solid rgba(255,255,255,.10); padding-top: 6px; font-size: 11px; color: var(--muted); line-height: 1.35; word-break: break-word; }
     .resource-detail-row b { color: var(--text); font-weight: 600; }
     .stat-icon { display:inline-block; transform-origin:50% 55%; }
     .stat-icon.icon-pulse { animation: statIconPulse .5s ease-out; }
     .stat.tone-food .k { color: var(--tone-food); }
-    .stat.tone-food { border-left-color: rgba(251,191,36,.42); }
+    .stat.tone-food { border-top: 2px solid rgba(251,191,36,.35); }
     .stat.tone-wood .k { color: var(--tone-wood); }
-    .stat.tone-wood { border-left-color: rgba(192,132,87,.42); }
+    .stat.tone-wood { border-top: 2px solid rgba(192,132,87,.35); }
     .stat.tone-warmth .k { color: var(--tone-warmth); }
-    .stat.tone-warmth { border-left-color: rgba(251,113,133,.42); }
+    .stat.tone-warmth { border-top: 2px solid rgba(251,113,133,.35); }
     .stat.tone-threat .k { color: var(--tone-threat); }
-    .stat.tone-threat { border-left-color: rgba(248,113,113,.42); }
+    .stat.tone-threat { border-top: 2px solid rgba(248,113,113,.35); }
     .stat.tone-science .k { color: var(--tone-science); }
-    .stat.tone-science { border-left-color: rgba(96,165,250,.42); }
+    .stat.tone-science { border-top: 2px solid rgba(96,165,250,.35); }
     .stat.tone-tools .k { color: var(--tone-tools); }
-    .stat.tone-tools { border-left-color: rgba(167,139,250,.42); }
+    .stat.tone-tools { border-top: 2px solid rgba(167,139,250,.35); }
     .stat.tone-legacy .k { color: var(--tone-legacy); }
-    .stat.tone-legacy { border-left-color: rgba(34,211,238,.42); }
+    .stat.tone-legacy { border-top: 2px solid rgba(34,211,238,.35); }
     .stat .v.resource-ok { color: var(--good); }
     .stat .v.resource-low { color: var(--warn); }
     .stat .v.resource-critical { color: var(--bad); }
@@ -111,16 +111,7 @@
     .stat.inspectable { cursor:pointer; position:relative; border-color: rgba(125,211,252,.20); }
     .stat.inspectable:hover { background: rgba(125,211,252,.06); border-color: rgba(125,211,252,.35); }
     .stat.inspectable::after {
-      content: 'inspect';
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      font-size: 10px;
-      letter-spacing: .3px;
-      text-transform: uppercase;
-      color: rgba(125,211,252,.85);
-      opacity: .85;
-      pointer-events: none;
+      content: none;
     }
 
     .small { font-size:12px; color:var(--muted); }
@@ -329,7 +320,7 @@
     .tag { font-size:11px; color:var(--muted); padding:2px 6px; border:1px solid rgba(255,255,255,.12); border-radius:999px; }
     td.taskCell.blocked { background: rgba(251,191,36,.06); }
 
-    .log, .panelmono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; white-space:pre-wrap; overflow:auto; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); border-left:3px solid var(--section-accent, rgba(125,211,252,.30)); padding:10px; border-radius:12px; }
+    .log, .panelmono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; white-space:pre-wrap; overflow:auto; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); padding:10px; border-radius:8px; }
     .log { max-height:160px; }
     .panelmono { max-height:180px; }
     .decision-log-panel { margin-top:10px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:rgba(0,0,0,.18); }
