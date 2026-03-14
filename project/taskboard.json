@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T13:17:27.914Z",
+    "lastUpdated": "2026-03-14T13:22:51.611Z",
     "columns": {
         "todo": [
             {
@@ -166,6 +166,24 @@
                 "source": "strategist",
                 "testVerdict": "REJECTED",
                 "reworkNote": "Indicator shows amber even without active negative modifier. Must only indicate when trait IS actively modifying output."
+            },
+            {
+                "id": "TASK-138",
+                "title": "Enhance resource fly-up animations for significant gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:10:27.891Z",
+                "description": "Arbiter review notes the +X fly-up popups are small and fast. For significant gains (building complete, active event claimed, prestige bonuses), fly-ups should be larger, slower, and more satisfying. Reference: Cookie Clicker golden cookie popups scale with value. Keep it CSS-only - bigger font-size, slower translateY, maybe a brief scale-up pulse. This is Tier 2 (visual feel) work that directly targets the visuals axis (8.5).\n\n[REJECTED 2026-03-14T13:22:51.611Z] Significant fly-ups are threshold-based only; building completion is not explicitly handled per acceptance criterion 1.",
+                "acceptanceCriteria": [
+                    "Significant gains (building completion, event claims) show larger fly-up text than routine +1 ticks",
+                    "Fly-up animation duration is at least 1.5s for significant gains vs current speed",
+                    "No new JS animation libraries - CSS transitions/keyframes only",
+                    "Normal per-tick fly-ups remain unchanged"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T13:16:11.372Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -229,25 +247,6 @@
                 "claimedAt": "2026-03-14T12:41:56.510Z",
                 "completedAt": "2026-03-14T12:43:42.845Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-138",
-                "title": "Enhance resource fly-up animations for significant gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T08:10:27.891Z",
-                "description": "Arbiter review notes the +X fly-up popups are small and fast. For significant gains (building complete, active event claimed, prestige bonuses), fly-ups should be larger, slower, and more satisfying. Reference: Cookie Clicker golden cookie popups scale with value. Keep it CSS-only - bigger font-size, slower translateY, maybe a brief scale-up pulse. This is Tier 2 (visual feel) work that directly targets the visuals axis (8.5).",
-                "acceptanceCriteria": [
-                    "Significant gains (building completion, event claims) show larger fly-up text than routine +1 ticks",
-                    "Fly-up animation duration is at least 1.5s for significant gains vs current speed",
-                    "No new JS animation libraries - CSS transitions/keyframes only",
-                    "Normal per-tick fly-ups remain unchanged"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T13:16:11.372Z",
-                "completedAt": "2026-03-14T13:17:27.914Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
