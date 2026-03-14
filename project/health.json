@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-14T06:03:11.284Z",
+  "timestamp": "2026-03-14T01:33:20.401Z",
   "iteration": 0,
   "cronHealth": {
     "healthy": [
@@ -17,9 +17,9 @@
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 10,
+    "todo": 9,
     "claimed": 0,
-    "review": 0,
+    "review": 1,
     "done": 29,
     "blocked": 7,
     "staleTasks": [],
