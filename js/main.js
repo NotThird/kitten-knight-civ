@@ -680,11 +680,64 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const eternityGate = eternityGateStatus(s);
     const eternitySigils = computeEternitySigilGain(s);
 
+    const legacyLosses = [];
+    const lossRows = [
+      ['Food', Number(s?.res?.food ?? 0)],
+      ['Wood', Number(s?.res?.wood ?? 0)],
+      ['Science', Number(s?.res?.science ?? 0)],
+      ['Tools', Number(s?.res?.tools ?? 0)],
+      ['Kittens', Number(s?.kittens?.length ?? 0)],
+      ['Huts', Number(s?.res?.huts ?? 0)],
+      ['Palisades', Number(s?.res?.palisade ?? 0)],
+      ['Granaries', Number(s?.res?.granaries ?? 0)],
+      ['Workshops', Number(s?.res?.workshops ?? 0)],
+      ['Libraries', Number(s?.res?.libraries ?? 0)],
+    ];
+    for (const [name, val] of lossRows) {
+      if ((Number(val) || 0) > 0) legacyLosses.push(`${name}: ${fmt(val)}`);
+    }
+    if (!legacyLosses.length) legacyLosses.push('No meaningful colony progress to reset yet.');
+
+    const loreBonuses = LEGACY_LORE_UPGRADES
+      .filter((up) => !!s?.legacy?.upgrades?.[up.id])
+      .map((up) => `${up.name}: ${up.desc}`);
+    const militaryBonuses = LEGACY_MILITARY_UPGRADES
+      .map((up) => {
+        const rank = legacyUpgradeRank(s, up.id);
+        if (rank <= 0) return null;
+        const rankNote = up.maxRank > 1 ? ` (rank ${fmt(rank)}/${fmt(up.maxRank)})` : '';
+        return `${up.name}${rankNote}: ${up.desc}`;
+      })
+      .filter(Boolean);
+
+    const eternityLosses = [];
+    if ((Number(s?.legacy?.shards ?? 0) || 0) > 0) eternityLosses.push(`Legacy Shards bank: ${fmt(s.legacy.shards)}`);
+    const ownedLegacyUpgrades = [
+      ...LEGACY_LORE_UPGRADES.filter((up) => !!s?.legacy?.upgrades?.[up.id]).map((up) => up.name),
+      ...LEGACY_MILITARY_UPGRADES
+        .map((up) => ({ up, rank: legacyUpgradeRank(s, up.id) }))
+        .filter((row) => row.rank > 0)
+        .map((row) => `${row.up.name}${row.up.maxRank > 1 ? ` (rank ${fmt(row.rank)}/${fmt(row.up.maxRank)})` : ''}`),
+    ];
+    if (ownedLegacyUpgrades.length > 0) eternityLosses.push(`Legacy upgrades: ${fmt(ownedLegacyUpgrades.length)} owned`);
+
+    const unlockedResearch = Object.values(s?.research?.unlocked ?? {}).filter(Boolean).length;
+    if (unlockedResearch > 0) eternityLosses.push(`Research unlocks: ${fmt(unlockedResearch)}`);
+    if (!eternityLosses.length) eternityLosses.push('No legacy-layer progress to reset yet.');
+
     return {
       legacyPoints,
       newUnlocks: {
         legacy: legacyUnlocks,
         eternity: eternityUnlocks,
+      },
+      legacySummary: {
+        loreBonuses,
+        militaryBonuses,
+        losses: legacyLosses,
+      },
+      eternitySummary: {
+        losses: eternityLosses,
       },
       eternityProgress: {
         gateCount: eternityGate.count,
@@ -8438,6 +8491,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }).join('');
   }
 
+  function renderPrestigeSimpleList(items, emptyText){
+    if (!Array.isArray(items) || items.length === 0) return `<li>${escapeHtml(emptyText)}</li>`;
+    return items.slice(0, 8).map((line) => `<li>${escapeHtml(String(line ?? ''))}</li>`).join('');
+  }
+
   function openPrestigePreviewModal(kind){
     if (!prestigeModalEl || !prestigeTitleEl || !prestigeSubEl || !prestigeBodyEl || !btnPrestigePreviewConfirmEl) {
       return Promise.resolve(confirm(kind === 'eternity'
@@ -8448,42 +8506,67 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const preview = getPrestigePreview(state);
     const legacyUnlocks = preview?.newUnlocks?.legacy ?? [];
     const eternityUnlocks = preview?.newUnlocks?.eternity ?? [];
+    const legacySummary = preview?.legacySummary ?? { loreBonuses: [], militaryBonuses: [], losses: [] };
+    const eternitySummary = preview?.eternitySummary ?? { losses: [] };
     const gate = preview?.eternityProgress ?? { gateCount: 0, gates: {}, ready: false, sigilGain: 0 };
 
     if (kind === 'eternity') {
       prestigeEyebrowEl.textContent = 'Eternity Cycle';
       prestigeTitleEl.textContent = 'Confirm Eternity Reset';
-      prestigeSubEl.textContent = 'Legacy shards, legacy upgrades, and research reset. Eternity upgrades, mandate, preserve package, and sigils persist.';
+      prestigeSubEl.textContent = 'Gain Eternity power first, then choose when to cash out your current Legacy run.';
       btnPrestigePreviewConfirmEl.textContent = 'Confirm Eternity Reset';
       prestigeBodyEl.innerHTML = [
         '<div class="prestigePreviewGrid">',
         '  <section class="prestigePreviewCard">',
-        '    <h4>Reset Gain</h4>',
+        '    <h4>You Gain</h4>',
         `    <div class="prestigeGain">+${fmt(gate.sigilGain)} Ancestral Sigils</div>`,
         `    <div class="small">Gate progress: ${fmt(gate.gateCount)}/4 met</div>`,
         `    <div class="small">Legacy resets ${gate.gates?.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates?.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates?.doctrine ? 'yes' : 'no'} | population ${gate.gates?.population ? 'yes' : 'no'}</div>`,
         '  </section>',
         '  <section class="prestigePreviewCard">',
-        '    <h4>Affordable After Reset</h4>',
+        '    <h4>Buy Immediately After Reset</h4>',
         `    <ul class="prestigeList">${renderPrestigeUnlockList(eternityUnlocks, 'No new Eternity upgrades immediately affordable.')}</ul>`,
+        '  </section>',
+        '</div>',
+        '<div class="prestigePreviewGrid">',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>This Reset Consumes</h4>',
+        `    <ul class="prestigeList">${renderPrestigeSimpleList(eternitySummary.losses, 'No major legacy-layer losses.')}</ul>`,
+        '  </section>',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>What Stays</h4>',
+        '    <ul class="prestigeList"><li>Eternity upgrades</li><li>Mandate + preserve package</li><li>Existing sigil bank</li></ul>',
         '  </section>',
         '</div>'
       ].join('');
     } else {
       prestigeEyebrowEl.textContent = 'Legacy Chronicle';
       prestigeTitleEl.textContent = 'Confirm Legacy Reset';
-      prestigeSubEl.textContent = 'Colony resources, buildings, and population reset. Legacy upgrades and shard balance persist.';
+      prestigeSubEl.textContent = 'Bank your shard gain now, then rebuild faster with permanent branch bonuses.';
       btnPrestigePreviewConfirmEl.textContent = 'Confirm Legacy Reset';
       prestigeBodyEl.innerHTML = [
         '<div class="prestigePreviewGrid">',
         '  <section class="prestigePreviewCard">',
-        '    <h4>Reset Gain</h4>',
+        '    <h4>You Gain</h4>',
         `    <div class="prestigeGain">+${fmt(preview.legacyPoints)} Legacy Shards</div>`,
         `    <div class="small">Potential sigils after this run: +${fmt(gate.sigilGain)} (${fmt(gate.gateCount)}/4 gates met)</div>`,
         '  </section>',
         '  <section class="prestigePreviewCard">',
-        '    <h4>Affordable After Reset</h4>',
+        '    <h4>Buy Immediately After Reset</h4>',
         `    <ul class="prestigeList">${renderPrestigeUnlockList(legacyUnlocks, 'No new Legacy upgrades immediately affordable.')}</ul>`,
+        '  </section>',
+        '</div>',
+        '<div class="prestigePreviewGrid">',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>Branch Bonuses You Keep</h4>',
+        `    <div class="small"><b>Lore</b></div>`,
+        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.loreBonuses, 'No Lore upgrades owned yet.')}</ul>`,
+        `    <div class="small" style="margin-top:6px"><b>Military</b></div>`,
+        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.militaryBonuses, 'No Military upgrades owned yet.')}</ul>`,
+        '  </section>',
+        '  <section class="prestigePreviewCard">',
+        '    <h4>This Reset Rebuilds</h4>',
+        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.losses, 'No major colony losses.')}</ul>`,
         '  </section>',
         '</div>',
         '<section class="prestigePreviewCard">',
