@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-14T09:03:00-05:00",
-  "iteration": 25,
+  "timestamp": "2026-03-14T04:33:12.2730852-05:00",
+  "iteration": 23,
   "cronHealth": {
     "healthy": [
       "forge-oracle",
@@ -19,7 +19,7 @@
   "pipelineHealth": {
     "todo": 13,
     "claimed": 0,
-    "review": 0,
+    "review": 1,
     "done": 36,
     "blocked": 5,
     "staleTasks": [],
@@ -31,23 +31,23 @@
     ],
     "lastCycleSilent": [
       "oracle",
-      "forgeleader",
       "architect",
       "gauntlet",
       "arbiter",
+      "watchdog",
       "sentinel",
       "strategist",
-      "watchdog",
-      "codesmith"
+      "forgeleader",
+      "leader"
     ],
     "errors": []
   },
   "convergence": {
     "currentScore": 9.2,
-    "threshold": 9.0,
+    "threshold": 9,
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "shipped"
+    "status": "phase2-improving"
   }
 }

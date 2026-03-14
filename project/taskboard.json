@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T09:17:28.608Z",
+    "lastUpdated": "2026-03-14T09:22:53.535Z",
     "columns": {
         "todo": [
             {
@@ -217,6 +217,27 @@
                     "Web Audio synthesized, no external files"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T09:16:19.563Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -240,28 +261,6 @@
                 "claimedAt": "2026-03-14T09:11:56.583Z",
                 "completedAt": "2026-03-14T09:12:43.286Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-057",
-                "title": "Implement welcome-back summary screen showing offline gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T20:24:24.696Z",
-                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.",
-                "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
-                    "Shows resource gains and population changes during absence",
-                    "Displays current streak count",
-                    "Modal dismisses on click/tap",
-                    "No modal if offline less than 5 minutes",
-                    "Mobile-responsive layout",
-                    "Tests pass"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T09:16:19.563Z",
-                "completedAt": "2026-03-14T09:17:28.608Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
