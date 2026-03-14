@@ -189,6 +189,13 @@
       "taskId": "TASK-140",
       "action": "completed",
       "notes": "Added 4 contextual society event audio cues (rivalry, truce, reconnect, ritual) and wired feed event triggers"
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T14:48:41.780Z",
+      "taskId": "TASK-057",
+      "action": "completed",
+      "notes": "Added 5-minute welcome-back modal gate and offline population born/died deltas in summary modal."
     }
   ]
 }

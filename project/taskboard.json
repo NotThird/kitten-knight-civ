@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T14:22:48.824Z",
+    "lastUpdated": "2026-03-14T14:48:37.224Z",
     "columns": {
         "todo": [
             {
@@ -42,27 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-057",
-                "title": "Implement welcome-back summary screen showing offline gains",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T20:24:24.696Z",
-                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
-                "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
-                    "Shows resource gains and population changes during absence",
-                    "Displays current streak count",
-                    "Modal dismisses on click/tap",
-                    "No modal if offline less than 5 minutes",
-                    "Mobile-responsive layout",
-                    "Tests pass"
-                ],
-                "source": "strategist",
-                "testVerdict": "REJECTED",
-                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships."
             },
             {
                 "id": "TASK-095",
@@ -153,7 +132,52 @@
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-146",
+                "title": "Design mid-game adaptive pacing system with scaled challenges",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T14:40:36.657Z",
+                "description": "Critic identifies mid-game plateau once players have 10+ kittens and all buildings. Decision density drops. Kittens Game solves with trade routes/religion, Cookie Clicker with garden/stock market minigames, NGU IDLE with adventure zones. KKC needs mechanics introducing NEW tension scaled to colony size: rival colonies, seasonal crises, kitten council politics, or NPC trade/diplomacy.",
+                "acceptanceCriteria": [
+                    "Design doc describes at least 2 new mid-game mechanics unlocking at colony milestones",
+                    "Each mechanic introduces new player decisions not present in early game",
+                    "Mechanics scale with colony size to maintain tension",
+                    "Design integrates with existing faction and curator mode systems",
+                    "Includes pacing timeline showing when each mechanic activates"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T14:41:51.449Z",
+                "completedAt": "2026-03-14T14:42:29.800Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-057",
+                "title": "Implement welcome-back summary screen showing offline gains",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T20:24:24.696Z",
+                "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
+                "acceptanceCriteria": [
+                    "Summary modal appears on load if offline time  minutes",
+                    "Shows resource gains and population changes during absence",
+                    "Displays current streak count",
+                    "Modal dismisses on click/tap",
+                    "No modal if offline less than 5 minutes",
+                    "Mobile-responsive layout",
+                    "Tests pass"
+                ],
+                "source": "strategist",
+                "testVerdict": "REJECTED",
+                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships.",
+                "claimedAt": "2026-03-14T14:46:26.852Z",
+                "completedAt": "2026-03-14T14:48:37.224Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-137",
@@ -422,9 +446,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 139,
+        "totalCreated": 140,
         "totalCompleted": 93,
         "pendingQuestion": null
     },
-    "nextId": 146
+    "nextId": 147
 }

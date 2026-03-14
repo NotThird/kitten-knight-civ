@@ -2556,6 +2556,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const OFFLINE_CAP_SEC = 24 * 60 * 60;
   const OFFLINE_KNEE_SEC = 4 * 60 * 60;
   const OFFLINE_STREAK_MIN_AWAY_SEC = 2 * 60;
+  const OFFLINE_SUMMARY_MIN_AWAY_SEC = 5 * 60;
   const _lastTs = Number(state?.meta?.lastTs ?? 0) || 0;
   const _offlineSecRaw = _lastTs ? Math.max(0, (Date.now() - _lastTs) / 1000) : 0;
   state._offlinePending = Math.min(OFFLINE_CAP_SEC, _offlineSecRaw);
@@ -7774,6 +7775,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const tier = String(summary?.tier ?? 'Welcome back');
     const comebackMul = Math.max(1, Number(summary?.comebackMul ?? 1) || 1);
     const catchUpBonusPct = Math.max(0, Number(summary?.catchUpBonusPct ?? 0) || 0);
+    const popBefore = Math.max(0, Math.floor(Number(summary?.popBefore ?? 0) || 0));
+    const popAfter = Math.max(0, Math.floor(Number(summary?.popAfter ?? popBefore) || popBefore));
+    const popBorn = Math.max(0, Math.floor(Number(summary?.popBorn ?? 0) || 0));
+    const popDied = Math.max(0, Math.floor(Number(summary?.popDied ?? 0) || 0));
 
     const gainRows = [];
     let totalGain = 0;
@@ -7807,6 +7812,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const summaryLine = top
       ? `Top gain: ${top.key} +${fmt(top.value)} | Total gained: ${fmt(totalGain)} (${quality})`
       : 'No meaningful gains this time.';
+    const populationLine = `Population: ${popBefore} -> ${popAfter} | Born +${popBorn} | Died ${popDied > 0 ? `-${popDied}` : '0'}`;
 
     const breakdown = gainRows.length
       ? gainRows
@@ -7826,6 +7832,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       `<div><strong>Welcome-back summary</strong></div>`,
       longReturn && flavorLine ? `<div class="offline-narrative">${escapeHtml(flavorLine)}</div>` : '',
       `<div>${summaryLine}</div>`,
+      `<div>${populationLine}</div>`,
       `<div>${streakLine}</div>`,
       '<div style="height:8px"></div>',
       '<div><strong>Resource breakdown</strong></div>',
@@ -13133,6 +13140,12 @@ function renderTrends(){
   function maybeShowOfflineSummary(){
     const summary = state?._offlineSummary;
     if (!summary) return;
+    const away = Number(summary?.away ?? 0) || 0;
+    if (away < OFFLINE_SUMMARY_MIN_AWAY_SEC) {
+      state._offlineSummary = null;
+      save();
+      return;
+    }
     openOfflineModal(summary);
     state._offlineSummary = null;
     save();
@@ -13195,6 +13208,7 @@ function renderTrends(){
 
     const keys = ['food','jerky','wood','science','tools'];
     const liveState = state;
+    const popBefore = Math.max(0, Number(liveState?.kittens?.length ?? 0) || 0);
     const probeState = structuredClone(state);
 
     // Estimate current economy rates by running a short deterministic probe sim.
@@ -13227,6 +13241,10 @@ function renderTrends(){
       state.res[k] = Math.max(0, Number(state.res?.[k] ?? 0) + add);
     }
 
+    const popAfter = Math.max(0, Number(state?.kittens?.length ?? 0) || 0);
+    const popBorn = Math.max(0, popAfter - popBefore);
+    const popDied = Math.max(0, popBefore - popAfter);
+
     const capped = !!state._offlineWasCapped;
     const tier = away >= (8 * 60 * 60) ? 'Legendary return' : away >= (2 * 60 * 60) ? 'Recharged return' : away >= (15 * 60) ? 'Rested return' : 'Quick return';
     log(
@@ -13237,7 +13255,21 @@ function renderTrends(){
       (capped ? ' (capped at 24h).' : '.')
     );
 
-    state._offlineSummary = { away, simulated: simSeconds, capped, gains, tier, streak, streakBonusPct, comebackMul, catchUpBonusPct };
+    state._offlineSummary = {
+      away,
+      simulated: simSeconds,
+      capped,
+      gains,
+      tier,
+      streak,
+      streakBonusPct,
+      comebackMul,
+      catchUpBonusPct,
+      popBefore,
+      popAfter,
+      popBorn,
+      popDied
+    };
     state._offlinePending = 0;
     state._offlineWasCapped = false;
     state._suppressedLogCount = 0;
