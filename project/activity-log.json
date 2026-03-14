@@ -203,6 +203,13 @@
       "taskId": "TASK-095",
       "action": "completed",
       "notes": "Added dedicated masteryPanel render target and wired Constellation cards to it."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T15:47:15.781Z",
+      "taskId": "TASK-142",
+      "action": "completed",
+      "notes": "Fixed content.js UTF-8 BOM and mojibake artifacts in PATCH_HISTORY; normalized to ASCII-safe punctuation."
     }
   ]
 }

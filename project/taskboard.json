@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T15:23:18.687Z",
+    "lastUpdated": "2026-03-14T15:47:11.646Z",
     "columns": {
         "todo": [
             {
@@ -42,20 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-142",
-                "title": "Fix UTF-8 encoding artifacts in content.js",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "bug",
-                "createdAt": "2026-03-14T10:58:39.172Z",
-                "description": "content.js has BOM/encoding mojibake visible in Patch Notes modal. Curly quotes render as garbled text, arrows as corrupted chars. Fix: re-save as UTF-8 without BOM, replace corrupted characters with ASCII equivalents.",
-                "acceptanceCriteria": [
-                    "All patch note strings render correctly in-browser",
-                    "No mojibake artifacts in PATCH_HISTORY entries"
-                ],
-                "source": "critic"
             },
             {
                 "id": "TASK-143",
@@ -109,6 +95,23 @@
                 "source": "strategist",
                 "claimedAt": "2026-03-14T13:16:11.372Z",
                 "testVerdict": "REJECTED"
+            },
+            {
+                "id": "TASK-148",
+                "title": "Design evolving ambient soundscape system tied to colony state",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T15:40:38.866Z",
+                "description": "Critic identifies sound as the weakest area - 9 SFX with a toggle is functional but minimal. Kittens Game uses subtle ambient audio that shifts with seasons. Cookie Clicker has ascending tones for combos. KKC should have a layered ambient system: base colony hum that thickens with population, seasonal audio shifts (rain, wind), faction-specific motifs, and intensity scaling during events. TASK-143 covers implementation - this task designs the sound architecture and trigger map.",
+                "acceptanceCriteria": [
+                    "Design doc maps colony states to ambient sound layers (population tiers, seasons, factions)",
+                    "At least 4 distinct ambient layers defined with trigger conditions",
+                    "Layers blend smoothly - no abrupt cuts between states",
+                    "Design specifies how ambient audio coexists with existing 9 SFX",
+                    "Includes volume/mix recommendations for mobile speakers"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
@@ -132,6 +135,43 @@
                 "claimedAt": "2026-03-14T14:41:51.449Z",
                 "completedAt": "2026-03-14T14:42:29.800Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-147",
+                "title": "Design illustrated event cards for colony mini-events and discoveries",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T15:40:23.885Z",
+                "description": "Critic review notes colony events are text-only. Golden cookie moments and discoveries lack visual punch. Cookie Clicker uses animated golden cookies; Kittens Game uses event banners with icons. KKC should have simple illustrated event cards - a small modal or toast with an icon/emoji scene + flavor text + reward summary. This makes discovery moments feel special and screenshot-worthy. Keep it CSS-driven, no heavy sprites.",
+                "acceptanceCriteria": [
+                    "Design doc defines event card layout (icon area, title, flavor text, reward summary)",
+                    "At least 3 event card variants designed (discovery, golden event, crisis)",
+                    "Cards use existing emoji/CSS art style - no external image assets",
+                    "Design includes animation spec for card entrance and exit",
+                    "Cards work in both mobile and desktop layouts"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T15:41:59.501Z",
+                "completedAt": "2026-03-14T15:42:43.516Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-142",
+                "title": "Fix UTF-8 encoding artifacts in content.js",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "bug",
+                "createdAt": "2026-03-14T10:58:39.172Z",
+                "description": "content.js has BOM/encoding mojibake visible in Patch Notes modal. Curly quotes render as garbled text, arrows as corrupted chars. Fix: re-save as UTF-8 without BOM, replace corrupted characters with ASCII equivalents.",
+                "acceptanceCriteria": [
+                    "All patch note strings render correctly in-browser",
+                    "No mojibake artifacts in PATCH_HISTORY entries"
+                ],
+                "source": "critic",
+                "claimedAt": "2026-03-14T15:46:20.639Z",
+                "completedAt": "2026-03-14T15:47:11.646Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -451,9 +491,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 140,
+        "totalCreated": 142,
         "totalCompleted": 95,
         "pendingQuestion": null
     },
-    "nextId": 147
+    "nextId": 149
 }
