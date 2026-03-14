@@ -35,6 +35,13 @@
       "taskId": "TASK-126",
       "action": "completed",
       "notes": "Added prestige preview modal for legacy/eternity reset confirmation using getPrestigePreview data"
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T03:48:06.951Z",
+      "taskId": "TASK-081",
+      "action": "completed",
+      "notes": "Added explicit Legacy/Eternity preview buttons in prestige panels and wired modal access without triggering reset."
     }
   ]
 }

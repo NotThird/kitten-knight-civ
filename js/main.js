@@ -10799,6 +10799,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       legacyPanelEl.innerHTML =
         `<div class="small">Shard bank: <b>${fmt(state.legacy.shards)}</b> | total earned: ${fmt(state.legacy.totalShards)} | resets: ${fmt(state.legacy.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(preview)}</b> shards now.</div>` +
+        `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="legacy">Preview Legacy Reset</button></div>` +
         milSummary +
         tabsHtml +
         `<div style="margin-top:8px">${upgradeRows}</div>`;
@@ -10827,6 +10828,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       eternityPanelEl.innerHTML =
         `<div class="small">Sigils bank: <b>${fmt(state.eternity.sigils)}</b> | total earned: ${fmt(state.eternity.totalSigils)} | resets: ${fmt(state.eternity.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(gain)}</b> sigils. ${escapeHtml(gateLine)}</div>` +
+        `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="eternity">Preview Eternity Reset</button></div>` +
         `<div class="small" style="margin-top:6px">Mandates (tab rail):</div><div class="row" style="gap:6px; margin-top:4px">${mandateTabs}</div>` +
         `<div class="small" style="margin-top:6px">Preservation package:</div><div class="row" style="gap:6px; margin-top:4px">${preserveTabs}</div>` +
         `<div style="margin-top:8px">${rows}</div>`;
@@ -13171,6 +13173,12 @@ function renderTrends(){
 
   const legacyPanel = document.getElementById('legacyPanel');
   if (legacyPanel) legacyPanel.addEventListener('click', (e) => {
+    const previewBtn = e.target.closest('button[data-prestige-preview]');
+    if (previewBtn && previewBtn.dataset.prestigePreview === 'legacy') {
+      openPrestigePreviewModal('legacy');
+      return;
+    }
+
     const tabBtn = e.target.closest('button[data-legacy-tab]');
     if (tabBtn) {
       ensureLegacyState(state);
@@ -13194,6 +13202,12 @@ function renderTrends(){
 
   const eternityPanel = document.getElementById('eternityPanel');
   if (eternityPanel) eternityPanel.addEventListener('click', (e) => {
+    const previewBtn = e.target.closest('button[data-prestige-preview]');
+    if (previewBtn && previewBtn.dataset.prestigePreview === 'eternity') {
+      openPrestigePreviewModal('eternity');
+      return;
+    }
+
     const mandateBtn = e.target.closest('button[data-eternity-mandate]');
     if (mandateBtn) {
       ensureEternityState(state);
