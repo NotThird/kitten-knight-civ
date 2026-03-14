@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T12:48:57.853Z",
+    "lastUpdated": "2026-03-14T12:53:29.975Z",
     "columns": {
         "todo": [
             {
@@ -245,25 +245,6 @@
                 "claimedAt": "2026-03-14T12:41:56.510Z",
                 "completedAt": "2026-03-14T12:43:42.845Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-135",
-                "title": "Add colony tank zone legend and dot color key",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T07:10:14.034Z",
-                "description": "Arbiter notes colony tank has no legend, no zone labels visible by default, and dot colors are unexplained. First-time players see colored dots bouncing with no context. Add a compact always-visible legend showing what each dot color represents and label zones. Tier 2 visual clarity improvement that supports the no-tutorial philosophy: the legend teaches through presence. Reference: Realm Grinder shows faction colors in a sidebar key.",
-                "acceptanceCriteria": [
-                    "Colony tank displays a compact legend showing dot color meanings",
-                    "Zone labels are visible by default, not hover-only",
-                    "Legend does not obscure tank content or add clutter",
-                    "Legend updates dynamically if new dot types appear via progressive reveal"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T12:46:20.082Z",
-                "completedAt": "2026-03-14T12:48:57.853Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -307,6 +288,27 @@
                 "completedAt": "2026-03-14T12:18:00.882Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T12:23:06.678Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-135",
+                "title": "Add colony tank zone legend and dot color key",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T07:10:14.034Z",
+                "description": "Arbiter notes colony tank has no legend, no zone labels visible by default, and dot colors are unexplained. First-time players see colored dots bouncing with no context. Add a compact always-visible legend showing what each dot color represents and label zones. Tier 2 visual clarity improvement that supports the no-tutorial philosophy: the legend teaches through presence. Reference: Realm Grinder shows faction colors in a sidebar key.",
+                "acceptanceCriteria": [
+                    "Colony tank displays a compact legend showing dot color meanings",
+                    "Zone labels are visible by default, not hover-only",
+                    "Legend does not obscure tank content or add clutter",
+                    "Legend updates dynamically if new dot types appear via progressive reveal"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T12:46:20.082Z",
+                "completedAt": "2026-03-14T12:48:57.853Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T12:53:29.975Z",
                 "testVerdict": "APPROVED"
             }
         ],
@@ -404,7 +406,7 @@
     },
     "meta": {
         "totalCreated": 139,
-        "totalCompleted": 87,
+        "totalCompleted": 88,
         "pendingQuestion": null
     },
     "nextId": 146

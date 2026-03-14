@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-14T12:33:11.863Z",
+  "timestamp": "2026-03-14T13:03:17.942Z",
   "iteration": 23,
   "cronHealth": {
     "healthy": [
@@ -17,10 +17,10 @@
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 12,
+    "todo": 10,
     "claimed": 0,
-    "review": 2,
-    "done": 2,
+    "review": 3,
+    "done": 3,
     "blocked": 5,
     "staleTasks": [],
     "status": "stalled"
@@ -47,8 +47,6 @@
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "phase2-improving",
-    "axisFlags": [],
-    "trend": 0.1999999999999993
+    "status": "phase2-improving"
   }
 }
