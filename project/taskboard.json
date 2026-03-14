@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T05:48:15.377Z",
+    "lastUpdated": "2026-03-14T05:53:09.699Z",
     "columns": {
         "todo": [
             {
@@ -187,28 +187,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-124",
-                "title": "Add prestige reset confirmation dialog with gain summary",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T01:40:03.777Z",
-                "description": "Critic notes prestige is a 'leap of faith' - players hesitate to reset because they cannot see what they gain vs lose. Complements TASK-081 (milestone preview). Add a confirmation dialog when clicking Legacy Reset or Eternity Reset that shows: what you will gain (legacy points, unlocks), what you will lose (resources, buildings), and net benefit. Reference: Antimatter Dimensions shows 'You will gain X IP' prominently. NGU IDLE shows rebirth gains clearly. This directly addresses the #1 engagement gap for mid-to-late game retention per critic review.",
-                "acceptanceCriteria": [
-                    "Legacy Reset button shows a confirmation modal before executing",
-                    "Modal displays: legacy points to gain, lore/military branch bonuses, resources that will reset",
-                    "Eternity Reset shows similar confirmation with eternity-specific gains",
-                    "Player can cancel the reset from the confirmation dialog",
-                    "Confirmation text uses positive framing (what you gain first, then what resets)"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T05:46:14.515Z",
-                "completedAt": "2026-03-14T05:48:15.377Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -830,6 +809,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T05:22:58.266Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-124",
+                "title": "Add prestige reset confirmation dialog with gain summary",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T01:40:03.777Z",
+                "description": "Critic notes prestige is a 'leap of faith' - players hesitate to reset because they cannot see what they gain vs lose. Complements TASK-081 (milestone preview). Add a confirmation dialog when clicking Legacy Reset or Eternity Reset that shows: what you will gain (legacy points, unlocks), what you will lose (resources, buildings), and net benefit. Reference: Antimatter Dimensions shows 'You will gain X IP' prominently. NGU IDLE shows rebirth gains clearly. This directly addresses the #1 engagement gap for mid-to-late game retention per critic review.",
+                "acceptanceCriteria": [
+                    "Legacy Reset button shows a confirmation modal before executing",
+                    "Modal displays: legacy points to gain, lore/military branch bonuses, resources that will reset",
+                    "Eternity Reset shows similar confirmation with eternity-specific gains",
+                    "Player can cancel the reset from the confirmation dialog",
+                    "Confirmation text uses positive framing (what you gain first, then what resets)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T05:46:14.515Z",
+                "completedAt": "2026-03-14T05:48:15.377Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T05:53:09.699Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -963,7 +964,7 @@
     },
     "meta": {
         "totalCreated": 125,
-        "totalCompleted": 75,
+        "totalCompleted": 76,
         "pendingQuestion": null
     },
     "nextId": 132
