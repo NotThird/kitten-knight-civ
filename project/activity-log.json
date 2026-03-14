@@ -77,6 +77,13 @@
       "taskId": "TASK-127",
       "action": "completed",
       "notes": "Extended animated resource counters to include Gold stat card with existing 320ms easing path."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T06:47:52.976Z",
+      "taskId": "TASK-132",
+      "action": "completed",
+      "notes": "Stabilized tank kitten circle indicators with zone hold cache, deterministic ordering, and non-transparent canvas redraw."
     }
   ]
 }

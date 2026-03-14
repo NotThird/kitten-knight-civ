@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T06:17:58.731Z",
+    "lastUpdated": "2026-03-14T06:47:48.708Z",
     "columns": {
         "todo": [
             {
@@ -169,26 +169,48 @@
                     "parse_check and replay_test pass"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-133",
+                "title": "Layout overhaul: eliminate dead space, improve panel organization",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-14T06:36:37.665Z",
+                "description": "Austin reports the layout has one long horizontal panel and a super long vertical panel with excessive dead space. Current structure: everything lives inside a single Director section (index.html). The page is a single column with: stats grid, curator controls, colony tank canvas, 3 trend canvases, society feed, advanced controls (modes/policy/sliders/targets/reserves/quotas/research/buildings/legacy/eternity) all stacked vertically. This creates a massive scroll. Fix approach: reorganize into a multi-column or grid layout. Group related panels (e.g., stats+tank in one column, controls+feed in another). Use CSS Grid on desktop (2-3 columns) while keeping single-column on mobile. Collapse or tab less-used sections. Reference: Cookie Clicker uses a left sidebar + main area; Kittens Game uses tabs. The key is information density without overwhelming.",
+                "acceptanceCriteria": [
+                    "No visible dead space gaps larger than 20px between content sections",
+                    "Desktop layout uses at least 2 columns for main content areas",
+                    "Mobile layout remains single-column and functional",
+                    "All existing UI elements remain accessible (nothing hidden without a toggle/tab)",
+                    "Page scroll length reduced by at least 30% on desktop compared to current",
+                    "Stats, tank, and feed are visible without scrolling on a 1080p screen",
+                    "parse_check.js and replay_test.js pass"
+                ],
+                "source": "directive"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-127",
-                "title": "Animated counters: Add easing number animation to resource totals",
+                "id": "TASK-132",
+                "title": "Fix kitten circle indicators flashing without showing data",
                 "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.196Z",
-                "description": "Step 1 of TASK-063. When resource values change, animate the number transition with easing instead of instant update. Target food, wood, gold, science displays.",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-14T06:36:33.011Z",
+                "description": "Austin reports kitten circle indicators flash without showing data. Root cause: the colony tank canvas (renderTank in main.js ~line 10600) draws kittens as small circles (ctx.arc, radius 4px) with names beside them. These likely flash because: (1) the canvas clears and redraws every tick, (2) kitten task assignments may change rapidly causing zone reassignment, or (3) the data (name/task) is undefined or empty on some ticks. The circles ARE the kitten dots in the tank visualization. Fix approach: add a visual throttle (similar to the decision display hold at line 10295) so dot positions are stable between ticks. Ensure kitten name and zone data are always valid before rendering. Consider caching previous positions and lerping rather than snapping.",
                 "acceptanceCriteria": [
-                    "Resource numbers animate smoothly on change",
-                    "Animation completes in under 500ms",
-                    "parse_check and replay_test pass"
+                    "Kitten dots in the colony tank render stably without flickering or flashing",
+                    "Each dot consistently shows the kitten name label beside it",
+                    "Dots stay in their zone for at least 2-3 seconds even if task changes mid-tick",
+                    "Canvas does not blank-frame between redraws (no visible clear-then-draw flash)",
+                    "parse_check.js and replay_test.js pass",
+                    "Verified on both desktop and mobile viewport sizes"
                 ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T06:16:21.344Z",
-                "completedAt": "2026-03-14T06:17:58.731Z",
+                "source": "directive",
+                "claimedAt": "2026-03-14T06:46:12.233Z",
+                "completedAt": "2026-03-14T06:47:48.708Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
@@ -835,6 +857,26 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T05:53:09.699Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-127",
+                "title": "Animated counters: Add easing number animation to resource totals",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.196Z",
+                "description": "Step 1 of TASK-063. When resource values change, animate the number transition with easing instead of instant update. Target food, wood, gold, science displays.",
+                "acceptanceCriteria": [
+                    "Resource numbers animate smoothly on change",
+                    "Animation completes in under 500ms",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T06:16:21.344Z",
+                "completedAt": "2026-03-14T06:17:58.731Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T06:36:03.439Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -967,9 +1009,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 125,
-        "totalCompleted": 76,
+        "totalCreated": 127,
+        "totalCompleted": 77,
         "pendingQuestion": null
     },
-    "nextId": 132
+    "nextId": 134
 }

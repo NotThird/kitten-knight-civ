@@ -89,12 +89,6 @@ export function migrateState(s, {
   s.feed = Array.isArray(s.feed) ? s.feed : [];
   const FEED_MAX = 220;
   if (s.feed.length > FEED_MAX) s.feed = s.feed.slice(-FEED_MAX);
-
-  // Decision log panel (TASK-106): persistent AI task-switch history.
-  s.decisionLog = Array.isArray(s.decisionLog) ? s.decisionLog : [];
-  const DECISION_LOG_MAX = 260;
-  if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog = s.decisionLog.slice(-DECISION_LOG_MAX);
-
   s.rations = s.rations ?? 'Normal';
   s.targets = s.targets ?? { foodPerKitten: 120, warmth: 60, maxThreat: 70 };
   s.reserve = s.reserve ?? { food:0, wood:18, science:25, tools:0 };
@@ -233,22 +227,6 @@ export function migrateState(s, {
 
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
-
-  // Session milestone rewards (continuous-play progression)
-  s.sessionMilestones = (s.sessionMilestones && typeof s.sessionMilestones === 'object') ? s.sessionMilestones : { sessionSeconds:0, unlocked:0, lastReward:null };
-  s.sessionMilestones.sessionSeconds = Math.max(0, Number(s.sessionMilestones.sessionSeconds ?? 0) || 0);
-  s.sessionMilestones.unlocked = Math.max(0, Math.min(4, Math.floor(Number(s.sessionMilestones.unlocked ?? 0) || 0)));
-  s.sessionMilestones.lastReward = (s.sessionMilestones.lastReward && typeof s.sessionMilestones.lastReward === 'object') ? s.sessionMilestones.lastReward : null;
-
-  // Discovery + secrets migration (TASK-029)
-  s.secrets = (s.secrets && typeof s.secrets === 'object') ? s.secrets : {};
-  s.secrets.found = (s.secrets.found && typeof s.secrets.found === 'object') ? s.secrets.found : {};
-  s.secrets.log = Array.isArray(s.secrets.log) ? s.secrets.log : [];
-  s.secrets.rareSeen = Math.max(0, Math.floor(Number(s.secrets.rareSeen ?? 0) || 0));
-  s.secrets.nextRareAt = Number(s.secrets.nextRareAt ?? 0) || 0;
-  s.secrets.banner = (s.secrets.banner && typeof s.secrets.banner === 'object') ? s.secrets.banner : null;
-  const SECRET_LOG_MAX = 80;
-  if (s.secrets.log.length > SECRET_LOG_MAX) s.secrets.log = s.secrets.log.slice(-SECRET_LOG_MAX);
 
   // Social layer migration (includes persistent norms / society memory).
   s.social = (s.social && typeof s.social === 'object') ? s.social : { dissent: 0, band: 'calm', lastLogBand: '', lastLogAt: 0 };

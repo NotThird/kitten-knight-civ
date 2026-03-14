@@ -281,6 +281,35 @@
       "notes": "Phase 2 Iter 19. TASK-029 (secrets system) shipped — 10 secret triggers, 4 rare events, secrets panel. Mechanics bumped to 9.5 (deep discovery layer). Created TASK-125/126/127/128 decomposing top tasks into bite-sized pieces to break pipeline stall. Overall hits 9.0 — first convergence-eligible iteration."
     }
   ],
+  ,{
+      "iteration": 20,
+      "timestamp": "2026-03-14T06:30:00.000Z",
+      "scores": {
+        "mechanics": 9.5,
+        "visuals": 8.5,
+        "engagement": 9.5,
+        "stability": 8.5,
+        "completeness": 9
+      },
+      "overall": 9.0,
+      "delta": 0,
+      "notes": "Phase 2 Iter 20. TASK-125/126 (prestige preview) shipped. Convergence declared at 9.0 x2."
+    }
+    ,{
+      "iteration": 21,
+      "timestamp": "2026-03-14T07:35:00.000Z",
+      "scores": {
+        "mechanics": 9.5,
+        "visuals": 7.5,
+        "engagement": 9.5,
+        "stability": 8.5,
+        "completeness": 8.5
+      },
+      "overall": 8.7,
+      "delta": -0.3,
+      "notes": "Phase 2 Iter 21. POST-SHIP REGRESSION. Austin reports circle indicators flashing without data + excessive dead space layout. Visuals dropped to 7.5, completeness to 8.5. Convergence REOPENED. Created TASK-132 (circles bug) and TASK-133 (layout overhaul), both critical. Approved TASK-127 (animated counters)."
+    }
+  ],
   "convergenceThreshold": 9,
   "maxIterations": 50,
   "stagnationThreshold": 5,

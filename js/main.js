@@ -9,7 +9,7 @@ import { GENERATED_SKILLS } from './skills_generated.js';
 import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } from './charts.js';
 
 (() => {
-  const GAME_VERSION = '0.9.136';
+  const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
 
@@ -207,19 +207,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
   }
 
-  function ensureDecisionLog(s){
-    s.decisionLog = Array.isArray(s.decisionLog) ? s.decisionLog : [];
-    const DECISION_LOG_MAX = 260;
-    if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog = s.decisionLog.slice(-DECISION_LOG_MAX);
-  }
-
-  function pushDecisionLog(s, msg){
-    ensureDecisionLog(s);
-    s.decisionLog.push(`[${fmt(s.t)}] ${msg}`);
-    const DECISION_LOG_MAX = 260;
-    if (s.decisionLog.length > DECISION_LOG_MAX) s.decisionLog.splice(0, s.decisionLog.length - DECISION_LOG_MAX);
-  }
-
   function tryAdvanceRevealStage(s){
     s.meta = s.meta ?? {};
     let stage = revealStageOf(s);
@@ -279,13 +266,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
     research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
-    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, incident: null, incidentSeen: 0, lastIncidentAt: 0, incidentCooldownUntil: 0, nextIncidentAt: 600 },
-    sessionMilestones: { sessionSeconds: 0, unlocked: 0, lastReward: null },
-    secrets: { found: {}, log: [], rareSeen: 0, nextRareAt: 180, banner: null },
+    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
-    feed: [],
-    decisionLog: []
+    feed: []
   });
 
   const LEGACY_LORE_UPGRADES = [
@@ -459,6 +443,21 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return base * researchPalisadeMul(s);
   }
 
+
+    const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
+    const sci = Math.max(0, Number(s?.res?.science ?? 0));
+    const builds = Math.max(0,
+      Number(s?.res?.huts ?? 0) +
+      Number(s?.res?.palisade ?? 0) * 1.5 +
+      Number(s?.res?.granaries ?? 0) * 2 +
+      Number(s?.res?.workshops ?? 0) * 3 +
+      Number(s?.res?.libraries ?? 0) * 4
+    );
+    const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s));
+    return Math.max(0, gained + legacyWarLedgerBonus(s));
+  }
+
   function performLegacyReset(){
     ensureLegacyState(state);
     const gain = computeLegacyShardGain(state);
@@ -467,7 +466,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const prior = structuredClone(state.legacy);
     const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
     const priorEternity = structuredClone(state.eternity ?? { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' });
-    const priorSecretsFound = structuredClone(state.secrets?.found ?? {});
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -481,7 +479,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     fresh.legacy = prior;
     fresh.eternity = priorEternity;
     fresh.research = priorResearch;
-    fresh.secrets.found = priorSecretsFound;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
     fresh.legacy.resets += 1;
@@ -497,7 +494,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     state = fresh;
     ensureMilestonesState(state);
-    ensureSessionMilestoneState(state);
     ensureLegacyState(state);
     ensureEternityState(state);
     ensureResearchState(state);
@@ -631,159 +627,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return Math.max(0, gained + legacyWarLedgerBonus(s));
   }
 
-  function getPrestigePreview(s){
-    ensureLegacyState(s);
-    ensureResearchState(s);
-    ensureEternityState(s);
-
-    const legacyPoints = computeLegacyShardGain(s);
-    const legacyShardsAfterReset = Math.max(0, Number(s.legacy?.shards ?? 0)) + legacyPoints;
-    const sigilsAfterReset = Math.max(0, Number(s.eternity?.sigils ?? 0)) + computeEternitySigilGain(s);
-
-    const legacyUnlocks = [
-      ...LEGACY_LORE_UPGRADES.map((up) => ({
-        id: up.id,
-        name: up.name,
-        currency: 'legacy',
-        cost: up.cost,
-        affordableNow: !s.legacy.upgrades[up.id] && legacyShardsAfterReset >= up.cost,
-      })),
-      ...LEGACY_MILITARY_UPGRADES.map((up) => {
-        const rank = legacyUpgradeRank(s, up.id);
-        return {
-          id: up.id,
-          name: up.name,
-          currency: 'legacy',
-          cost: up.cost,
-          affordableNow: rank < up.maxRank && legacyShardsAfterReset >= up.cost,
-          nextRank: rank + 1,
-          maxRank: up.maxRank,
-        };
-      }),
-    ].filter((up) => up.affordableNow);
-
-    const eternityUnlocks = ETERNITY_UPGRADES
-      .map((up) => {
-        const rank = eternityUpgradeRank(s, up.id);
-        return {
-          id: up.id,
-          name: up.name,
-          currency: 'eternity',
-          cost: up.cost,
-          affordableNow: rank < up.maxRank && sigilsAfterReset >= up.cost,
-          nextRank: rank + 1,
-          maxRank: up.maxRank,
-        };
-      })
-      .filter((up) => up.affordableNow);
-
-    const eternityGate = eternityGateStatus(s);
-    const eternitySigils = computeEternitySigilGain(s);
-
-    const legacyLosses = [];
-    const lossRows = [
-      ['Food', Number(s?.res?.food ?? 0)],
-      ['Wood', Number(s?.res?.wood ?? 0)],
-      ['Science', Number(s?.res?.science ?? 0)],
-      ['Tools', Number(s?.res?.tools ?? 0)],
-      ['Kittens', Number(s?.kittens?.length ?? 0)],
-      ['Huts', Number(s?.res?.huts ?? 0)],
-      ['Palisades', Number(s?.res?.palisade ?? 0)],
-      ['Granaries', Number(s?.res?.granaries ?? 0)],
-      ['Workshops', Number(s?.res?.workshops ?? 0)],
-      ['Libraries', Number(s?.res?.libraries ?? 0)],
-    ];
-    for (const [name, val] of lossRows) {
-      if ((Number(val) || 0) > 0) legacyLosses.push(`${name}: ${fmt(val)}`);
-    }
-    if (!legacyLosses.length) legacyLosses.push('No meaningful colony progress to reset yet.');
-
-    const loreBonuses = LEGACY_LORE_UPGRADES
-      .filter((up) => !!s?.legacy?.upgrades?.[up.id])
-      .map((up) => `${up.name}: ${up.desc}`);
-    const militaryBonuses = LEGACY_MILITARY_UPGRADES
-      .map((up) => {
-        const rank = legacyUpgradeRank(s, up.id);
-        if (rank <= 0) return null;
-        const rankNote = up.maxRank > 1 ? ` (rank ${fmt(rank)}/${fmt(up.maxRank)})` : '';
-        return `${up.name}${rankNote}: ${up.desc}`;
-      })
-      .filter(Boolean);
-
-    const eternityLosses = [];
-    if ((Number(s?.legacy?.shards ?? 0) || 0) > 0) eternityLosses.push(`Legacy Shards bank: ${fmt(s.legacy.shards)}`);
-    const ownedLegacyUpgrades = [
-      ...LEGACY_LORE_UPGRADES.filter((up) => !!s?.legacy?.upgrades?.[up.id]).map((up) => up.name),
-      ...LEGACY_MILITARY_UPGRADES
-        .map((up) => ({ up, rank: legacyUpgradeRank(s, up.id) }))
-        .filter((row) => row.rank > 0)
-        .map((row) => `${row.up.name}${row.up.maxRank > 1 ? ` (rank ${fmt(row.rank)}/${fmt(row.up.maxRank)})` : ''}`),
-    ];
-    if (ownedLegacyUpgrades.length > 0) eternityLosses.push(`Legacy upgrades: ${fmt(ownedLegacyUpgrades.length)} owned`);
-
-    const unlockedResearch = Object.values(s?.research?.unlocked ?? {}).filter(Boolean).length;
-    if (unlockedResearch > 0) eternityLosses.push(`Research unlocks: ${fmt(unlockedResearch)}`);
-    if (!eternityLosses.length) eternityLosses.push('No legacy-layer progress to reset yet.');
-
-    return {
-      legacyPoints,
-      newUnlocks: {
-        legacy: legacyUnlocks,
-        eternity: eternityUnlocks,
-      },
-      legacySummary: {
-        loreBonuses,
-        militaryBonuses,
-        losses: legacyLosses,
-      },
-      eternitySummary: {
-        losses: eternityLosses,
-      },
-      eternityProgress: {
-        gateCount: eternityGate.count,
-        gates: eternityGate.gates,
-        ready: eternityGate.ok,
-        sigilGain: eternitySigils,
-      },
-    };
-  }
-
-  function renderNextMilestoneStrip(opts){
-    const o = opts && typeof opts === 'object' ? opts : {};
-    const label = escapeHtml(String(o.label ?? 'Next milestone'));
-    const reward = escapeHtml(String(o.reward ?? ''));
-    const pct = Math.max(0, Math.min(100, Number(o.pct ?? 0) || 0));
-    const hint = escapeHtml(String(o.hint ?? ''));
-    return (
-      `<div class="small" style="margin-top:6px" title="${hint}">` +
-      `<div style="display:flex; justify-content:space-between; gap:8px"><span>${label}</span><span>${pct.toFixed(0)}%</span></div>` +
-      `<div style="height:6px; border-radius:999px; background:rgba(255,255,255,.12); margin-top:4px; overflow:hidden"><div style="height:100%; width:${pct.toFixed(1)}%; background:linear-gradient(90deg,#67e8f9,#818cf8)"></div></div>` +
-      `<div style="opacity:.8; margin-top:3px">${reward}</div>` +
-      `</div>`
-    );
-  }
-
-  function nextLegacyMilestone(s, activeBranch){
-    const ups = activeBranch === 'military' ? LEGACY_MILITARY_UPGRADES : LEGACY_LORE_UPGRADES;
-    for (const up of ups) {
-      if (activeBranch === 'military') {
-        const rank = legacyUpgradeRank(s, up.id);
-        if (rank < up.maxRank) return { name: up.name, cost: up.cost, reward: up.desc };
-      } else if (!s.legacy?.upgrades?.[up.id]) {
-        return { name: up.name, cost: up.cost, reward: up.desc };
-      }
-    }
-    return null;
-  }
-
-  function nextEternityGateLabel(gates){
-    if (!gates?.legacyResets) return 'Legacy resets gate';
-    if (!gates?.shardMastery) return 'Shard mastery gate';
-    if (!gates?.doctrine) return 'Doctrine gate';
-    if (!gates?.population) return 'Population gate';
-    return 'All gates ready';
-  }
-
   function performEternityReset(){
     ensureLegacyState(state);
     ensureResearchState(state);
@@ -793,7 +636,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!gate.ok || gain <= 0) return { ok:false, reason:'locked' };
 
     const priorEt = structuredClone(state.eternity);
-    const priorSecretsFound = structuredClone(state.secrets?.found ?? {});
     const pkg = PRESERVATION_PACKAGES.find(p => p.id === priorEt.preserve) ?? PRESERVATION_PACKAGES[0];
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * pkg.keep.food),
@@ -805,7 +647,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.eternity = priorEt;
-    fresh.secrets.found = priorSecretsFound;
     fresh.eternity.sigils += gain;
     fresh.eternity.totalSigils += gain;
     fresh.eternity.resets += 1;
@@ -816,7 +657,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     state = fresh;
     ensureMilestonesState(state);
-    ensureSessionMilestoneState(state);
     ensureLegacyState(state);
     ensureResearchState(state);
     ensureEternityState(state);
@@ -866,319 +706,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.active = (ap.active && typeof ap.active === 'object') ? ap.active : null;
     ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
     ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
-    ap.lastEventId = String(ap.lastEventId ?? '');
-    ap.trainingBuffUntil = Number(ap.trainingBuffUntil ?? 0) || 0;
-    ap.trainingBuffMul = Math.max(1, Number(ap.trainingBuffMul ?? 1) || 1);
     ap.seen = Math.max(0, Math.floor(Number(ap.seen ?? 0) || 0));
-    ap.incident = (ap.incident && typeof ap.incident === 'object') ? ap.incident : null;
-    ap.incidentSeen = Math.max(0, Math.floor(Number(ap.incidentSeen ?? 0) || 0));
-    ap.lastIncidentAt = Number(ap.lastIncidentAt ?? 0) || 0;
-    ap.incidentCooldownUntil = Number(ap.incidentCooldownUntil ?? 0) || 0;
-    if (!Number.isFinite(ap.nextIncidentAt)) {
-      ap.nextIncidentAt = tNow + 600;
-    }
-    ap.nextIncidentAt = Math.max(tNow + 45, Number(ap.nextIncidentAt) || (tNow + 600));
-  }
-
-  const SESSION_MILESTONE_DEFS = [
-    { id: 1, sec: 120, title: 'Session Spark', tier: 'spark', reward: { food: 20, wood: 10, boostMul: 2.0, boostSec: 60 } },
-    { id: 2, sec: 300, title: 'Session Surge', tier: 'surge', reward: { food: 30, wood: 20, science: 12, boostMul: 2.25, boostSec: 75 } },
-    { id: 3, sec: 600, title: 'Session Saga', tier: 'saga', reward: { food: 50, wood: 30, science: 20, tools: 2, boostMul: 2.5, boostSec: 90 } },
-    { id: 4, sec: 900, title: 'Session Mythic', tier: 'mythic', reward: { food: 80, wood: 50, science: 30, tools: 4, boostMul: 2.75, boostSec: 120 } },
-  ];
-
-  function ensureSessionMilestoneState(s){
-    s.sessionMilestones = (s.sessionMilestones && typeof s.sessionMilestones === 'object') ? s.sessionMilestones : {};
-    const sm = s.sessionMilestones;
-    sm.sessionSeconds = Math.max(0, Number(sm.sessionSeconds ?? 0) || 0);
-    sm.unlocked = Math.max(0, Math.floor(Number(sm.unlocked ?? 0) || 0));
-    sm.lastReward = (sm.lastReward && typeof sm.lastReward === 'object') ? sm.lastReward : null;
-  }
-
-  function sessionMilestoneProgress(s){
-    ensureSessionMilestoneState(s);
-    const sm = s.sessionMilestones;
-    const idx = Math.max(0, Math.min(SESSION_MILESTONE_DEFS.length - 1, Number(sm.unlocked ?? 0)));
-    const next = SESSION_MILESTONE_DEFS[idx] ?? null;
-    if (!next) return { done:true, pct:100, cur:sm.sessionSeconds, next:null, prev:null };
-    const prev = SESSION_MILESTONE_DEFS[Math.max(0, idx - 1)] ?? { sec: 0 };
-    const span = Math.max(1, Number(next.sec ?? 0) - Number(prev.sec ?? 0));
-    const cur = Math.max(0, Number(sm.sessionSeconds ?? 0) - Number(prev.sec ?? 0));
-    const pct = Math.max(0, Math.min(100, (cur / span) * 100));
-    return { done:false, pct, cur:sm.sessionSeconds, next, prev };
-  }
-
-  function applySessionMilestoneReward(s, def){
-    if (!def || !def.reward) return;
-    const r = def.reward;
-    s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(r.food ?? 0));
-    s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(r.wood ?? 0));
-    s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(r.science ?? 0));
-    s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(r.tools ?? 0));
-    if (Number(r.boostMul ?? 1) > 1) {
-      ensureActivePlayState(s);
-      const ap = s.activePlay;
-      ap.boostMul = Math.max(Number(ap.boostMul ?? 1) || 1, Number(r.boostMul ?? 1));
-      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0) || 0, Number(s.t ?? 0) + Number(r.boostSec ?? 90));
-    }
-  }
-
-  function tickSessionMilestones(s, dt){
-    ensureSessionMilestoneState(s);
-    const sm = s.sessionMilestones;
-    sm.sessionSeconds += Math.max(0, Number(dt ?? 0) || 0);
-    while (sm.unlocked < SESSION_MILESTONE_DEFS.length) {
-      const def = SESSION_MILESTONE_DEFS[sm.unlocked];
-      if (!def || sm.sessionSeconds < Number(def.sec ?? Infinity)) break;
-      applySessionMilestoneReward(s, def);
-      sm.unlocked += 1;
-      sm.lastReward = { id: def.id, title: def.title, at: Number(s.t ?? 0) };
-      feed(`Session milestone: ${def.title} reached (+reward).`);
-      playSfx('milestone');
-      const nowMs = Date.now();
-      milestoneUiFx.active.push({
-        id: `session-${def.id}-${nowMs}`,
-        tier: String(def.tier ?? 'spark'),
-        title: String(def.title ?? 'Session milestone'),
-        desc: `Continuous play reward unlocked at ${fmt(Number(def.sec ?? 0))}s.`,
-        until: nowMs + milestoneDurationMsForTier(String(def.tier ?? 'spark')),
-      });
-      if (milestoneUiFx.active.length > 4) milestoneUiFx.active.splice(0, milestoneUiFx.active.length - 4);
-    }
   }
 
   function rollActivePlayDelay(){
     return 60 + Math.random() * 60;
-  }
-
-  const FIELD_INCIDENTS = [
-    {
-      id: 'collapsed_bridge',
-      label: 'Collapsed Bridge',
-      desc: 'Supply bridge failed. Choose where to allocate labor tonight.',
-      choices: [
-        { id:'rebuild_fast', label:'Rebuild fast', effects:{ wood:-36, tools:-4, food:+26, threat:-8, mood:-0.02 } },
-        { id:'ration_detour', label:'Detour with ration cuts', effects:{ food:-48, wood:+18, science:+10, dissent:+0.04 } },
-      ],
-    },
-    {
-      id: 'embers_in_rain',
-      label: 'Embers in the Rain',
-      desc: 'Storm soaked fuel stores. Decide between comfort and stockpile safety.',
-      choices: [
-        { id:'burn_reserves', label:'Burn reserve timber', effects:{ wood:-52, warmth:+24, mood:+0.04, threat:-5 } },
-        { id:'cold_watch', label:'Cold watch shifts', effects:{ food:+20, science:+14, warmth:-18, dissent:+0.05 } },
-      ],
-    },
-    {
-      id: 'strange_caravan',
-      label: 'Strange Caravan',
-      desc: 'A caravan offers risky trade terms at dusk.',
-      choices: [
-        { id:'buy_map', label:'Buy star-map bundle', effects:{ food:-34, wood:-22, science:+42, tools:+6 } },
-        { id:'seize_crates', label:'Seize crates by force', effects:{ food:+54, wood:+34, threat:+16, mood:-0.05, dissent:+0.03 } },
-      ],
-    },
-    {
-      id: 'rookery_fire',
-      label: 'Rookery Fire',
-      desc: 'A workshop ember sparked a rookery fire near storage huts.',
-      choices: [
-        { id:'bucket_line', label:'Bucket line response', effects:{ food:-20, wood:-12, threat:-10, mood:+0.03 } },
-        { id:'save_tools', label:'Prioritize tool caches', effects:{ tools:+8, science:+12, food:-36, warmth:-10, dissent:+0.02 } },
-      ],
-    },
-  ];
-
-  function fieldIncidentSeed(s, salt=0){
-    const ap = s.activePlay ?? {};
-    const t = Math.floor(Number(s.t ?? 0));
-    const runMix = (Math.floor(Number(s?.legacy?.resets ?? 0)) * 2654435761) ^ (Math.floor(Number(s?.eternity?.resets ?? 0)) * 2246822519);
-    const socialMix = (Math.floor((Number(s?.social?.dissent ?? 0) || 0) * 1000) * 3266489917) ^ (Math.floor((Number(s?.social?.norms?.scarcityMindset ?? 0) || 0) * 1000) * 668265263);
-    const seenMix = Math.floor(Number(ap.incidentSeen ?? 0)) * 1597334677;
-    return (t ^ runMix ^ socialMix ^ seenMix ^ (Math.floor(Number(salt ?? 0)) * 374761393)) | 0;
-  }
-
-  function rollFieldIncidentDelay(s){
-    const rng = seededRng(fieldIncidentSeed(s, 11));
-    return 600 + Math.floor(rng() * 1201);
-  }
-
-  function spawnFieldIncident(s){
-    ensureActivePlayState(s);
-    const ap = s.activePlay;
-    if (ap.incident) return;
-    const nowT = Number(s.t ?? 0);
-    const rng = seededRng(fieldIncidentSeed(s, 23));
-    const idx = Math.floor(rng() * FIELD_INCIDENTS.length);
-    const base = FIELD_INCIDENTS[idx] ?? FIELD_INCIDENTS[0];
-    ap.incident = {
-      id: String(base.id),
-      label: String(base.label),
-      desc: String(base.desc),
-      choices: base.choices.map((c) => ({ id:String(c.id), label:String(c.label), effects:{ ...(c.effects ?? {}) } })),
-      spawnedAt: nowT,
-      expiresAt: nowT + 120,
-    };
-    ap.lastIncidentAt = nowT;
-    log(`Field Incident: ${base.label}. Choose a response.`);
-    playSfx('unlock');
-  }
-
-  function applyFieldIncidentChoice(s, choiceId){
-    ensureActivePlayState(s);
-    const ap = s.activePlay;
-    const inc = ap.incident;
-    if (!inc) return false;
-    const choice = (Array.isArray(inc.choices) ? inc.choices : []).find((c) => String(c.id) === String(choiceId));
-    if (!choice) return false;
-    const fx = (choice.effects && typeof choice.effects === 'object') ? choice.effects : {};
-
-    s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(fx.food ?? 0));
-    s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(fx.wood ?? 0));
-    s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(fx.science ?? 0));
-    s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(fx.tools ?? 0));
-    s.res.warmth = Math.max(0, Number(s.res.warmth ?? 0) + Number(fx.warmth ?? 0));
-    s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(fx.threat ?? 0));
-
-    s.social = s.social ?? { dissent:0, norms:{} };
-    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + Number(fx.dissent ?? 0));
-    const moodDelta = Number(fx.mood ?? 0);
-    if (Math.abs(moodDelta) > 0.0001) {
-      const ks = Array.isArray(s.kittens) ? s.kittens : [];
-      for (const k of ks) {
-        k.mood = clamp01(Number(k.mood ?? 0.6) + moodDelta);
-      }
-    }
-
-    log(`Field Incident resolved: ${inc.label} -> ${choice.label}.`);
-    ap.incident = null;
-    ap.incidentSeen = Math.max(0, Number(ap.incidentSeen ?? 0) + 1);
-    ap.incidentCooldownUntil = Number(s.t ?? 0) + 120;
-    ap.nextIncidentAt = Number(s.t ?? 0) + rollFieldIncidentDelay(s);
-    playSfx('milestone');
-    save();
-    return true;
-  }
-
-  const ACTIVE_PLAY_EVENTS = [
-    {
-      id:'wandering_knight',
-      label:'Wandering Knight',
-      icon:'⚔️',
-      accent:'#7aa2ff',
-      desc:'A veteran knight offers to train your colony for a short tour.',
-      cta:'training buff + science',
-      duration:16,
-      condition:(s)=>Number(s?.kittens?.length ?? 0) >= 6,
-      weight:(s)=>1.0 + Math.max(0, Math.min(0.5, 1 - averageMood01(s))),
-      reward:(s)=>{
-        const nowT = Number(s?.t ?? 0);
-        const out = [];
-        const training = applyTimedMultiplier(s, 'trainingBuffMul', 'trainingBuffUntil', 1.25, 45, 2.2);
-        out.push(`training ${training.mul.toFixed(2)}x (${Math.max(1, Math.ceil(training.until - nowT))}s)`);
-        s.res.science = Math.max(0, Number(s.res.science ?? 0) + 6);
-        out.push('+6 science');
-        return out;
-      },
-    },
-    {
-      id:'lantern_festival',
-      label:'Lantern Festival',
-      icon:'🏮',
-      accent:'#f5b041',
-      desc:'The camp glows with lanterns; spirits rise and work flows.',
-      cta:'production boost + mood',
-      duration:20,
-      condition:(s)=>Number(s?.res?.food ?? 0) >= 40 || Number(s?.res?.warmth ?? 0) >= 30,
-      weight:(s)=>1.2 + 0.2 * clamp01((Number(s?.social?.norms?.mutualAid ?? 0) - 0.4) / 0.6),
-      reward:(s)=>{
-        const nowT = Number(s?.t ?? 0);
-        const out = [];
-        const boost = applyTimedMultiplier(s, 'boostMul', 'boostUntil', 1.65, 30, 2.2);
-        out.push(`production ${boost.mul.toFixed(2)}x (${Math.max(1, Math.ceil(boost.until - nowT))}s)`);
-        const ks = Array.isArray(s.kittens) ? s.kittens : [];
-        for (const k of ks) k.mood = clamp01(Number(k.mood ?? 0.6) + 0.04);
-        out.push('+mood pulse');
-        return out;
-      },
-    },
-    {
-      id:'bandit_scouts',
-      label:'Bandit Scouts Spotted',
-      icon:'🛡️',
-      accent:'#ef5350',
-      desc:'Scouts circle the outskirts. Intercept now for supplies and safer roads.',
-      cta:'reduce threat + resources',
-      duration:14,
-      condition:(s)=>Number(s?.res?.threat ?? 0) >= 12,
-      weight:(s)=>0.9 + Math.max(0, Math.min(0.8, (Number(s?.res?.threat ?? 0) - 12) / 30)),
-      reward:(s)=>{
-        const out = [];
-        s.res.threat = Math.max(0, Number(s.res.threat ?? 0) - 8);
-        out.push('-8 threat');
-        const scaled = scaledBurstRewards(s, { wood:18, tools:10 });
-        s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + scaled.wood);
-        s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + scaled.tools);
-        out.push(`+${fmt(scaled.wood)} wood`, `+${fmt(scaled.tools)} tools`);
-        return out;
-      },
-    },
-    {
-      id:'diplomatic_envoy',
-      label:'Diplomatic Envoy',
-      icon:'🤝',
-      accent:'#b388ff',
-      desc:'An envoy requests audience, offering favorable exchange terms.',
-      cta:'science + food + lower dissent',
-      duration:24,
-      condition:(s)=>Number(s?.social?.coteries?.length ?? 0) > 0,
-      weight:(s)=>0.8 + 0.3 * clamp01(1 - Number(s?.social?.dissent ?? 0)),
-      reward:(s)=>{
-        const out = [];
-        const scaled = scaledBurstRewards(s, { science:14, food:14 });
-        s.res.science = Math.max(0, Number(s.res.science ?? 0) + scaled.science);
-        s.res.food = Math.max(0, Number(s.res.food ?? 0) + scaled.food);
-        s.social = s.social ?? { dissent:0 };
-        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - 0.03);
-        out.push(`+${fmt(scaled.science)} science`, `+${fmt(scaled.food)} food`, '-dissent');
-        return out;
-      },
-    },
-  ];
-
-  function averageMood01(s){
-    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
-    if (!ks.length) return 0.55;
-    let sum = 0;
-    for (const k of ks) sum += clamp01(Number(k?.mood ?? 0.55));
-    return clamp01(sum / ks.length);
-  }
-
-  function scaledBurstRewards(s, burst){
-    const pop = Math.max(1, Number(s?.kittens?.length ?? 1));
-    const popFactor = Math.min(1.75, 1 + 0.025 * pop);
-    const out = {};
-    for (const [key, val] of Object.entries(burst ?? {})) out[key] = Math.max(0, Number(val ?? 0) * popFactor);
-    return out;
-  }
-
-  function applyTimedMultiplier(s, mulKey, untilKey, newMul, newDurationSec, hardCap){
-    ensureActivePlayState(s);
-    const ap = s.activePlay;
-    const nowT = Number(s?.t ?? 0);
-    const curUntil = Number(ap[untilKey] ?? 0);
-    const curMul = Math.max(1, Number(ap[mulKey] ?? 1));
-    const isActive = nowT < curUntil;
-    const nextMul = Math.min(Number(hardCap ?? 2.2), Math.max(curMul, Number(newMul ?? 1)));
-    if (isActive) {
-      const ext = Math.min(Number(newDurationSec ?? 0), 15);
-      ap[untilKey] = curUntil + ext;
-    } else {
-      ap[untilKey] = nowT + Math.max(1, Number(newDurationSec ?? 0));
-    }
-    ap[mulKey] = Math.max(1, nextMul);
-    return { mul: ap[mulKey], until: Number(ap[untilKey] ?? nowT) };
   }
 
   function activePlayProdMul(s){
@@ -1187,59 +719,32 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return (Number(s?.t ?? 0) < Number(ap.boostUntil ?? 0)) ? Math.max(1, Number(ap.boostMul ?? 1) || 1) : 1;
   }
 
-  function activePlayTrainingMul(s){
-    const ap = s?.activePlay;
-    if (!ap) return 1;
-    return (Number(s?.t ?? 0) < Number(ap.trainingBuffUntil ?? 0)) ? Math.max(1, Number(ap.trainingBuffMul ?? 1) || 1) : 1;
-  }
-
   function spawnActivePlayEvent(s){
     ensureActivePlayState(s);
     const ap = s.activePlay;
     if (ap.active) return;
     const nowT = Number(s.t ?? 0);
-    const eligible = [];
-
-    for (const base of ACTIVE_PLAY_EVENTS) {
-      let ok = false;
-      try { ok = !!base.condition(s); } catch (_) { ok = false; }
-      if (!ok) continue;
-      let w = 0;
-      try { w = Math.max(0, Number(base.weight(s)) || 0); } catch (_) { w = 0; }
-      if (String(ap.lastEventId ?? '') === String(base.id)) w *= 0.35;
-      if (w <= 0) continue;
-      eligible.push({ ...base, _weight: w });
-    }
-
-    if (!eligible.length) {
-      ap.nextAt = nowT + rollActivePlayDelay();
-      return;
-    }
-
-    const total = eligible.reduce((acc, e) => acc + Number(e._weight ?? 0), 0);
-    let roll = Math.random() * Math.max(0.0001, total);
-    let pick = eligible[0];
-    for (const e of eligible) {
-      roll -= Number(e._weight ?? 0);
-      if (roll <= 0) { pick = e; break; }
-    }
-
-    const evDuration = Math.max(10, Math.min(30, Number(pick.duration ?? 16)));
+    const types = [
+      { id:'sunbeam_cache', label:'Sunbeam Cache', reward:'burst', burst:{ food: 26, wood: 14 } },
+      { id:'scholar_scroll', label:'Scholar Scroll', reward:'burst', burst:{ science: 20, tools: 5 } },
+      { id:'forge_surge', label:'Forge Surge', reward:'boost', mul: 2.0, duration: 30 },
+      { id:'harvest_blessing', label:'Harvest Blessing', reward:'boost', mul: 1.8, duration: 30 },
+      { id:'knight_tithe', label:'Knight Tithe', reward:'burst', burst:{ food: 14, wood: 20, science: 8 } },
+    ];
+    const pick = types[Math.floor(Math.random() * types.length)] ?? types[0];
     ap.active = {
       id: String(pick.id),
       label: String(pick.label),
-      icon: String(pick.icon ?? '✨'),
-      accent: String(pick.accent ?? '#7aa2ff'),
-      desc: String(pick.desc ?? 'Opportunity awaits.'),
-      cta: String(pick.cta ?? 'Claim reward'),
-      duration: evDuration,
+      reward: String(pick.reward),
+      burst: pick.burst ? { ...pick.burst } : null,
+      mul: Number(pick.mul ?? 1),
+      duration: Number(pick.duration ?? 0),
       spawnedAt: nowT,
-      expiresAt: nowT + evDuration,
+      expiresAt: nowT + 10,
     };
     ap.nextAt = nowT + rollActivePlayDelay();
-    ap.lastEventId = String(pick.id);
     playSfx('unlock');
-    log(`Active event: ${pick.label} appeared (${evDuration}s).`);
+    log(`Active event: ${pick.label} appeared (10s).`);
   }
 
   function claimActivePlayEvent(s){
@@ -1248,17 +753,27 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ev = ap.active;
     if (!ev) return false;
 
-    const def = ACTIVE_PLAY_EVENTS.find((x) => String(x.id) === String(ev.id));
-    const details = (def && typeof def.reward === 'function') ? def.reward(s) : [];
+    const pop = Math.max(1, Number(s.kittens?.length ?? 1));
+    if (ev.reward === 'boost') {
+      ap.boostMul = Math.max(1.6, Number(ev.mul ?? 2));
+      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0), Number(s.t ?? 0) + Math.max(15, Number(ev.duration ?? 30)));
+      log(`${ev.label}: production surge active (${ap.boostMul.toFixed(2)}x for ${Math.max(1, Math.ceil(ap.boostUntil - Number(s.t ?? 0)))}s).`);
+    } else {
+      const burst = ev.burst ?? { food: 18, wood: 10 };
+      const food = Math.max(0, Number(burst.food ?? 0) * (1 + pop * 0.04));
+      const wood = Math.max(0, Number(burst.wood ?? 0) * (1 + pop * 0.03));
+      const science = Math.max(0, Number(burst.science ?? 0) * (1 + pop * 0.03));
+      const tools = Math.max(0, Number(burst.tools ?? 0) * (1 + pop * 0.02));
+      s.res.food = Number(s.res.food ?? 0) + food;
+      s.res.wood = Number(s.res.wood ?? 0) + wood;
+      s.res.science = Number(s.res.science ?? 0) + science;
+      s.res.tools = Number(s.res.tools ?? 0) + tools;
+      log(`${ev.label}: cache recovered (+${fmt(food)} food, +${fmt(wood)} wood${science > 0 ? `, +${fmt(science)} science` : ''}${tools > 0 ? `, +${fmt(tools)} tools` : ''}).`);
+    }
 
     ap.active = null;
     ap.seen = Math.max(0, Number(ap.seen ?? 0) + 1);
     playSfx('milestone');
-    if (Array.isArray(details) && details.length) {
-      log(`${ev.label}: ${details.join(', ')}.`);
-    } else {
-      log(`${ev.label}: reward claimed.`);
-    }
     save();
     return true;
   }
@@ -1273,104 +788,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ap.active = null;
     }
 
-    if (ap.incident && nowT >= Number(ap.incident.expiresAt ?? 0)) {
-      log(`Field Incident missed: ${ap.incident.label}. Opportunity lost.`);
-      ap.incident = null;
-      ap.incidentCooldownUntil = nowT + 120;
-      ap.nextIncidentAt = nowT + rollFieldIncidentDelay(state);
-    }
-
     if (nowT >= Number(ap.nextAt ?? Infinity) && !ap.active && !state.paused) {
       spawnActivePlayEvent(state);
     }
 
-    if (!ap.incident && nowT >= Number(ap.nextIncidentAt ?? Infinity) && nowT >= Number(ap.incidentCooldownUntil ?? 0) && !state.paused) {
-      spawnFieldIncident(state);
-    }
-
     if (nowT >= Number(ap.boostUntil ?? 0)) {
       ap.boostMul = 1;
-    }
-    if (nowT >= Number(ap.trainingBuffUntil ?? 0)) {
-      ap.trainingBuffMul = 1;
-    }
-  }
-
-  function ensureSecretsState(s){
-    s.secrets = (s.secrets && typeof s.secrets === 'object') ? s.secrets : {};
-    s.secrets.found = (s.secrets.found && typeof s.secrets.found === 'object') ? s.secrets.found : {};
-    s.secrets.log = Array.isArray(s.secrets.log) ? s.secrets.log : [];
-    s.secrets.rareSeen = Math.max(0, Math.floor(Number(s.secrets.rareSeen ?? 0) || 0));
-    s.secrets.nextRareAt = Number(s.secrets.nextRareAt ?? 0) || (Number(s.t ?? 0) + 180);
-    s.secrets.banner = (s.secrets.banner && typeof s.secrets.banner === 'object') ? s.secrets.banner : null;
-    if (s.secrets.log.length > 80) s.secrets.log = s.secrets.log.slice(-80);
-  }
-
-  function revealSecret(s, id, title, detail){
-    ensureSecretsState(s);
-    const key = String(id || '');
-    if (!key || s.secrets.found[key]) return false;
-    s.secrets.found[key] = { at: Number(s.t ?? 0), title: String(title ?? key), detail: String(detail ?? '') };
-    s.secrets.log.push(`[${fmt(s.t)}] ${title} — ${detail}`);
-    if (s.secrets.log.length > 80) s.secrets.log.splice(0, s.secrets.log.length - 80);
-    const msg = `✨ Discovery: ${title}. ${detail}`;
-    feed(msg);
-    log(msg);
-    s.secrets.banner = { text: `${title} discovered!`, until: Number(s.t ?? 0) + 8 };
-    playSfx('milestone');
-    return true;
-  }
-
-  function tickSecretsSystem(s){
-    ensureSecretsState(s);
-    const nowT = Number(s.t ?? 0);
-
-    if (nowT >= 360) revealSecret(s, 'first_winter', 'First Winter Survived', 'The colony endured a full winter cycle.');
-    if (Number(s.res?.food ?? 0) >= 500) revealSecret(s, 'stockpile_500', 'Granary Whisper', 'Fresh food crossed 500.');
-    if (Number(s.res?.science ?? 0) >= 250) revealSecret(s, 'science_250', 'Stargazer Notes', 'Scholars mapped hidden constellations.');
-    if (Number(s.legacy?.resets ?? 0) >= 1) revealSecret(s, 'legacy_reset', 'Echo Archive', 'Legacy memories now echo across runs.');
-    if (Number(s.res?.jerky ?? 0) >= 40) revealSecret(s, 'jerky_cache', 'Smokehouse Lore', 'Preserved rations unlocked deep storage techniques.');
-    if (Number(s.pop?.kittens ?? 0) >= 24) revealSecret(s, 'moonlit_colony', 'Moonlit Colony', 'Twenty-four kittens now call the valley home.');
-    if (Number(s.res?.gold ?? 0) >= 120) revealSecret(s, 'coin_hoard', 'Coin Hoard', 'A gleaming reserve of trade coin now anchors diplomacy.');
-    if (Number(s.eternity?.resets ?? 0) >= 1) revealSecret(s, 'eternity_echo', 'Eternity Echo', 'Fragments from prior eternities whisper in the archive.');
-
-    const inWinter = String(seasonAt(s.t)?.name ?? '') === 'Winter';
-    if (inWinter && nowT > 360) revealSecret(s, 'moon_rites', 'Moon Rites', 'Winter gatherings strengthen colony resolve.');
-    if (inWinter && Number(s.res?.warmth ?? 0) >= 120) revealSecret(s, 'ember_ceremony', 'Ember Ceremony', 'A midnight fire rite carried the colony through bitter cold.');
-
-    // Rare events (lightweight, deterministic cadence)
-    if (!s.paused && nowT >= Number(s.secrets.nextRareAt ?? Infinity)) {
-      const pool = [
-        { id:'rare_caravan', title:'Moonlit Caravan', text:'A hidden trader left rare supplies.', fx:{ food:32, science:18, tools:4 } },
-        { id:'rare_relic', title:'Buried Relic', text:'Scouts uncovered a relic cache beneath old palisades.', fx:{ wood:28, science:22, threat:-10 } },
-        { id:'rare_skyshard', title:'Skyshard Fall', text:'A luminous shard struck nearby and infused your workshops.', fx:{ science:26, tools:8, gold:14 } },
-        { id:'rare_haven', title:'Hidden Haven', text:'Scouts found a sheltered glade packed with winter stores.', fx:{ food:44, warmth:20, threat:-6 } },
-      ];
-      const pick = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
-      s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(pick.fx.food ?? 0));
-      s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(pick.fx.wood ?? 0));
-      s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(pick.fx.science ?? 0));
-      s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(pick.fx.tools ?? 0));
-      s.res.gold = Math.max(0, Number(s.res.gold ?? 0) + Number(pick.fx.gold ?? 0));
-      s.res.warmth = Math.max(0, Number(s.res.warmth ?? 0) + Number(pick.fx.warmth ?? 0));
-      s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(pick.fx.threat ?? 0));
-      s.secrets.rareSeen = Math.max(0, Number(s.secrets.rareSeen ?? 0) + 1);
-      s.secrets.nextRareAt = nowT + (210 + Math.floor(Math.random() * 180));
-      const parts = [];
-      if (pick.fx.food) parts.push(`${pick.fx.food > 0 ? '+' : ''}${fmt(pick.fx.food)} food`);
-      if (pick.fx.wood) parts.push(`${pick.fx.wood > 0 ? '+' : ''}${fmt(pick.fx.wood)} wood`);
-      if (pick.fx.science) parts.push(`${pick.fx.science > 0 ? '+' : ''}${fmt(pick.fx.science)} science`);
-      if (pick.fx.tools) parts.push(`${pick.fx.tools > 0 ? '+' : ''}${fmt(pick.fx.tools)} tools`);
-      if (pick.fx.gold) parts.push(`${pick.fx.gold > 0 ? '+' : ''}${fmt(pick.fx.gold)} gold`);
-      if (pick.fx.warmth) parts.push(`${pick.fx.warmth > 0 ? '+' : ''}${fmt(pick.fx.warmth)} warmth`);
-      if (pick.fx.threat) parts.push(`${pick.fx.threat > 0 ? '+' : ''}${fmt(pick.fx.threat)} threat`);
-      const msg = `✨ Rare event: ${pick.title} — ${pick.text} (${parts.join(', ')}).`;
-      s.secrets.log.push(`[${fmt(s.t)}] ${pick.title} — ${pick.text}`);
-      if (s.secrets.log.length > 80) s.secrets.log.splice(0, s.secrets.log.length - 80);
-      feed(msg);
-      log(msg);
-      s.secrets.banner = { text: `${pick.title}!`, until: nowT + 8 };
-      playSfx('unlock');
     }
   }
 
@@ -1385,39 +808,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       document.body.appendChild(host);
     }
 
-    if (ap.incident) {
-      const inc = ap.incident;
-      const left = Math.max(0, Number(inc.expiresAt ?? 0) - Number(state.t ?? 0));
-      const choices = (Array.isArray(inc.choices) ? inc.choices : []).map((c) => {
-        const label = escapeHtml(String(c.label ?? 'Respond'));
-        const id = escapeHtml(String(c.id ?? 'choice'));
-        return `<button class="incident-choice-btn" type="button" data-incident-choice="${id}">${label}</button>`;
-      }).join('');
-      host.innerHTML = `<div class="active-play-event incident"><div class="title">Field Incident: ${escapeHtml(String(inc.label ?? 'Incident'))}</div><div class="desc">${escapeHtml(String(inc.desc ?? 'Choose a response.'))} • ${Math.ceil(left)}s</div><div class="incident-choice-row">${choices}</div></div>`;
-      return;
-    }
-
     const ev = ap.active;
     const boostLeft = Math.max(0, Number(ap.boostUntil ?? 0) - Number(state.t ?? 0));
-    const trainingLeft = Math.max(0, Number(ap.trainingBuffUntil ?? 0) - Number(state.t ?? 0));
     if (!ev) {
-      const lines = [];
-      if (boostLeft > 0) lines.push(`${Number(ap.boostMul ?? 1).toFixed(2)}x production • ${Math.ceil(boostLeft)}s`);
-      if (trainingLeft > 0) lines.push(`${Number(ap.trainingBuffMul ?? 1).toFixed(2)}x training • ${Math.ceil(trainingLeft)}s`);
-      host.innerHTML = lines.length
-        ? `<div class="active-play-event active"><div class="title">Momentum Effects</div><div class="desc">${escapeHtml(lines.join(' | '))}</div></div>`
+      host.innerHTML = boostLeft > 0
+        ? `<div class="active-play-event active"><div class="title">Momentum Surge</div><div class="desc">${Number(ap.boostMul ?? 1).toFixed(2)}x production • ${Math.ceil(boostLeft)}s</div></div>`
         : '';
       return;
     }
 
     const left = Math.max(0, Number(ev.expiresAt ?? 0) - Number(state.t ?? 0));
-    const evId = String(ev.id ?? '').replace(/[^a-z0-9_-]/gi, '');
-    const icon = escapeHtml(String(ev.icon ?? '✨'));
-    const label = escapeHtml(String(ev.label ?? 'Active Event'));
-    const desc = escapeHtml(String(ev.desc ?? 'Tap to claim reward'));
-    const cta = escapeHtml(String(ev.cta ?? 'reward'));
-    const accent = escapeHtml(String(ev.accent ?? '#7aa2ff'));
-    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event event-${evId}" style="--event-accent:${accent}" type="button"><div class="title"><span class="event-icon" aria-hidden="true">${icon}</span><span class="event-name">${label}</span></div><div class="desc" title="${desc}">${desc}</div><div class="cta">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
+    const cta = (ev.reward === 'boost') ? `${Number(ev.mul ?? 2).toFixed(1)}x production` : 'Claim cache';
+    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event" type="button"><div class="title">${ev.label}</div><div class="desc">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
   }
 
   function audioCtx(){
@@ -1499,69 +901,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Kept outside save data to preserve replay/save determinism.
   const resourceUiFx = {
     last: null,
-    popups: { Food: [], Wood: [], Gold: [], Science: [], Tools: [], Jerky: [] },
-    counters: Object.create(null),
+    popups: { Food: [], Wood: [], Science: [], Tools: [], Jerky: [] }
   };
-
-  function formatCompactResourceNumber(n){
-    const v = Number(n ?? 0);
-    if (!Number.isFinite(v)) return '0';
-    const sign = v < 0 ? '-' : '';
-    const abs = Math.abs(v);
-    const units = [
-      { div: 1e12, suf: 'T' },
-      { div: 1e9, suf: 'B' },
-      { div: 1e6, suf: 'M' },
-      { div: 1e3, suf: 'K' },
-    ];
-    for (const u of units) {
-      if (abs >= u.div) {
-        const scaled = abs / u.div;
-        const digits = scaled >= 100 ? 0 : (scaled >= 10 ? 1 : 2);
-        return `${sign}${scaled.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')}${u.suf}`;
-      }
-    }
-    return fmt(v);
-  }
-
-  function formatFullResourceNumber(n){
-    const v = Number(n ?? 0);
-    if (!Number.isFinite(v)) return '0';
-    const hasFrac = Math.abs(v % 1) > 0.001;
-    return v.toLocaleString(undefined, {
-      minimumFractionDigits: hasFrac ? 1 : 0,
-      maximumFractionDigits: hasFrac ? 1 : 0,
-    });
-  }
-
-  function animatedResourceValue(key, target){
-    const k = String(key || '');
-    const t = Number(target ?? 0);
-    if (!k || !Number.isFinite(t)) return t;
-
-    const nowMs = now();
-    const durMs = 320;
-    let c = resourceUiFx.counters[k];
-    if (!c) {
-      c = { from: t, to: t, startAt: nowMs, durMs };
-      resourceUiFx.counters[k] = c;
-      return t;
-    }
-
-    if (Math.abs(t - c.to) > 0.0001) {
-      const elapsed = Math.max(0, Math.min(1, (nowMs - c.startAt) / Math.max(1, c.durMs)));
-      const eased = 1 - Math.pow(1 - elapsed, 3);
-      const current = c.from + (c.to - c.from) * eased;
-      c.from = current;
-      c.to = t;
-      c.startAt = nowMs;
-      c.durMs = durMs;
-    }
-
-    const p = Math.max(0, Math.min(1, (nowMs - c.startAt) / Math.max(1, c.durMs)));
-    const e = 1 - Math.pow(1 - p, 3);
-    return c.from + (c.to - c.from) * e;
-  }
 
   const statDeltaUiFx = {
     last: Object.create(null),
@@ -1826,102 +1167,20 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   // --- Traits (civ-sim identity layer)
-  // 6-trait cap by design (clarity + balance). Each kitten gets 1-2 traits at birth.
-  // Traits do two things:
-  // 1) decision bias (which jobs they prefer)
-  // 2) direct per-action output modifier (+/-15%) on productive actions.
+  // One small "trait" per kitten. Unlike likes/dislikes (which depend on Autonomy), traits are a steady bias.
+  // Goal: make colonies feel different across runs and make specialization feel more "character-driven".
   const TRAIT_DEFS = [
-    { id:'Brave', desc:'Bold in danger. Strong guard instincts, but less patient in study halls.', bias:{ Guard:12, BuildPalisade:8, Research:-4 }, prod:{ Guard:0.15, BuildPalisade:0.12, Research:-0.08 } },
-    { id:'Curious', desc:'Constantly investigating. Great for knowledge work, weaker under direct threat.', bias:{ Research:12, Mentor:8, Guard:-5 }, prod:{ Research:0.15, Mentor:0.12, Guard:-0.08 } },
-    { id:'Lazy', desc:'Conserves effort. Tires a little slower, but output is lower when working hard.', bias:{ Rest:8, Loaf:9, Guard:-4 }, prod:{ '*':-0.12, Rest:0.08, Loaf:0.08 } },
-    { id:'Greedy', desc:'Resource-chasing opportunist. Excellent at gains, poor at communal duties.', bias:{ Forage:8, CraftTools:10, Socialize:-6, Care:-4 }, prod:{ Forage:0.12, CraftTools:0.15, Socialize:-0.10, Care:-0.08 } },
-    { id:'Gentle', desc:'Soft-hearted and cooperative. Great with care and morale, hesitant in combat roles.', bias:{ Care:11, Socialize:10, Guard:-7, BuildPalisade:-5 }, prod:{ Care:0.15, Socialize:0.15, Guard:-0.10 } },
-    { id:'Stubborn', desc:'Determined and relentless. Pushes projects through, resists collaboration pivots.', bias:{ BuildHut:8, BuildGranary:8, BuildWorkshop:9, BuildLibrary:9, Socialize:-5, Mentor:-4 }, prod:{ BuildHut:0.12, BuildGranary:0.12, BuildWorkshop:0.15, BuildLibrary:0.15, Socialize:-0.06, Research:-0.08 } },
+    { id:'Brave',     desc:'Leans into danger. Prefers Guard; ALARM stresses them less.', bias: { Guard: 12 } },
+    { id:'Studious',  desc:'Bookish. Prefers Research (and Mentor once unlocked).', bias: { Research: 10, Mentor: 8 } },
+    { id:'Builder',   desc:'Hands-on. Prefers construction + tool work.', bias: { BuildHut: 9, BuildPalisade: 8, BuildGranary: 8, BuildWorkshop: 8, BuildLibrary: 8, CraftTools: 8 } },
+    { id:'Caretaker', desc:'Keeps spirits up. Prefers Socialize/Care.', bias: { Socialize: 10, Care: 10 } },
+    { id:'Forager',   desc:'Wilderness savvy. Prefers Forage/Farm/ChopWood.', bias: { Forage: 9, Farm: 7, ChopWood: 7 } },
   ];
-  const TRAIT_DEF_BY_ID = Object.fromEntries(TRAIT_DEFS.map((t) => [t.id, t]));
-
-  function normalizeTraitId(id){
-    const v = String(id ?? '').trim();
-    if (TRAIT_DEF_BY_ID[v]) return v;
-    const map = { Studious: 'Curious', Builder: 'Stubborn', Ambitious: 'Stubborn', Forager: 'Greedy', Caretaker: 'Gentle' };
-    return map[v] ?? null;
-  }
-
-  function normalizeTraits(arr, fallbackId=1){
-    const raw = Array.isArray(arr) ? arr : [];
-    const out = [];
-    for (const id of raw) {
-      const n = normalizeTraitId(id);
-      if (n && !out.includes(n)) out.push(n);
-      if (out.length >= 2) break;
-    }
-    if (out.length) return out;
-    return genTraits(fallbackId);
-  }
 
   function genTraits(id){
     const rng = seededRng((id * 1103515245 + 12345) | 0);
-    const pick1 = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Curious';
-    const wantTwo = rng() < 0.38;
-    if (!wantTwo) return [pick1];
-    const rest = TRAIT_DEFS.map(t => t.id).filter(t => t !== pick1);
-    const pick2 = rest[Math.floor(rng() * Math.max(1, rest.length))] ?? pick1;
-    return [pick1, pick2];
-  }
-
-  function traitOutputMul(k, action){
-    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
-    let mod = 0;
-    for (const id of traits) {
-      const def = TRAIT_DEF_BY_ID[id];
-      if (!def?.prod) continue;
-      mod += Number(def.prod[action] ?? def.prod['*'] ?? 0) || 0;
-    }
-    return Math.max(0.55, Math.min(1.45, 1 + mod));
-  }
-
-  function traitSummary(k){
-    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
-    if (!traits.length) return '-';
-    if (!traitEffectsVisible(state)) return traits.join(', ');
-    return traits.map((id) => {
-      const d = TRAIT_DEF_BY_ID[id];
-      if (!d?.prod) return id;
-      const vals = Object.values(d.prod).map(v => Number(v) || 0);
-      const best = vals.length ? Math.max(...vals) : 0;
-      const worst = vals.length ? Math.min(...vals) : 0;
-      if (best > 0 && worst >= 0) return `${id} (+${Math.round(best * 100)}%)`;
-      if (worst < 0 && best <= 0) return `${id} (${Math.round(worst * 100)}%)`;
-      return id;
-    }).join(', ');
-  }
-
-  function traitEffectsVisible(s){
-    const pop = Array.isArray(s?.kittens) ? s.kittens.length : 0;
-    return pop >= 4;
-  }
-
-  function traitFlavorReasonForTask(s, k, task){
-    if (!traitEffectsVisible(s)) return '';
-    const action = String(task ?? '');
-    if (!action) return '';
-
-    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
-    for (const id of traits) {
-      const def = TRAIT_DEF_BY_ID[id];
-      const bias = Number(def?.bias?.[action] ?? 0) || 0;
-      if (bias <= 0) continue;
-
-      if (id === 'Brave' && (action === 'Guard' || action === 'BuildPalisade')) return 'Brave instinct: volunteers for danger duty';
-      if (id === 'Curious' && (action === 'Research' || action === 'Mentor')) return 'Curious streak: chases new ideas';
-      if (id === 'Lazy' && (action === 'Rest' || action === 'Loaf')) return 'Lazy streak: conserves energy';
-      if (id === 'Greedy' && (action === 'Forage' || action === 'CraftTools')) return 'Greedy streak: chases high-yield work';
-      if (id === 'Gentle' && (action === 'Care' || action === 'Socialize')) return 'Gentle instinct: prioritizes harmony';
-      if (id === 'Stubborn' && (action === 'BuildHut' || action === 'BuildGranary' || action === 'BuildWorkshop' || action === 'BuildLibrary')) return 'Stubborn streak: sticks to the build plan';
-      return `${id} trait influence`;
-    }
-
-    return '';
+    const pick = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)]?.id ?? 'Forager';
+    return [pick];
   }
 
   // --- Names (civ-sim readability)
@@ -1959,12 +1218,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     const t = Array.isArray(traits) ? traits : [];
-    if (t.includes('Brave'))    { v.Safety += 0.24; v.Progress -= 0.06; }
-    if (t.includes('Curious'))  { v.Progress += 0.26; v.Safety -= 0.05; }
-    if (t.includes('Lazy'))     { v.Social += 0.12; v.Progress -= 0.10; }
-    if (t.includes('Greedy'))   { v.Food += 0.18; v.Progress += 0.08; v.Social -= 0.10; }
-    if (t.includes('Gentle'))   { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.07; }
-    if (t.includes('Stubborn')) { v.Progress += 0.16; v.Safety += 0.04; v.Social -= 0.08; }
+    if (t.includes('Forager'))   { v.Food += 0.18; v.Safety += 0.05; v.Progress -= 0.10; v.Social -= 0.05; }
+    if (t.includes('Brave'))     { v.Safety += 0.22; v.Progress -= 0.05; }
+    if (t.includes('Studious'))  { v.Progress += 0.26; v.Social -= 0.05; }
+    if (t.includes('Builder'))   { v.Progress += 0.20; v.Food += 0.06; v.Social -= 0.04; }
+    if (t.includes('Caretaker')) { v.Social += 0.28; v.Safety += 0.04; v.Progress -= 0.06; }
 
     // Normalize + clamp.
     for (const k of VALUE_AXES) v[k] = Math.max(0.03, Number(v[k] ?? 0));
@@ -2077,11 +1335,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function traitInfoList(k){
     const arr = Array.isArray(k?.traits) ? k.traits : [];
     const out = [];
-    const reveal = traitEffectsVisible(state);
     for (const id of arr) {
       const def = TRAIT_DEFS.find(t => t.id === id);
-      if (!reveal) out.push(def ? def.id : String(id));
-      else out.push(def ? `${def.id}: ${def.desc}` : String(id));
+      out.push(def ? `${def.id}: ${def.desc}` : String(id));
     }
     return out;
   }
@@ -2107,7 +1363,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Personality: soft preferences that bias scoring (adds emergent specialization)
       personality: genPersonality(id),
       // Traits: steady "identity" bias (civ-sim flavor)
-      traits: normalizeTraits(traits, id),
+      traits,
       // Values: what this kitten *wants* the colony to be doing (policy fit affects mood under central planning)
       values: genValues(id, traits),
 
@@ -3044,7 +2300,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
-  ensureSessionMilestoneState(state);
   ensureLegacyState(state);
   ensureEternityState(state);
   ensureResearchState(state);
@@ -3200,69 +2455,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!Number.isFinite(v)) return '0/s';
     const sign = v >= 0 ? '+' : '';
     return `${sign}${fmt(v)}/s`;
-  }
-
-  function rateTrendMeta(v){
-    const n = Number(v ?? 0);
-    if (!Number.isFinite(n) || Math.abs(n) < 0.02) return { arrow:'→', cls:'flat' };
-    if (n > 0) return { arrow:'↑', cls:'up' };
-    return { arrow:'↓', cls:'down' };
-  }
-
-  function taskCounts(s){
-    const out = Object.create(null);
-    for (const k of (s?.kittens ?? [])) {
-      const t = String(k?.task ?? '');
-      if (!t) continue;
-      out[t] = (out[t] ?? 0) + 1;
-    }
-    return out;
-  }
-
-  function resourceBreakdownRows(s, key, rates){
-    const counts = taskCounts(s);
-    const season = seasonAt(Number(s?.t ?? 0));
-    const winterMul = (season?.name === 'Winter') ? 0.55 : 1;
-    const prodMul = toolsBonus(s) * activePlayProdMul(s) * workPaceMul(s);
-    const researchMul = libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * workPaceMul(s);
-    const workshopMul = workshopBonus(s) * activePlayProdMul(s) * workPaceMul(s);
-    const rat = getRations(s);
-    const eaters = Number(counts.Eat ?? 0);
-
-    const push = (arr, label, rate) => {
-      const n = Number(rate ?? 0);
-      if (!Number.isFinite(n) || Math.abs(n) < 0.02) return;
-      arr.push(`${label}: ${fmtRate(n)}`);
-    };
-
-    const prod = [];
-    const cons = [];
-
-    if (key === 'Food') {
-      push(prod, `Foragers (${counts.Forage ?? 0})`, Number(counts.Forage ?? 0) * 1.85 * winterMul * prodMul);
-      push(prod, `Farmers (${counts.Farm ?? 0})`, Number(counts.Farm ?? 0) * 2.35 * ((season?.name === 'Winter') ? 0.85 : 1) * prodMul);
-      push(cons, `Preservers (${counts.PreserveFood ?? 0})`, -(Number(counts.PreserveFood ?? 0) * 0.95 * workPaceMul(s)));
-      push(cons, `Eaters (${eaters})`, -(eaters * 0.95 * Number(rat?.foodUse ?? 1)));
-      push(cons, 'Spoilage/decay', Number(rates.food ?? 0) - Number(rates.jerky ?? 0) - Number(counts.Forage ?? 0) * 1.85 * winterMul * prodMul - Number(counts.Farm ?? 0) * 2.35 * ((season?.name === 'Winter') ? 0.85 : 1) * prodMul + Number(counts.PreserveFood ?? 0) * 0.95 * workPaceMul(s) + eaters * 0.95 * Number(rat?.foodUse ?? 1));
-    } else if (key === 'Wood') {
-      push(prod, `Woodcutters (${counts.ChopWood ?? 0})`, Number(counts.ChopWood ?? 0) * 1.05 * prodMul);
-      push(cons, `Firekeepers (${counts.StokeFire ?? 0})`, -(Number(counts.StokeFire ?? 0) * 0.90 * workPaceMul(s)));
-      push(cons, `Preservers (${counts.PreserveFood ?? 0})`, -(Number(counts.PreserveFood ?? 0) * 0.22 * workPaceMul(s)));
-    } else if (key === 'Science') {
-      push(prod, `Researchers (${counts.Research ?? 0})`, Number(counts.Research ?? 0) * 0.95 * researchMul);
-      push(cons, `Toolsmiths (${counts.CraftTools ?? 0})`, -(Number(counts.CraftTools ?? 0) * 0.40 * workPaceMul(s)));
-      push(cons, `Workshop builders (${counts.BuildWorkshop ?? 0})`, -(Number(counts.BuildWorkshop ?? 0) * 0.55 * workPaceMul(s)));
-      push(cons, `Library builders (${counts.BuildLibrary ?? 0})`, -(Number(counts.BuildLibrary ?? 0) * 0.65 * workPaceMul(s)));
-      push(cons, `Mentors (${counts.Mentor ?? 0})`, -(Number(counts.Mentor ?? 0) * 0.42 * workPaceMul(s)));
-    } else if (key === 'Tools') {
-      push(prod, `Toolsmiths (${counts.CraftTools ?? 0})`, Number(counts.CraftTools ?? 0) * 0.55 * workshopMul);
-      push(cons, `Library builders (${counts.BuildLibrary ?? 0})`, -(Number(counts.BuildLibrary ?? 0) * 0.35 * workPaceMul(s)));
-    } else if (key === 'Jerky') {
-      push(prod, `Preservers (${counts.PreserveFood ?? 0})`, Number(counts.PreserveFood ?? 0) * 0.72 * workPaceMul(s));
-      push(cons, `Eaters (when food low) (${eaters})`, -(eaters * 0.30));
-    }
-
-    return { prod, cons };
   }
 
   function fmtEtaSeconds(sec){
@@ -3473,7 +2665,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Forage');
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
@@ -3513,7 +2705,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         // Spend actual resources (respect reserves).
         const spentFood = spendUpToReserve(s,'food', wantFood * norm);
         const spentWood = spendUpToReserve(s,'wood', wantWood * norm);
-        const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72 * traitOutputMul(k, 'PreserveFood'); // yield < 1 to keep it from dominating
+        const made = Math.min(spentFood / 0.95, spentWood / 0.22) * 0.72; // yield < 1 to keep it from dominating
 
         s.res.jerky = (s.res.jerky ?? 0) + made;
         k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
@@ -3530,7 +2722,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
         const wp = workPaceMul(s);
-        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Farm');
+        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.025 * wp * fx.hungerMult);
@@ -3544,7 +2736,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
         const wp = workPaceMul(s);
-        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'ChopWood');
+        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.wood += out;
         k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
@@ -3565,7 +2757,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const use = Math.min(s.res.wood, 0.9 * dt * wp * fx.speedMult);
         const mom = momentumMul(k, 'StokeFire');
         s.res.wood -= use;
-        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult * traitOutputMul(k, 'StokeFire'));
+        s.res.warmth = Math.min(100, s.res.warmth + use * 6.5 * mom * fx.outputMult);
         k.energy = clamp01(k.energy - dt * 0.02 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.02 * wp * fx.hungerMult);
         gainSkillXP(s, k, 'StokeFire', dt * 0.70 * efficiency(s,k));
@@ -3582,7 +2774,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Guard');
         const wp = workPaceMul(s);
-        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * legacyGuardOutputMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Guard'));
+        s.res.threat = Math.max(0, s.res.threat - base * fx.outputMult * legacyGuardOutputMul(s) * dt * eff * mom * wp);
         k.energy = clamp01(k.energy - dt * 0.03 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
         gainSkillXP(s, k, 'Guard', dt * (1.0 + 0.35*drill) * efficiency(s,k) * legacyCombatXPMul(s));
@@ -3600,7 +2792,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildHut');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildHut');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildHut');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.0 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildHut blocked by wood reserve → ChopWood');
@@ -3630,7 +2822,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildPalisade');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildPalisade');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildPalisade');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 1.1 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildPalisade blocked by wood reserve → ChopWood');
@@ -3660,7 +2852,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildGranary');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildGranary');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildGranary');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         const use = spendUpToReserve(s,'wood', 0.95 * speed * dt);
         if (use <= 0.0001) {
           doFallback(s, k, dt, 'ChopWood', 'BuildGranary blocked by wood reserve → ChopWood');
@@ -3698,7 +2890,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildWorkshop');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildWorkshop');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildWorkshop');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
         // Respect reserves (hard stop at execution time).
         const maxByWood = woodAvail / 0.85;
         const maxBySci  = sciAvail / 0.55;
@@ -3752,7 +2944,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'BuildLibrary');
         const wp = workPaceMul(s);
         const fx = skillRegistry.applySkillEffects(s, k, 'BuildLibrary');
-        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp * traitOutputMul(k, 'BuildLibrary');
+        const speed = fx.outputMult * toolsBonus(s) * eff * mom * wp;
 
         // Costs per 1 progress.
         const maxByWood  = woodAvail / 0.75;
@@ -3804,14 +2996,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const mom = momentumMul(k, 'CraftTools');
         const wp = workPaceMul(s);
         // Respect reserves (hard stop at execution time).
-        const useWood = Math.min(woodAvail, 0.55 * fx.outputMult * dt * eff * wp * traitOutputMul(k, 'CraftTools'));
-        const useSci  = Math.min(sciAvail, 0.40 * fx.outputMult * dt * eff * wp * traitOutputMul(k, 'CraftTools'));
+        const useWood = Math.min(woodAvail, 0.55 * fx.outputMult * dt * eff * wp);
+        const useSci  = Math.min(sciAvail, 0.40 * fx.outputMult * dt * eff * wp);
         const craft = Math.min(useWood / 0.55, useSci / 0.40); // normalize to "tool-seconds"
         if (craft <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
-        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00) * traitOutputMul(k, 'CraftTools'); // workshops improve throughput
+        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
@@ -3908,7 +3100,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const wp = workPaceMul(s);
 
         // Science cost scales with teaching throughput.
-        const wantSci = 0.42 * fx.outputMult * dt * eff * mom * wp * traitOutputMul(k, 'Mentor');
+        const wantSci = 0.42 * fx.outputMult * dt * eff * mom * wp;
         const spent = spendUpToReserve(s,'science', wantSci);
         if (spent <= 0.0001) {
           doFallback(s, k, dt, 'Research', 'Mentor blocked by science reserve → Research');
@@ -3938,7 +3130,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp * traitOutputMul(k, 'Research');
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp;
         s.res.science += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
@@ -4012,17 +3204,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Main XP function: distributes XP across micro-skills for a task, or awards directly.
   // Signature: gainSkillXP(state, kitten, taskOrSkill, amount)
   function gainSkillXP(s, k, taskOrSkill, amt){
-    const trainingMul = activePlayTrainingMul(s);
-    const totalAmt = Number(amt ?? 0) * trainingMul;
     const entries = TASK_SKILL_MAP[taskOrSkill];
     if (entries) {
       // Distribute across micro-skills based on TASK_SKILL_MAP rates
       for (const [skillId, rate] of entries) {
-        awardMicroSkillXP(s, k, skillId, totalAmt * rate);
+        awardMicroSkillXP(s, k, skillId, amt * rate);
       }
     } else {
       // Direct skill/category XP (backward compat for Mentor target teaching, etc.)
-      awardMicroSkillXP(s, k, taskOrSkill, totalAmt);
+      awardMicroSkillXP(s, k, taskOrSkill, amt);
     }
   }
 
@@ -4063,15 +3253,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!k || prevTask === newTask) return;
     // Only log if the kitten has been doing the previous task for at least 3s (avoid log spam)
     if ((k.taskStreak ?? 0) < 3) return;
-    const whyShort = String(why ?? '').slice(0, 60);
-    kittenLog(k, 'task', { from: prevTask, to: newTask, why: whyShort });
-    const fromTask = String(prevTask ?? 'Idle').trim() || 'Idle';
-    const toTask = String(newTask ?? 'Idle').trim() || 'Idle';
-    const who = String(k.name ?? `#${k.id ?? '?'}`).trim() || `#${k.id ?? '?'}`;
-    const because = whyShort ? ` (${whyShort})` : '';
-    const traitFlavor = traitFlavorReasonForTask(s, k, newTask);
-    const traitSuffix = traitFlavor ? ` | ${traitFlavor}` : '';
-    pushDecisionLog(s, `${who}: ${fromTask} -> ${toTask}${because}${traitSuffix}`);
+    kittenLog(k, 'task', { from: prevTask, to: newTask, why: String(why ?? '').slice(0, 60) });
   }
 
   // Log mood band crossings (called at end of mood update)
@@ -4365,10 +3547,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function applyTraitPressure(scored, k){
     // Traits are a steady bias (unlike likes/dislikes which scale with Autonomy).
-    const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
+    const traits = Array.isArray(k?.traits) ? k.traits : [];
     if (!traits.length) return;
 
-    const showReasons = traitEffectsVisible(state);
     for (const id of traits) {
       const def = TRAIT_DEFS.find(t => t.id === id);
       if (!def?.bias) continue;
@@ -4376,43 +3557,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const add = Number(def.bias[row.action] ?? 0);
         if (!add) continue;
         row.score += add;
-        if (showReasons) row.reasons.push(`trait ${def.id} -> ${add >= 0 ? '+' : ''}${add.toFixed(0)}`);
-      }
-    }
-  }
-
-  function tickTraitEvents(s){
-    s._traitEventTimer = Number(s._traitEventTimer ?? 0) + 1;
-    if (s._traitEventTimer < 20) return;
-    s._traitEventTimer = 0;
-
-    const ks = Array.isArray(s?.kittens) ? s.kittens : [];
-    if (!ks.length) return;
-
-    for (const k of ks) {
-      k._traitEventAt = Number(k._traitEventAt ?? 0) || 0;
-      if ((Number(s.t ?? 0) - k._traitEventAt) < 120) continue;
-      const traits = normalizeTraits(k?.traits, Number(k?.id ?? 1));
-
-      if (traits.includes('Brave')) {
-        const r = rand01At((s.t ?? 0) + (k.id ?? 0) * 0.37, 41);
-        if (r < 0.015) {
-          const gain = 8 + Math.floor((Number(k.skills?.Combat ?? 1) || 1) * 0.5);
-          s.res.threat = Math.max(0, Number(s.res?.threat ?? 0) - gain);
-          s.res.wood = Number(s.res?.wood ?? 0) + 6;
-          k._traitEventAt = Number(s.t ?? 0);
-          log(`${k.name || ('Kitten '+k.id)} (Brave) led a scouting patrol: -${gain} threat, +6 wood.`);
-        }
-      }
-
-      if (traits.includes('Curious')) {
-        const r = rand01At((s.t ?? 0) + (k.id ?? 0) * 0.53, 77);
-        if (r < 0.015) {
-          const sci = 12 + Math.floor((Number(k.skills?.Scholarship ?? 1) || 1) * 0.8);
-          s.res.science = Number(s.res?.science ?? 0) + sci;
-          k._traitEventAt = Number(s.t ?? 0);
-          log(`${k.name || ('Kitten '+k.id)} (Curious) uncovered an insight cache: +${sci} science.`);
-        }
+        row.reasons.push(`trait ${def.id} → +${add.toFixed(0)}`);
       }
     }
   }
@@ -7133,7 +6278,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     tryAdvanceRevealStage(state);
     tickPressures(dt);
     tickActivePlayEvents();
-    tickSecretsSystem(state);
 
     // Trends sampling (charts): 1Hz, last ~2 minutes
     state._trend = state._trend ?? { t:[], food:[], warmth:[], threat:[], science:[], dissent:[] };
@@ -7400,7 +6544,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
       updateSharedWorkEdgesPerSecond(state);
       updateRecentWorkMemoryPerSecond(state);
-      tickTraitEvents(state);
     }
 
     runKittensTick(state, dt, {
@@ -7421,7 +6564,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
-    tickSessionMilestones(state, dt);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
@@ -7518,9 +6660,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const devModeEl = el('devMode');
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
-  const decisionLogPanelEl = el('decisionLogPanel');
-  const decisionLogSummaryEl = el('decisionLogSummary');
-  const decisionLogEl = el('decisionLog');
   const tankEl = el('tank');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendTabRailEl = el('trendTabRail');
@@ -7528,27 +6667,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const trendPanels = Array.from(document.querySelectorAll('[data-trend-panel]'));
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
-
-  function shouldStickToBottom(node){
-    if (!node) return false;
-    const gap = node.scrollHeight - node.scrollTop - node.clientHeight;
-    return gap <= 24;
-  }
-
-  function syncLogView(node, lines, sticky){
-    if (!node) return;
-    node.textContent = lines.join('\n');
-    if (sticky) node.scrollTop = node.scrollHeight;
-  }
-
-  function ensureDecisionLogPanelLayout(){
-    if (!decisionLogPanelEl || decisionLogPanelEl.dataset.mobileInit === '1') return;
-    const isMobile = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
-    if (isMobile) decisionLogPanelEl.removeAttribute('open');
-    else decisionLogPanelEl.setAttribute('open', '');
-    decisionLogPanelEl.dataset.mobileInit = '1';
-  }
-  ensureDecisionLogPanelLayout();
 
   function ensureCurator(s){
     s.director = s.director ?? {};
@@ -7757,113 +6875,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     });
   }
 
-  function initMobileLayoutControls(){
-    const mobileMq = (typeof window.matchMedia === 'function')
-      ? window.matchMedia('(max-width: 479px)')
-      : null;
-    const isMobile = () => {
-      if (mobileMq && mobileMq.matches) return true;
-      const vv = Number(window.visualViewport?.width || 0);
-      const iw = Number(window.innerWidth || 0);
-      const cw = Number(document.documentElement?.clientWidth || 0);
-      const width = Math.min(...[vv, iw, cw].filter((v) => Number.isFinite(v) && v > 0));
-      return (Number.isFinite(width) ? width : iw) <= 479;
-    };
-    const accordionIds = ['directorSection', 'colonySection', 'safetySection'];
-    const storageKey = 'kkc_mobile_accordion_v1';
-    const cards = accordionIds
-      .map((id) => document.getElementById(id))
-      .filter((node) => !!node);
-
-    let persisted = {};
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (raw) persisted = JSON.parse(raw) || {};
-    } catch (_err) { persisted = {}; }
-
-    const getCardHeading = (card) => {
-      if (!card) return null;
-      const first = card.firstElementChild;
-      if (first && first.tagName === 'H2') return first;
-      return card.querySelector('h2');
-    };
-
-    const setExpanded = (card, heading) => {
-      if (!heading) return;
-      heading.setAttribute('aria-expanded', card.classList.contains('is-collapsed') ? 'false' : 'true');
-    };
-
-    const persist = () => {
-      const next = {};
-      for (const card of cards) next[card.id] = !card.classList.contains('is-collapsed');
-      try { window.localStorage.setItem(storageKey, JSON.stringify(next)); } catch (_err) {}
-      persisted = next;
-    };
-
-    for (const card of cards){
-      const heading = getCardHeading(card);
-      if (!heading) continue;
-      heading.setAttribute('role', 'button');
-      heading.setAttribute('tabindex', '0');
-      heading.addEventListener('click', () => {
-        if (!isMobile()) return;
-        card.classList.toggle('is-collapsed');
-        setExpanded(card, heading);
-        persist();
-      });
-      heading.addEventListener('keydown', (ev) => {
-        if (!isMobile()) return;
-        if (ev.key !== 'Enter' && ev.key !== ' ') return;
-        ev.preventDefault();
-        card.classList.toggle('is-collapsed');
-        setExpanded(card, heading);
-        persist();
-      });
-    }
-
-    const apply = () => {
-      const mobile = isMobile();
-      document.body.classList.toggle('mobile-accordion', mobile);
-      for (const card of cards){
-        const heading = getCardHeading(card);
-        if (!mobile) {
-          card.classList.remove('is-collapsed');
-          setExpanded(card, heading);
-          continue;
-        }
-        const open = Object.prototype.hasOwnProperty.call(persisted, card.id)
-          ? !!persisted[card.id]
-          : card.id === 'directorSection';
-        card.classList.toggle('is-collapsed', !open);
-        setExpanded(card, heading);
-      }
-      if (mobile) persist();
-    };
-
-    apply();
-    const listener = () => apply();
-    if (mobileMq) {
-      if (typeof mobileMq.addEventListener === 'function') mobileMq.addEventListener('change', listener);
-      else mobileMq.addListener(listener);
-    } else {
-      window.addEventListener('resize', listener);
-    }
-
-    const overflow = document.getElementById('headerOverflow');
-    if (overflow) {
-      document.addEventListener('click', (ev) => {
-        if (!overflow.open) return;
-        if (overflow.contains(ev.target)) return;
-        overflow.open = false;
-      });
-      overflow.addEventListener('click', (ev) => {
-        const btn = ev.target?.closest?.('button');
-        if (btn) overflow.open = false;
-      });
-    }
-  }
-  initMobileLayoutControls();
-
   // Inspector modals are initialized later once their DOM nodes exist.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
   // These wrappers let other UI (stat cards, Escape key) call them safely.
@@ -7877,13 +6888,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function openCulture(){ societyUI?.openCulture?.(); }
   function closeCulture(){ societyUI?.closeCulture?.(); }
-
-  const uiResourceDetail = { openKey: '' };
-  function toggleResourceDetail(key){
-    const next = String(key || '');
-    uiResourceDetail.openKey = (uiResourceDetail.openKey === next) ? '' : next;
-    render();
-  }
 
   // Transient UI state + small listeners (sorting, debounced UI logs, stat-card clicks)
   const { uiSort, uiFilter, uiDebouncedLog, colonyCountEl: _ccEl } = initUI({
@@ -7900,7 +6904,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     openStorage,
     openThreat,
     openCulture,
-    toggleResourceDetail,
   });
 
   // Trends: marker legend + filter (culture beats timeline)
@@ -8421,15 +7424,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const offlineBodyEl = el('offlineBody');
   const btnOfflineCloseEl = el('btnOfflineClose');
 
-  const prestigeModalEl = el('prestigeModal');
-  const prestigeEyebrowEl = el('prestigeEyebrow');
-  const prestigeTitleEl = el('prestigeTitle');
-  const prestigeSubEl = el('prestigeSub');
-  const prestigeBodyEl = el('prestigePreviewBody');
-  const btnPrestigePreviewCloseEl = el('btnPrestigePreviewClose');
-  const btnPrestigePreviewCancelEl = el('btnPrestigePreviewCancel');
-  const btnPrestigePreviewConfirmEl = el('btnPrestigePreviewConfirm');
-
   const patchNotesUI = initPatchNotes({
     gameVersion: GAME_VERSION,
     patchHistory: PATCH_HISTORY,
@@ -8469,129 +7463,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     offlineModalEl.classList.remove('hidden');
   }
 
-  let prestigePreviewResolve = null;
-
-  function closePrestigePreviewModal(confirmed){
-    if (!prestigeModalEl) return;
-    prestigeModalEl.classList.add('hidden');
-    if (prestigePreviewResolve) {
-      const resolve = prestigePreviewResolve;
-      prestigePreviewResolve = null;
-      resolve(!!confirmed);
-    }
-  }
-
-  function renderPrestigeUnlockList(items, emptyText){
-    if (!Array.isArray(items) || items.length === 0) return `<li>${emptyText}</li>`;
-    return items.slice(0, 6).map((item) => {
-      const rankNote = Number.isFinite(item?.nextRank) && Number.isFinite(item?.maxRank)
-        ? ` (rank ${fmt(item.nextRank)}/${fmt(item.maxRank)})`
-        : '';
-      return `<li><b>${item.name}</b> - cost ${fmt(item.cost)}${rankNote}</li>`;
-    }).join('');
-  }
-
-  function renderPrestigeSimpleList(items, emptyText){
-    if (!Array.isArray(items) || items.length === 0) return `<li>${escapeHtml(emptyText)}</li>`;
-    return items.slice(0, 8).map((line) => `<li>${escapeHtml(String(line ?? ''))}</li>`).join('');
-  }
-
-  function openPrestigePreviewModal(kind){
-    if (!prestigeModalEl || !prestigeTitleEl || !prestigeSubEl || !prestigeBodyEl || !btnPrestigePreviewConfirmEl) {
-      return Promise.resolve(confirm(kind === 'eternity'
-        ? 'Eternity Reset now?'
-        : 'Legacy Reset now?'));
-    }
-
-    const preview = getPrestigePreview(state);
-    const legacyUnlocks = preview?.newUnlocks?.legacy ?? [];
-    const eternityUnlocks = preview?.newUnlocks?.eternity ?? [];
-    const legacySummary = preview?.legacySummary ?? { loreBonuses: [], militaryBonuses: [], losses: [] };
-    const eternitySummary = preview?.eternitySummary ?? { losses: [] };
-    const gate = preview?.eternityProgress ?? { gateCount: 0, gates: {}, ready: false, sigilGain: 0 };
-
-    if (kind === 'eternity') {
-      prestigeEyebrowEl.textContent = 'Eternity Cycle';
-      prestigeTitleEl.textContent = 'Confirm Eternity Reset';
-      prestigeSubEl.textContent = 'Gain Eternity power first, then choose when to cash out your current Legacy run.';
-      btnPrestigePreviewConfirmEl.textContent = 'Confirm Eternity Reset';
-      prestigeBodyEl.innerHTML = [
-        '<div class="prestigePreviewGrid">',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>You Gain</h4>',
-        `    <div class="prestigeGain">+${fmt(gate.sigilGain)} Ancestral Sigils</div>`,
-        `    <div class="small">Gate progress: ${fmt(gate.gateCount)}/4 met</div>`,
-        `    <div class="small">Legacy resets ${gate.gates?.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates?.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates?.doctrine ? 'yes' : 'no'} | population ${gate.gates?.population ? 'yes' : 'no'}</div>`,
-        '  </section>',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>Buy Immediately After Reset</h4>',
-        `    <ul class="prestigeList">${renderPrestigeUnlockList(eternityUnlocks, 'No new Eternity upgrades immediately affordable.')}</ul>`,
-        '  </section>',
-        '</div>',
-        '<div class="prestigePreviewGrid">',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>This Reset Consumes</h4>',
-        `    <ul class="prestigeList">${renderPrestigeSimpleList(eternitySummary.losses, 'No major legacy-layer losses.')}</ul>`,
-        '  </section>',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>What Stays</h4>',
-        '    <ul class="prestigeList"><li>Eternity upgrades</li><li>Mandate + preserve package</li><li>Existing sigil bank</li></ul>',
-        '  </section>',
-        '</div>'
-      ].join('');
-    } else {
-      prestigeEyebrowEl.textContent = 'Legacy Chronicle';
-      prestigeTitleEl.textContent = 'Confirm Legacy Reset';
-      prestigeSubEl.textContent = 'Bank your shard gain now, then rebuild faster with permanent branch bonuses.';
-      btnPrestigePreviewConfirmEl.textContent = 'Confirm Legacy Reset';
-      prestigeBodyEl.innerHTML = [
-        '<div class="prestigePreviewGrid">',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>You Gain</h4>',
-        `    <div class="prestigeGain">+${fmt(preview.legacyPoints)} Legacy Shards</div>`,
-        `    <div class="small">Potential sigils after this run: +${fmt(gate.sigilGain)} (${fmt(gate.gateCount)}/4 gates met)</div>`,
-        '  </section>',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>Buy Immediately After Reset</h4>',
-        `    <ul class="prestigeList">${renderPrestigeUnlockList(legacyUnlocks, 'No new Legacy upgrades immediately affordable.')}</ul>`,
-        '  </section>',
-        '</div>',
-        '<div class="prestigePreviewGrid">',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>Branch Bonuses You Keep</h4>',
-        `    <div class="small"><b>Lore</b></div>`,
-        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.loreBonuses, 'No Lore upgrades owned yet.')}</ul>`,
-        `    <div class="small" style="margin-top:6px"><b>Military</b></div>`,
-        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.militaryBonuses, 'No Military upgrades owned yet.')}</ul>`,
-        '  </section>',
-        '  <section class="prestigePreviewCard">',
-        '    <h4>This Reset Rebuilds</h4>',
-        `    <ul class="prestigeList">${renderPrestigeSimpleList(legacySummary.losses, 'No major colony losses.')}</ul>`,
-        '  </section>',
-        '</div>',
-        '<section class="prestigePreviewCard">',
-        '  <h4>Eternity Readiness</h4>',
-        `  <div class="small">Legacy resets ${gate.gates?.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates?.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates?.doctrine ? 'yes' : 'no'} | population ${gate.gates?.population ? 'yes' : 'no'}</div>`,
-        '</section>'
-      ].join('');
-    }
-
-    prestigeModalEl.classList.remove('hidden');
-    return new Promise((resolve) => {
-      prestigePreviewResolve = resolve;
-    });
-  }
-
   if (btnOfflineCloseEl) btnOfflineCloseEl.addEventListener('click', closeOfflineModal);
   if (offlineModalEl) offlineModalEl.addEventListener('click', (e) => {
     if (e.target === offlineModalEl) closeOfflineModal();
-  });
-
-  if (btnPrestigePreviewCloseEl) btnPrestigePreviewCloseEl.addEventListener('click', () => closePrestigePreviewModal(false));
-  if (btnPrestigePreviewCancelEl) btnPrestigePreviewCancelEl.addEventListener('click', () => closePrestigePreviewModal(false));
-  if (btnPrestigePreviewConfirmEl) btnPrestigePreviewConfirmEl.addEventListener('click', () => closePrestigePreviewModal(true));
-  if (prestigeModalEl) prestigeModalEl.addEventListener('click', (e) => {
-    if (e.target === prestigeModalEl) closePrestigePreviewModal(false);
   });
 
   // --- Inspect modal (explainability)
@@ -8679,7 +7553,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const hates = (p.dislikes ?? []).join(', ') || '-';
     const at = (typeof k._lastScoredAt === 'number') ? `t=${fmt(k._lastScoredAt)}s` : '';
     const autoFresh = (k._autonomyPickNote && (state.t - Number(k._autonomyPickAt ?? 0)) < 2) ? k._autonomyPickNote : '';
-    const traits = traitSummary(k);
+    const traits = Array.isArray(k.traits) ? k.traits.join(', ') : '-';
     const buddy = buddyOf(state, k);
     const buddyNote = buddy ? ` | buddy: #${buddy.id}` : '';
     const needNote = buddy ? ` | buddy-need: ${Math.round(clamp01(Number(k.buddyNeed ?? 0))*100)}%` : '';
@@ -9631,7 +8505,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       log(`Council: spokeskitten #${k.id} suggests ${labels}.`);
     }
 
-    const traits = traitSummary(k);
+    const traits = (k.traits ?? []).join(', ') || '-';
     const mood = Math.round(clamp01(Number(k.mood ?? 0.55)) * 100);
     const dis = Math.round(dissent01(s) * 100);
 
@@ -10319,19 +9193,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     applyRevealVisibility();
     renderTrendsLegend();
 
-    // Society feed + persistent decision log
-    ensureDecisionLog(state);
-    if (feedEl) {
-      const feedSticky = shouldStickToBottom(feedEl);
-      const feedLines = (Array.isArray(state.feed) ? state.feed : []).slice(-180);
-      syncLogView(feedEl, feedLines, feedSticky);
-    }
-    if (decisionLogEl) {
-      const decSticky = shouldStickToBottom(decisionLogEl);
-      const decLines = (Array.isArray(state.decisionLog) ? state.decisionLog : []).slice(-220);
-      syncLogView(decisionLogEl, decLines, decSticky);
-      if (decisionLogSummaryEl) decisionLogSummaryEl.textContent = `Decision log (${decLines.length})`;
-    }
+    // Society feed
+    if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
     renderMilestonesFx();
     renderActivePlayEvent();
 
@@ -10592,25 +9455,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     statsEl.innerHTML = '';
     updateResourceFlyups(state);
 
-    const smProg = sessionMilestoneProgress(state);
-    const smTitle = smProg.done
-      ? 'Session milestone track complete'
-      : `${smProg.next.title} in ${fmt(Math.max(0, Number(smProg.next.sec ?? 0) - Number(smProg.cur ?? 0)))}s`;
-    const smReward = smProg.done
-      ? 'All session rewards unlocked this run.'
-      : (() => {
-          const rwd = smProg.next.reward || {};
-          const base = Object.entries(rwd)
-            .filter(([k,v]) => ['food','wood','science','tools'].includes(k) && Number(v ?? 0) > 0)
-            .map(([k,v]) => `+${fmt(Number(v ?? 0))} ${k}`);
-          if (Number(rwd.boostMul ?? 1) > 1) base.push(`x${Number(rwd.boostMul ?? 1).toFixed(2)} production for ${fmt(Number(rwd.boostSec ?? 0))}s`);
-          return base.join(' | ');
-        })();
-    const smStrip = document.createElement('div');
-    smStrip.className = 'session-milestone';
-    smStrip.innerHTML = `<div class="session-milestone-top"><span>Session milestones</span><span>${escapeHtml(smTitle)}</span></div><div class="session-milestone-bar"><div class="session-milestone-fill" style="width:${smProg.done ? 100 : smProg.pct.toFixed(1)}%"></div></div><div class="session-milestone-sub">${escapeHtml(smReward)}</div>`;
-    statsEl.appendChild(smStrip);
-
     const spoilMult = (() => {
       const m = Number(state._lastFoodOvercap?.mult ?? 1);
       return Number.isFinite(m) ? Math.max(1, Math.min(4, m)) : 1;
@@ -10627,19 +9471,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const scienceRate = Number(r.science ?? 0);
     const toolsRate = Number(r.tools ?? 0);
     const jerkyRate = Number(r.jerky ?? 0);
-
-    state._rateDisplay = (state._rateDisplay && typeof state._rateDisplay === 'object') ? state._rateDisplay : { nextAt: 0, values: {} };
-    if (Number(state.t ?? 0) >= Number(state._rateDisplay.nextAt ?? 0)) {
-      state._rateDisplay.values = {
-        food: foodRate,
-        wood: woodRate,
-        science: scienceRate,
-        tools: toolsRate,
-        jerky: jerkyRate,
-      };
-      state._rateDisplay.nextAt = Number(state.t ?? 0) + 2;
-    }
-    const displayRate = state._rateDisplay.values ?? {};
 
     const raidEta = (threatRate > 0.02 && state.res.threat < 100)
       ? fmtEtaSeconds(etaToTarget(state.res.threat, 100, threatRate))
@@ -10738,7 +9569,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const statRevealMin = {
       'Legacy Shards': 3, 'Legacy Preview': 3,
       'Food': 0, 'Edible': 1, 'Wood': 0, 'Warmth': 0, 'Threat': 0,
-      'Science': 2, 'Gold': 3, 'Tools': 2, 'Prod x': 3,
+      'Science': 2, 'Tools': 2, 'Prod x': 3,
       'Huts': 1, 'Palisade': 1, 'Granaries': 2, 'Workshops': 2, 'Libraries': 3,
       'Industry x': 3, 'Research x': 3,
       'Food Cap': 2, 'Spoilage': 2, 'Edible/Kitten': 1,
@@ -10754,7 +9585,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ['Warmth', fmt(state.res.warmth)],
       ['Threat', fmt(state.res.threat)],
       ['Science', fmt(state.res.science)],
-      ['Gold', fmt(state.res.gold ?? 0)],
       ['Tools', fmt(state.res.tools ?? 0)],
       ['Prod x', fmt(toolsBonus(state)) + 'x'],
       ['Huts', fmt(state.res.huts)],
@@ -10786,14 +9616,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     const visibleStats = stats.filter(([key]) => revealStage >= Number(statRevealMin[key] ?? 0));
-    const resourceRawByStat = {
-      Food: Number(state.res.food ?? 0),
-      Wood: Number(state.res.wood ?? 0),
-      Science: Number(state.res.science ?? 0),
-      Gold: Number(state.res.gold ?? 0),
-      Tools: Number(state.res.tools ?? 0),
-      Jerky: Number(state.res.jerky ?? 0),
-    };
 
     const statLabelMeta = {
       'Food': { icon: '🍖', tone: 'food' },
@@ -10802,7 +9624,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'Warmth': { icon: '🔥', tone: 'warmth' },
       'Threat': { icon: '⚠️', tone: 'threat' },
       'Science': { icon: '🔬', tone: 'science' },
-      'Gold': { icon: '🪙', tone: 'gold' },
       'Tools': { icon: '⚒️', tone: 'tools' },
       'Jerky': { icon: '🥓', tone: 'food' },
       'Food Cap': { icon: '📦', tone: 'food' },
@@ -10891,12 +9712,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const sub = statSub(k);
       const subHtml = sub ? `<div class="small" style="margin-top:4px; opacity:.85">${escapeHtml(sub)}</div>` : '';
 
-      const isResource = (k === 'Food' || k === 'Wood' || k === 'Gold' || k === 'Science' || k === 'Tools' || k === 'Jerky');
-      if (isResource) {
-        d.dataset.resourceCard = '1';
-        d.dataset.resourceKey = k;
-        d.classList.add('resource-card');
-      }
+      const isResource = (k === 'Food' || k === 'Wood' || k === 'Science' || k === 'Tools' || k === 'Jerky');
       const valueClass = isResource ? resourceLevelClass(state, k, state?.res?.[k.toLowerCase()] ?? 0) : '';
       const pulseMetric = (
         k === 'Food' ? Number(state.res.food ?? 0) :
@@ -10916,44 +9732,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ? `<span class="stat-icon${iconPulseClass}" aria-hidden="true">${escapeHtml(labelParts.icon)}</span> ${escapeHtml(labelParts.label)}`
         : escapeHtml(labelParts.label);
 
-      const rateByStat = {
-        Food: Number(displayRate.food ?? foodRate ?? 0),
-        Wood: Number(displayRate.wood ?? woodRate ?? 0),
-        Gold: Number(displayRate.gold ?? 0),
-        Science: Number(displayRate.science ?? scienceRate ?? 0),
-        Tools: Number(displayRate.tools ?? toolsRate ?? 0),
-        Jerky: Number(displayRate.jerky ?? jerkyRate ?? 0),
-      };
-      const resourceRate = Number(rateByStat[k] ?? 0);
-      const trend = rateTrendMeta(resourceRate);
-      const rateHtml = isResource
-        ? `<div class="resource-rate ${trend.cls}"><span class="trend">${trend.arrow}</span><span class="rate-value">${escapeHtml(fmtRate(resourceRate))}</span></div>`
-        : '';
-
       const microClass = pulseClass === 'pulse-good' ? 'micro-gain' : (pulseClass === 'pulse-warn' ? 'micro-spend' : '');
       d.classList.toggle('micro-gain', microClass === 'micro-gain');
       d.classList.toggle('micro-spend', microClass === 'micro-spend');
-
-      const rawResource = Number(resourceRawByStat[k]);
-      const valueDisplay = isResource
-        ? formatCompactResourceNumber(animatedResourceValue(k, rawResource))
-        : v;
-
-      let detailHtml = '';
-      if (isResource && uiResourceDetail.openKey === k) {
-        const rows = resourceBreakdownRows(state, k, {
-          food: foodRate,
-          wood: woodRate,
-          science: scienceRate,
-          tools: toolsRate,
-          jerky: jerkyRate,
-        });
-        const prodText = rows.prod.length ? rows.prod.join(' | ') : 'No major producers active';
-        const consText = rows.cons.length ? rows.cons.join(' | ') : 'No major consumption active';
-        detailHtml = `<div class="resource-detail-row"><div><b>Current total:</b> ${escapeHtml(formatFullResourceNumber(rawResource))}</div><div><b>Produced by:</b> ${escapeHtml(prodText)}</div><div><b>Consumed by:</b> ${escapeHtml(consText)}</div></div>`;
-      }
-
-      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${valueDisplay}${flyupHtml}</div>${rateHtml}${subHtml}${detailHtml}`;
+      d.innerHTML = `<div class="k">${labelHtml}</div><div class="v ${valueClass} ${pulseClass}">${v}${flyupHtml}</div>${subHtml}`;
       statsEl.appendChild(d);
     }
 
@@ -11040,24 +9822,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         : `<span class="small">No active build projects yet. Unlock Construction via Science, then nudge build tasks with policy or Project focus.</span>`;
     }
 
-    const secretsPanelEl = el('secretsPanel');
-    if (secretsPanelEl) {
-      ensureSecretsState(state);
-      const found = Object.values(state.secrets?.found ?? {});
-      const foundCount = found.length;
-      const recent = (Array.isArray(state.secrets?.log) ? state.secrets.log : []).slice(-5).reverse();
-      const banner = (state.secrets?.banner && Number(state.t ?? 0) < Number(state.secrets.banner.until ?? 0))
-        ? `<div class="tag good" style="margin-bottom:6px">${escapeHtml(String(state.secrets.banner.text ?? 'Discovery!'))}</div>`
-        : '';
-      const rows = recent.length
-        ? recent.map((x)=>`<div class="small" style="margin-top:4px">${escapeHtml(String(x))}</div>`).join('')
-        : '<div class="small" style="opacity:.75">No discoveries yet. Keep playing to surface hidden milestones.</div>';
-      secretsPanelEl.innerHTML =
-        banner +
-        `<div class="small">Discovered: <b>${foundCount}</b> | Rare events seen: <b>${fmt(state.secrets?.rareSeen ?? 0)}</b></div>` +
-        `<div class="small" style="margin-top:6px">Recent:</div>${rows}`;
-    }
-
     const legacyPanelEl = el('legacyPanel');
     if (legacyPanelEl) {
       ensureLegacyState(state);
@@ -11082,21 +9846,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
       const warLedger = legacyWarLedgerBonus(state);
       const milSummary = `<div class="small" style="margin-top:4px">Military shard bonus: <b>+${warLedger}</b> (cap +4)</div>`;
-      const nextLegacy = nextLegacyMilestone(state, activeBranch);
-      const legacyProgressStrip = nextLegacy
-        ? renderNextMilestoneStrip({
-          label: `Legacy next: ${nextLegacy.name} (${fmt(Math.max(0, nextLegacy.cost - state.legacy.shards))} shards to go)`,
-          reward: `Reward preview: ${nextLegacy.reward}`,
-          pct: (Math.max(0, Number(state.legacy?.shards ?? 0)) / Math.max(1, Number(nextLegacy.cost ?? 1))) * 100,
-          hint: `Progress to ${nextLegacy.name}. Cost ${fmt(nextLegacy.cost)} shards.`,
-        })
-        : renderNextMilestoneStrip({ label:'Legacy branch complete', reward:'All upgrades in this branch purchased.', pct:100, hint:'No remaining upgrades in active branch.' });
 
       legacyPanelEl.innerHTML =
         `<div class="small">Shard bank: <b>${fmt(state.legacy.shards)}</b> | total earned: ${fmt(state.legacy.totalShards)} | resets: ${fmt(state.legacy.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(preview)}</b> shards now.</div>` +
-        legacyProgressStrip +
-        `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="legacy">Preview Legacy Reset</button></div>` +
         milSummary +
         tabsHtml +
         `<div style="margin-top:8px">${upgradeRows}</div>`;
@@ -11121,18 +9874,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const mandateTabs = ETERNITY_MANDATES.map((m) => `<button class="btn ${state.eternity.mandate === m.id ? 'active' : ''}" data-eternity-mandate="${m.id}">${escapeHtml(m.name)}</button>`).join(' ');
       const preserveTabs = PRESERVATION_PACKAGES.map((p) => `<button class="btn ${state.eternity.preserve === p.id ? 'active' : ''}" data-eternity-preserve="${p.id}">${escapeHtml(p.name)}</button>`).join(' ');
       const gateLine = `Gates: legacy resets ${gate.gates.legacyResets ? 'yes' : 'no'} | shard mastery ${gate.gates.shardMastery ? 'yes' : 'no'} | doctrine ${gate.gates.doctrine ? 'yes' : 'no'} | population ${gate.gates.population ? 'yes' : 'no'}`;
-      const gateProgressStrip = renderNextMilestoneStrip({
-        label: `Eternity gates: ${fmt(gate.count)}/4`,
-        reward: `Next gate target: ${nextEternityGateLabel(gate.gates)}`,
-        pct: (Math.max(0, Number(gate.count ?? 0)) / 4) * 100,
-        hint: 'Eternity unlock requires all 4 gates. This bar tracks readiness.',
-      });
 
       eternityPanelEl.innerHTML =
         `<div class="small">Sigils bank: <b>${fmt(state.eternity.sigils)}</b> | total earned: ${fmt(state.eternity.totalSigils)} | resets: ${fmt(state.eternity.resets)}</div>` +
         `<div class="small" style="margin-top:4px">Reset preview: <b>+${fmt(gain)}</b> sigils. ${escapeHtml(gateLine)}</div>` +
-        gateProgressStrip +
-        `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-prestige-preview="eternity">Preview Eternity Reset</button></div>` +
         `<div class="small" style="margin-top:6px">Mandates (tab rail):</div><div class="row" style="gap:6px; margin-top:4px">${mandateTabs}</div>` +
         `<div class="small" style="margin-top:6px">Preservation package:</div><div class="row" style="gap:6px; margin-top:4px">${preserveTabs}</div>` +
         `<div style="margin-top:8px">${rows}</div>`;
@@ -11175,27 +9920,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
 
       const doctrine = state.research.doctrine ? (state.research.doctrine === 'legion' ? 'Legion Charter' : 'Scholarium Compact') : 'none';
-      let researchProgressStrip = '';
-      if (selected) {
-        const owned = !!state.research.unlocked[selected.id];
-        const prereqIds = Array.isArray(selected.prereqs) ? selected.prereqs : [];
-        const prereqsMet = prereqIds.every((id) => !!state.research.unlocked[id]);
-        const science = Math.max(0, Number(state.res.science ?? 0));
-        const cost = Math.max(1, Number(selected.cost ?? 1));
-        researchProgressStrip = owned
-          ? renderNextMilestoneStrip({ label:`Research unlocked: ${selected.name}`, reward:'Pick another tech for a new milestone.', pct:100, hint:'This tech is complete.' })
-          : renderNextMilestoneStrip({
-            label: `Research next: ${selected.name}`,
-            reward: prereqsMet ? `Unlock reward: ${selected.desc}` : `Prereq needed before unlock (${prereqIds.length} total)`,
-            pct: prereqsMet ? (science / cost) * 100 : 0,
-            hint: prereqsMet
-              ? `Progress to ${selected.name}: ${fmt(science)}/${fmt(cost)} science.`
-              : `Locked by prerequisites: ${(prereqIds.join(', ') || 'none')}.`,
-          });
-      }
       researchPanelEl.innerHTML =
         `<div class="small">Science bank: <b>${fmt(state.res.science)}</b> | Doctrine: <b>${doctrine}</b></div>` +
-        researchProgressStrip +
         `<div class="row" style="gap:6px; margin-top:8px">${tabs}</div>` +
         `<div style="margin-top:8px">${rows}</div>` +
         `${detailSheet}`;
@@ -11661,7 +10387,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const energy = clamp01(Number(k.energy ?? 0));
         const hunger = clamp01(Number(k.hunger ?? 0));
         const health = clamp01(Number(k.health ?? 1));
-        const traits = normalizeTraits(k.traits, Number(k.id ?? 1));
+        const traits = Array.isArray(k.traits) ? k.traits : [];
         const buddy = buddyOf(state, k);
         const buddyNeedPct = Math.round(clamp01(Number(k.buddyNeed ?? 0)) * 100);
         const align = valuesAlignment01(state, k);
@@ -11677,17 +10403,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         let displayTask = k.task ?? '';
         let displayKind = String(d?.kind ?? 'score');
         let displayFallback = k._fallbackTo || '';
-        let displayWhy = String(k.why ?? '');
 
         if (cached && (now - cached.setAt) < DISPLAY_HOLD_MS) {
           // Hold the cached display values
           displayTask = cached.task;
           displayKind = cached.kind;
           displayFallback = cached.fallback;
-          displayWhy = String(cached.why ?? displayWhy);
-        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind || displayFallback !== cached.fallback || displayWhy !== String(cached.why ?? '')) {
-          // New decision/explanation or cache expired with a change — update cache
-          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, why: displayWhy, setAt: now };
+        } else if (!cached || displayTask !== cached.task || displayKind !== cached.kind) {
+          // New decision or cache expired with a change — update cache
+          displayCache[cacheKey] = { task: displayTask, kind: displayKind, fallback: displayFallback, setAt: now };
         }
         // else: cache expired but nothing changed — refresh timer
         else { displayCache[cacheKey].setAt = now; }
@@ -11758,7 +10482,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           <div class="kc-footer">
             ${traits.length ? `<div class="kc-traits">${escapeHtml(traits.join(', '))}</div>` : ''}
             ${buddyStr ? `<div class="kc-buddy">${buddyStr}</div>` : ''}
-            <div class="kc-why">${escapeHtml(displayWhy)}</div>
+            <div class="kc-why">${escapeHtml(k.why ?? '')}</div>
           </div>
         `;
 
@@ -11834,17 +10558,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     logEl.textContent = state.log.slice(-40).join('\n');
     logEl.scrollTop = logEl.scrollHeight;
 
-    // Society feed + decision log: auto-scroll only while user is at the bottom.
+    // Society feed scroll follows newest entries.
     if (feedEl) {
-      const feedSticky = shouldStickToBottom(feedEl);
-      const feedLines = (Array.isArray(state.feed) ? state.feed : []).slice(-180);
-      syncLogView(feedEl, feedLines, feedSticky);
-    }
-    if (decisionLogEl) {
-      const decSticky = shouldStickToBottom(decisionLogEl);
-      const decLines = (Array.isArray(state.decisionLog) ? state.decisionLog : []).slice(-220);
-      syncLogView(decisionLogEl, decLines, decSticky);
-      if (decisionLogSummaryEl) decisionLogSummaryEl.textContent = `Decision log (${decLines.length})`;
+      feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).slice(-180).join('\n');
+      feedEl.scrollTop = feedEl.scrollHeight;
     }
 
     // Canvas HUDs
@@ -11869,101 +10586,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       .replaceAll('"','&quot;')
       .replaceAll("'",'&#39;');
   }
-  function phaseFromLevel(level, p1, p2){
-    const lv = Math.max(0, Number(level ?? 0) || 0);
-    if (lv < p1) return 'early';
-    if (lv < p2) return 'mid';
-    return 'late';
-  }
-
-  function applySoftCap(value, threshold, tailPow){
-    const v = Math.max(0, Number(value ?? 0) || 0);
-    const th = Math.max(1, Number(threshold ?? 1) || 1);
-    const pow = Math.max(0.15, Number(tailPow ?? 0.6) || 0.6);
-    if (v <= th) return v;
-    return th + Math.pow(v - th, pow);
-  }
-
-  function getUpgradeCost(baseCost, level, opts){
-    const cfg = opts && typeof opts === 'object' ? opts : {};
-    const base = Math.max(1, Number(baseCost ?? 1) || 1);
-    const lv = Math.max(0, Number(level ?? 0) || 0);
-    const p1 = Math.max(1, Number(cfg.phase1At ?? 18) || 18);
-    const p2 = Math.max(p1 + 1, Number(cfg.phase2At ?? 48) || 48);
-    const earlyMul = Math.max(1.01, Number(cfg.earlyMul ?? 1.16) || 1.16);
-    const midMul = Math.max(1.01, Number(cfg.midMul ?? 1.19) || 1.19);
-    const lateMul = Math.max(1.01, Number(cfg.lateMul ?? 1.23) || 1.23);
-
-    const phase = phaseFromLevel(lv, p1, p2);
-    let expo = 0;
-    if (phase === 'early') {
-      expo = lv;
-    } else if (phase === 'mid') {
-      expo = p1 + (lv - p1);
-    } else {
-      expo = p1 + (p2 - p1) + (lv - p2);
-    }
-
-    const phaseGrowth =
-      (phase === 'early') ? Math.pow(earlyMul, expo)
-      : (phase === 'mid') ? Math.pow(earlyMul, p1) * Math.pow(midMul, lv - p1)
-      : Math.pow(earlyMul, p1) * Math.pow(midMul, p2 - p1) * Math.pow(lateMul, lv - p2);
-
-    const softCapAt = Math.max(10, Number(cfg.softCapAt ?? 2000) || 2000);
-    const softTailPow = Math.max(0.15, Number(cfg.softTailPow ?? 0.62) || 0.62);
-    const afterSoftCap = applySoftCap(base * phaseGrowth, softCapAt, softTailPow);
-
-    const legacyMul = Math.max(0.1, Number(cfg.legacyMul ?? 1) || 1);
-    const eternityMul = Math.max(0.1, Number(cfg.eternityMul ?? 1) || 1);
-    const breakthroughMul = Math.max(0.1, Number(cfg.breakthroughMul ?? 1) || 1);
-
-    return {
-      phase,
-      raw: base * phaseGrowth,
-      cost: Math.max(1, Math.floor(afterSoftCap * legacyMul * eternityMul * breakthroughMul)),
-    };
-  }
-
-  function getPacingBreakthroughs(s){
-    const legacyResets = Math.max(0, Number(s?.legacy?.resets ?? 0) || 0);
-    const eternityResets = Math.max(0, Number(s?.eternity?.resets ?? 0) || 0);
-    const totalShards = Math.max(0, Number(s?.legacy?.totalShards ?? 0) || 0);
-    const unlockedTechs = Object.values(s?.research?.unlocked ?? {}).filter(Boolean).length;
-    return {
-      legacyMomentum: legacyResets >= 2,
-      shardMastery: totalShards >= 80,
-      doctrineLift: unlockedTechs >= 10,
-      eternityEcho: eternityResets >= 1,
-    };
-  }
-
   function kittenCost(){
+    // Aquarium pacing: early population growth should be easy.
+    // Old: 60 * 1.27^(n-3). New: cheaper base + gentler curve.
     const n = Math.max(0, Number(state.kittens?.length ?? 0));
     const expo = Math.max(0, n - 3);
-    const legacyResets = Math.max(0, Number(state?.legacy?.resets ?? 0) || 0);
-    const eternityResets = Math.max(0, Number(state?.eternity?.resets ?? 0) || 0);
-    const breakthroughs = getPacingBreakthroughs(state);
-
-    let breakthroughMul = 1;
-    if (breakthroughs.legacyMomentum) breakthroughMul *= 0.97;
-    if (breakthroughs.shardMastery) breakthroughMul *= 0.96;
-    if (breakthroughs.doctrineLift) breakthroughMul *= 0.96;
-    if (breakthroughs.eternityEcho) breakthroughMul *= 0.92;
-
-    const { cost } = getUpgradeCost(35, expo, {
-      phase1At: 16,
-      phase2At: 46,
-      earlyMul: 1.16,
-      midMul: 1.20,
-      lateMul: 1.24,
-      softCapAt: 1700,
-      softTailPow: 0.60,
-      legacyMul: Math.pow(0.988, legacyResets),
-      eternityMul: Math.pow(0.95, eternityResets),
-      breakthroughMul,
-    });
-
-    return Math.max(10, cost);
+    const base = 35;
+    const mult = 1.20;
+    const cost = base * Math.pow(mult, expo);
+    return Math.max(10, Math.floor(cost));
   }
 
   function renderTank(){
@@ -11972,7 +10603,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!ctx) return;
 
     const W = tankEl.width, H = tankEl.height;
-    ctx.clearRect(0,0,W,H);
+    // Draw an explicit backdrop each frame (instead of transparent clear) to prevent
+    // visible blank-frame flashes on some browsers/devices.
+    ctx.fillStyle = 'rgba(7,12,20,.92)';
+    ctx.fillRect(0, 0, W, H);
 
     // Zones (no pathing): kittens snap to task zones so it feels like an aquarium.
     const zones = [
@@ -12007,15 +10641,52 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     };
 
     // Place kittens as dots in their zone.
+    // Visual throttle: hold rendered zone for a short window so dots don't thrash/flicker
+    // when task assignments change rapidly.
+    const nowMs = performance.now();
+    if (!window._tankDisplayCache) window._tankDisplayCache = { byId: Object.create(null), lastPruneAt: 0 };
+    const tankCache = window._tankDisplayCache;
+    const byId = tankCache.byId || (tankCache.byId = Object.create(null));
+    const ZONE_HOLD_MS = 2800;
+
+    const zoneSet = new Set(zones.map(z => z.id));
     const byZone = Object.create(null);
     for (const z of zones) byZone[z.id] = [];
+
     for (const k of (state.kittens ?? [])) {
-      const z = taskZone(k._fallbackTo || k.task);
-      (byZone[z] ?? (byZone[z]=[])).push(k);
+      const kid = Number(k?.id ?? 0);
+      if (!Number.isFinite(kid) || kid <= 0) continue;
+
+      const rawZone = taskZone(k?._fallbackTo || k?.task);
+      const nextZone = zoneSet.has(rawZone) ? rawZone : 'Hearth';
+      const nameRaw = String(k?.name ?? '').trim();
+      const safeName = nameRaw || `#${kid}`;
+
+      const cached = byId[kid];
+      let displayZone = nextZone;
+      if (cached && (nowMs - Number(cached.setAt ?? 0)) < ZONE_HOLD_MS) {
+        displayZone = zoneSet.has(cached.zone) ? cached.zone : nextZone;
+      }
+
+      if (!cached || displayZone !== cached.zone || safeName !== cached.name) {
+        byId[kid] = { zone: displayZone, name: safeName, setAt: nowMs };
+      }
+
+      (byZone[displayZone] ?? (byZone[displayZone] = [])).push({ id: kid, name: safeName });
+    }
+
+    // Prune stale cache entries occasionally.
+    if ((nowMs - Number(tankCache.lastPruneAt ?? 0)) > 3000) {
+      tankCache.lastPruneAt = nowMs;
+      const liveIds = new Set((state.kittens ?? []).map(k => Number(k?.id ?? 0)).filter(id => Number.isFinite(id) && id > 0));
+      for (const idStr of Object.keys(byId)) {
+        const id = Number(idStr);
+        if (!liveIds.has(id)) delete byId[idStr];
+      }
     }
 
     for (const z of zones) {
-      const arr = byZone[z.id] ?? [];
+      const arr = (byZone[z.id] ?? []).slice().sort((a,b) => a.id - b.id);
       const showN = Math.min(arr.length, 12);
       for (let i=0;i<showN;i++) {
         const k = arr[i];
@@ -12028,8 +10699,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ctx.arc(px, py, 4, 0, Math.PI*2);
         ctx.fill();
         ctx.fillStyle = 'rgba(217,226,239,.75)';
-        const name = String(k?.name ?? `#${k.id}`);
-        const short = name.split(/\s+/).slice(-1)[0] || name;
+        const short = String(k?.name ?? `#${k?.id ?? '?'}`).split(/\s+/).slice(-1)[0] || String(k?.name ?? `#${k?.id ?? '?'}`);
         ctx.fillText(short, px + 6, py - 6);
       }
       if (arr.length > showN) {
@@ -12599,15 +11269,6 @@ function renderTrends(){
   document.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
-
-    const incidentChoice = target.closest('[data-incident-choice]');
-    if (incidentChoice) {
-      e.preventDefault();
-      const id = String(incidentChoice.getAttribute('data-incident-choice') ?? '');
-      if (applyFieldIncidentChoice(state, id)) render();
-      return;
-    }
-
     const hit = target.closest('#activePlayEventBtn');
     if (!hit) return;
     e.preventDefault();
@@ -13496,12 +12157,6 @@ function renderTrends(){
 
   const legacyPanel = document.getElementById('legacyPanel');
   if (legacyPanel) legacyPanel.addEventListener('click', (e) => {
-    const previewBtn = e.target.closest('button[data-prestige-preview]');
-    if (previewBtn && previewBtn.dataset.prestigePreview === 'legacy') {
-      openPrestigePreviewModal('legacy');
-      return;
-    }
-
     const tabBtn = e.target.closest('button[data-legacy-tab]');
     if (tabBtn) {
       ensureLegacyState(state);
@@ -13525,12 +12180,6 @@ function renderTrends(){
 
   const eternityPanel = document.getElementById('eternityPanel');
   if (eternityPanel) eternityPanel.addEventListener('click', (e) => {
-    const previewBtn = e.target.closest('button[data-prestige-preview]');
-    if (previewBtn && previewBtn.dataset.prestigePreview === 'eternity') {
-      openPrestigePreviewModal('eternity');
-      return;
-    }
-
     const mandateBtn = e.target.closest('button[data-eternity-mandate]');
     if (mandateBtn) {
       ensureEternityState(state);
@@ -13603,16 +12252,16 @@ function renderTrends(){
   });
 
   const prestigeBtn = document.getElementById('btnPrestige');
-  if (prestigeBtn) prestigeBtn.addEventListener('click', async () => {
+  if (prestigeBtn) prestigeBtn.addEventListener('click', () => {
     const gain = computeLegacyShardGain(state);
     if (gain <= 0) { playSfx('error'); log('Legacy Reset unavailable: build up your colony first.'); return; }
-    const ok = await openPrestigePreviewModal('legacy');
+    const ok = confirm(`Legacy Reset now?\n\nYou will gain +${fmt(gain)} Legacy Shards.\nYour colony resources/buildings/population reset.\nLegacy upgrades and shard balance persist.`);
     if (!ok) return;
     performLegacyReset();
   });
 
   const eternityBtn = document.getElementById('btnEternity');
-  if (eternityBtn) eternityBtn.addEventListener('click', async () => {
+  if (eternityBtn) eternityBtn.addEventListener('click', () => {
     const gate = eternityGateStatus(state);
     const gain = computeEternitySigilGain(state);
     if (!gate.ok || gain <= 0) {
@@ -13620,7 +12269,7 @@ function renderTrends(){
       log(`Eternity Reset locked (${gate.count}/4 gates met).`);
       return;
     }
-    const ok = await openPrestigePreviewModal('eternity');
+    const ok = confirm(`Eternity Reset now?\n\nYou will gain +${fmt(gain)} Ancestral Sigils.\nLegacy shards/upgrades/research reset.\nEternity upgrades, mandate, and sigils persist.`);
     if (!ok) return;
     performEternityReset();
   });
