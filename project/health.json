@@ -1,17 +1,17 @@
 {
-  "timestamp": "2026-03-14T04:33:12.2730852-05:00",
+  "timestamp": "2026-03-14T09:53:04.896Z",
   "iteration": 23,
   "cronHealth": {
     "healthy": [
-      "forge-oracle",
-      "forge-leader",
-      "forge-architect",
-      "forge-codesmith",
-      "forge-gauntlet",
-      "forge-arbiter",
-      "forge-watchdog",
-      "forge-sentinel",
-      "forge-strategist"
+      "oracle-(prophet)",
+      "forgeleader-(orchestrator)",
+      "architect-(designer)",
+      "codesmith-(developer)",
+      "gauntlet-(tester)",
+      "arbiter-(critic)",
+      "watchdog",
+      "sentinel",
+      "strategist-(research-&-planning)"
     ],
     "failing": [],
     "disabled": []
@@ -32,6 +32,7 @@
     "lastCycleSilent": [
       "oracle",
       "architect",
+      "codesmith",
       "gauntlet",
       "arbiter",
       "watchdog",
