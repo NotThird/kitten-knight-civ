@@ -22,6 +22,59 @@
     header button:active { animation: btnClickFlash .22s ease-out; transform: scale(.97); filter: brightness(1.12); }
     header button.danger { border-color: rgba(251,113,133,.55); background: rgba(251,113,133,.10); }
 
+    .sound-nudge-host {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 72;
+      pointer-events: none;
+    }
+    .sound-nudge {
+      position: relative;
+      min-width: 220px;
+      max-width: 280px;
+      padding: 9px 28px 9px 11px;
+      border-radius: 12px;
+      border: 1px solid rgba(125,211,252,.35);
+      background: rgba(8,13,24,.94);
+      box-shadow: 0 10px 28px rgba(2,8,20,.45);
+      pointer-events: auto;
+      animation: soundNudgeIn .22s ease-out;
+    }
+    .sound-nudge::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 18px;
+      width: 10px;
+      height: 10px;
+      border-left: 1px solid rgba(125,211,252,.35);
+      border-top: 1px solid rgba(125,211,252,.35);
+      background: rgba(8,13,24,.94);
+      transform: rotate(45deg);
+    }
+    .sound-nudge .title { font-size: 12px; font-weight: 700; color: rgba(217,226,239,.96); }
+    .sound-nudge .desc { margin-top: 2px; font-size: 11px; color: var(--muted); }
+    .sound-nudge .dismiss {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      line-height: 14px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .sound-nudge .dismiss:hover { background: rgba(255,255,255,.09); }
+    @keyframes soundNudgeIn {
+      from { opacity: 0; transform: translateY(-4px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     main { padding:16px; display:grid; grid-template-columns: minmax(380px, 1.05fr) minmax(360px, .95fr); gap:12px; align-items:start; }
     .card { background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.10); border-radius:14px; overflow:hidden; --section-accent: rgba(125,211,252,.34); --section-accent-soft: rgba(125,211,252,.10); }
     .card h2 { margin:0; padding:12px 12px 8px; font-size:13px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted); border-left:4px solid var(--section-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); background:linear-gradient(90deg, var(--section-accent-soft), rgba(0,0,0,0)); }

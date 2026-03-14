@@ -12,6 +12,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
+const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
 
   // --- Living Skill Registry (DCC-inspired) ─────────────────────────────────
   // Every micro-action is a skill. Skills are discovered organically and impact the simulation.
@@ -695,6 +696,65 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function ensureAudioState(s){
     s.sound = (s.sound && typeof s.sound === 'object') ? s.sound : { enabled:false };
     s.sound.enabled = !!s.sound.enabled;
+  }
+
+  const soundNudgeRuntime = {
+    dismissed: false,
+    shown: false,
+    dismissedStored: false,
+    activeSeconds: 0,
+  };
+
+  function hasDismissedSoundNudge(){
+    try {
+      return localStorage.getItem(SOUND_NUDGE_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function persistSoundNudgeDismissed(){
+    soundNudgeRuntime.dismissed = true;
+    soundNudgeRuntime.shown = false;
+    soundNudgeRuntime.dismissedStored = true;
+    try { localStorage.setItem(SOUND_NUDGE_DISMISSED_KEY, '1'); } catch {}
+  }
+
+  function maybeRenderSoundNudge(){
+    let host = document.getElementById('soundNudgeHost');
+    const soundBtn = document.getElementById('btnSound');
+
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'soundNudgeHost';
+      host.className = 'sound-nudge-host';
+      document.body.appendChild(host);
+    }
+
+    ensureAudioState(state);
+    if (!soundBtn || soundNudgeRuntime.dismissed || state.sound.enabled || soundNudgeRuntime.activeSeconds < 30) {
+      host.innerHTML = '';
+      soundNudgeRuntime.shown = false;
+      return;
+    }
+
+    if (!soundNudgeRuntime.shown) {
+      host.innerHTML = '<div class="sound-nudge" role="status" aria-live="polite"><div class="title">Sound adds life to your colony</div><div class="desc">Tap Sound to enable cozy colony SFX.</div><button class="dismiss" id="btnSoundNudgeDismiss" type="button" aria-label="Dismiss sound tip">×</button></div>';
+      const dismissBtn = host.querySelector('#btnSoundNudgeDismiss');
+      if (dismissBtn) dismissBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        persistSoundNudgeDismissed();
+        host.innerHTML = '';
+      });
+      soundNudgeRuntime.shown = true;
+    }
+
+    const rect = soundBtn.getBoundingClientRect();
+    const top = Math.round(rect.bottom + 8);
+    const right = Math.max(8, Math.round(window.innerWidth - rect.right));
+    host.style.top = `${top}px`;
+    host.style.right = `${right}px`;
   }
 
   function ensureActivePlayState(s){
@@ -9297,6 +9357,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       soundBtn.classList.toggle('active', on);
       soundBtn.title = on ? 'Sound effects enabled' : 'Toggle sound effects (default off)';
     }
+    maybeRenderSoundNudge();
 
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
@@ -11314,6 +11375,7 @@ function renderTrends(){
   if (soundBtn) soundBtn.addEventListener('click', () => {
     ensureAudioState(state);
     state.sound.enabled = !state.sound.enabled;
+    if (state.sound.enabled) persistSoundNudgeDismissed();
     playSfx('toggle');
     log(`Sound effects ${state.sound.enabled ? 'enabled' : 'disabled'}.`);
     save();
@@ -12626,7 +12688,10 @@ function renderTrends(){
     const t = now();
     const dt = Math.min(0.25, (t-last)/1000);
     last = t;
-    if (!state.paused) step(dt);
+    if (!state.paused) {
+      soundNudgeRuntime.activeSeconds += dt;
+      step(dt);
+    }
     render();
     requestAnimationFrame(frame);
   }
@@ -12738,6 +12803,10 @@ function renderTrends(){
   }
 
   applyOfflineProgressOnBoot();
+
+  soundNudgeRuntime.dismissed = hasDismissedSoundNudge();
+  soundNudgeRuntime.dismissedStored = soundNudgeRuntime.dismissed;
+  soundNudgeRuntime.activeSeconds = Math.max(0, Number(state?.t ?? 0) || 0);
 
   render();
   requestAnimationFrame(frame);

@@ -2,26 +2,9 @@
     "version": 1,
     "iteration": 23,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T08:22:39.725Z",
+    "lastUpdated": "2026-03-14T08:48:40.651Z",
     "columns": {
         "todo": [
-            {
-                "id": "TASK-052",
-                "title": "Add one-time sound discoverability nudge after 30 seconds of play",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-12T18:22:03.935Z",
-                "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept — gentle discovery of an opt-in feature.",
-                "acceptanceCriteria": [
-                    "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
-                    "Tooltip has a dismiss button and never reappears after dismissal",
-                    "Dismissal state persists in localStorage across sessions",
-                    "Tooltip does not appear if sound is already ON",
-                    "No hover dependency — works on mobile tap"
-                ],
-                "source": "strategist"
-            },
             {
                 "id": "TASK-057",
                 "title": "Implement welcome-back summary screen showing offline gains",
@@ -235,10 +218,49 @@
                     "Returns under 1 hour show simpler summary without narrative flourish"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-140",
+                "title": "Add contextual audio cues for society events",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:40:30.259Z",
+                "description": "Critic review notes 9 SFX are functional but thin. Add 4-6 Web Audio synthesis tones for key society events: rivalry clash gets a dissonant chord, truce gets a resolution tone, ritual gets a chime, reconnection gets a warm tone. Reference: Cookie Clicker uses distinct sounds per event type. Keep synthesis-based, no audio files.",
+                "acceptanceCriteria": [
+                    "At least 4 new distinct audio cues for society events",
+                    "Rivalry clash plays a dissonant tone",
+                    "Truce and reconnection play warm resolved tones",
+                    "Culture ritual plays a chime or bell",
+                    "All sounds respect existing audio toggle",
+                    "Web Audio synthesized, no external files"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-052",
+                "title": "Add one-time sound discoverability nudge after 30 seconds of play",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T18:22:03.935Z",
+                "description": "Sound defaults to OFF (correct for autoplay). But the toggle blends into the header. After 30s of active play (not idle), show a subtle one-time tooltip near the sound button: a small floating bubble saying something like 'Sound adds life to your colony' with a dismiss X. Store dismissal in localStorage so it never repeats. Reference: Cookie Clicker shows golden cookie hint after first minute. Same concept — gentle discovery of an opt-in feature.",
+                "acceptanceCriteria": [
+                    "A tooltip/bubble appears near the sound toggle after 30s of active play on first visit",
+                    "Tooltip has a dismiss button and never reappears after dismissal",
+                    "Dismissal state persists in localStorage across sessions",
+                    "Tooltip does not appear if sound is already ON",
+                    "No hover dependency — works on mobile tap"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T08:46:17.498Z",
+                "completedAt": "2026-03-14T08:48:40.651Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-084",
@@ -1108,9 +1130,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 133,
+        "totalCreated": 134,
         "totalCompleted": 82,
         "pendingQuestion": null
     },
-    "nextId": 140
+    "nextId": 141
 }

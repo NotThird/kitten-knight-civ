@@ -105,6 +105,13 @@
       "taskId": "TASK-136",
       "action": "completed",
       "notes": "Implemented visual hierarchy tier classes/tokens and applied to director/colony/safety panels"
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T08:48:45.680Z",
+      "taskId": "TASK-052",
+      "action": "completed",
+      "notes": "Added one-time sound discoverability nudge after 30s active play with localStorage dismissal persistence and mobile-safe dismiss UI."
     }
   ]
 }

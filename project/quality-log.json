@@ -349,6 +349,20 @@
       "overall": 9.0,
       "delta": 0.0,
       "notes": "Phase 2 Iter 24. No new agent output. Scores hold at 9.0. Consecutive >=9.0: 2 of 2 needed. CONVERGED — SHIP_IT."
+    },
+    {
+      "iteration": 25,
+      "timestamp": "2026-03-14T09:35:00.000Z",
+      "scores": {
+        "mechanics": 9.5,
+        "visuals": 9.0,
+        "engagement": 9.5,
+        "stability": 9.0,
+        "completeness": 9.0
+      },
+      "overall": 9.2,
+      "delta": 0.2,
+      "notes": "Phase 2 Iter 25. TASK-136 (visual hierarchy tiers) shipped and verified. Visuals bumped to 9.0, stability to 9.0. Overall 9.2. Consecutive >=9.0: 3. SHIP_IT confirmed."
     }
   ],
   "convergenceThreshold": 9,
