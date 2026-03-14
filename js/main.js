@@ -280,6 +280,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
     activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, incident: null, incidentSeen: 0, lastIncidentAt: 0, incidentCooldownUntil: 0, nextIncidentAt: 600 },
+    sessionMilestones: { sessionSeconds: 0, unlocked: 0, lastReward: null },
     secrets: { found: {}, log: [], rareSeen: 0, nextRareAt: 180, banner: null },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
@@ -496,6 +497,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     state = fresh;
     ensureMilestonesState(state);
+    ensureSessionMilestoneState(state);
     ensureLegacyState(state);
     ensureEternityState(state);
     ensureResearchState(state);
@@ -725,6 +727,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     state = fresh;
     ensureMilestonesState(state);
+    ensureSessionMilestoneState(state);
     ensureLegacyState(state);
     ensureResearchState(state);
     ensureEternityState(state);
@@ -786,6 +789,73 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ap.nextIncidentAt = tNow + 600;
     }
     ap.nextIncidentAt = Math.max(tNow + 45, Number(ap.nextIncidentAt) || (tNow + 600));
+  }
+
+  const SESSION_MILESTONE_DEFS = [
+    { id: 1, sec: 120, title: 'Session Spark', tier: 'spark', reward: { food: 20, wood: 10, boostMul: 2.0, boostSec: 60 } },
+    { id: 2, sec: 300, title: 'Session Surge', tier: 'surge', reward: { food: 30, wood: 20, science: 12, boostMul: 2.25, boostSec: 75 } },
+    { id: 3, sec: 600, title: 'Session Saga', tier: 'saga', reward: { food: 50, wood: 30, science: 20, tools: 2, boostMul: 2.5, boostSec: 90 } },
+    { id: 4, sec: 900, title: 'Session Mythic', tier: 'mythic', reward: { food: 80, wood: 50, science: 30, tools: 4, boostMul: 2.75, boostSec: 120 } },
+  ];
+
+  function ensureSessionMilestoneState(s){
+    s.sessionMilestones = (s.sessionMilestones && typeof s.sessionMilestones === 'object') ? s.sessionMilestones : {};
+    const sm = s.sessionMilestones;
+    sm.sessionSeconds = Math.max(0, Number(sm.sessionSeconds ?? 0) || 0);
+    sm.unlocked = Math.max(0, Math.floor(Number(sm.unlocked ?? 0) || 0));
+    sm.lastReward = (sm.lastReward && typeof sm.lastReward === 'object') ? sm.lastReward : null;
+  }
+
+  function sessionMilestoneProgress(s){
+    ensureSessionMilestoneState(s);
+    const sm = s.sessionMilestones;
+    const idx = Math.max(0, Math.min(SESSION_MILESTONE_DEFS.length - 1, Number(sm.unlocked ?? 0)));
+    const next = SESSION_MILESTONE_DEFS[idx] ?? null;
+    if (!next) return { done:true, pct:100, cur:sm.sessionSeconds, next:null, prev:null };
+    const prev = SESSION_MILESTONE_DEFS[Math.max(0, idx - 1)] ?? { sec: 0 };
+    const span = Math.max(1, Number(next.sec ?? 0) - Number(prev.sec ?? 0));
+    const cur = Math.max(0, Number(sm.sessionSeconds ?? 0) - Number(prev.sec ?? 0));
+    const pct = Math.max(0, Math.min(100, (cur / span) * 100));
+    return { done:false, pct, cur:sm.sessionSeconds, next, prev };
+  }
+
+  function applySessionMilestoneReward(s, def){
+    if (!def || !def.reward) return;
+    const r = def.reward;
+    s.res.food = Math.max(0, Number(s.res.food ?? 0) + Number(r.food ?? 0));
+    s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + Number(r.wood ?? 0));
+    s.res.science = Math.max(0, Number(s.res.science ?? 0) + Number(r.science ?? 0));
+    s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + Number(r.tools ?? 0));
+    if (Number(r.boostMul ?? 1) > 1) {
+      ensureActivePlayState(s);
+      const ap = s.activePlay;
+      ap.boostMul = Math.max(Number(ap.boostMul ?? 1) || 1, Number(r.boostMul ?? 1));
+      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0) || 0, Number(s.t ?? 0) + Number(r.boostSec ?? 90));
+    }
+  }
+
+  function tickSessionMilestones(s, dt){
+    ensureSessionMilestoneState(s);
+    const sm = s.sessionMilestones;
+    sm.sessionSeconds += Math.max(0, Number(dt ?? 0) || 0);
+    while (sm.unlocked < SESSION_MILESTONE_DEFS.length) {
+      const def = SESSION_MILESTONE_DEFS[sm.unlocked];
+      if (!def || sm.sessionSeconds < Number(def.sec ?? Infinity)) break;
+      applySessionMilestoneReward(s, def);
+      sm.unlocked += 1;
+      sm.lastReward = { id: def.id, title: def.title, at: Number(s.t ?? 0) };
+      feed(`Session milestone: ${def.title} reached (+reward).`);
+      playSfx('milestone');
+      const nowMs = Date.now();
+      milestoneUiFx.active.push({
+        id: `session-${def.id}-${nowMs}`,
+        tier: String(def.tier ?? 'spark'),
+        title: String(def.title ?? 'Session milestone'),
+        desc: `Continuous play reward unlocked at ${fmt(Number(def.sec ?? 0))}s.`,
+        until: nowMs + milestoneDurationMsForTier(String(def.tier ?? 'spark')),
+      });
+      if (milestoneUiFx.active.length > 4) milestoneUiFx.active.splice(0, milestoneUiFx.active.length - 4);
+    }
   }
 
   function rollActivePlayDelay(){
@@ -2824,6 +2894,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
+  ensureSessionMilestoneState(state);
   ensureLegacyState(state);
   ensureEternityState(state);
   ensureResearchState(state);
@@ -7200,6 +7271,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
+    tickSessionMilestones(state, dt);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
@@ -10339,6 +10411,25 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     statsEl.innerHTML = '';
     updateResourceFlyups(state);
+
+    const smProg = sessionMilestoneProgress(state);
+    const smTitle = smProg.done
+      ? 'Session milestone track complete'
+      : `${smProg.next.title} in ${fmt(Math.max(0, Number(smProg.next.sec ?? 0) - Number(smProg.cur ?? 0)))}s`;
+    const smReward = smProg.done
+      ? 'All session rewards unlocked this run.'
+      : (() => {
+          const rwd = smProg.next.reward || {};
+          const base = Object.entries(rwd)
+            .filter(([k,v]) => ['food','wood','science','tools'].includes(k) && Number(v ?? 0) > 0)
+            .map(([k,v]) => `+${fmt(Number(v ?? 0))} ${k}`);
+          if (Number(rwd.boostMul ?? 1) > 1) base.push(`x${Number(rwd.boostMul ?? 1).toFixed(2)} production for ${fmt(Number(rwd.boostSec ?? 0))}s`);
+          return base.join(' | ');
+        })();
+    const smStrip = document.createElement('div');
+    smStrip.className = 'session-milestone';
+    smStrip.innerHTML = `<div class="session-milestone-top"><span>Session milestones</span><span>${escapeHtml(smTitle)}</span></div><div class="session-milestone-bar"><div class="session-milestone-fill" style="width:${smProg.done ? 100 : smProg.pct.toFixed(1)}%"></div></div><div class="session-milestone-sub">${escapeHtml(smReward)}</div>`;
+    statsEl.appendChild(smStrip);
 
     const spoilMult = (() => {
       const m = Number(state._lastFoodOvercap?.mult ?? 1);

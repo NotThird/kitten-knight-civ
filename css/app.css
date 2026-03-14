@@ -24,6 +24,11 @@
     #safetySection { --section-accent: rgba(251,191,36,.34); --section-accent-soft: rgba(251,191,36,.10); border-color: rgba(251,191,36,.18); }
 
     .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .session-milestone { grid-column:1 / -1; background:rgba(125,211,252,.08); border:1px solid rgba(125,211,252,.28); border-radius:12px; padding:8px 10px; }
+    .session-milestone-top { display:flex; justify-content:space-between; gap:8px; font-size:11px; color:var(--text); }
+    .session-milestone-bar { margin-top:6px; height:8px; border-radius:999px; background:rgba(255,255,255,.09); overflow:hidden; }
+    .session-milestone-fill { height:100%; background:linear-gradient(90deg, rgba(52,211,153,.95), rgba(125,211,252,.95)); }
+    .session-milestone-sub { margin-top:5px; font-size:11px; color:var(--muted); }
     .stat { background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08); border-left:3px solid rgba(255,255,255,.10); padding:10px; border-radius:12px; }
     .stat .k { font-size:12px; color:var(--muted); font-weight:600; }
     .stat .v { font-size:18px; font-weight:700; margin-top:2px; position:relative; display:inline-block; }

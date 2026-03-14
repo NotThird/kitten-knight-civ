@@ -234,6 +234,12 @@ export function migrateState(s, {
   // Effects migration
   s.effects = s.effects ?? { festivalUntil: 0, councilUntil: 0 };
 
+  // Session milestone rewards (continuous-play progression)
+  s.sessionMilestones = (s.sessionMilestones && typeof s.sessionMilestones === 'object') ? s.sessionMilestones : { sessionSeconds:0, unlocked:0, lastReward:null };
+  s.sessionMilestones.sessionSeconds = Math.max(0, Number(s.sessionMilestones.sessionSeconds ?? 0) || 0);
+  s.sessionMilestones.unlocked = Math.max(0, Math.min(4, Math.floor(Number(s.sessionMilestones.unlocked ?? 0) || 0)));
+  s.sessionMilestones.lastReward = (s.sessionMilestones.lastReward && typeof s.sessionMilestones.lastReward === 'object') ? s.sessionMilestones.lastReward : null;
+
   // Discovery + secrets migration (TASK-029)
   s.secrets = (s.secrets && typeof s.secrets === 'object') ? s.secrets : {};
   s.secrets.found = (s.secrets.found && typeof s.secrets.found === 'object') ? s.secrets.found : {};
