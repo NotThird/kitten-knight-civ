@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T02:47:28.501Z",
+    "lastUpdated": "2026-03-14T02:52:46.664Z",
     "columns": {
         "todo": [
             {
@@ -272,26 +272,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-125",
-                "title": "Prestige preview: Add data function calculating next-reset gains",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-14T02:37:08.126Z",
-                "description": "Step 1 of TASK-081. Add getPrestigePreview fn to main.js returning legacyPoints, newUnlocks, eternityProgress. Pure data, no UI.",
-                "acceptanceCriteria": [
-                    "getPrestigePreview fn exists and returns correct preview object",
-                    "Values match actual reset logic",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-14T02:46:18.301Z",
-                "completedAt": "2026-03-14T02:47:28.501Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -784,6 +765,26 @@
                 "completedAt": "2026-03-14T02:18:03.907Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T02:23:45.559Z"
+            },
+            {
+                "id": "TASK-125",
+                "title": "Prestige preview: Add data function calculating next-reset gains",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-14T02:37:08.126Z",
+                "description": "Step 1 of TASK-081. Add getPrestigePreview fn to main.js returning legacyPoints, newUnlocks, eternityProgress. Pure data, no UI.",
+                "acceptanceCriteria": [
+                    "getPrestigePreview fn exists and returns correct preview object",
+                    "Values match actual reset logic",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-14T02:46:18.301Z",
+                "completedAt": "2026-03-14T02:47:28.501Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T02:52:46.664Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -917,7 +918,7 @@
     },
     "meta": {
         "totalCreated": 124,
-        "totalCompleted": 69,
+        "totalCompleted": 70,
         "pendingQuestion": null
     },
     "nextId": 129
