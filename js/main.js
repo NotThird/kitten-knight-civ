@@ -1030,10 +1030,31 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       milestone:     [{ wave:'sine',     startHz:740, endHz:1240, duration:0.20, attack:0.003, release:0.15, volume:0.080 }],
       raid:          [{ wave:'sawtooth', startHz:240, endHz:120, duration:0.22, attack:0.001, release:0.18, volume:0.080 }],
       legacy_reset:  [{ wave:'triangle', startHz:300, endHz:900, duration:0.28, attack:0.004, release:0.20, volume:0.090 }],
+      society_rivalry:[
+        { wave:'sawtooth', startHz:220, endHz:185, duration:0.17, attack:0.002, release:0.10, volume:0.060 },
+        { wave:'square',   startHz:311, endHz:274, duration:0.16, attack:0.002, release:0.10, volume:0.048 },
+      ],
+      society_truce: [
+        { wave:'triangle', startHz:349, endHz:392, duration:0.12, attack:0.002, release:0.10, volume:0.048 },
+        { wave:'sine',     startHz:440, endHz:523, duration:0.14, attack:0.003, release:0.11, volume:0.045 },
+      ],
+      society_reconnect: [
+        { wave:'sine',     startHz:392, endHz:523, duration:0.10, attack:0.002, release:0.09, volume:0.044 },
+        { wave:'triangle', startHz:523, endHz:659, duration:0.12, attack:0.003, release:0.10, volume:0.042 },
+      ],
+      society_ritual: [
+        { wave:'triangle', startHz:988, endHz:1319, duration:0.20, attack:0.003, release:0.16, volume:0.050 },
+        { wave:'sine',     startHz:1319, endHz:1568, duration:0.16, attack:0.003, release:0.14, volume:0.038 },
+      ],
     };
 
     const spec = bank[String(type)] ?? bank.click;
     for (const tone of spec) playTone(ctx, tone);
+  }
+
+  function playSocietySfxFor(stateRef, type){
+    if (stateRef !== state) return;
+    playSfx(type);
   }
 
   // UI-only resource FX (non-persistent): gain fly-ups + scarcity colors.
@@ -1728,6 +1749,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
       if (newBand === 'close') {
         feedTo(s, `Relationship: ${nmA} and ${nmB} reconnected.`);
+        playSocietySfxFor(s, 'society_reconnect');
         s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
         s._trendEvents.push({ t: nowT, kind:'rel', label:'reconnect', color:'rgba(52,211,153,.14)' });
       }
@@ -2368,6 +2390,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         if (kind === 'story') s.feed.push(`[${fmt(s.t)}] Ritual: a story-circle spreads — warmth and care feel briefly easier. (${who})`);
         if (kind === 'oath') s.feed.push(`[${fmt(s.t)}] Ritual: a work-oath takes hold — productivity tightens, leisure chills. (${who})`);
+        playSocietySfxFor(s, 'society_ritual');
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2402,6 +2425,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         s._coterieRelations[key] = { status:'truce', until: nowT + 90 };
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Truce: rival circles cool their tempers for a while.`);
+        playSocietySfxFor(s, 'society_truce');
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2459,6 +2483,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '�' : '');
           s.feed = Array.isArray(s.feed) ? s.feed : [];
           s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash � the mutual-aid coterie snubs the strict circle. (${whoA} ? ${whoB})`);
+          playSocietySfxFor(s, 'society_rivalry');
           const FEED_MAX = 220;
           if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
