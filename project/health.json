@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-14T01:33:20.401Z",
-  "iteration": 0,
+  "timestamp": "2026-03-14T02:03:00.000-06:00",
+  "iteration": 21,
   "cronHealth": {
     "healthy": [
       "Forge: Oracle (Prophet)",
@@ -17,10 +17,10 @@
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 9,
+    "todo": 10,
     "claimed": 0,
-    "review": 1,
-    "done": 29,
+    "review": 0,
+    "done": 31,
     "blocked": 7,
     "staleTasks": [],
     "status": "stalled"
@@ -36,16 +36,18 @@
       "gauntlet",
       "arbiter",
       "watchdog",
-      "sentinel"
+      "sentinel",
+      "forgeleader",
+      "prophet"
     ],
     "errors": []
   },
   "convergence": {
-    "currentScore": 9,
-    "threshold": 9,
-    "consecutiveAbove": 1,
-    "iteration": 19,
+    "currentScore": 8.7,
+    "threshold": 9.0,
+    "consecutiveAbove": 0,
+    "iteration": 21,
     "maxIterations": 50,
-    "status": "phase2-improving"
+    "status": "regressing"
   }
 }

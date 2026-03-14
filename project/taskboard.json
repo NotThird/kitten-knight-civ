@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 0,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T06:47:48.708Z",
+    "lastUpdated": "2026-03-14T06:53:35.972Z",
     "columns": {
         "todo": [
             {
@@ -191,29 +191,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-132",
-                "title": "Fix kitten circle indicators flashing without showing data",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "bugfix",
-                "createdAt": "2026-03-14T06:36:33.011Z",
-                "description": "Austin reports kitten circle indicators flash without showing data. Root cause: the colony tank canvas (renderTank in main.js ~line 10600) draws kittens as small circles (ctx.arc, radius 4px) with names beside them. These likely flash because: (1) the canvas clears and redraws every tick, (2) kitten task assignments may change rapidly causing zone reassignment, or (3) the data (name/task) is undefined or empty on some ticks. The circles ARE the kitten dots in the tank visualization. Fix approach: add a visual throttle (similar to the decision display hold at line 10295) so dot positions are stable between ticks. Ensure kitten name and zone data are always valid before rendering. Consider caching previous positions and lerping rather than snapping.",
-                "acceptanceCriteria": [
-                    "Kitten dots in the colony tank render stably without flickering or flashing",
-                    "Each dot consistently shows the kitten name label beside it",
-                    "Dots stay in their zone for at least 2-3 seconds even if task changes mid-tick",
-                    "Canvas does not blank-frame between redraws (no visible clear-then-draw flash)",
-                    "parse_check.js and replay_test.js pass",
-                    "Verified on both desktop and mobile viewport sizes"
-                ],
-                "source": "directive",
-                "claimedAt": "2026-03-14T06:46:12.233Z",
-                "completedAt": "2026-03-14T06:47:48.708Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-084",
@@ -877,6 +855,29 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T06:36:03.439Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-132",
+                "title": "Fix kitten circle indicators flashing without showing data",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "bugfix",
+                "createdAt": "2026-03-14T06:36:33.011Z",
+                "description": "Austin reports kitten circle indicators flash without showing data. Root cause: the colony tank canvas (renderTank in main.js ~line 10600) draws kittens as small circles (ctx.arc, radius 4px) with names beside them. These likely flash because: (1) the canvas clears and redraws every tick, (2) kitten task assignments may change rapidly causing zone reassignment, or (3) the data (name/task) is undefined or empty on some ticks. The circles ARE the kitten dots in the tank visualization. Fix approach: add a visual throttle (similar to the decision display hold at line 10295) so dot positions are stable between ticks. Ensure kitten name and zone data are always valid before rendering. Consider caching previous positions and lerping rather than snapping.",
+                "acceptanceCriteria": [
+                    "Kitten dots in the colony tank render stably without flickering or flashing",
+                    "Each dot consistently shows the kitten name label beside it",
+                    "Dots stay in their zone for at least 2-3 seconds even if task changes mid-tick",
+                    "Canvas does not blank-frame between redraws (no visible clear-then-draw flash)",
+                    "parse_check.js and replay_test.js pass",
+                    "Verified on both desktop and mobile viewport sizes"
+                ],
+                "source": "directive",
+                "claimedAt": "2026-03-14T06:46:12.233Z",
+                "completedAt": "2026-03-14T06:47:48.708Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T06:53:35.972Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1010,7 +1011,7 @@
     },
     "meta": {
         "totalCreated": 127,
-        "totalCompleted": 77,
+        "totalCompleted": 78,
         "pendingQuestion": null
     },
     "nextId": 134
