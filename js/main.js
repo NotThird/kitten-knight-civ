@@ -6882,6 +6882,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const rulesEl = el('rules');
   const logEl = el('log');
   const goalsEl = el('goals');
+  const masteryPanelEl = el('masteryPanel');
   const advisorEl = el('advisor');
   const govLogEl = el('govlog');
   const councilPanelEl = el('council');
@@ -10447,8 +10448,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           : `<div class="small" style="margin-top:6px; opacity:.85">${picked ? `Reward chosen: ${picked}` : `Rewards: A ${g.rewardA} | B ${g.rewardB}`}</div>`;
         return `<div class="tier-secondary-block" style="padding:8px; border-radius:10px; margin-bottom:8px"><div class="small"><b>${escapeHtml(g.name)}</b> ${done ? '<span class="tag good">Complete</span>' : ''}</div><div class="small" style="margin-top:4px">${fmt(g.cur)} / ${fmt(g.req)}</div><div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>${rewardRow}</div>`;
       }).join('');
-      goalsEl.innerHTML = `<div class="small" style="margin-bottom:6px">Constellation Mastery</div>${cards}`;
+      if (masteryPanelEl) masteryPanelEl.innerHTML = cards;
+      goalsEl.textContent = 'Constellation Mastery active: check the panel below Eternity Cycle.';
     } else {
+      if (masteryPanelEl) masteryPanelEl.textContent = 'Unlocks after 2 Eternity resets.';
       const goals = [
         { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
         { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },

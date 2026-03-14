@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T14:52:56.061Z",
+    "lastUpdated": "2026-03-14T15:17:36.596Z",
     "columns": {
         "todo": [
             {
@@ -42,26 +42,6 @@
                 "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
-            },
-            {
-                "id": "TASK-095",
-                "title": "Implement Constellation endgame goals from approved TASK-093 design",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-13T18:35:25.869Z",
-                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.\n\n[REJECTED 2026-03-14T09:53:04.896Z] Missing required acceptance criterion: masteryPanel does not exist/render; implementation uses goalsEl instead. parse/replay pass but criterion unmet.",
-                "acceptanceCriteria": [
-                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
-                    "Progress bars update deterministically each tick",
-                    "Completing a goal shows A/B reward choice buttons",
-                    "Chosen rewards apply correct multipliers and bonuses",
-                    "Old saves without state.mastery load without errors",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "testVerdict": "REJECTED",
-                "reworkNote": "CodeSmith used goalsEl instead of masteryPanel. Next attempt must match AC element names exactly."
             },
             {
                 "id": "TASK-142",
@@ -152,6 +132,29 @@
                 "claimedAt": "2026-03-14T14:41:51.449Z",
                 "completedAt": "2026-03-14T14:42:29.800Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-095",
+                "title": "Implement Constellation endgame goals from approved TASK-093 design",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-13T18:35:25.869Z",
+                "description": "Implement the Constellation system as specified in TASK-093 design. Includes mastery state model, tracker updates in tick loop, reveal stage 5, UI panel with progress bars and reward choice buttons, and save migration for old saves.\n\n[REJECTED 2026-03-14T09:53:04.896Z] Missing required acceptance criterion: masteryPanel does not exist/render; implementation uses goalsEl instead. parse/replay pass but criterion unmet.",
+                "acceptanceCriteria": [
+                    "masteryPanel renders 3 goal cards after eternity resets >= 2",
+                    "Progress bars update deterministically each tick",
+                    "Completing a goal shows A/B reward choice buttons",
+                    "Chosen rewards apply correct multipliers and bonuses",
+                    "Old saves without state.mastery load without errors",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "testVerdict": "REJECTED",
+                "reworkNote": "CodeSmith used goalsEl instead of masteryPanel. Next attempt must match AC element names exactly.",
+                "claimedAt": "2026-03-14T15:16:24.649Z",
+                "completedAt": "2026-03-14T15:17:36.596Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [

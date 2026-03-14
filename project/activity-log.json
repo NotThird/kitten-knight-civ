@@ -196,6 +196,13 @@
       "taskId": "TASK-057",
       "action": "completed",
       "notes": "Added 5-minute welcome-back modal gate and offline population born/died deltas in summary modal."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-14T15:17:41.045Z",
+      "taskId": "TASK-095",
+      "action": "completed",
+      "notes": "Added dedicated masteryPanel render target and wired Constellation cards to it."
     }
   ]
 }
