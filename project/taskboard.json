@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T14:17:54.420Z",
+    "lastUpdated": "2026-03-14T14:22:48.824Z",
     "columns": {
         "todo": [
             {
@@ -153,29 +153,7 @@
             }
         ],
         "claimed": [],
-        "review": [
-            {
-                "id": "TASK-140",
-                "title": "Add contextual audio cues for society events",
-                "assignee": "developer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T08:40:30.259Z",
-                "description": "Critic review notes 9 SFX are functional but thin. Add 4-6 Web Audio synthesis tones for key society events: rivalry clash gets a dissonant chord, truce gets a resolution tone, ritual gets a chime, reconnection gets a warm tone. Reference: Cookie Clicker uses distinct sounds per event type. Keep synthesis-based, no audio files.",
-                "acceptanceCriteria": [
-                    "At least 4 new distinct audio cues for society events",
-                    "Rivalry clash plays a dissonant tone",
-                    "Truce and reconnection play warm resolved tones",
-                    "Culture ritual plays a chime or bell",
-                    "All sounds respect existing audio toggle",
-                    "Web Audio synthesized, no external files"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-14T14:16:15.318Z",
-                "completedAt": "2026-03-14T14:17:54.420Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
-            }
-        ],
+        "review": [],
         "done": [
             {
                 "id": "TASK-137",
@@ -326,6 +304,29 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-14T14:05:57.078Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-140",
+                "title": "Add contextual audio cues for society events",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T08:40:30.259Z",
+                "description": "Critic review notes 9 SFX are functional but thin. Add 4-6 Web Audio synthesis tones for key society events: rivalry clash gets a dissonant chord, truce gets a resolution tone, ritual gets a chime, reconnection gets a warm tone. Reference: Cookie Clicker uses distinct sounds per event type. Keep synthesis-based, no audio files.",
+                "acceptanceCriteria": [
+                    "At least 4 new distinct audio cues for society events",
+                    "Rivalry clash plays a dissonant tone",
+                    "Truce and reconnection play warm resolved tones",
+                    "Culture ritual plays a chime or bell",
+                    "All sounds respect existing audio toggle",
+                    "Web Audio synthesized, no external files"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-14T14:16:15.318Z",
+                "completedAt": "2026-03-14T14:17:54.420Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-14T14:22:48.824Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -422,7 +423,7 @@
     },
     "meta": {
         "totalCreated": 139,
-        "totalCompleted": 92,
+        "totalCompleted": 93,
         "pendingQuestion": null
     },
     "nextId": 146

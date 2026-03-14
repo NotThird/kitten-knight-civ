@@ -1,50 +1,49 @@
 {
-  "timestamp": "2026-03-14T09:03:15.0702101-05:00",
+  "timestamp": "2026-03-14T14:33:30.611755Z",
   "iteration": 25,
   "cronHealth": {
     "healthy": [
-      "Forge: Oracle (Prophet)",
-      "Forge: ForgeLeader (Orchestrator)",
-      "Forge: Architect (Designer)",
-      "Forge: CodeSmith (Developer)",
-      "Forge: Gauntlet (Tester)",
-      "Forge: Arbiter (Critic)",
-      "Forge: Watchdog",
-      "Forge: Sentinel",
-      "Forge: Strategist (Research & Planning)"
+      "Oracle (Prophet)",
+      "ForgeLeader (Orchestrator)",
+      "Architect (Designer)",
+      "CodeSmith (Developer)",
+      "Gauntlet (Tester)",
+      "Arbiter (Critic)",
+      "Watchdog",
+      "Sentinel",
+      "Strategist (Research & Planning)"
     ],
     "failing": [],
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 9,
+    "todo": 8,
     "claimed": 0,
-    "review": 3,
-    "done": 4,
+    "review": 0,
+    "done": 8,
     "blocked": 5,
     "staleTasks": [],
-    "status": "healthy"
+    "status": "stalled"
   },
   "agentActivity": {
     "lastCycleActive": [
       "developer"
     ],
     "lastCycleSilent": [
-      "architect",
-      "arbiter",
-      "strategist",
-      "sentinel",
       "oracle",
-      "leader",
+      "architect",
+      "strategist",
+      "tester",
+      "critic",
       "watchdog",
-      "designer",
-      "tester"
+      "sentinel",
+      "leader"
     ],
     "errors": []
   },
   "convergence": {
     "currentScore": 9.2,
-    "threshold": 9.0,
+    "threshold": 9,
     "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
