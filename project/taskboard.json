@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T13:54:12.013Z",
+    "lastUpdated": "2026-03-15T14:20:04.538Z",
     "columns": {
         "todo": [
             {
@@ -353,23 +353,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-185",
-                "title": "Implement kitten relationship panel with visual bond lines in colony tank",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:36:13.141Z",
-                "description": "Surface existing relationship/bond data in UI. Add relationship lines between bonded kittens in colony tank. Add relationships section on kitten cards showing bonds with trust/friction. Consolidates TASK-163 and TASK-180.",
-                "acceptanceCriteria": [
-                    "Colony tank shows visual lines between bonded kittens with color coding",
-                    "Line thickness scales with bond strength",
-                    "Kitten cards show relationships section with trust/friction values",
-                    "Hovering a kitten highlights their relationship lines",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-188",
                 "title": "Tune golden moment frequency and add 3 new mid-game choice templates",
                 "assignee": "developer",
@@ -383,43 +366,6 @@
                     "Events use data from memory/conversation system for bond names and trait references",
                     "Frequency config is tunable via a single constant",
                     "parse_check and smoke_test pass"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-190",
-                "title": "BREAKTHROUGH: Implement birth system with trait inheritance and generation tracking",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:05:30.477Z",
-                "description": "Second half of TASK-177 aging design: birth eligibility checks (partnered adults, bond>=65, food ratio>=0.85, pop less than capacity+2), birth chance formula with bond/food/crowd/season factors, offspring trait inheritance with dominance weighting and 20% mutation chance, generation tracking (Gen N badges), generation milestone vignettes with Legacy Spark selection. Requires aging system to be in place first.",
-                "acceptanceCriteria": [
-                    "Eligible adult pairs can produce offspring based on birth chance formula",
-                    "Offspring inherit 3 traits using dominance-weighted parent pool + mutation",
-                    "Generation counter increments correctly (max parent gen + 1)",
-                    "Gen badge displays on kitten cards",
-                    "First adult of new generation triggers milestone vignette",
-                    "Legacy Spark selection offered at generation milestones (4 options)",
-                    "Birth cooldown of 12 real minutes per pair enforced",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
-                "id": "TASK-191",
-                "title": "Design authored mid-game narrative event scripts for minutes 8-20",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:09:52.646Z",
-                "description": "Arbiter identifies the #1 engagement gap: after Libraries unlock (~8 min), the game goes quiet. Content fallback (TASK-183) fills time but feels procedural. We need 8-10 AUTHORED narrative beats spaced across minutes 8-20 that feel like real story moments. Reference: Cookie Clicker news ticker has authored jokes that surprise; Kittens Game seasonal events tell micro-stories. Each beat should reference specific kittens by name, reference colony history, and offer a meaningful choice or revelation. These scripts feed into Whisker Relics (TASK-184) and the content drip system.",
-                "acceptanceCriteria": [
-                    "At least 8 authored narrative event scripts with unique dialogue and choices",
-                    "Each event references colony state (population, buildings, relationships) for contextual flavor",
-                    "Events are paced to trigger roughly every 60-90 seconds between minutes 8-20",
-                    "At least 3 events offer meaningful binary choices with different stat outcomes",
-                    "Events feel thematically connected as a discovery chain, not random"
                 ],
                 "source": "strategist"
             },
@@ -462,23 +408,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-194",
-                "title": "Implement kitten relationship panel with visual bond network",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:35:24.976Z",
-                "description": "Surface the existing coterie/trust/conversation system visually. Add a relationship panel showing kitten bonds as a network: nodes=kittens, edges=relationships colored by type (friendship green, rivalry red, mentor gold). Show bond strength. Add bond indicators on kitten cards. Makes social simulation VISIBLE to players.",
-                "acceptanceCriteria": [
-                    "Relationship panel shows kitten bond network with typed colored edges",
-                    "Bond strength and type visible on hover or tap",
-                    "Kitten cards show top 1-2 relationship indicators",
-                    "Panel updates live as relationships change",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-195",
                 "title": "Design comeback hooks: offline milestones and return-triggered story beats",
                 "assignee": "designer",
@@ -511,29 +440,107 @@
                     "Design connects to trading design TASK-160 and exploration TASK-154"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-197",
+                "title": "Implement mid-game building unlock chain (Watchtower, Scriptorium, Market Hall, Hearth Archive) from TASK-187 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T14:05:37.620Z",
+                "description": "Implement the 4-building mid-game chain from approved TASK-187 design. Each building unlocks a new kitten job (Scout, Scribe, Broker, Archivist). Add new resources (Intel, Insight, Trade Influence, Legacy Charge). Implement unlock gating with anti-drought catch-up pacing. Add building cards with unlock checklists and job assignment UI. Include save migration defaults for state.midgame.",
+                "acceptanceCriteria": [
+                    "Watchtower unlockable after Library + pop>=10 + buildings>=12 + 8min elapsed",
+                    "Scriptorium unlockable after Watchtower + Library>=2 + 8 research + 18min",
+                    "Market Hall unlockable after Scriptorium + pop>=16 + 5 positive-income resources + 28min",
+                    "Hearth Archive unlockable after Market Hall + pop>=22 + 40min",
+                    "Each building creates its new job with correct per-tick outputs",
+                    "Anti-drought catch-up activates at 70pct requirements met after 15min gap",
+                    "Save migration initializes state.midgame with zeros on old saves",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-199",
+                "title": "Implement kitten relationship visualization panel with bond network",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T14:05:41.862Z",
+                "description": "Surface the existing relationship engine visually. Create a relationship panel from colony view showing kitten bonds as a network graph. Bond types color-coded: friendship green, rivalry red, mentorship blue, coterie gold. Click kitten to see connections and bond details. Mini-feed of recent relationship events. Replaces TASK-185 and TASK-194.",
+                "acceptanceCriteria": [
+                    "Relationship panel accessible from colony view with toggle button",
+                    "Graph shows all kitten bonds with color-coded types",
+                    "Clicking a kitten highlights connections and shows bond details",
+                    "Mini-feed shows recent relationship events",
+                    "Panel updates live during gameplay",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-200",
+                "title": "Design player agency hooks for kitten lifecycle: matchmaking, naming ceremonies, eulogy choices",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T14:10:51.062Z",
+                "description": "Once birth and aging are live, the lifecycle loop runs automatically. Players need agency over life events. Reference: Realm Grinder faction choices feel consequential. Design: 1. Matchmaking influence via housing/policy affecting trait inheritance odds. 2. Naming ceremonies where player picks from generated names with trait previews. 3. Eulogy choices when elders pass - memorial building, trait boost to mentees, or lore entry. Each choice should have visible lasting consequences.",
+                "acceptanceCriteria": [
+                    "Design doc covers at least 3 player agency moments across kitten lifecycle",
+                    "Each moment offers 2-3 meaningful choices with distinct mechanical outcomes",
+                    "Choices have visible lasting effects not just flavor text",
+                    "Integrates with existing trait inheritance and memorial systems",
+                    "Naming ceremony design includes trait-preview UI concept"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-187",
-                "title": "Design mid-game building unlock chain with new kitten activities",
+                "id": "TASK-191",
+                "title": "Design authored mid-game narrative event scripts for minutes 8-20",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T12:40:50.311Z",
-                "description": "The critic identifies a gap between Libraries unlock and Eternity where no new GAMEPLAY unlocks occur. Design 3-4 new buildings that unlock in the mid-game, each introducing a new kitten activity or mechanic. Reference: Kittens Game unlocks new buildings that change what kittens DO. Each building should add a new kitten job/activity, not just a production bonus. Examples: Training Grounds for combat skill, Scriptorium for culture resource, Watchtower for scouting, Market for trade. These should integrate with existing systems.",
+                "createdAt": "2026-03-15T13:09:52.646Z",
+                "description": "Arbiter identifies the #1 engagement gap: after Libraries unlock (~8 min), the game goes quiet. Content fallback (TASK-183) fills time but feels procedural. We need 8-10 AUTHORED narrative beats spaced across minutes 8-20 that feel like real story moments. Reference: Cookie Clicker news ticker has authored jokes that surprise; Kittens Game seasonal events tell micro-stories. Each beat should reference specific kittens by name, reference colony history, and offer a meaningful choice or revelation. These scripts feed into Whisker Relics (TASK-184) and the content drip system.",
                 "acceptanceCriteria": [
-                    "3-4 mid-game buildings defined with unlock conditions between Libraries and Eternity",
-                    "Each building introduces a new kitten activity/job type",
-                    "Resource costs and production effects specified",
-                    "Integration points with exploration, trading, and Whisker Relics systems documented",
-                    "Unlock pacing ensures a new building every 10-15 minutes of mid-game play"
+                    "At least 8 authored narrative event scripts with unique dialogue and choices",
+                    "Each event references colony state (population, buildings, relationships) for contextual flavor",
+                    "Events are paced to trigger roughly every 60-90 seconds between minutes 8-20",
+                    "At least 3 events offer meaningful binary choices with different stat outcomes",
+                    "Events feel thematically connected as a discovery chain, not random"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T13:41:51.734Z",
-                "completedAt": "2026-03-15T13:42:43.746Z",
+                "claimedAt": "2026-03-15T14:11:55.002Z",
+                "completedAt": "2026-03-15T14:13:14.971Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-190",
+                "title": "BREAKTHROUGH: Implement birth system with trait inheritance and generation tracking",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:30.477Z",
+                "description": "Second half of TASK-177 aging design: birth eligibility checks (partnered adults, bond>=65, food ratio>=0.85, pop less than capacity+2), birth chance formula with bond/food/crowd/season factors, offspring trait inheritance with dominance weighting and 20% mutation chance, generation tracking (Gen N badges), generation milestone vignettes with Legacy Spark selection. Requires aging system to be in place first.",
+                "acceptanceCriteria": [
+                    "Eligible adult pairs can produce offspring based on birth chance formula",
+                    "Offspring inherit 3 traits using dominance-weighted parent pool + mutation",
+                    "Generation counter increments correctly (max parent gen + 1)",
+                    "Gen badge displays on kitten cards",
+                    "First adult of new generation triggers milestone vignette",
+                    "Legacy Spark selection offered at generation milestones (4 options)",
+                    "Birth cooldown of 12 real minutes per pair enforced",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T14:16:18.249Z",
+                "completedAt": "2026-03-15T14:20:04.538Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1310,6 +1317,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T13:54:12.013Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-187",
+                "title": "Design mid-game building unlock chain with new kitten activities",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:40:50.311Z",
+                "description": "The critic identifies a gap between Libraries unlock and Eternity where no new GAMEPLAY unlocks occur. Design 3-4 new buildings that unlock in the mid-game, each introducing a new kitten activity or mechanic. Reference: Kittens Game unlocks new buildings that change what kittens DO. Each building should add a new kitten job/activity, not just a production bonus. Examples: Training Grounds for combat skill, Scriptorium for culture resource, Watchtower for scouting, Market for trade. These should integrate with existing systems.",
+                "acceptanceCriteria": [
+                    "3-4 mid-game buildings defined with unlock conditions between Libraries and Eternity",
+                    "Each building introduces a new kitten activity/job type",
+                    "Resource costs and production effects specified",
+                    "Integration points with exploration, trading, and Whisker Relics systems documented",
+                    "Unlock pacing ensures a new building every 10-15 minutes of mid-game play"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T13:41:51.734Z",
+                "completedAt": "2026-03-15T13:42:43.746Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T14:04:42.330Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1456,13 +1485,67 @@
                 ],
                 "source": "strategist",
                 "blockedReason": "Already implemented by TASK-179"
+            },
+            {
+                "id": "TASK-198",
+                "title": "Design authored mid-game narrative events for minutes 8-20",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T14:05:41.723Z",
+                "description": "Design 6-8 authored narrative event scripts that fire between minutes 8-20 of active play. Dramatic memorable colony moments with 2-3 player choices each. Events reference actual kittens by name and traits. Connect to aging lifecycle, relationship system, and Whisker Relics.",
+                "acceptanceCriteria": [
+                    "At least 6 unique narrative event scripts designed",
+                    "Each event has 2-3 meaningful player choices with distinct outcomes",
+                    "Events reference live kitten names and traits",
+                    "Events timed to fire between minutes 8-20 with no overlap",
+                    "Design doc includes trigger conditions, dialogue text, choice outcomes, and stat effects"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Duplicate of TASK-191 (same scope: authored mid-game narrative events for minutes 8-20). TASK-191 has more detailed criteria. Archive this."
+            },
+            {
+                "id": "TASK-185",
+                "title": "Implement kitten relationship panel with visual bond lines in colony tank",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:13.141Z",
+                "description": "Surface existing relationship/bond data in UI. Add relationship lines between bonded kittens in colony tank. Add relationships section on kitten cards showing bonds with trust/friction. Consolidates TASK-163 and TASK-180.",
+                "acceptanceCriteria": [
+                    "Colony tank shows visual lines between bonded kittens with color coding",
+                    "Line thickness scales with bond strength",
+                    "Kitten cards show relationships section with trust/friction values",
+                    "Hovering a kitten highlights their relationship lines",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Superseded by TASK-199 which consolidates TASK-185 and TASK-194 into one comprehensive relationship visualization task."
+            },
+            {
+                "id": "TASK-194",
+                "title": "Implement kitten relationship panel with visual bond network",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:35:24.976Z",
+                "description": "Surface the existing coterie/trust/conversation system visually. Add a relationship panel showing kitten bonds as a network: nodes=kittens, edges=relationships colored by type (friendship green, rivalry red, mentor gold). Show bond strength. Add bond indicators on kitten cards. Makes social simulation VISIBLE to players.",
+                "acceptanceCriteria": [
+                    "Relationship panel shows kitten bond network with typed colored edges",
+                    "Bond strength and type visible on hover or tap",
+                    "Kitten cards show top 1-2 relationship indicators",
+                    "Panel updates live as relationships change",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Superseded by TASK-199 which consolidates TASK-185 and TASK-194 into one comprehensive relationship visualization task."
             }
         ]
     },
     "meta": {
-        "totalCreated": 187,
-        "totalCompleted": 120,
+        "totalCreated": 191,
+        "totalCompleted": 121,
         "pendingQuestion": null
     },
-    "nextId": 197
+    "nextId": 201
 }

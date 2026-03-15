@@ -1542,6 +1542,66 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return [pick];
   }
 
+  function pickMutatedTrait(seed, exclude = new Set()){
+    const rng = seededRng((Number(seed ?? 0) * 48271 + 17) | 0);
+    const pool = TRAIT_DEFS.map(t => String(t.id)).filter(id => !exclude.has(id));
+    if (!pool.length) return TRAIT_DEFS[0]?.id ?? 'Forager';
+    return pool[Math.floor(rng() * pool.length)] ?? pool[0];
+  }
+
+  function inheritedTraitsForOffspring(parentA, parentB, seed){
+    const dom = {
+      Brave: 1.0,
+      Studious: 1.0,
+      Builder: 1.1,
+      Caretaker: 1.1,
+      Forager: 1.0,
+    };
+    const weights = new Map();
+    const addTrait = (id, base) => {
+      const key = String(id || '').trim();
+      if (!key) return;
+      const w = Number(weights.get(key) ?? 0);
+      weights.set(key, w + Number(base ?? 0) * Number(dom[key] ?? 1));
+    };
+    for (const id of (Array.isArray(parentA?.traits) ? parentA.traits : [])) addTrait(id, 1.2);
+    for (const id of (Array.isArray(parentB?.traits) ? parentB.traits : [])) addTrait(id, 1.2);
+
+    if (!weights.size) {
+      const solo = genTraits(Number(seed ?? 0));
+      return [solo[0], pickMutatedTrait(Number(seed ?? 0) + 1, new Set(solo)), pickMutatedTrait(Number(seed ?? 0) + 2, new Set(solo))];
+    }
+
+    const rng = seededRng((Number(seed ?? 0) * 1103515245 + 12345) | 0);
+    const picked = [];
+    while (picked.length < 3) {
+      const options = [...weights.entries()].filter(([id]) => !picked.includes(id));
+      if (!options.length) break;
+      const total = options.reduce((a, [,w]) => a + Math.max(0.001, Number(w)), 0);
+      let r = rng() * total;
+      let chosen = options[0][0];
+      for (const [id, w0] of options) {
+        const w = Math.max(0.001, Number(w0));
+        r -= w;
+        if (r <= 0) { chosen = id; break; }
+      }
+      picked.push(chosen);
+    }
+
+    while (picked.length < 3) {
+      picked.push(pickMutatedTrait(Number(seed ?? 0) + picked.length + 7, new Set(picked)));
+    }
+
+    const mutateRoll = rng();
+    if (mutateRoll < 0.20) {
+      const idx = Math.floor(rng() * picked.length);
+      const next = pickMutatedTrait(Number(seed ?? 0) + 99, new Set(picked.filter((_,i)=>i!==idx)));
+      picked[idx] = next;
+    }
+
+    return picked.slice(0, 3);
+  }
+
   // --- Names (civ-sim readability)
   // Deterministic per kitten id; makes it easier to notice emergent personalities + social dynamics.
   const NAME_ADJ = ['Brisk','Clever','Drowsy','Sunny','Mossy','Wily','Gentle','Bold','Curious','Proud','Quiet','Stormy','Toasty','Nimble','Patient','Rusty','Velvet','Glitter','Sable','Honey'];
@@ -1727,11 +1787,16 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ageYears = Math.max(0, Number(k.ageYears ?? ((Number(state?.t ?? 0) - Number(k.birthTime ?? 0)) / AGE_SECONDS_PER_YEAR)));
     k.ageYears = ageYears;
     k.lifeStage = lifeStageForAgeYears(ageYears);
+    k.generation = Math.max(1, Math.floor(Number(k.generation ?? 1) || 1));
   }
 
-  function makeKitten(id, birthTime){
+  function makeKitten(id, birthTime, opts = null){
     const t0 = Number(birthTime ?? 0);
-    const traits = genTraits(id);
+    const options = (opts && typeof opts === 'object') ? opts : {};
+    const traits = Array.isArray(options.traits) && options.traits.length
+      ? options.traits.slice(0, 3).map(t => String(t))
+      : genTraits(id);
+    const generation = Math.max(1, Math.floor(Number(options.generation ?? 1) || 1));
     return {
       id,
       name: genName(id),
@@ -1747,6 +1812,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       birthTime: t0,
       ageYears: 0,
       lifeStage: 'kitten',
+      generation,
+      parents: Array.isArray(options.parents) ? options.parents.slice(0, 2).map(x => Number(x)).filter(n => Number.isFinite(n) && n > 0) : [],
       // Mood: 0..1. Softly affects efficiency + preferences (adds "civ sim" texture without hard locks).
       mood: 0.55,
       skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1, Social:1, Survival:1, Athletics:1 },
@@ -6196,14 +6263,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     // Aquarium: births + wandering arrivals (continuous growth, not 1/year).
-    // Goal: reach dozens+ kittens quickly when stable.
+    // TASK-190: births now use eligible adult bonded pairs + inheritance + generation tracking.
     state._popFlowTimer = (state._popFlowTimer ?? 0) + dt;
     if (state._popFlowTimer >= 1) {
       state._popFlowTimer = 0;
       const cap = housingCap(state);
       const pop = Math.max(0, state.kittens.length);
-      const space = Math.max(0, cap - pop);
-      if (space > 0 && pop > 0) {
+      const spaceSoft = Math.max(0, (cap + 2) - pop);
+      if (spaceSoft > 0 && pop > 0) {
         const season = seasonAt(state.t);
         const targets = seasonTargets(state);
         const ediblePk = ediblePerKitten(state);
@@ -6216,39 +6283,97 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const safe = clamp01((targets.maxThreat - threat) / Math.max(1, targets.maxThreat));
         const happy = clamp01((avgMood - 0.52) / 0.30);
         const calm = clamp01(1 - avgGriev);
+        const foodRatio = clamp01(ediblePk / Math.max(1, targets.foodPerKitten));
 
-        // Desired pace: if stable, add kittens frequently. Rates are capped and deterministic.
-        let birthRate = 0.02 + 0.22 * surplus * happy * safe;  // up to ~0.24 / sec
-        let wanderRate = 0.03 + 0.26 * surplus * safe * clamp01(0.4 + 0.6 * calm); // up to ~0.29 / sec
-
-        // Seasonal spice
-        if (season.name === 'Spring') { birthRate *= 1.15; wanderRate *= 1.10; }
-        if (season.name === 'Winter') { birthRate *= 0.75; wanderRate *= 0.80; }
-        if (cozy < 0) { birthRate *= 0.85; }
+        // Wanderers still keep the world feeling alive.
+        let wanderRate = 0.03 + 0.26 * surplus * safe * clamp01(0.4 + 0.6 * calm);
+        if (season.name === 'Spring') wanderRate *= 1.10;
+        if (season.name === 'Winter') wanderRate *= 0.80;
 
         const minFoodAfter = getReserve(state,'food');
         const canAfford = (state.res.food ?? 0) >= (minFoodAfter + 24);
 
-        const tInt = Math.floor(Number(state.t ?? 0));
-        const rollA = rand01At(tInt, 101);
-        const rollB = rand01At(tInt, 202);
+        // Partner eligibility + cooldown map.
+        state.birth = (state.birth && typeof state.birth === 'object') ? state.birth : {};
+        state.birth.cooldowns = (state.birth.cooldowns && typeof state.birth.cooldowns === 'object') ? state.birth.cooldowns : {};
+        state.birth.maxGeneration = Math.max(1, Math.floor(Number(state.birth.maxGeneration ?? 1) || 1));
+        state.birth.lastMilestoneGen = Math.max(0, Math.floor(Number(state.birth.lastMilestoneGen ?? 0) || 0));
 
-        // Births consume a small amount of food (pregnancy/baby care), but are otherwise free.
-        if (canAfford && rollA < birthRate) {
-          const cost = Math.max(8, Math.round(10 + pop * 0.03));
-          if ((state.res.food - cost) >= minFoodAfter) {
-            state.res.food -= cost;
-            const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
-            state.kittens.push(makeKitten(id, state.t));
-            feed(`Birth: a kitten was born (pop ${state.kittens.length}/${cap}).`);
-            state._birthCt = (state._birthCt ?? 0) + 1;
-            state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
-            state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:'birth', color:'rgba(52,211,153,.22)' });
-            if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
+        const adults = (state.kittens ?? []).filter((k) => String(k?.lifeStage ?? '') === 'adult');
+        const eligiblePairs = [];
+        for (const a of adults) {
+          for (const b of adults) {
+            const aid = Number(a?.id ?? 0);
+            const bid = Number(b?.id ?? 0);
+            if (!aid || !bid || aid >= bid) continue;
+            ensureKittenMemory(a);
+            ensureKittenMemory(b);
+            const ab = a.memory.bonds?.[String(bid)] ?? { trust:0.5, friction:0 };
+            const ba = b.memory.bonds?.[String(aid)] ?? { trust:0.5, friction:0 };
+            const bond = clamp01((Number(ab.trust ?? 0.5) + Number(ba.trust ?? 0.5)) / 2 - ((Number(ab.friction ?? 0) + Number(ba.friction ?? 0)) / 2) * 0.35);
+            if (bond < 0.65) continue;
+            const pairKey = `${Math.min(aid,bid)}:${Math.max(aid,bid)}`;
+            const nextAt = Number(state.birth.cooldowns[pairKey] ?? 0);
+            if (Number(state.t ?? 0) < nextAt) continue;
+            eligiblePairs.push({ a, b, bond, pairKey });
           }
         }
 
-        // Wanderers (immigration) — cheaper than spring event, can happen any season if stable.
+        if (canAfford && foodRatio >= 0.85 && eligiblePairs.length > 0) {
+          // Select best bonded pair this second and evaluate formula.
+          eligiblePairs.sort((x,y)=>Number(y.bond ?? 0)-Number(x.bond ?? 0));
+          const pair = eligiblePairs[0];
+          const crowd = clamp01((pop - cap) / Math.max(2, cap));
+          const seasonMul = (season.name === 'Spring') ? 1.18 : (season.name === 'Winter') ? 0.78 : 1.0;
+          const birthChance = Math.max(0.01, Math.min(0.35,
+            (0.015 + 0.12 * pair.bond + 0.08 * clamp01((foodRatio - 0.85) / 0.30) + 0.04 * safe + 0.03 * happy) * (1 - 0.55 * crowd) * seasonMul * (cozy < 0 ? 0.9 : 1)
+          ));
+
+          const tInt = Math.floor(Number(state.t ?? 0));
+          const rollA = rand01At(tInt, 101);
+          if (rollA < birthChance) {
+            const cost = Math.max(8, Math.round(10 + pop * 0.03));
+            if ((state.res.food - cost) >= minFoodAfter) {
+              state.res.food -= cost;
+              const id = state.kittens.length ? Math.max(...state.kittens.map(k=>k.id))+1 : 1;
+              const childGen = Math.max(1, Math.floor(Math.max(Number(pair.a.generation ?? 1), Number(pair.b.generation ?? 1)) + 1));
+              const childTraits = inheritedTraitsForOffspring(pair.a, pair.b, id + tInt);
+              state.kittens.push(makeKitten(id, state.t, {
+                traits: childTraits,
+                generation: childGen,
+                parents: [pair.a.id, pair.b.id],
+              }));
+              state.birth.cooldowns[pair.pairKey] = Number(state.t ?? 0) + (12 * 60);
+              state.birth.maxGeneration = Math.max(Number(state.birth.maxGeneration ?? 1), childGen);
+              feed(`Birth: ${kittenName(state, pair.a.id)} + ${kittenName(state, pair.b.id)} welcomed a Gen ${childGen} kitten (pop ${state.kittens.length}/${cap}).`);
+              state._birthCt = (state._birthCt ?? 0) + 1;
+              state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
+              state._trendEvents.push({ t: Number(state.t ?? 0), kind:'pop', label:`gen${childGen}`, color:'rgba(52,211,153,.22)' });
+              if (state._trendEvents.length > 120) state._trendEvents.splice(0, state._trendEvents.length - 120);
+
+              if (childGen > Number(state.birth.lastMilestoneGen ?? 0)) {
+                state.birth.lastMilestoneGen = childGen;
+                queueChoiceEvent(state, {
+                  id: `legacy-spark-gen-${childGen}`,
+                  title: `Generation ${childGen} Legacy Spark`,
+                  body: `A new generation comes of age. Choose the colony legacy spark to pass forward.`,
+                  tier: 3,
+                  tags: ['legacy:spark'],
+                  choices: [
+                    { label: 'Spark of Hearth (+food stores)', tone: 'positive', outcomes: { food: 55, moodDelta: 0.02 }, log: `Legacy Spark chosen: Hearth (Gen ${childGen}).` },
+                    { label: 'Spark of Steel (+wood/tools)', tone: 'neutral', outcomes: { wood: 45, tools: 18 }, log: `Legacy Spark chosen: Steel (Gen ${childGen}).` },
+                    { label: 'Spark of Lore (+science/mentor)', tone: 'positive', outcomes: { science: 36, policy: { Mentor: 0.12, Research: 0.10 } }, log: `Legacy Spark chosen: Lore (Gen ${childGen}).` },
+                    { label: 'Spark of Unity (+social stability)', tone: 'neutral', outcomes: { social: { dissent: -0.05 }, moodDelta: 0.03 }, log: `Legacy Spark chosen: Unity (Gen ${childGen}).` },
+                  ]
+                }, { source:'generation-milestone' });
+                triggerEventInterrupt('society-ripple');
+              }
+            }
+          }
+        }
+
+        const tInt = Math.floor(Number(state.t ?? 0));
+        const rollB = rand01At(tInt, 202);
         if (canAfford && rollB < wanderRate) {
           const cost = Math.max(6, Math.round(8 + pop * 0.02));
           if ((state.res.food - cost) >= minFoodAfter) {
@@ -11594,7 +11719,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             <span class="kc-face">${moodFace}${healthIcon}</span>
             <div class="kc-identity">
               <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))}</span>
-              <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')} <span class="tag" style="font-size:10px">${escapeHtml(stageBadge(String(k.lifeStage ?? 'adult')))}</span></span>
+              <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')} <span class="tag" style="font-size:10px">${escapeHtml(stageBadge(String(k.lifeStage ?? 'adult')))}</span> <span class="tag" style="font-size:10px">Gen ${Math.max(1, Math.floor(Number(k.generation ?? 1) || 1))}</span></span>
             </div>
             <span class="kc-mood-react" title="Current mood reaction">${reactionText}</span>
           </div>
