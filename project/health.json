@@ -1,26 +1,27 @@
 {
-  "timestamp": "2026-03-15T09:59:14.368Z",
-  "iteration": 29,
+  "timestamp": "2026-03-15T05:29:20-05:00",
+  "iteration": 25,
   "cronHealth": {
     "healthy": [
       "Forge: Oracle (Prophet)",
       "Forge: ForgeLeader (Orchestrator)",
       "Forge: Architect (Designer)",
-      "Forge: CodeSmith (Developer)",
       "Forge: Gauntlet (Tester)",
       "Forge: Arbiter (Critic)",
       "Forge: Watchdog",
       "Forge: Sentinel",
       "Forge: Strategist (Research & Planning)"
     ],
-    "failing": [],
+    "failing": [
+      "Forge: CodeSmith (Developer)"
+    ],
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 18,
+    "todo": 22,
     "claimed": 0,
     "review": 1,
-    "done": 20,
+    "done": 21,
     "blocked": 4,
     "staleTasks": [],
     "status": "healthy"
@@ -31,22 +32,22 @@
     ],
     "lastCycleSilent": [
       "oracle",
-      "forgeleader",
       "architect",
-      "arbiter",
+      "tester",
+      "critic",
+      "watchdog",
       "sentinel",
       "strategist",
-      "watchdog",
-      "gauntlet"
+      "forgeleader"
     ],
     "errors": []
   },
   "convergence": {
-    "currentScore": 7.2,
-    "threshold": 9.0,
+    "currentScore": 7.4,
+    "threshold": 9,
     "consecutiveAbove": 0,
-    "iteration": 29,
+    "iteration": 30,
     "maxIterations": 50,
-    "status": "regressing"
+    "status": "stalled"
   }
 }
