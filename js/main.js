@@ -7060,6 +7060,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
+  const tankLifeEl = el('tankLife');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendTabRailEl = el('trendTabRail');
   const trendTabButtons = Array.from(document.querySelectorAll('[data-trend-tab]'));
@@ -11243,34 +11244,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function renderTank(){
-    if (!tankEl) return;
-    const ctx = tankEl.getContext('2d');
-    if (!ctx) return;
+    if (!tankLifeEl) return;
 
-    const W = tankEl.width, H = tankEl.height;
-    ctx.clearRect(0,0,W,H);
+    const W = Math.max(360, Math.round(tankLifeEl.clientWidth || tankEl?.width || 380));
+    const H = Math.max(190, Math.round(tankLifeEl.clientHeight || tankEl?.height || 190));
 
-    // Zones (no pathing): kittens snap to task zones so it feels like an aquarium.
     const zones = [
-      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)' },
-      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)' },
-      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)' },
-      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)' },
-      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)' },
+      { id:'Hearth', x:10, y:10, w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)' },
+      { id:'Stock', x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)' },
+      { id:'Forest', x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)' },
+      { id:'Fields', x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)' },
+      { id:'Study', x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)' },
     ];
-
-    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    ctx.textBaseline = 'top';
-
-    for (const z of zones) {
-      ctx.fillStyle = z.color;
-      ctx.strokeStyle = 'rgba(255,255,255,.10)';
-      ctx.lineWidth = 1;
-      ctx.fillRect(z.x, z.y, z.w, z.h);
-      ctx.strokeRect(z.x, z.y, z.w, z.h);
-      ctx.fillStyle = 'rgba(148,163,184,.95)';
-      ctx.fillText(z.id, z.x + 6, z.y + 6);
-    }
 
     const taskZone = (task) => {
       const t = String(task || '');
@@ -11282,37 +11267,83 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       return 'Hearth';
     };
 
-    // Place kittens as dots in their zone.
+    const activityGlyph = (task) => {
+      const t = String(task || '');
+      if (t === 'Forage') return '🌿';
+      if (t === 'ChopWood') return '🪵';
+      if (t === 'Farm') return '🌾';
+      if (t === 'Research') return '📚';
+      if (t === 'Guard') return '🛡️';
+      if (t === 'Rest') return '😴';
+      if (t === 'Eat') return '🍲';
+      if (t === 'Care') return '🩹';
+      if (t === 'Socialize') return '💬';
+      if (t === 'Mentor') return '🎓';
+      if (t === 'CraftTools') return '🔧';
+      if (t.startsWith('Build')) return '🏗️';
+      return '🐾';
+    };
+
+    const moodAura = (k) => {
+      const m = clamp01(Number(k?.mood ?? 0.55));
+      if (m >= 0.76) return 'rgba(74,222,128,.62)';
+      if (m >= 0.52) return 'rgba(125,211,252,.56)';
+      if (m >= 0.30) return 'rgba(251,191,36,.60)';
+      return 'rgba(251,113,133,.68)';
+    };
+
+    const statusPin = (k) => {
+      const health = clamp01(Number(k?.health ?? 1));
+      const mood = clamp01(Number(k?.mood ?? 0.55));
+      const need = clamp01(Number(k?.buddyNeed ?? 0));
+      const griev = clamp01(Number(k?.grievance ?? 0));
+      if (health < 0.45) return '🤒';
+      if (need > 0.82) return '💔';
+      if (griev > 0.60 || mood < 0.25) return '💢';
+      return '';
+    };
+
     const byZone = Object.create(null);
     for (const z of zones) byZone[z.id] = [];
     for (const k of (state.kittens ?? [])) {
       const z = taskZone(k._fallbackTo || k.task);
-      (byZone[z] ?? (byZone[z]=[])).push(k);
+      (byZone[z] ?? (byZone[z] = [])).push(k);
     }
 
+    const html = [];
     for (const z of zones) {
+      html.push(`<div class="tank-zone" style="left:${Math.round(z.x)}px;top:${Math.round(z.y)}px;width:${Math.max(40, Math.round(z.w))}px;height:${Math.max(34, Math.round(z.h))}px;background:${z.color}"><div class="tank-zone-label">${escapeHtml(z.id)}</div></div>`);
       const arr = byZone[z.id] ?? [];
-      const showN = Math.min(arr.length, 12);
+      const showN = Math.min(arr.length, 20);
+      const placed = new Map();
       for (let i=0;i<showN;i++) {
         const k = arr[i];
-        const nx = (i % 4);
-        const ny = Math.floor(i / 4);
-        const px = z.x + 20 + nx * 22;
-        const py = z.y + 28 + ny * 18;
-        ctx.fillStyle = 'rgba(217,226,239,.95)';
-        ctx.beginPath();
-        ctx.arc(px, py, 4, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(217,226,239,.75)';
+        const nx = i % 5;
+        const ny = Math.floor(i / 5);
+        let px = z.x + 20 + nx * 22;
+        let py = z.y + 30 + ny * 18;
+        const buddyId = Number(k?.buddyId ?? 0);
+        if (buddyId > 0 && placed.has(buddyId)) {
+          const b = placed.get(buddyId);
+          px = b.x + ((i % 2) ? 10 : -10);
+          py = b.y + ((i % 3) - 1) * 5;
+        }
+        px = Math.max(z.x + 12, Math.min(z.x + z.w - 12, px));
+        py = Math.max(z.y + 20, Math.min(z.y + z.h - 10, py));
+        placed.set(Number(k.id), { x:px, y:py });
+
+        const glyph = activityGlyph(k._fallbackTo || k.task);
+        const pin = statusPin(k);
         const name = String(k?.name ?? `#${k.id}`);
         const short = name.split(/\s+/).slice(-1)[0] || name;
-        ctx.fillText(short, px + 6, py - 6);
+        html.push(`<div class="tank-kitten" style="left:${Math.round(px)}px;top:${Math.round(py)}px;--aura:${moodAura(k)}"><span class="activity-glyph">${glyph}</span>${pin ? `<span class="status-pin">${pin}</span>` : ''}<span class="name-tag">${escapeHtml(short)}</span></div>`);
       }
       if (arr.length > showN) {
-        ctx.fillStyle = 'rgba(148,163,184,.85)';
-        ctx.fillText(`+${arr.length - showN}`, z.x + z.w - 34, z.y + 6);
+        html.push(`<div class="tank-zone-label" style="position:absolute;left:${Math.round(z.x + z.w - 34)}px;top:${Math.round(z.y + 6)}px">+${arr.length - showN}</div>`);
       }
     }
+
+    tankLifeEl.innerHTML = html.join('');
   }
 
     function renderStacked(canvasEl, store, rows, opts={}){

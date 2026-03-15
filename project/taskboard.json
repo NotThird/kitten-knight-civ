@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T10:53:19.705Z",
+    "lastUpdated": "2026-03-15T11:19:06.569Z",
     "columns": {
         "todo": [
             {
@@ -313,23 +313,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-170",
-                "title": "Design active-play golden moments system (wandering visitors, rare discoveries)",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:10:20.986Z",
-                "description": "KKC lacks Cookie Clicker golden cookie equivalents - time-limited active-play rewards that pull the player back. Design random colony moments requiring player attention: wandering trader (limited-time trade), buried artifact discovery (choose how to use), rival settlement envoy (accept/reject alliance), rare resource vein (assign kittens quickly). Appear every 3-8 minutes of active play, visually prominent via event interrupt system, meaningful choices with lasting consequences. Reference: Cookie Clicker golden cookies, NGU IDLE wandoos, Realm Grinder faction visitors.",
-                "acceptanceCriteria": [
-                    "At least 5 golden moment types designed with choice mechanics",
-                    "Timing and frequency system specified (not too rare, not spammy)",
-                    "Each moment has 2-3 player choices with distinct outcomes",
-                    "Visual presentation spec using existing event interrupt FX",
-                    "Rewards scale with colony progress to stay relevant at all stages"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-171",
                 "title": "Implement generation milestones with legacy bonuses and family trees",
                 "assignee": "developer",
@@ -347,34 +330,20 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-172",
-                "title": "Implement colony tank life-at-a-glance layer from TASK-165 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "description": "Implement the approved TASK-165 design: mood aura rings, activity glyphs, status pins, and relationship proximity clustering on colony tank kitten dots. CSS+emoji only, no canvas.",
-                "acceptanceCriteria": [
-                    "Each tank kitten shows colored mood aura based on mood scalar",
-                    "Activity glyph emoji visible on each kitten showing current task",
-                    "Relationship proximity - bonded kittens cluster closer together",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "status": "todo",
-                "createdAt": "2026-03-15T10:35:30.803Z",
-                "staleCount": 0
-            },
-            {
                 "id": "TASK-173",
                 "title": "Implement mid-game content drip with exploration discoveries",
                 "assignee": "developer",
                 "priority": "high",
                 "type": "feature",
-                "description": "Address mid-game content vacuum. After Library unlock, drip-feed new discoveries every 10 min of play.",
+                "description": "The #1 engagement issue per 3 consecutive critic reviews. After unlocking Library + Eternity, players hit a 10+ minute plateau with no new mechanics appearing. This task implements the mystery chain designed in TASK-175. Reference: Cookie Clicker sugar lumps appearing after first ascension, Kittens Game religion surprise layer, Antimatter Dimensions infinity dimensions. Each discovery should feel like finding a hidden room — a small but meaningful new system that interacts with existing mechanics. DEPENDS ON: TASK-175 (design spec). Do not start until TASK-175 is approved.",
                 "acceptanceCriteria": [
-                    "At least 5 discoverable content pieces that unlock progressively",
-                    "Each discovery provides a new mechanic or resource or narrative beat",
-                    "Visual notification when a new discovery is available",
+                    "Implements 5-8 sequential discoveries from the TASK-175 design spec",
+                    "Each discovery triggers based on specific game progress milestones (population thresholds, building counts, research completions, elapsed play time)",
+                    "Each discovery introduces a tangible new mechanic, modifier, or resource — not just flavor text",
+                    "Discoveries surface via the existing event interrupt system (TASK-162) with unique visual treatment",
+                    "A persistent discovery log/journal is accessible showing found and unfound discoveries (unfound shown as ??? teasers)",
+                    "Mid-game session (30-60 min play) encounters at least 3 new discoveries spaced roughly 10 min apart",
+                    "Discovery rewards scale with colony progress so early and late discoveries both feel meaningful",
                     "parse_check and smoke_test pass"
                 ],
                 "source": "orchestrator",
@@ -432,29 +401,70 @@
                     "Goals span different systems: buildings, research, prestige, population milestones"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-177",
+                "title": "Design kitten aging, life stages, and generational inheritance system",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "description": "TASK-153 (implement aging/generations) is a complex system that needs a design spec first. Austin wants a micro universe of growth — kittens that age, form families, pass on traits, and leave legacies. Reference: CK3 trait inheritance with dominant/recessive mechanics, RimWorld aging with meaningful elder roles, Dwarf Fortress generational legends. Key design questions: How fast should kittens age relative to game ticks? What are the life stage thresholds and bonuses? How does trait inheritance work (which traits dominate, mutation rates)? How do deaths affect relationships and morale? How does population balance work (births vs deaths vs carrying capacity)? Should elders have unique actions (storytelling, mentoring)? How do generations interact with prestige resets? Design must integrate with existing personality traits, coterie system, and the new relationship system (TASK-152).",
+                "acceptanceCriteria": [
+                    "Life stage progression defined with age thresholds, stat modifiers, and visual indicators for each stage (kitten/adult/elder)",
+                    "Trait inheritance rules specified: which traits can be inherited, dominance hierarchy, mutation chance and pool",
+                    "Population lifecycle balance model: birth rate formula, death triggers, carrying capacity interaction",
+                    "Elder-specific mechanics designed (wisdom bonuses, mentoring, memorial events on death)",
+                    "Integration points documented for relationships (TASK-152), coteries, personality system, and prestige layers",
+                    "Generational tracking spec: family trees, generation counter, legacy bonuses per generation survived"
+                ],
+                "source": "strategist",
+                "status": "todo",
+                "createdAt": "2026-03-15T11:10:39.533Z",
+                "staleCount": 0
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-169",
-                "title": "Design kitten personal goals and aspirations system",
+                "id": "TASK-170",
+                "title": "Design active-play golden moments system (wandering visitors, rare discoveries)",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T10:10:20.937Z",
-                "description": "Kittens need visible GOALS that players can help fulfill. Reference: Dwarf Fortress dwarves have needs/thoughts; Rimworld colonists have mood-affecting aspirations. Design a system where each kitten develops 1-2 personal goals based on personality (Explorer wants to scout, Scholar wants research, Social kitten wants a friend). Goals should be visible on kitten cards, completable through gameplay, and grant bonuses when fulfilled. Failed/ignored goals should affect mood. Tier 1 core gameplay mechanic.",
+                "createdAt": "2026-03-15T10:10:20.986Z",
+                "description": "KKC lacks Cookie Clicker golden cookie equivalents - time-limited active-play rewards that pull the player back. Design random colony moments requiring player attention: wandering trader (limited-time trade), buried artifact discovery (choose how to use), rival settlement envoy (accept/reject alliance), rare resource vein (assign kittens quickly). Appear every 3-8 minutes of active play, visually prominent via event interrupt system, meaningful choices with lasting consequences. Reference: Cookie Clicker golden cookies, NGU IDLE wandoos, Realm Grinder faction visitors.",
                 "acceptanceCriteria": [
-                    "Goal types defined (at least 6 archetypes tied to personality traits)",
-                    "Goal lifecycle specified: how goals appear, progress, complete, fail, and rotate",
-                    "Visual spec for goal display on kitten cards (icon + progress + reward preview)",
-                    "Mood/productivity impact of fulfilled vs ignored goals defined",
-                    "Goals interact with existing systems (skills, coteries, buddy bonds)"
+                    "At least 5 golden moment types designed with choice mechanics",
+                    "Timing and frequency system specified (not too rare, not spammy)",
+                    "Each moment has 2-3 player choices with distinct outcomes",
+                    "Visual presentation spec using existing event interrupt FX",
+                    "Rewards scale with colony progress to stay relevant at all stages"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T10:41:09.268Z",
-                "completedAt": "2026-03-15T10:42:28.582Z",
+                "claimedAt": "2026-03-15T11:11:34.396Z",
+                "completedAt": "2026-03-15T11:12:57.986Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-172",
+                "title": "Implement colony tank life-at-a-glance layer from TASK-165 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "description": "Implement the approved TASK-165 design: mood aura rings, activity glyphs, status pins, and relationship proximity clustering on colony tank kitten dots. CSS+emoji only, no canvas.",
+                "acceptanceCriteria": [
+                    "Each tank kitten shows colored mood aura based on mood scalar",
+                    "Activity glyph emoji visible on each kitten showing current task",
+                    "Relationship proximity - bonded kittens cluster closer together",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "status": "todo",
+                "createdAt": "2026-03-15T10:35:30.803Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-15T11:16:16.544Z",
+                "completedAt": "2026-03-15T11:19:06.569Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -957,6 +967,28 @@
                 "completedAt": "2026-03-15T10:48:13.246Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T10:53:19.705Z"
+            },
+            {
+                "id": "TASK-169",
+                "title": "Design kitten personal goals and aspirations system",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:10:20.937Z",
+                "description": "Kittens need visible GOALS that players can help fulfill. Reference: Dwarf Fortress dwarves have needs/thoughts; Rimworld colonists have mood-affecting aspirations. Design a system where each kitten develops 1-2 personal goals based on personality (Explorer wants to scout, Scholar wants research, Social kitten wants a friend). Goals should be visible on kitten cards, completable through gameplay, and grant bonuses when fulfilled. Failed/ignored goals should affect mood. Tier 1 core gameplay mechanic.",
+                "acceptanceCriteria": [
+                    "Goal types defined (at least 6 archetypes tied to personality traits)",
+                    "Goal lifecycle specified: how goals appear, progress, complete, fail, and rotate",
+                    "Visual spec for goal display on kitten cards (icon + progress + reward preview)",
+                    "Mood/productivity impact of fulfilled vs ignored goals defined",
+                    "Goals interact with existing systems (skills, coteries, buddy bonds)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T10:41:09.268Z",
+                "completedAt": "2026-03-15T10:42:28.582Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T11:04:29.539Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1036,8 +1068,8 @@
     },
     "meta": {
         "totalCreated": 168,
-        "totalCompleted": 108,
+        "totalCompleted": 109,
         "pendingQuestion": null
     },
-    "nextId": 177
+    "nextId": 178
 }
