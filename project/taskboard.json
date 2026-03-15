@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T09:49:39.609Z",
+    "lastUpdated": "2026-03-15T09:53:07.531Z",
     "columns": {
         "todo": [
             {
@@ -333,25 +333,6 @@
                 "claimedAt": "2026-03-15T09:40:27.116Z",
                 "completedAt": "2026-03-15T09:41:52.500Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-162",
-                "title": "Implement dramatic visual event interrupts with screen effects",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T09:36:07.166Z",
-                "description": "When major events fire, produce dramatic full-screen visual effects: screen darkening for winter, red flash for raids, shake for earthquakes, warm glow for festivals. Use CSS animations. Reference TASK-156 design for timing.",
-                "acceptanceCriteria": [
-                    "At least 4 event types produce distinct full-screen visual effects",
-                    "Effects use CSS animations and respect prefers-reduced-motion",
-                    "Winter arrival darkens the entire game UI gradually",
-                    "Effects auto-dismiss within 3 seconds"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T09:46:14.029Z",
-                "completedAt": "2026-03-15T09:49:39.609Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -766,6 +747,27 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T09:34:37.108Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-162",
+                "title": "Implement dramatic visual event interrupts with screen effects",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:36:07.166Z",
+                "description": "When major events fire, produce dramatic full-screen visual effects: screen darkening for winter, red flash for raids, shake for earthquakes, warm glow for festivals. Use CSS animations. Reference TASK-156 design for timing.",
+                "acceptanceCriteria": [
+                    "At least 4 event types produce distinct full-screen visual effects",
+                    "Effects use CSS animations and respect prefers-reduced-motion",
+                    "Winter arrival darkens the entire game UI gradually",
+                    "Effects auto-dismiss within 3 seconds"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T09:46:14.029Z",
+                "completedAt": "2026-03-15T09:49:39.609Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T09:53:07.531Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -845,7 +847,7 @@
     },
     "meta": {
         "totalCreated": 160,
-        "totalCompleted": 104,
+        "totalCompleted": 105,
         "pendingQuestion": null
     },
     "nextId": 167
