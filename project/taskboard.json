@@ -2,25 +2,39 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-14T15:52:57.415Z",
+    "lastUpdated": "2026-03-15T00:05:43.914Z",
     "columns": {
         "todo": [
             {
-                "id": "TASK-047",
-                "title": "Implement save export/import with clipboard and file download",
+                "id": "TASK-047a",
+                "title": "Add save export button (base64 to clipboard + JSON download)",
                 "assignee": "developer",
                 "priority": "low",
                 "type": "feature",
-                "description": "Common incremental game expectation: let players export saves as base64 text (copy to clipboard) and import from clipboard/paste. Also offer download as .json file. Cookie Clicker, NGU IDLE, Antimatter Dimensions all have this. Improves completeness and player trust (backup before prestige).",
+                "description": "Part 1 of save export/import. Let players export saves as base64 text (copy to clipboard) and download as .json file. Cookie Clicker, NGU IDLE, Antimatter Dimensions all have this. Split from TASK-047 to comply with 3-criteria task size rule.",
                 "acceptanceCriteria": [
                     "Export button copies base64 save string to clipboard with success toast",
-                    "Import button accepts pasted base64 string and loads save after confirmation prompt",
                     "Download button saves .json file with timestamp in filename",
-                    "Invalid import data shows clear error message without corrupting current save",
                     "Works on mobile (clipboard API with fallback textarea)"
                 ],
                 "source": "strategist",
-                "createdAt": "2026-03-12T17:51:26.381Z",
+                "createdAt": "2026-03-14T18:00:00.000Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-047b",
+                "title": "Add save import from clipboard/paste with validation",
+                "assignee": "developer",
+                "priority": "low",
+                "type": "feature",
+                "description": "Part 2 of save export/import. Let players import saves from pasted base64 string. Validate input before applying. Depends on TASK-047a.",
+                "acceptanceCriteria": [
+                    "Import button accepts pasted base64 string and loads save after confirmation prompt",
+                    "Invalid import data shows clear error message without corrupting current save",
+                    "Works on mobile"
+                ],
+                "source": "strategist",
+                "createdAt": "2026-03-14T18:00:00.000Z",
                 "staleCount": 0
             },
             {
@@ -28,7 +42,7 @@
                 "assignee": "developer",
                 "priority": "low",
                 "type": "feature",
-                "description": "Implement diplomacy panel. DEPRIORITIZED until post-ship.",
+                "description": "Implement diplomacy panel. DEPRIORITIZED until post-ship. NOTE: Has 6 criteria — must be split before claiming (3-criteria rule).",
                 "acceptanceCriteria": [
                     "Diplomacy state persists",
                     "Influence generates per tick",
@@ -39,7 +53,6 @@
                 ],
                 "source": "orchestrator",
                 "id": "TASK-088",
-                "column": "todo",
                 "createdAt": "2026-03-12T23:38:15.449Z",
                 "staleCount": 0
             },
@@ -94,7 +107,8 @@
                 ],
                 "source": "strategist",
                 "claimedAt": "2026-03-14T13:16:11.372Z",
-                "testVerdict": "REJECTED"
+                "testVerdict": "REJECTED",
+                "reworkNote": "Significant fly-ups are threshold-based only; building completion events must be explicitly detected and trigger the enhanced animation, not just high-value gains."
             },
             {
                 "id": "TASK-148",
@@ -112,10 +126,29 @@
                     "Includes volume/mix recommendations for mobile speakers"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-069",
+                "title": "Implement session performance metrics and play-time statistics panel",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-12T21:24:22.583Z",
+                "description": "Completeness gap. Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. This is Tier 1 engagement (completionist loop), not Tier 5 infrastructure. Use existing save data where possible. Dark-themed, scrollable list. NOTE: Has 4 criteria — consider splitting before claiming.",
+                "acceptanceCriteria": [
+                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
+                    "Lifetime totals persist across prestige resets",
+                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
+                    "Data loads from existing save structure without migration"
+                ],
+                "source": "strategist",
+                "reclassifiedAt": "2026-03-14T18:00:00.000Z",
+                "reclassifiedReason": "Statistics panel is Tier 1 engagement (completionist driver), not Tier 5 infrastructure. Cookie Clicker, Antimatter Dimensions, NGU IDLE all use stats pages as core engagement loops."
             }
         ],
         "claimed": [],
-        "review": [
+        "review": [],
+        "done": [
             {
                 "id": "TASK-146",
                 "title": "Design mid-game adaptive pacing system with scaled challenges",
@@ -123,7 +156,7 @@
                 "priority": "high",
                 "type": "feature",
                 "createdAt": "2026-03-14T14:40:36.657Z",
-                "description": "Critic identifies mid-game plateau once players have 10+ kittens and all buildings. Decision density drops. Kittens Game solves with trade routes/religion, Cookie Clicker with garden/stock market minigames, NGU IDLE with adventure zones. KKC needs mechanics introducing NEW tension scaled to colony size: rival colonies, seasonal crises, kitten council politics, or NPC trade/diplomacy.",
+                "description": "Critic identifies mid-game plateau once players have 10+ kittens and all buildings. Decision density drops.",
                 "acceptanceCriteria": [
                     "Design doc describes at least 2 new mid-game mechanics unlocking at colony milestones",
                     "Each mechanic introduces new player decisions not present in early game",
@@ -134,7 +167,9 @@
                 "source": "strategist",
                 "claimedAt": "2026-03-14T14:41:51.449Z",
                 "completedAt": "2026-03-14T14:42:29.800Z",
-                "outputPath": "agents/designer/output/latest-design.md"
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testVerdict": "APPROVED",
+                "testedAt": "2026-03-14T17:03:00.000Z"
             },
             {
                 "id": "TASK-147",
@@ -143,7 +178,7 @@
                 "priority": "medium",
                 "type": "feature",
                 "createdAt": "2026-03-14T15:40:23.885Z",
-                "description": "Critic review notes colony events are text-only. Golden cookie moments and discoveries lack visual punch. Cookie Clicker uses animated golden cookies; Kittens Game uses event banners with icons. KKC should have simple illustrated event cards - a small modal or toast with an icon/emoji scene + flavor text + reward summary. This makes discovery moments feel special and screenshot-worthy. Keep it CSS-driven, no heavy sprites.",
+                "description": "Critic review notes colony events are text-only. Golden cookie moments and discoveries lack visual punch.",
                 "acceptanceCriteria": [
                     "Design doc defines event card layout (icon area, title, flavor text, reward summary)",
                     "At least 3 event card variants designed (discovery, golden event, crisis)",
@@ -154,10 +189,10 @@
                 "source": "strategist",
                 "claimedAt": "2026-03-14T15:41:59.501Z",
                 "completedAt": "2026-03-14T15:42:43.516Z",
-                "outputPath": "agents/designer/output/latest-design.md"
-            }
-        ],
-        "done": [
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testVerdict": "APPROVED",
+                "testedAt": "2026-03-14T17:03:00.000Z"
+            },
             {
                 "id": "TASK-137",
                 "title": "Polish layout gaps: tighten card spacing and remove orphan whitespace",
@@ -340,7 +375,7 @@
                 "createdAt": "2026-03-12T20:24:24.696Z",
                 "description": "When a player returns after being away, show a summary modal: resources earned, kittens born/died, milestones unlocked, streak count. Cookie Clicker and NGU IDLE both do this well - creates a dopamine hit on return and reinforces idle loop value. Integrate with existing offline progress system. Modal dismisses on click/tap, mobile-friendly.\n\n[REJECTED 2026-03-14T09:22:53.535Z] Missing 5-minute offline gating and missing born/died population deltas in welcome-back summary.",
                 "acceptanceCriteria": [
-                    "Summary modal appears on load if offline time  minutes",
+                    "Summary modal appears on load if offline time >= 5 minutes",
                     "Shows resource gains and population changes during absence",
                     "Displays current streak count",
                     "Modal dismisses on click/tap",
@@ -350,7 +385,6 @@
                 ],
                 "source": "strategist",
                 "testVerdict": "APPROVED",
-                "reworkNote": "Superseded by TASK-139 (offline modal narrative). Remove if TASK-139 ships.",
                 "claimedAt": "2026-03-14T14:46:26.852Z",
                 "completedAt": "2026-03-14T14:48:37.224Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
@@ -374,7 +408,6 @@
                 ],
                 "source": "orchestrator",
                 "testVerdict": "APPROVED",
-                "reworkNote": "CodeSmith used goalsEl instead of masteryPanel. Next attempt must match AC element names exactly.",
                 "claimedAt": "2026-03-14T15:16:24.649Z",
                 "completedAt": "2026-03-14T15:17:36.596Z",
                 "outputPath": "agents/developer/output/latest-code-changes.md",
@@ -456,23 +489,6 @@
                 "blockedReason": "Tier 5 infrastructure — priority stack violation. Focus on gameplay tasks first."
             },
             {
-                "id": "TASK-069",
-                "title": "Implement session performance metrics and play-time statistics panel",
-                "assignee": "developer",
-                "priority": "low",
-                "type": "feature",
-                "createdAt": "2026-03-12T21:24:22.583Z",
-                "description": "Completeness gap (7). Every polished incremental has a stats page — Cookie Clicker has detailed stats, Antimatter Dimensions tracks everything. KKC needs a Statistics tab showing: total play time, resources gathered lifetime, prestige count, kittens born/lost, faction events triggered, longest streak. TASK-049 exists but lacks specificity. This task supersedes it with concrete implementation scope. Use existing save data where possible. Dark-themed, scrollable list.",
-                "acceptanceCriteria": [
-                    "Statistics panel accessible from main UI with at least 8 tracked metrics",
-                    "Lifetime totals persist across prestige resets",
-                    "Panel renders correctly on mobile viewport (no horizontal scroll)",
-                    "Data loads from existing save structure without migration"
-                ],
-                "source": "strategist",
-                "blockedReason": "Tier 5 infrastructure — statistics/metrics panel is not gameplay."
-            },
-            {
                 "id": "TASK-064",
                 "title": "Add particle effects on prestige reset and milestone unlock",
                 "assignee": "developer",
@@ -494,7 +510,7 @@
     },
     "meta": {
         "totalCreated": 142,
-        "totalCompleted": 96,
+        "totalCompleted": 98,
         "pendingQuestion": null
     },
     "nextId": 149

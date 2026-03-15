@@ -2,9 +2,11 @@
   "timestamp": "2026-03-14T17:03:00.000Z",
   "iteration": 25,
   "cronHealth": {
-    "healthy": [
+    "healthy": [],
+    "failing": [],
+    "disabled": [
       "forge-oracle",
-      "forge-forgingleader-orchestrator",
+      "forge-forgeleader-orchestrator",
       "forge-architect",
       "forge-codesmith",
       "forge-gauntlet",
@@ -12,40 +14,29 @@
       "forge-watchdog",
       "forge-sentinel",
       "forge-strategist"
-    ],
-    "failing": [],
-    "disabled": []
+    ]
   },
   "pipelineHealth": {
-    "todo": 6,
+    "todo": 8,
     "claimed": 0,
-    "review": 2,
-    "done": 11,
-    "blocked": 5,
+    "review": 0,
+    "done": 13,
+    "blocked": 4,
     "staleTasks": [],
-    "status": "healthy"
+    "status": "idle"
   },
   "agentActivity": {
-    "lastCycleActive": [
-      "developer"
-    ],
-    "lastCycleSilent": [
-      "leader",
-      "designer",
-      "tester",
-      "critic",
-      "watchdog",
-      "sentinel",
-      "strategist"
-    ],
-    "errors": []
+    "lastCycleActive": [],
+    "lastCycleSilent": [],
+    "errors": [],
+    "note": "All crons idle post-ship. Last active cycle was iteration 25."
   },
   "convergence": {
     "currentScore": 9.2,
     "threshold": 9.0,
-    "consecutiveAbove": 2,
+    "consecutiveAbove": 3,
     "iteration": 25,
     "maxIterations": 50,
-    "status": "phase2-improving"
+    "status": "shipped"
   }
 }

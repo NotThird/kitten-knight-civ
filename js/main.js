@@ -12,12 +12,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const GAME_VERSION = '0.9.135';
   const LOG_MAX = 260; // cap persisted event log lines to keep saves/localStorage small + fast
   const SAVE_KEY = 'kittenKnightCiv';
-  const SAVE_BACKUP_PREFIX = `${SAVE_KEY}:backup:`;
-  const SAVE_BACKUP_META_KEY = `${SAVE_KEY}:backupMeta`;
-  const SAVE_DIRTY_KEY = `${SAVE_KEY}:dirty`;
-  const SAVE_BACKUP_SLOT_COUNT = 3;
-  const SAVE_BACKUP_MAX_BYTES = 4.8 * 1024 * 1024;
-  const SOUND_NUDGE_DISMISSED_KEY = 'kkc_sound_nudge_dismissed_v1';
 
   // --- Living Skill Registry (DCC-inspired) ─────────────────────────────────
   // Every micro-action is a skill. Skills are discovered organically and impact the simulation.
@@ -431,10 +425,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function legacyResearchMul(s){
-    ensureMasteryState(s);
     const base = legacyHas(s, 'lore_inkwell') ? 1.10 : 1.00;
-    const masteryMul = Math.max(1, Number(s?.mastery?.bonuses?.researchMul ?? 1));
-    return base * researchScienceMul(s) * eternityMandateMul(s, 'research') * masteryMul;
+    return base * researchScienceMul(s) * eternityMandateMul(s, 'research');
   }
 
   function legacyGuardOutputMul(s){
@@ -451,21 +443,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return base * researchPalisadeMul(s);
   }
 
-
-    const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
-    const sci = Math.max(0, Number(s?.res?.science ?? 0));
-    const builds = Math.max(0,
-      Number(s?.res?.huts ?? 0) +
-      Number(s?.res?.palisade ?? 0) * 1.5 +
-      Number(s?.res?.granaries ?? 0) * 2 +
-      Number(s?.res?.workshops ?? 0) * 3 +
-      Number(s?.res?.libraries ?? 0) * 4
-    );
-    const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
-    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s));
-    return Math.max(0, gained + legacyWarLedgerBonus(s));
-  }
-
   function performLegacyReset(){
     ensureLegacyState(state);
     const gain = computeLegacyShardGain(state);
@@ -474,7 +451,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const prior = structuredClone(state.legacy);
     const priorResearch = structuredClone(state.research ?? { unlocked:{}, activeBranch:'economy', doctrine:null });
     const priorEternity = structuredClone(state.eternity ?? { sigils:0, totalSigils:0, resets:0, upgrades:{}, mandate:'harmony', preserve:'balanced' });
-    const priorMastery = structuredClone(state.mastery ?? {});
     const keepFrac = legacyHas(state, 'lore_embers') ? 0.08 : 0;
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * keepFrac),
@@ -487,7 +463,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.legacy = prior;
     fresh.eternity = priorEternity;
-    fresh.mastery = priorMastery;
     fresh.research = priorResearch;
     fresh.legacy.shards += gain;
     fresh.legacy.totalShards += gain;
@@ -496,8 +471,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (legacyHas(fresh, 'lore_scribes')) {
       keep.science += 25;
     }
-    ensureMasteryState(fresh);
-    keep.science += Math.max(0, Number(fresh.mastery.bonuses.resetScienceBonus ?? 0));
 
     fresh.res.food += keep.food;
     fresh.res.wood += keep.wood;
@@ -508,7 +481,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ensureMilestonesState(state);
     ensureLegacyState(state);
     ensureEternityState(state);
-    ensureMasteryState(state);
     ensureResearchState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
@@ -567,64 +539,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
   }
 
-  function ensureMasteryState(s){
-    s.mastery = (s.mastery && typeof s.mastery === 'object') ? s.mastery : {};
-    s.mastery.unlocked = !!s.mastery.unlocked;
-    s.mastery.completed = (s.mastery.completed && typeof s.mastery.completed === 'object') ? s.mastery.completed : {};
-    s.mastery.choices = (s.mastery.choices && typeof s.mastery.choices === 'object') ? s.mastery.choices : {};
-    s.mastery.bonuses = (s.mastery.bonuses && typeof s.mastery.bonuses === 'object') ? s.mastery.bonuses : {};
-    for (const id of ['shard_hoarder', 'cycle_keeper', 'scholar_house']) {
-      s.mastery.completed[id] = !!s.mastery.completed[id];
-      const choice = String(s.mastery.choices[id] ?? '');
-      s.mastery.choices[id] = (choice === 'A' || choice === 'B') ? choice : '';
-    }
-    s.mastery.bonuses.legacyGainMul = Math.max(1, Number(s.mastery.bonuses.legacyGainMul ?? 1) || 1);
-    s.mastery.bonuses.legacyFlatBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.legacyFlatBonus ?? 0) || 0));
-    s.mastery.bonuses.eternityGainMul = Math.max(1, Number(s.mastery.bonuses.eternityGainMul ?? 1) || 1);
-    s.mastery.bonuses.researchMul = Math.max(1, Number(s.mastery.bonuses.researchMul ?? 1) || 1);
-    s.mastery.bonuses.resetScienceBonus = Math.max(0, Math.floor(Number(s.mastery.bonuses.resetScienceBonus ?? 0) || 0));
-  }
-
-  function masteryGoalDefs(){
-    return [
-      { id:'shard_hoarder', name:'Shard Hoarder', cur: Math.max(0, Number(state?.legacy?.totalShards ?? 0)), req:120, rewardA:'+15% Legacy shard gains', rewardB:'+1 flat shard per Legacy reset' },
-      { id:'cycle_keeper', name:'Cycle Keeper', cur: Math.max(0, Number(state?.eternity?.resets ?? 0)), req:6, rewardA:'+15% Sigils per Eternity reset', rewardB:'+20 science on each prestige reset' },
-      { id:'scholar_house', name:'Scholar House', cur: Object.values(state?.research?.unlocked ?? {}).filter(Boolean).length, req:12, rewardA:'+10% research output', rewardB:'+20 science on each prestige reset' },
-    ];
-  }
-
-  function masteryVisible(s){
-    return Math.max(0, Number(s?.eternity?.resets ?? 0)) >= 2;
-  }
-
-  function applyMasteryChoice(goalId, choice){
-    ensureMasteryState(state);
-    const pick = String(choice ?? '');
-    if (pick !== 'A' && pick !== 'B') return;
-    if (state.mastery.choices[goalId]) return;
-    const defs = masteryGoalDefs();
-    const goal = defs.find(g => g.id === goalId);
-    if (!goal) return;
-    if (goal.cur < goal.req) return;
-    state.mastery.completed[goalId] = true;
-    state.mastery.choices[goalId] = pick;
-    if (goalId === 'shard_hoarder') {
-      if (pick === 'A') state.mastery.bonuses.legacyGainMul = Math.max(1, Number(state.mastery.bonuses.legacyGainMul ?? 1) * 1.15);
-      if (pick === 'B') state.mastery.bonuses.legacyFlatBonus = Math.max(0, Number(state.mastery.bonuses.legacyFlatBonus ?? 0)) + 1;
-    }
-    if (goalId === 'cycle_keeper') {
-      if (pick === 'A') state.mastery.bonuses.eternityGainMul = Math.max(1, Number(state.mastery.bonuses.eternityGainMul ?? 1) * 1.15);
-      if (pick === 'B') state.mastery.bonuses.resetScienceBonus = Math.max(0, Number(state.mastery.bonuses.resetScienceBonus ?? 0)) + 20;
-    }
-    if (goalId === 'scholar_house') {
-      if (pick === 'A') state.mastery.bonuses.researchMul = Math.max(1, Number(state.mastery.bonuses.researchMul ?? 1) * 1.10);
-      if (pick === 'B') state.mastery.bonuses.resetScienceBonus = Math.max(0, Number(state.mastery.bonuses.resetScienceBonus ?? 0)) + 20;
-    }
-    log(`Constellation reward claimed: ${goal.name} [${pick}].`);
-    save();
-    render();
-  }
-
   function eternityUpgradeRank(s, id){
     ensureEternityState(s);
     const cfg = ETERNITY_UPGRADES.find(u => u.id === id);
@@ -671,7 +585,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   }
 
   function computeEternitySigilGain(s){
-    ensureMasteryState(s);
     const gate = eternityGateStatus(s);
     if (!gate.ok) return 0;
     const resets = Math.max(0, Number(s.legacy?.resets ?? 0));
@@ -679,12 +592,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const techs = Object.values(s.research?.unlocked ?? {}).filter(Boolean).length;
     const epochRank = eternityUpgradeRank(s, 'et_epoch_engine');
     const base = Math.floor(Math.sqrt(shards) / 3 + resets * 0.6 + techs * 0.35);
-    const mul = (1 + (0.08 * epochRank)) * Math.max(1, Number(s?.mastery?.bonuses?.eternityGainMul ?? 1));
+    const mul = 1 + (0.08 * epochRank);
     return Math.max(0, Math.floor(base * mul));
   }
 
   function computeLegacyShardGain(s){
-    ensureMasteryState(s);
     const pop = Math.max(0, Number(s?.kittens?.length ?? 0));
     const sci = Math.max(0, Number(s?.res?.science ?? 0));
     const builds = Math.max(0,
@@ -696,10 +608,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     );
     const runScore = (pop * 35) + (sci * 0.25) + (builds * 80);
     const etMul = eternityHas(s, 'et_sigil_lens') ? 1.12 : 1.00;
-    const masteryMul = Math.max(1, Number(s?.mastery?.bonuses?.legacyGainMul ?? 1));
-    const masteryFlat = Math.max(0, Number(s?.mastery?.bonuses?.legacyFlatBonus ?? 0));
-    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s) * etMul * masteryMul);
-    return Math.max(0, gained + legacyWarLedgerBonus(s) + masteryFlat);
+    const gained = Math.floor(Math.log10(1 + Math.max(0, runScore)) * 6 * researchLegacyShardMul(s) * etMul);
+    return Math.max(0, gained + legacyWarLedgerBonus(s));
   }
 
   function performEternityReset(){
@@ -711,7 +621,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!gate.ok || gain <= 0) return { ok:false, reason:'locked' };
 
     const priorEt = structuredClone(state.eternity);
-    const priorMastery = structuredClone(state.mastery ?? {});
     const pkg = PRESERVATION_PACKAGES.find(p => p.id === priorEt.preserve) ?? PRESERVATION_PACKAGES[0];
     const keep = {
       food: Math.floor(Math.max(0, Number(state?.res?.food ?? 0)) * pkg.keep.food),
@@ -723,12 +632,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const fresh = defaultState();
     fresh.sound = structuredClone(state.sound ?? { enabled:false });
     fresh.eternity = priorEt;
-    fresh.mastery = priorMastery;
     fresh.eternity.sigils += gain;
     fresh.eternity.totalSigils += gain;
     fresh.eternity.resets += 1;
-    ensureMasteryState(fresh);
-    keep.science += Math.max(0, Number(fresh.mastery.bonuses.resetScienceBonus ?? 0));
     fresh.res.food += keep.food;
     fresh.res.wood += keep.wood;
     fresh.res.science += keep.science;
@@ -739,7 +645,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ensureLegacyState(state);
     ensureResearchState(state);
     ensureEternityState(state);
-    ensureMasteryState(state);
     ensureAudioState(state);
     playSfx('legacy_reset');
     save();
@@ -775,65 +680,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   function ensureAudioState(s){
     s.sound = (s.sound && typeof s.sound === 'object') ? s.sound : { enabled:false };
     s.sound.enabled = !!s.sound.enabled;
-  }
-
-  const soundNudgeRuntime = {
-    dismissed: false,
-    shown: false,
-    dismissedStored: false,
-    activeSeconds: 0,
-  };
-
-  function hasDismissedSoundNudge(){
-    try {
-      return localStorage.getItem(SOUND_NUDGE_DISMISSED_KEY) === '1';
-    } catch {
-      return false;
-    }
-  }
-
-  function persistSoundNudgeDismissed(){
-    soundNudgeRuntime.dismissed = true;
-    soundNudgeRuntime.shown = false;
-    soundNudgeRuntime.dismissedStored = true;
-    try { localStorage.setItem(SOUND_NUDGE_DISMISSED_KEY, '1'); } catch {}
-  }
-
-  function maybeRenderSoundNudge(){
-    let host = document.getElementById('soundNudgeHost');
-    const soundBtn = document.getElementById('btnSound');
-
-    if (!host) {
-      host = document.createElement('div');
-      host.id = 'soundNudgeHost';
-      host.className = 'sound-nudge-host';
-      document.body.appendChild(host);
-    }
-
-    ensureAudioState(state);
-    if (!soundBtn || soundNudgeRuntime.dismissed || state.sound.enabled || soundNudgeRuntime.activeSeconds < 30) {
-      host.innerHTML = '';
-      soundNudgeRuntime.shown = false;
-      return;
-    }
-
-    if (!soundNudgeRuntime.shown) {
-      host.innerHTML = '<div class="sound-nudge" role="status" aria-live="polite"><div class="title">Sound adds life to your colony</div><div class="desc">Tap Sound to enable cozy colony SFX.</div><button class="dismiss" id="btnSoundNudgeDismiss" type="button" aria-label="Dismiss sound tip">×</button></div>';
-      const dismissBtn = host.querySelector('#btnSoundNudgeDismiss');
-      if (dismissBtn) dismissBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        persistSoundNudgeDismissed();
-        host.innerHTML = '';
-      });
-      soundNudgeRuntime.shown = true;
-    }
-
-    const rect = soundBtn.getBoundingClientRect();
-    const top = Math.round(rect.bottom + 8);
-    const right = Math.max(8, Math.round(window.innerWidth - rect.right));
-    host.style.top = `${top}px`;
-    host.style.right = `${right}px`;
   }
 
   function ensureActivePlayState(s){
@@ -1030,31 +876,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       milestone:     [{ wave:'sine',     startHz:740, endHz:1240, duration:0.20, attack:0.003, release:0.15, volume:0.080 }],
       raid:          [{ wave:'sawtooth', startHz:240, endHz:120, duration:0.22, attack:0.001, release:0.18, volume:0.080 }],
       legacy_reset:  [{ wave:'triangle', startHz:300, endHz:900, duration:0.28, attack:0.004, release:0.20, volume:0.090 }],
-      society_rivalry:[
-        { wave:'sawtooth', startHz:220, endHz:185, duration:0.17, attack:0.002, release:0.10, volume:0.060 },
-        { wave:'square',   startHz:311, endHz:274, duration:0.16, attack:0.002, release:0.10, volume:0.048 },
-      ],
-      society_truce: [
-        { wave:'triangle', startHz:349, endHz:392, duration:0.12, attack:0.002, release:0.10, volume:0.048 },
-        { wave:'sine',     startHz:440, endHz:523, duration:0.14, attack:0.003, release:0.11, volume:0.045 },
-      ],
-      society_reconnect: [
-        { wave:'sine',     startHz:392, endHz:523, duration:0.10, attack:0.002, release:0.09, volume:0.044 },
-        { wave:'triangle', startHz:523, endHz:659, duration:0.12, attack:0.003, release:0.10, volume:0.042 },
-      ],
-      society_ritual: [
-        { wave:'triangle', startHz:988, endHz:1319, duration:0.20, attack:0.003, release:0.16, volume:0.050 },
-        { wave:'sine',     startHz:1319, endHz:1568, duration:0.16, attack:0.003, release:0.14, volume:0.038 },
-      ],
     };
 
     const spec = bank[String(type)] ?? bank.click;
     for (const tone of spec) playTone(ctx, tone);
-  }
-
-  function playSocietySfxFor(stateRef, type){
-    if (stateRef !== state) return;
-    playSfx(type);
   }
 
   // UI-only resource FX (non-persistent): gain fly-ups + scarcity colors.
@@ -1139,15 +964,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return 'resource-ok';
   }
 
-  function significantFlyupThreshold(key){
-    if (key === 'Food') return 12;
-    if (key === 'Wood') return 8;
-    if (key === 'Science') return 5;
-    if (key === 'Tools') return 2;
-    if (key === 'Jerky') return 2;
-    return 10;
-  }
-
   function updateResourceFlyups(s){
     const nowMs = Date.now();
     const snap = currentResourceSnapshot(s);
@@ -1161,8 +977,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const delta = cur - prev;
       if (delta > 0.095) {
         const arr = resourceUiFx.popups[key] ?? [];
-        const significant = delta >= significantFlyupThreshold(key);
-        arr.push({ amount: delta, until: nowMs + (significant ? 1700 : 1200), significant });
+        arr.push({ amount: delta, until: nowMs + 1200 });
         if (arr.length > 4) arr.splice(0, arr.length - 4);
         resourceUiFx.popups[key] = arr;
       }
@@ -1268,66 +1083,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       let ok = false;
       try { ok = !!def.when(s); } catch (_) { ok = false; }
       if (ok) unlockMilestone(s, def);
-    }
-  }
-
-  const sessionMilestoneDefs = [
-    { id:'session-5m', sec:5 * 60, title:'Settling In', desc:'Session milestone: +35 food, +20 wood.', tier:'spark', reward:{ food:35, wood:20 } },
-    { id:'session-15m', sec:15 * 60, title:'Steady Rhythm', desc:'Session milestone: +70 food, +40 wood, +18 science.', tier:'surge', reward:{ food:70, wood:40, science:18 } },
-    { id:'session-30m', sec:30 * 60, title:'Colony Momentum', desc:'Session milestone: +130 food, +80 wood, +40 science, +18 tools.', tier:'saga', reward:{ food:130, wood:80, science:40, tools:18 } },
-    { id:'session-60m', sec:60 * 60, title:'Unbroken Watch', desc:'Session milestone: +240 food, +160 wood, +95 science, +42 tools.', tier:'mythic', reward:{ food:240, wood:160, science:95, tools:42 } },
-  ];
-
-  function ensureSessionMilestonesState(s){
-    const nowT = Number(s?.t ?? 0) || 0;
-    s._sessionMilestones = (s._sessionMilestones && typeof s._sessionMilestones === 'object') ? s._sessionMilestones : {};
-    if (!Number.isFinite(Number(s._sessionMilestones.startedAt ?? NaN))) s._sessionMilestones.startedAt = nowT;
-    s._sessionMilestones.unlocked = (s._sessionMilestones.unlocked && typeof s._sessionMilestones.unlocked === 'object') ? s._sessionMilestones.unlocked : {};
-    s._sessionMilestones.elapsedSec = Math.max(0, nowT - Number(s._sessionMilestones.startedAt ?? nowT));
-  }
-
-  function applySessionMilestoneReward(s, reward){
-    const r = (reward && typeof reward === 'object') ? reward : {};
-    for (const key of ['food','wood','science','tools']) {
-      const add = Math.max(0, Number(r[key] ?? 0) || 0);
-      if (add <= 0) continue;
-      s.res[key] = Math.max(0, Number(s?.res?.[key] ?? 0) + add);
-    }
-  }
-
-  function unlockSessionMilestone(s, def){
-    ensureSessionMilestonesState(s);
-    const id = String(def?.id ?? '');
-    if (!id || s._sessionMilestones.unlocked[id]) return false;
-
-    s._sessionMilestones.unlocked[id] = Number(s?.t ?? 0) || 0;
-    applySessionMilestoneReward(s, def?.reward);
-
-    const title = String(def?.title ?? 'Session Milestone');
-    const desc = String(def?.desc ?? '');
-    feed(`${title}: ${desc}`);
-    playSfx('milestone');
-
-    const nowMs = Date.now();
-    milestoneUiFx.active.push({
-      id,
-      title,
-      desc,
-      tier: String(def?.tier ?? 'spark'),
-      until: nowMs + milestoneDurationMsForTier(String(def?.tier ?? 'spark')),
-    });
-    if (milestoneUiFx.active.length > 4) milestoneUiFx.active.splice(0, milestoneUiFx.active.length - 4);
-
-    return true;
-  }
-
-  function tickSessionMilestones(s){
-    ensureSessionMilestonesState(s);
-    const elapsedSec = Number(s?._sessionMilestones?.elapsedSec ?? 0) || 0;
-
-    for (const def of sessionMilestoneDefs) {
-      if (s._sessionMilestones.unlocked?.[def.id]) continue;
-      if (elapsedSec >= Number(def?.sec ?? Infinity)) unlockSessionMilestone(s, def);
     }
   }
 
@@ -1749,7 +1504,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
       if (newBand === 'close') {
         feedTo(s, `Relationship: ${nmA} and ${nmB} reconnected.`);
-        playSocietySfxFor(s, 'society_reconnect');
         s._trendEvents = Array.isArray(s._trendEvents) ? s._trendEvents : [];
         s._trendEvents.push({ t: nowT, kind:'rel', label:'reconnect', color:'rgba(52,211,153,.14)' });
       }
@@ -2390,7 +2144,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         if (kind === 'story') s.feed.push(`[${fmt(s.t)}] Ritual: a story-circle spreads — warmth and care feel briefly easier. (${who})`);
         if (kind === 'oath') s.feed.push(`[${fmt(s.t)}] Ritual: a work-oath takes hold — productivity tightens, leisure chills. (${who})`);
-        playSocietySfxFor(s, 'society_ritual');
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2425,7 +2178,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         s._coterieRelations[key] = { status:'truce', until: nowT + 90 };
         s.feed = Array.isArray(s.feed) ? s.feed : [];
         s.feed.push(`[${fmt(s.t)}] Truce: rival circles cool their tempers for a while.`);
-        playSocietySfxFor(s, 'society_truce');
         const FEED_MAX = 220;
         if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2483,7 +2235,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           const whoB = (strict.names ?? []).slice(0, 2).join(', ') + ((strict.names?.length ?? 0) > 2 ? '�' : '');
           s.feed = Array.isArray(s.feed) ? s.feed : [];
           s.feed.push(`[${fmt(s.t)}] Rivalry: circles clash � the mutual-aid coterie snubs the strict circle. (${whoA} ? ${whoB})`);
-          playSocietySfxFor(s, 'society_rivalry');
           const FEED_MAX = 220;
           if (s.feed.length > FEED_MAX) s.feed.splice(0, s.feed.length - FEED_MAX);
 
@@ -2532,16 +2283,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return { id: crypto.randomUUID?.() ?? String(Math.random()), enabled:true, name, cond, act };
   }
 
-  const hadDirtySession = (() => {
-    try { return localStorage.getItem(SAVE_DIRTY_KEY) === '1'; }
-    catch { return false; }
-  })();
-
   let state = load() ?? defaultState();
   ensureMilestonesState(state);
   ensureLegacyState(state);
   ensureEternityState(state);
-  ensureMasteryState(state);
   ensureResearchState(state);
   ensureAudioState(state);
   ensureActivePlayState(state);
@@ -2556,7 +2301,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const OFFLINE_CAP_SEC = 24 * 60 * 60;
   const OFFLINE_KNEE_SEC = 4 * 60 * 60;
   const OFFLINE_STREAK_MIN_AWAY_SEC = 2 * 60;
-  const OFFLINE_SUMMARY_MIN_AWAY_SEC = 5 * 60;
   const _lastTs = Number(state?.meta?.lastTs ?? 0) || 0;
   const _offlineSecRaw = _lastTs ? Math.max(0, (Date.now() - _lastTs) / 1000) : 0;
   state._offlinePending = Math.min(OFFLINE_CAP_SEC, _offlineSecRaw);
@@ -6805,7 +6549,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
-    tickSessionMilestones(state);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
@@ -6832,12 +6575,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
     }
 
-    // Autosave (60s) + rotating backup snapshot.
+    // Autosave
     state._saveTimer = (state._saveTimer ?? 0) + dt;
-    if (state._saveTimer >= 60) {
-      state._saveTimer = 0;
-      save({ backup: true });
-    }
+    if (state._saveTimer >= 2) { state._saveTimer = 0; save(); }
   }
 
   // --- Offline gains (incremental QoL)
@@ -6882,7 +6622,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const rulesEl = el('rules');
   const logEl = el('log');
   const goalsEl = el('goals');
-  const masteryPanelEl = el('masteryPanel');
   const advisorEl = el('advisor');
   const govLogEl = el('govlog');
   const councilPanelEl = el('council');
@@ -6907,91 +6646,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   const advancedControlsEl = el('advancedControls');
   const feedEl = el('feed');
   const tankEl = el('tank');
-  const tankLegendEl = el('tankLegend');
   const trendsEl = el('trends');  const popTrendsEl = el('popTrends');  const socTrendsEl = el('socTrends');  const socLegendEl = el('socLegend');  const socHintEl = el('socHint');  const culTrendsEl = el('culTrends');
   const trendTabRailEl = el('trendTabRail');
   const trendTabButtons = Array.from(document.querySelectorAll('[data-trend-tab]'));
   const trendPanels = Array.from(document.querySelectorAll('[data-trend-panel]'));
   const trendsLegendEl = el('trendsLegend');
   const mlHintEl = el('mlHint');
-
-  function showCrashRecoveryModal(){
-    const backup = readNewestBackup();
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.background = 'rgba(4, 8, 12, 0.74)';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.zIndex = '9999';
-
-    const panel = document.createElement('div');
-    panel.style.width = 'min(560px, 92vw)';
-    panel.style.background = '#10151c';
-    panel.style.border = '1px solid rgba(124, 205, 255, 0.36)';
-    panel.style.borderRadius = '14px';
-    panel.style.padding = '18px';
-    panel.style.boxShadow = '0 16px 44px rgba(0, 0, 0, 0.55)';
-    panel.innerHTML = [
-      '<h3 style="margin:0 0 8px 0;color:#cce6ff;font-size:1.05rem;">Recovery Available</h3>',
-      '<p style="margin:0 0 8px 0;color:#d8e6f7;line-height:1.45;">The previous session appears to have ended unexpectedly.</p>',
-      `<p style="margin:0 0 14px 0;color:#9fb5ca;font-size:0.9rem;">Backup found: ${backup ? 'yes' : 'no'}${backup?.at ? ` • ${new Date(backup.at).toLocaleString()}` : ''}</p>`,
-      '<div style="display:flex;flex-wrap:wrap;gap:8px;">',
-      `<button class="btn" data-recovery="restore" ${backup ? '' : 'disabled'}>Restore Backup</button>`,
-      '<button class="btn" data-recovery="continue">Continue Current Save</button>',
-      '<button class="btn" data-recovery="fresh">Fresh Start</button>',
-      '</div>'
-    ].join('');
-
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-
-    panel.addEventListener('click', (e) => {
-      const btn = e.target?.closest?.('button[data-recovery]');
-      if (!btn) return;
-      const action = String(btn.dataset.recovery || '');
-
-      if (action === 'restore') {
-        if (!backup?.raw) return;
-        try {
-          localStorage.setItem(SAVE_KEY, backup.raw);
-          const restored = load();
-          if (restored) {
-            state = restored;
-            ensureMilestonesState(state);
-            ensureLegacyState(state);
-            ensureEternityState(state);
-            ensureMasteryState(state);
-            ensureResearchState(state);
-            ensureAudioState(state);
-            ensureActivePlayState(state);
-            log('Recovery: restored latest rotating backup.');
-          }
-        } catch {}
-      } else if (action === 'fresh') {
-        if (!confirm('Start fresh? This clears current save and backups.')) return;
-        try { localStorage.removeItem(SAVE_KEY); } catch {}
-        clearBackupSaves();
-        state = defaultState();
-        ensureMilestonesState(state);
-        ensureLegacyState(state);
-        ensureEternityState(state);
-        ensureMasteryState(state);
-        ensureResearchState(state);
-        ensureAudioState(state);
-        ensureActivePlayState(state);
-        log('Recovery: started a fresh colony.');
-      } else {
-        log('Recovery: continued with current save.');
-      }
-
-      clearDirtyOnCleanUnload();
-      overlay.remove();
-      render();
-      save();
-    });
-  }
 
   function ensureCurator(s){
     s.director = s.director ?? {};
@@ -7766,7 +7426,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function openOfflineModal(summary){
     if (!offlineModalEl || !offlineSubEl || !offlineBodyEl) return;
-
     const away = Number(summary?.away ?? 0) || 0;
     const sim = Number(summary?.simulated ?? 0) || 0;
     const capped = !!summary?.capped;
@@ -7774,71 +7433,17 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const streak = Math.max(0, Number(summary?.streak ?? 0) || 0);
     const streakBonusPct = Math.max(0, Number(summary?.streakBonusPct ?? 0) || 0);
     const tier = String(summary?.tier ?? 'Welcome back');
-    const comebackMul = Math.max(1, Number(summary?.comebackMul ?? 1) || 1);
-    const catchUpBonusPct = Math.max(0, Number(summary?.catchUpBonusPct ?? 0) || 0);
-    const popBefore = Math.max(0, Math.floor(Number(summary?.popBefore ?? 0) || 0));
-    const popAfter = Math.max(0, Math.floor(Number(summary?.popAfter ?? popBefore) || popBefore));
-    const popBorn = Math.max(0, Math.floor(Number(summary?.popBorn ?? 0) || 0));
-    const popDied = Math.max(0, Math.floor(Number(summary?.popDied ?? 0) || 0));
-
-    const gainRows = [];
-    let totalGain = 0;
-    for (const key of ['food','jerky','wood','science','tools']) {
-      const v = Number(gains[key] ?? 0);
-      if (v > 0.001) {
-        gainRows.push({ key, value: v });
-        totalGain += v;
-      }
-    }
-    gainRows.sort((a, b) => b.value - a.value);
-
-    const top = gainRows.length > 0 ? gainRows[0] : null;
-    const quality = totalGain >= 250 ? 'Huge haul' : totalGain >= 75 ? 'Solid gains' : totalGain > 0 ? 'Small gains' : 'Quiet return';
-    const longReturn = away >= (60 * 60);
-
-    const topKey = String(top?.key ?? '');
-    const flavorLine = !longReturn
-      ? ''
-      : (topKey === 'science')
-        ? 'The archive lanterns stayed lit while you were gone; fresh theories now crowd the scribe tables.'
-        : ((topKey === 'wood' || topKey === 'tools')
-          ? 'Workshops rang through the night; beams were set and tool racks filled for the next building push.'
-          : ((topKey === 'food' || topKey === 'jerky')
-            ? 'Storehouses swelled and the nursery warmed; the colony is ready to welcome new paws.'
-            : 'Your campfires held steady and the colony kept watch, turning quiet hours into momentum.'));
-
-    offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at ${(OFFLINE_RATE * 100).toFixed(0)}% base x${comebackMul.toFixed(2)} comeback${catchUpBonusPct > 0 ? ` (+${catchUpBonusPct.toFixed(0)}% catch-up)` : ''}${capped ? ' (capped at 24h)' : ''}.`;
-
-    const streakLine = `Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}`;
-    const summaryLine = top
-      ? `Top gain: ${top.key} +${fmt(top.value)} | Total gained: ${fmt(totalGain)} (${quality})`
-      : 'No meaningful gains this time.';
-    const populationLine = `Population: ${popBefore} -> ${popAfter} | Born +${popBorn} | Died ${popDied > 0 ? `-${popDied}` : '0'}`;
-
-    const breakdown = gainRows.length
-      ? gainRows
-          .slice(0, 5)
-          .map((row, idx) => `<div>${idx + 1}. ${row.key}: +${fmt(row.value)}</div>`)
-          .join('')
-      : '<div>-</div>';
-
-    const cardEl = offlineModalEl.querySelector('.modalCard');
-    if (cardEl) {
-      cardEl.classList.remove('offline-enter');
-      void cardEl.offsetWidth;
-      cardEl.classList.add('offline-enter');
+    const items = [];
+    for (const k of ['food','jerky','wood','science','tools']) {
+      const v = Number(gains[k] ?? 0);
+      if (v > 0.001) items.push(`${k}: +${fmt(v)}`);
     }
 
+    offlineSubEl.textContent = `${tier} - Away ${fmt(away)}s. Effective sim ${fmt(sim)}s at 50% base rate${capped ? ' (capped at 24h)' : ''}.`;
     offlineBodyEl.innerHTML = [
-      `<div><strong>Welcome-back summary</strong></div>`,
-      longReturn && flavorLine ? `<div class="offline-narrative">${escapeHtml(flavorLine)}</div>` : '',
-      `<div>${summaryLine}</div>`,
-      `<div>${populationLine}</div>`,
-      `<div>${streakLine}</div>`,
-      '<div style="height:8px"></div>',
-      '<div><strong>Resource breakdown</strong></div>',
-      breakdown
-    ].filter(Boolean).join('');
+      `<div>Daily return streak: ${streak} day${streak === 1 ? '' : 's'}${streakBonusPct > 0 ? ` (+${streakBonusPct}% bonus)` : ''}</div>`,
+      items.length ? items.map((line) => `<div>${line}</div>`).join('') : '<div>No meaningful gains this time.</div>'
+    ].join('<div style="height:8px"></div>');
 
     offlineModalEl.classList.remove('hidden');
   }
@@ -9616,7 +9221,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       soundBtn.classList.toggle('active', on);
       soundBtn.title = on ? 'Sound effects enabled' : 'Toggle sound effects (default off)';
     }
-    maybeRenderSoundNudge();
 
     const avgEff = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+efficiency(state,k),0) / state.kittens.length) : 1;
     const avgHealth = state.kittens.length ? (state.kittens.reduce((acc,k)=>acc+clamp01(Number(k.health ?? 1)),0) / state.kittens.length) : 1;
@@ -10010,9 +9614,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'Food Cap': { icon: '📦', tone: 'food' },
       'Spoilage': { icon: '🧪', tone: 'threat' },
       'Edible/Kitten': { icon: '🐾', tone: 'food' },
-      'Autonomy': { icon: '🐈', tone: 'science' },
-      'Focus-fit': { icon: '😺', tone: 'science' },
-      'Commitment': { icon: '🛡️', tone: 'tools' },
       'Legacy Shards': { icon: '💠', tone: 'legacy' },
       'Legacy Preview': { icon: '✨', tone: 'legacy' },
     };
@@ -10109,10 +9710,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       );
       const pulseClass = statPulseClass(k, pulseMetric);
       const flyups = (resourceUiFx.popups?.[k] ?? []);
-      const flyupHtml = flyups.map((p, i) => {
-        const sigClass = p?.significant ? ' significant' : '';
-        return `<span class="resource-flyup${sigClass}" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`;
-      }).join('');
+      const flyupHtml = flyups.map((p, i) => `<span class="resource-flyup" style="--flyup-index:${i}">+${escapeHtml(fmt(Number(p.amount ?? 0)))}</span>`).join('');
       const labelParts = statDisplayParts(k);
       const iconPulseClass = (isResource && flyups.length > 0 && labelParts.icon) ? ' icon-pulse' : '';
       const labelHtml = labelParts.icon
@@ -10436,36 +10034,19 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       `Raid at threat ≥ 100.` + planLine;
 
     // Goals that actually matter
-    ensureMasteryState(state);
-    if (masteryVisible(state)) {
-      state.mastery.unlocked = true;
-      const cards = masteryGoalDefs().map((g) => {
-        const pct = Math.max(0, Math.min(1, (g.req > 0 ? g.cur / g.req : 0)));
-        const done = pct >= 1;
-        const picked = String(state.mastery.choices[g.id] ?? '');
-        const rewardRow = done && !picked
-          ? `<div class="row" style="gap:6px; margin-top:6px"><button class="btn" data-mastery-choice="${g.id}:A">A ${escapeHtml(g.rewardA)}</button><button class="btn" data-mastery-choice="${g.id}:B">B ${escapeHtml(g.rewardB)}</button></div>`
-          : `<div class="small" style="margin-top:6px; opacity:.85">${picked ? `Reward chosen: ${picked}` : `Rewards: A ${g.rewardA} | B ${g.rewardB}`}</div>`;
-        return `<div class="tier-secondary-block" style="padding:8px; border-radius:10px; margin-bottom:8px"><div class="small"><b>${escapeHtml(g.name)}</b> ${done ? '<span class="tag good">Complete</span>' : ''}</div><div class="small" style="margin-top:4px">${fmt(g.cur)} / ${fmt(g.req)}</div><div class="bar" style="margin-top:6px"><div style="width:${Math.round(pct*100)}%"></div></div>${rewardRow}</div>`;
-      }).join('');
-      if (masteryPanelEl) masteryPanelEl.innerHTML = cards;
-      goalsEl.textContent = 'Constellation Mastery active: check the panel below Eternity Cycle.';
-    } else {
-      if (masteryPanelEl) masteryPanelEl.textContent = 'Unlocks after 2 Eternity resets.';
-      const goals = [
-        { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
-        { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
-        { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
-        { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
-        { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
-        { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
-        { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
-        { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
-        { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
-        { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
-      ];
-      goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
-    }
+    const goals = [
+      { ok: foodPerKitten >= targets.foodPerKitten, txt:`Stabilize food/kitten ≥ ${targets.foodPerKitten} (now ${fmt(foodPerKitten)})` },
+      { ok: state.res.warmth >= targets.warmth, txt:`Maintain warmth ≥ ${targets.warmth} (now ${fmt(state.res.warmth)})` },
+      { ok: state.res.threat <= targets.maxThreat, txt:`Keep threat ≤ ${targets.maxThreat} (now ${fmt(state.res.threat)})` },
+      { ok: state.kittens.length < housingCap(state), txt:`Stay under housing cap (${state.kittens.length}/${housingCap(state)})` },
+      { ok: state.res.science >= 200, txt:`Reach 200 science for Workshop (now ${fmt(state.res.science)})` },
+      { ok: (state.res.tools ?? 0) >= state.kittens.length * 10, txt:`Build Tools ≥ 10×pop (now ${fmt(state.res.tools ?? 0)}/${(state.kittens.length*10).toFixed(0)})` },
+      { ok: (state.res.jerky ?? 0) >= state.kittens.length * 20, txt:`Preserve Jerky ≥ 20×pop (now ${fmt(state.res.jerky ?? 0)}/${(state.kittens.length*20).toFixed(0)})` },
+      { ok: !state.unlocked.granary || ((state.res.granaries ?? 0) >= 1), txt:`Build 1 granary (unlocks at 900 science; now ${(state.res.granaries ?? 0)})` },
+      { ok: !state.unlocked.library || ((state.res.libraries ?? 0) >= 1), txt:`Build 1 library (unlocks at 1400 science; now ${(state.res.libraries ?? 0)})` },
+      { ok: state.res.science >= 350, txt:`Reach 350 science for Farming (now ${fmt(state.res.science)})` },
+    ];
+    goalsEl.textContent = goals.map(g => `${g.ok?'[x]':'[ ]'} ${g.txt}`).join('\n');
 
     renderAdvisor(state, targets);
     renderGovLog(state);
@@ -10823,20 +10404,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const decLabel = (displayKind === 'rule') ? 'RULE' : (displayKind === 'emergency') ? 'EMERG' : (displayKind === 'commit') ? 'COMMIT' : '';
         const blockedFresh = !!displayFallback;
 
-        // Trait effect indicator: show when current task aligns (boost) or conflicts (penalty vibe) with trait bias.
-        const taskForTrait = String(displayTask || '');
-        const hasTraitBias = traits.some((id) => {
-          const def = TRAIT_DEFS.find(t => t.id === id);
-          return !!def?.bias && Object.keys(def.bias).length > 0;
-        });
-        const traitBoostActive = traits.some((id) => {
-          const def = TRAIT_DEFS.find(t => t.id === id);
-          return Number(def?.bias?.[taskForTrait] ?? 0) > 0;
-        });
-        const traitPenaltyActive = hasTraitBias && !traitBoostActive && !!taskForTrait;
-        const traitFxClass = traitBoostActive ? ' is-positive' : (traitPenaltyActive ? ' is-negative' : '');
-        const traitFxLabel = traitBoostActive ? 'Trait boost active' : (traitPenaltyActive ? 'Trait mismatch active' : '');
-
         // Task display
         let taskText = escapeHtml(displayTask);
         if (k._mentor && displayTask === 'Mentor') taskText += ` → #${k._mentor.id}`;
@@ -10875,7 +10442,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
         const cardHTML = `
           <div class="kc-header">
-            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span>${traitFxClass ? ` <span class="kc-trait-fx${traitFxClass}" title="${traitFxLabel}"></span>` : ''}</span>
+            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span></span>
             <span class="kc-role">${escapeHtml(k.role ?? '-')}</span>
           </div>
           <div class="kc-task${blockedFresh ? ' blocked' : ''}">
@@ -10984,7 +10551,6 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Canvas HUDs
     renderTank();
-    renderTankLegend();
     renderTrends();
     syncGraphDashboardUI();
     if (state.director.graphTab === 'population') renderPopTrends();
@@ -11016,59 +10582,21 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return Math.max(10, Math.floor(cost));
   }
 
-  function tankZoneForTask(task){
-    const t = String(task || '');
-    if (t === 'StokeFire' || t === 'Eat' || t === 'Rest' || t === 'Care' || t === 'Socialize') return 'Hearth';
-    if (t === 'Forage' || t === 'ChopWood' || t === 'Guard') return 'Forest';
-    if (t === 'Farm') return 'Fields';
-    if (t === 'Research' || t === 'Mentor') return 'Study';
-    if (t.startsWith('Build') || t === 'CraftTools' || t === 'PreserveFood') return 'Stock';
-    return 'Hearth';
-  }
-
-  function renderTankLegend(){
-    if (!tankLegendEl) return;
-    const legendDefs = [
-      { id:'Hearth', label:'Hearth', dotColor:'rgba(251,191,36,.98)' },
-      { id:'Stock', label:'Stock', dotColor:'rgba(125,211,252,.98)' },
-      { id:'Forest', label:'Forest', dotColor:'rgba(52,211,153,.98)' },
-      { id:'Fields', label:'Fields', dotColor:'rgba(34,211,238,.98)' },
-      { id:'Study', label:'Study', dotColor:'rgba(167,139,250,.98)' },
-    ];
-
-    const counts = Object.create(null);
-    for (const d of legendDefs) counts[d.id] = 0;
-    for (const k of (state.kittens ?? [])) {
-      const zoneId = tankZoneForTask(k?._fallbackTo || k?.task);
-      counts[zoneId] = (Number(counts[zoneId] ?? 0) || 0) + 1;
-    }
-
-    const active = legendDefs.filter(d => Number(counts[d.id] ?? 0) > 0);
-    const rows = (active.length ? active : legendDefs).map(d => {
-      const n = Number(counts[d.id] ?? 0) || 0;
-      return `<span class="tank-legend-item" title="${escapeHtml(d.label)} zone"><span class="tank-legend-swatch" style="background:${d.dotColor}"></span><span class="tank-legend-zone">${escapeHtml(d.label)}</span><span class="small">${n}</span></span>`;
-    });
-    tankLegendEl.innerHTML = rows.join('');
-  }
-
   function renderTank(){
     if (!tankEl) return;
     const ctx = tankEl.getContext('2d');
     if (!ctx) return;
 
     const W = tankEl.width, H = tankEl.height;
-    // Draw an explicit backdrop each frame (instead of transparent clear) to prevent
-    // visible blank-frame flashes on some browsers/devices.
-    ctx.fillStyle = 'rgba(7,12,20,.92)';
-    ctx.fillRect(0, 0, W, H);
+    ctx.clearRect(0,0,W,H);
 
     // Zones (no pathing): kittens snap to task zones so it feels like an aquarium.
     const zones = [
-      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)', dotColor:'rgba(251,191,36,.98)' },
-      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)', dotColor:'rgba(125,211,252,.98)' },
-      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)', dotColor:'rgba(52,211,153,.98)' },
-      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)', dotColor:'rgba(34,211,238,.98)' },
-      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)', dotColor:'rgba(167,139,250,.98)' },
+      { id:'Hearth',   x:10, y:10,  w:W*0.42-15, h:H*0.45-15, color:'rgba(251,191,36,.08)' },
+      { id:'Stock',    x:W*0.42, y:10, w:W*0.58-20, h:H*0.28-15, color:'rgba(125,211,252,.06)' },
+      { id:'Forest',   x:10, y:H*0.45, w:W*0.36-15, h:H*0.55-20, color:'rgba(52,211,153,.06)' },
+      { id:'Fields',   x:W*0.36, y:H*0.45, w:W*0.32-10, h:H*0.55-20, color:'rgba(34,211,238,.04)' },
+      { id:'Study',    x:W*0.68, y:H*0.28, w:W*0.32-20, h:H*0.72-30, color:'rgba(167,139,250,.05)' },
     ];
 
     ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
@@ -11084,53 +10612,26 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ctx.fillText(z.id, z.x + 6, z.y + 6);
     }
 
-    // Place kittens as dots in their zone.
-    // Visual throttle: hold rendered zone for a short window so dots don't thrash/flicker
-    // when task assignments change rapidly.
-    const nowMs = performance.now();
-    if (!window._tankDisplayCache) window._tankDisplayCache = { byId: Object.create(null), lastPruneAt: 0 };
-    const tankCache = window._tankDisplayCache;
-    const byId = tankCache.byId || (tankCache.byId = Object.create(null));
-    const ZONE_HOLD_MS = 2800;
+    const taskZone = (task) => {
+      const t = String(task || '');
+      if (t === 'StokeFire' || t === 'Eat' || t === 'Rest' || t === 'Care' || t === 'Socialize') return 'Hearth';
+      if (t === 'Forage' || t === 'ChopWood' || t === 'Guard') return 'Forest';
+      if (t === 'Farm') return 'Fields';
+      if (t === 'Research' || t === 'Mentor') return 'Study';
+      if (t.startsWith('Build') || t === 'CraftTools' || t === 'PreserveFood') return 'Stock';
+      return 'Hearth';
+    };
 
-    const zoneSet = new Set(zones.map(z => z.id));
+    // Place kittens as dots in their zone.
     const byZone = Object.create(null);
     for (const z of zones) byZone[z.id] = [];
-
     for (const k of (state.kittens ?? [])) {
-      const kid = Number(k?.id ?? 0);
-      if (!Number.isFinite(kid) || kid <= 0) continue;
-
-      const rawZone = tankZoneForTask(k?._fallbackTo || k?.task);
-      const nextZone = zoneSet.has(rawZone) ? rawZone : 'Hearth';
-      const nameRaw = String(k?.name ?? '').trim();
-      const safeName = nameRaw || `#${kid}`;
-
-      const cached = byId[kid];
-      let displayZone = nextZone;
-      if (cached && (nowMs - Number(cached.setAt ?? 0)) < ZONE_HOLD_MS) {
-        displayZone = zoneSet.has(cached.zone) ? cached.zone : nextZone;
-      }
-
-      if (!cached || displayZone !== cached.zone || safeName !== cached.name) {
-        byId[kid] = { zone: displayZone, name: safeName, setAt: nowMs };
-      }
-
-      (byZone[displayZone] ?? (byZone[displayZone] = [])).push({ id: kid, name: safeName });
-    }
-
-    // Prune stale cache entries occasionally.
-    if ((nowMs - Number(tankCache.lastPruneAt ?? 0)) > 3000) {
-      tankCache.lastPruneAt = nowMs;
-      const liveIds = new Set((state.kittens ?? []).map(k => Number(k?.id ?? 0)).filter(id => Number.isFinite(id) && id > 0));
-      for (const idStr of Object.keys(byId)) {
-        const id = Number(idStr);
-        if (!liveIds.has(id)) delete byId[idStr];
-      }
+      const z = taskZone(k._fallbackTo || k.task);
+      (byZone[z] ?? (byZone[z]=[])).push(k);
     }
 
     for (const z of zones) {
-      const arr = (byZone[z.id] ?? []).slice().sort((a,b) => a.id - b.id);
+      const arr = byZone[z.id] ?? [];
       const showN = Math.min(arr.length, 12);
       for (let i=0;i<showN;i++) {
         const k = arr[i];
@@ -11138,24 +10639,14 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const ny = Math.floor(i / 4);
         const px = z.x + 20 + nx * 22;
         const py = z.y + 28 + ny * 18;
-
-        // TASK-129: give kittens visible identity in the tank (emoji-first with shape fallback).
-        const useEmoji = true;
-        if (useEmoji) {
-          ctx.font = '13px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-          ctx.fillText('🐱', px - 6, py - 8);
-        }
-
-        // Fallback/anchor: colored dot communicates zone type even if emoji does not render.
-        ctx.fillStyle = z.dotColor || 'rgba(217,226,239,.92)';
+        ctx.fillStyle = 'rgba(217,226,239,.95)';
         ctx.beginPath();
-        ctx.arc(px, py + 2, 2.2, 0, Math.PI*2);
+        ctx.arc(px, py, 4, 0, Math.PI*2);
         ctx.fill();
-
-        ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
         ctx.fillStyle = 'rgba(217,226,239,.75)';
-        const short = String(k?.name ?? `#${k?.id ?? '?'}`).split(/\s+/).slice(-1)[0] || String(k?.name ?? `#${k?.id ?? '?'}`);
-        ctx.fillText(short, px + 8, py - 6);
+        const name = String(k?.name ?? `#${k.id}`);
+        const short = name.split(/\s+/).slice(-1)[0] || name;
+        ctx.fillText(short, px + 6, py - 6);
       }
       if (arr.length > showN) {
         ctx.fillStyle = 'rgba(148,163,184,.85)';
@@ -11708,7 +11199,6 @@ function renderTrends(){
   if (soundBtn) soundBtn.addEventListener('click', () => {
     ensureAudioState(state);
     state.sound.enabled = !state.sound.enabled;
-    if (state.sound.enabled) persistSoundNudgeDismissed();
     playSfx('toggle');
     log(`Sound effects ${state.sound.enabled ? 'enabled' : 'disabled'}.`);
     save();
@@ -12611,15 +12101,6 @@ function renderTrends(){
     render();
   });
 
-  const goalsPanel = document.getElementById('goals');
-  if (goalsPanel) goalsPanel.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-mastery-choice]');
-    if (!btn) return;
-    const raw = String(btn.dataset.masteryChoice || '');
-    const [goalId, pick] = raw.split(':');
-    applyMasteryChoice(goalId, pick);
-  });
-
   const legacyPanel = document.getElementById('legacyPanel');
   if (legacyPanel) legacyPanel.addEventListener('click', (e) => {
     const tabBtn = e.target.closest('button[data-legacy-tab]');
@@ -12965,85 +12446,8 @@ function renderTrends(){
   });
 
   // --- Save/Load
-  function getBackupMeta(){
-    try {
-      const raw = localStorage.getItem(SAVE_BACKUP_META_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (!parsed || typeof parsed !== 'object') return { nextSlot: 0, slots: [] };
-      const nextSlot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Math.floor(Number(parsed.nextSlot ?? 0) || 0)));
-      const slots = Array.isArray(parsed.slots) ? parsed.slots : [];
-      return { nextSlot, slots };
-    } catch {
-      return { nextSlot: 0, slots: [] };
-    }
-  }
-
-  function setBackupMeta(meta){
-    try { localStorage.setItem(SAVE_BACKUP_META_KEY, JSON.stringify(meta)); } catch {}
-  }
-
-  function rotateBackupSave(){
-    try {
-      const snapshot = localStorage.getItem(SAVE_KEY);
-      if (!snapshot) return;
-      const bytes = new Blob([snapshot]).size;
-      const projected = bytes * (SAVE_BACKUP_SLOT_COUNT + 1);
-      if (projected > SAVE_BACKUP_MAX_BYTES) return;
-
-      const meta = getBackupMeta();
-      const slot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Number(meta.nextSlot ?? 0) || 0));
-      localStorage.setItem(`${SAVE_BACKUP_PREFIX}${slot}`, snapshot);
-
-      const slots = Array.isArray(meta.slots) ? meta.slots.slice() : [];
-      const filtered = slots.filter((x) => Number(x?.slot) !== slot);
-      filtered.push({ slot, at: Date.now() });
-      filtered.sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0));
-
-      setBackupMeta({
-        nextSlot: (slot + 1) % SAVE_BACKUP_SLOT_COUNT,
-        slots: filtered,
-      });
-    } catch {}
-  }
-
-  function readNewestBackup(){
-    try {
-      const meta = getBackupMeta();
-      const slots = Array.isArray(meta.slots) ? meta.slots.slice().sort((a, b) => Number(b.at ?? 0) - Number(a.at ?? 0)) : [];
-      for (const entry of slots) {
-        const slot = Math.max(0, Math.min(SAVE_BACKUP_SLOT_COUNT - 1, Number(entry?.slot) || 0));
-        const raw = localStorage.getItem(`${SAVE_BACKUP_PREFIX}${slot}`);
-        if (raw) return { raw, slot, at: Number(entry?.at ?? 0) || 0 };
-      }
-      for (let slot = SAVE_BACKUP_SLOT_COUNT - 1; slot >= 0; slot -= 1) {
-        const raw = localStorage.getItem(`${SAVE_BACKUP_PREFIX}${slot}`);
-        if (raw) return { raw, slot, at: 0 };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  function clearBackupSaves(){
-    try {
-      for (let i = 0; i < SAVE_BACKUP_SLOT_COUNT; i += 1) localStorage.removeItem(`${SAVE_BACKUP_PREFIX}${i}`);
-      localStorage.removeItem(SAVE_BACKUP_META_KEY);
-    } catch {}
-  }
-
-  function markDirtyOnSaveStart(){
-    try { localStorage.setItem(SAVE_DIRTY_KEY, '1'); } catch {}
-  }
-
-  function clearDirtyOnCleanUnload(){
-    try { localStorage.setItem(SAVE_DIRTY_KEY, '0'); } catch {}
-  }
-
-  function save(opts = {}){
-    markDirtyOnSaveStart();
+  function save(){
     saveGame(state, { GAME_VERSION, SAVE_KEY, LOG_MAX });
-    if (opts.backup === true) rotateBackupSave();
   }
 
   function load(){
@@ -13102,22 +12506,12 @@ function renderTrends(){
     }
   });
 
-  window.addEventListener('beforeunload', () => {
-    clearDirtyOnCleanUnload();
-  });
-  window.addEventListener('pagehide', () => {
-    clearDirtyOnCleanUnload();
-  });
-
   let last = now();
   function frame(){
     const t = now();
     const dt = Math.min(0.25, (t-last)/1000);
     last = t;
-    if (!state.paused) {
-      soundNudgeRuntime.activeSeconds += dt;
-      step(dt);
-    }
+    if (!state.paused) step(dt);
     render();
     requestAnimationFrame(frame);
   }
@@ -13143,34 +12537,9 @@ function renderTrends(){
   function maybeShowOfflineSummary(){
     const summary = state?._offlineSummary;
     if (!summary) return;
-    const away = Number(summary?.away ?? 0) || 0;
-    if (away < OFFLINE_SUMMARY_MIN_AWAY_SEC) {
-      state._offlineSummary = null;
-      save();
-      return;
-    }
     openOfflineModal(summary);
     state._offlineSummary = null;
     save();
-  }
-
-  function computeOfflineComebackMul(awaySec){
-    const hours = Math.max(0, Number(awaySec ?? 0) || 0) / 3600;
-    if (hours <= 0) return 1;
-    if (hours <= 8) {
-      return 1 + (0.75 * (hours / 8));
-    }
-    const tail = 1 - Math.exp(-(hours - 8) / 8);
-    return Math.min(2, 1.75 + (0.25 * tail));
-  }
-
-  function computeOfflineCatchUpBonus(s){
-    const expectedUnlocks = unlockDefs.reduce((acc, def) => {
-      return acc + ((Number(s?.t ?? 0) >= Number(def.at ?? Infinity)) ? 1 : 0);
-    }, 0);
-    const unlocked = unlockDefs.reduce((acc, def) => acc + (s?.unlocked?.[def.id] ? 1 : 0), 0);
-    const behind = Math.max(0, expectedUnlocks - unlocked);
-    return Math.min(25, behind * 8);
   }
 
   function applyOfflineProgressOnBoot(){
@@ -13180,13 +12549,7 @@ function renderTrends(){
     const effectiveAway = away <= OFFLINE_KNEE_SEC
       ? away
       : (OFFLINE_KNEE_SEC + Math.sqrt((away - OFFLINE_KNEE_SEC) * OFFLINE_KNEE_SEC));
-    const comebackMulRaw = computeOfflineComebackMul(away);
-    const catchUpBonusPctRaw = computeOfflineCatchUpBonus(state);
-    const catchUpMulRaw = 1 + (catchUpBonusPctRaw / 100);
-    const totalBonusMul = Math.min(2, comebackMulRaw * catchUpMulRaw);
-    const comebackMul = Math.min(2, comebackMulRaw);
-    const catchUpBonusPct = Math.max(0, (totalBonusMul / Math.max(1, comebackMul) - 1) * 100);
-    const simSeconds = Math.min(24 * 60 * 60, effectiveAway) * OFFLINE_RATE * totalBonusMul;
+    const simSeconds = Math.min(24 * 60 * 60, effectiveAway) * OFFLINE_RATE;
     if (simSeconds < 1) {
       state._offlinePending = 0;
       state._offlineWasCapped = false;
@@ -13204,14 +12567,11 @@ function renderTrends(){
       state.meta.offlineReturnStreak = streak;
     }
 
-    const streakBonusPctRaw = Math.min(25, Math.max(0, (streak - 1) * 5));
-    const streakBonusMulRaw = 1 + (streakBonusPctRaw / 100);
-    const combinedBonusMul = Math.min(2, totalBonusMul * streakBonusMulRaw);
-    const streakBonusPct = Math.max(0, (combinedBonusMul / Math.max(1, totalBonusMul) - 1) * 100);
+    const streakBonusPct = Math.min(25, Math.max(0, (streak - 1) * 5));
+    const streakBonusMul = 1 + (streakBonusPct / 100);
 
     const keys = ['food','jerky','wood','science','tools'];
     const liveState = state;
-    const popBefore = Math.max(0, Number(liveState?.kittens?.length ?? 0) || 0);
     const probeState = structuredClone(state);
 
     // Estimate current economy rates by running a short deterministic probe sim.
@@ -13239,40 +12599,20 @@ function renderTrends(){
 
     const gains = {};
     for (const k of keys) {
-      const add = perSec[k] * simSeconds * (combinedBonusMul / Math.max(1, totalBonusMul));
+      const add = perSec[k] * simSeconds * streakBonusMul;
       gains[k] = add;
       state.res[k] = Math.max(0, Number(state.res?.[k] ?? 0) + add);
     }
 
-    const popAfter = Math.max(0, Number(state?.kittens?.length ?? 0) || 0);
-    const popBorn = Math.max(0, popAfter - popBefore);
-    const popDied = Math.max(0, popBefore - popAfter);
-
     const capped = !!state._offlineWasCapped;
     const tier = away >= (8 * 60 * 60) ? 'Legendary return' : away >= (2 * 60 * 60) ? 'Recharged return' : away >= (15 * 60) ? 'Rested return' : 'Quick return';
     log(
-      `Offline progress: away ${fmt(away)}s, effective ${fmt(effectiveAway)}s, simulated ${fmt(simSeconds)}s at ${(OFFLINE_RATE * 100).toFixed(0)}% base x${comebackMul.toFixed(2)}` +
-      (catchUpBonusPct > 0 ? ` (+${catchUpBonusPct.toFixed(0)}% catch-up)` : '') +
-      (streakBonusPct > 0 ? ` (+${streakBonusPct.toFixed(0)}% streak)` : '') +
-      (combinedBonusMul >= 1.999 ? ' (capped at 2x active value/hour).' : '') +
+      `Offline progress: away ${fmt(away)}s, effective ${fmt(effectiveAway)}s, simulated ${fmt(simSeconds)}s at 50% base` +
+      (streakBonusPct > 0 ? ` (+${streakBonusPct}% streak bonus)` : '') +
       (capped ? ' (capped at 24h).' : '.')
     );
 
-    state._offlineSummary = {
-      away,
-      simulated: simSeconds,
-      capped,
-      gains,
-      tier,
-      streak,
-      streakBonusPct,
-      comebackMul,
-      catchUpBonusPct,
-      popBefore,
-      popAfter,
-      popBorn,
-      popDied
-    };
+    state._offlineSummary = { away, simulated: simSeconds, capped, gains, tier, streak, streakBonusPct };
     state._offlinePending = 0;
     state._offlineWasCapped = false;
     state._suppressedLogCount = 0;
@@ -13284,12 +12624,7 @@ function renderTrends(){
 
   applyOfflineProgressOnBoot();
 
-  soundNudgeRuntime.dismissed = hasDismissedSoundNudge();
-  soundNudgeRuntime.dismissedStored = soundNudgeRuntime.dismissed;
-  soundNudgeRuntime.activeSeconds = Math.max(0, Number(state?.t ?? 0) || 0);
-
   render();
-  if (hadDirtySession) showCrashRecoveryModal();
   requestAnimationFrame(frame);
   maybeShowPatchNotes();
   maybeShowOfflineSummary();
