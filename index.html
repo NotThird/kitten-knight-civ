@@ -4,25 +4,82 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kitten Knight Civ</title>
-  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-12a">
+  <link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./css/app.css?v=2026-03-15b">
 </head>
 <body>
 <header>
   <h1>Kitten Knight Civ</h1>
   <span class="pill" id="ver"></span>
-  <span class="pill">You manage policy; the colony AI survives seasons + raids</span>
-  <button id="btnPause" title="Shortcut: Space" data-reveal-min="1">Pause</button>
-  <button id="btnSound" title="Toggle sound effects (default off)" data-reveal-min="4">Sound: Off</button>
-  <button id="btnPatchNotes" title="What's new in this version" data-reveal-min="4">Patch Notes</button>
-  <button id="btnExport" title="Copy/download your save (useful for sharing bugs or moving devices)" data-reveal-min="4">Export Save</button>
-  <button id="btnImport" title="Paste a save string to restore" data-reveal-min="4">Import Save</button>
-  <button id="btnPrestige" title="Reset colony for Legacy Shards" data-reveal-min="4">Legacy Reset</button>
-  <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils" data-reveal-min="4">Eternity Reset</button>
-  <button id="btnReset" title="Resets everything" data-reveal-min="4">Hard Reset</button>
+  <span class="pill tagline">You manage policy; the colony AI survives seasons + raids</span>
+  <div class="header-group">
+    <button id="btnPause" title="Shortcut: Space" data-reveal-min="1">Pause</button>
+    <button id="btnSound" title="Toggle sound effects (default off)" data-reveal-min="4">Sound: Off</button>
+  </div>
+  <div class="header-sep"></div>
+  <div class="header-group">
+    <button id="btnPrestige" title="Reset colony for Legacy Shards" data-reveal-min="4">Legacy Reset</button>
+    <button id="btnEternity" title="Reset legacy progression for Ancestral Sigils" data-reveal-min="4">Eternity Reset</button>
+  </div>
+  <div class="header-group meta">
+    <button id="btnPatchNotes" title="What's new in this version" data-reveal-min="4">Patch Notes</button>
+    <button id="btnExport" title="Copy/download your save" data-reveal-min="4">Export Save</button>
+    <button id="btnImport" title="Paste a save string to restore" data-reveal-min="4">Import Save</button>
+    <button id="btnReset" title="Resets everything" data-reveal-min="4" class="danger">Hard Reset</button>
+  </div>
   <span class="small" id="clock"></span>
 </header>
 
 <main>
+  <!-- Settlement Overview — the "at a glance" view of your colony -->
+  <section class="settlement-panel" id="settlementPanel">
+    <div class="settle-illustration" id="settleIllustration" aria-live="polite"></div>
+
+    <div class="settle-status">
+      <div class="settle-season" id="settleSeason">
+        <span class="settle-season-icon" id="settleSeasonIcon"></span>
+        <span class="settle-season-name" id="settleSeasonName">Spring</span>
+        <span class="settle-year" id="settleYear">Year 1</span>
+      </div>
+      <div class="settle-pop" id="settlePop">
+        <span class="settle-pop-count" id="settlePopCount">0</span>
+        <span class="settle-pop-label">kittens</span>
+        <span class="settle-pop-cap" id="settlePopCap">/ 3</span>
+      </div>
+      <div class="settle-mode" id="settleMode">Survive</div>
+    </div>
+
+    <div class="settle-resources" id="settleResources">
+      <div class="settle-res" data-res="food">
+        <span class="settle-res-icon">🍖</span>
+        <div class="settle-res-bar"><div class="settle-res-fill" id="settleBarFood"></div></div>
+        <span class="settle-res-val" id="settleValFood">0</span>
+      </div>
+      <div class="settle-res" data-res="wood">
+        <span class="settle-res-icon">🪵</span>
+        <div class="settle-res-bar"><div class="settle-res-fill" id="settleBarWood"></div></div>
+        <span class="settle-res-val" id="settleValWood">0</span>
+      </div>
+      <div class="settle-res" data-res="warmth">
+        <span class="settle-res-icon">🔥</span>
+        <div class="settle-res-bar"><div class="settle-res-fill" id="settleBarWarmth"></div></div>
+        <span class="settle-res-val" id="settleValWarmth">0</span>
+      </div>
+      <div class="settle-res" data-res="threat">
+        <span class="settle-res-icon">⚠️</span>
+        <div class="settle-res-bar threat"><div class="settle-res-fill" id="settleBarThreat"></div></div>
+        <span class="settle-res-val" id="settleValThreat">0</span>
+      </div>
+    </div>
+
+    <div class="settle-buildings" id="settleBuildings">
+      <!-- Filled by JS: visual building icons -->
+    </div>
+
+    <div class="settle-builds" id="settleBuilds">
+      <!-- Filled by JS: active build progress bars -->
+    </div>
+  </section>
+
   <section class="card tier-primary" id="directorSection">
     <h2>Director</h2>
     <div class="body">
@@ -98,7 +155,7 @@
       </div>
 
       <div style="height:10px"></div>
-      <div class="small" data-reveal-min="0">Society feed</div>
+      <div class="small" data-reveal-min="0" style="font-weight:600; color:var(--good); letter-spacing:.3px">📜 Colony Chronicle</div>
       <div class="log tier-secondary-block" id="feed" style="max-height:220px" data-reveal-min="0"></div>
 
       <div style="height:12px"></div>
@@ -437,8 +494,8 @@
     </div>
   </section>
 
-  <section class="card tier-secondary" id="colonySection" data-reveal-min="3">
-    <h2>Colony (AI decisions)</h2>
+  <section class="card tier-primary" id="colonySection" data-reveal-min="3">
+    <h2>Colony</h2>
     <div class="body">
       <div class="colony-toolbar" id="colonyToolbar">
         <label class="small">Sort

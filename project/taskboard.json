@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T00:05:43.914Z",
+    "lastUpdated": "2026-03-15T08:17:33.921Z",
     "columns": {
         "todo": [
             {
@@ -111,23 +111,6 @@
                 "reworkNote": "Significant fly-ups are threshold-based only; building completion events must be explicitly detected and trigger the enhanced animation, not just high-value gains."
             },
             {
-                "id": "TASK-148",
-                "title": "Design evolving ambient soundscape system tied to colony state",
-                "assignee": "designer",
-                "priority": "medium",
-                "type": "feature",
-                "createdAt": "2026-03-14T15:40:38.866Z",
-                "description": "Critic identifies sound as the weakest area - 9 SFX with a toggle is functional but minimal. Kittens Game uses subtle ambient audio that shifts with seasons. Cookie Clicker has ascending tones for combos. KKC should have a layered ambient system: base colony hum that thickens with population, seasonal audio shifts (rain, wind), faction-specific motifs, and intensity scaling during events. TASK-143 covers implementation - this task designs the sound architecture and trigger map.",
-                "acceptanceCriteria": [
-                    "Design doc maps colony states to ambient sound layers (population tiers, seasons, factions)",
-                    "At least 4 distinct ambient layers defined with trigger conditions",
-                    "Layers blend smoothly - no abrupt cuts between states",
-                    "Design specifies how ambient audio coexists with existing 9 SFX",
-                    "Includes volume/mix recommendations for mobile speakers"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-069",
                 "title": "Implement session performance metrics and play-time statistics panel",
                 "assignee": "developer",
@@ -144,10 +127,133 @@
                 "source": "strategist",
                 "reclassifiedAt": "2026-03-14T18:00:00.000Z",
                 "reclassifiedReason": "Statistics panel is Tier 1 engagement (completionist driver), not Tier 5 infrastructure. Cookie Clicker, Antimatter Dimensions, NGU IDLE all use stats pages as core engagement loops."
+            },
+            {
+                "id": "TASK-150",
+                "title": "Add interactive event choice system with meaningful consequences",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.888Z",
+                "description": "Implement popup event system presenting players with 2-3 choices during gameplay. Events trigger based on colony state. Each choice has visible consequences. Target 8-10 event templates. Addresses core engagement gap.",
+                "acceptanceCriteria": [
+                    "Event popup appears with 2-3 clickable choices",
+                    "At least 8 distinct event templates",
+                    "Choices produce visible consequences",
+                    "Events trigger contextually based on colony state"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-151",
+                "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.961Z",
+                "description": "Add speech bubbles to kitten cards with context-aware quips based on traits, mood, activity, relationships. Show emoji mood reactions. At least 30 unique lines. Makes kittens feel alive per Austin full life sim vision.",
+                "acceptanceCriteria": [
+                    "Speech bubbles appear on kitten cards with trait-appropriate text",
+                    "At least 30 unique speech lines",
+                    "Mood emoji visible on card updating with state",
+                    "Bubbles rotate naturally"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-152",
+                "title": "Implement kitten relationship system with friendships, rivalries, and mentorships",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:09:08.422Z",
+                "description": "Austin wants full life simulation with real social dynamics. Kittens already have personality traits and coterie membership, but lack direct 1-on-1 relationships. Implement a relationship graph where kittens form bonds over time based on shared activities, compatible traits, and proximity. Reference: Dwarf Fortress relationship system, RimWorld social tab. Each kitten should track 2-5 key relationships with sentiment scores. Relationships should influence behavior (friends work better together, rivals cause friction, mentors boost skill growth). Surface relationship changes in the chronicle feed with narrative flavor text.",
+                "acceptanceCriteria": [
+                    "Each kitten tracks up to 5 relationships with other kittens (friend/rival/mentor/partner)",
+                    "Relationships form organically based on shared work assignments and trait compatibility",
+                    "Relationship status visibly affects productivity (friends: +10-20% when co-assigned, rivals: -10%)",
+                    "Chronicle feed shows relationship events with personality-flavored text (e.g. Whiskers and Nimble became friends after building the granary together)",
+                    "Relationship data persists across save/load"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-153",
+                "title": "Implement kitten aging, generations, and trait inheritance",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:09:23.044Z",
+                "description": "Austin wants a micro universe of growth with real changes over time. Kittens should age, eventually pass on, and leave behind offspring who inherit traits. This creates generational storytelling — the hallmark of great colony sims. Reference: CK3 trait inheritance, RimWorld aging. Kittens age through life stages (kitten -> adult -> elder). Elders gain wisdom bonuses but slow down. When kittens form partnerships (see relationship system), they can have offspring who inherit a mix of parent traits with small mutations. Deaths should be meaningful chronicle events. Generational depth gives players long-term attachment.",
+                "acceptanceCriteria": [
+                    "Kittens have an age property that advances with game ticks through stages: kitten (learning bonus, no work), adult (full capability), elder (wisdom bonus, reduced stamina)",
+                    "Elder kittens eventually pass away with a memorial chronicle entry naming their achievements",
+                    "Partnered adult kittens can produce offspring who inherit 2-3 traits from parents with 20% mutation chance for new traits",
+                    "Generation counter tracked per kitten (Gen 1, Gen 2, etc.) displayed on kitten card",
+                    "Population naturally cycles through births and deaths without player micromanagement"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-154",
+                "title": "Implement exploration and scouting system for kittens",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:09:35.848Z",
+                "description": "Austin called out exploration as a missing system. Players should be able to send kittens on scouting expeditions to discover new areas, resources, and encounters. This adds active decision-making (which kitten to send, risk vs reward) and narrative moments (what they find). Reference: Kittens Game exploration, Realm Grinder excavation. Create a simple exploration system: player assigns 1-2 kittens to scout, expedition takes N ticks, outcome based on kitten traits (brave kittens find more, cautious kittens return safely). Discoveries could include: new resource nodes, lost artifacts (permanent bonuses), other settlements (future trading), threats (wolves, storms). Each expedition generates a short narrative log entry.",
+                "acceptanceCriteria": [
+                    "Player can assign 1-2 idle kittens to an exploration expedition via a UI button",
+                    "Expeditions take 30-120 seconds real-time and resolve with trait-influenced outcomes",
+                    "At least 5 distinct discovery types: resource cache, artifact, hazard, settlement contact, ancient ruin",
+                    "Expedition results appear as narrative chronicle entries with kitten names and personality flavor",
+                    "Kittens gain exploration XP and unlock better discoveries over time"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
-        "review": [],
+        "review": [
+            {
+                "id": "TASK-148",
+                "title": "Design evolving ambient soundscape system tied to colony state",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T15:40:38.866Z",
+                "description": "Critic identifies sound as the weakest area - 9 SFX with a toggle is functional but minimal. Kittens Game uses subtle ambient audio that shifts with seasons. Cookie Clicker has ascending tones for combos. KKC should have a layered ambient system: base colony hum that thickens with population, seasonal audio shifts (rain, wind), faction-specific motifs, and intensity scaling during events. TASK-143 covers implementation - this task designs the sound architecture and trigger map.",
+                "acceptanceCriteria": [
+                    "Design doc maps colony states to ambient sound layers (population tiers, seasons, factions)",
+                    "At least 4 distinct ambient layers defined with trigger conditions",
+                    "Layers blend smoothly - no abrupt cuts between states",
+                    "Design specifies how ambient audio coexists with existing 9 SFX",
+                    "Includes volume/mix recommendations for mobile speakers"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T08:10:20.991Z",
+                "completedAt": "2026-03-15T08:11:23.612Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-149",
+                "title": "Implement visual settlement evolution (clearing to camp to village to town)",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.837Z",
+                "description": "Create a visual settlement illustration using CSS or canvas at the top of the colony panel that evolves based on building count and population milestones. 4 stages from campfire to town. Each stage transitions with a brief animation. Warm colors matching dark theme. Top visual gap per critic.",
+                "acceptanceCriteria": [
+                    "Settlement illustration visible above colony section",
+                    "At least 4 visual stages based on building count",
+                    "Smooth transition animation between stages",
+                    "Matches dark theme with warm accents"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T08:16:16.407Z",
+                "completedAt": "2026-03-15T08:17:33.921Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
+            }
+        ],
         "done": [
             {
                 "id": "TASK-146",
@@ -509,9 +615,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 142,
+        "totalCreated": 148,
         "totalCompleted": 98,
         "pendingQuestion": null
     },
-    "nextId": 149
+    "nextId": 155
 }

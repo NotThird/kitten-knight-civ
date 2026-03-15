@@ -210,6 +210,13 @@
       "taskId": "TASK-142",
       "action": "completed",
       "notes": "Fixed content.js UTF-8 BOM and mojibake artifacts in PATCH_HISTORY; normalized to ASCII-safe punctuation."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-15T08:17:40.765Z",
+      "taskId": "TASK-149",
+      "action": "completed",
+      "notes": "Added 4-stage settlement evolution illustration with animated transitions and warm dark-theme styling."
     }
   ]
 }

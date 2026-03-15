@@ -9165,12 +9165,137 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
   }
 
+  // ═══ Settlement Overview Renderer ═══
+  function renderSettlement(s, season) {
+    const seasonIcons = { Spring: '🌱', Summer: '☀️', Fall: '🍂', Winter: '❄️' };
+    const seasonEl = el('settleSeasonIcon');
+    if (seasonEl) seasonEl.textContent = seasonIcons[season.name] || '🌍';
+    const snEl = el('settleSeasonName');
+    if (snEl) {
+      snEl.textContent = season.name;
+      snEl.className = 'settle-season-name season-' + season.name.toLowerCase();
+    }
+    const yrEl = el('settleYear');
+    if (yrEl) yrEl.textContent = `Year ${yearAt(s.t) + 1}`;
+
+    const popEl = el('settlePopCount');
+    if (popEl) popEl.textContent = s.kittens.length;
+    const capEl = el('settlePopCap');
+    if (capEl) capEl.textContent = `/ ${housingCap(s)}`;
+
+    const modeEl = el('settleMode');
+    if (modeEl) modeEl.textContent = s.mode || 'Survive';
+
+    // Settlement evolution illustration (clearing -> camp -> village -> town)
+    const settleIllEl = el('settleIllustration');
+    if (settleIllEl) {
+      const bTotal = Math.max(0,
+        Number(s.res.huts || 0) +
+        Number(s.res.palisade || 0) +
+        Number(s.res.granaries || 0) +
+        Number(s.res.workshops || 0) +
+        Number(s.res.libraries || 0)
+      );
+      const pop = Math.max(0, Number(s.kittens?.length || 0));
+      const growthScore = bTotal + Math.floor(pop / 4);
+      let stage = 0;
+      if (growthScore >= 30) stage = 3;
+      else if (growthScore >= 16) stage = 2;
+      else if (growthScore >= 6) stage = 1;
+
+      const stageDefs = [
+        { name: 'Clearing', vibe: 'campfire and a lone shelter', skyline: ['s1'] },
+        { name: 'Camp', vibe: 'scattered huts around the hearth', skyline: ['s1', 's1', 's2', 's1'] },
+        { name: 'Village', vibe: 'clustered homes and workshops', skyline: ['s2', 's3', 's2', 's2', 's3'] },
+        { name: 'Town', vibe: 'dense skyline with fortified walls', skyline: ['s3', 's4', 's3', 's2', 's4', 's3'] },
+      ];
+      const def = stageDefs[stage] || stageDefs[0];
+      const bars = def.skyline.map((k) => `<span class="settle-structure ${k}"></span>`).join('');
+      settleIllEl.innerHTML = `<div class="settle-stage-label">Settlement: ${def.name} · ${def.vibe}</div><div class="settle-scene"><div class="settle-fire" aria-hidden="true"></div><div class="settle-skyline" aria-hidden="true">${bars}</div></div>`;
+
+      const prevStage = Number(settleIllEl.dataset.stage ?? -1);
+      if (prevStage !== stage) {
+        settleIllEl.classList.remove('stage-enter');
+        void settleIllEl.offsetWidth;
+        settleIllEl.classList.add('stage-enter');
+      }
+      settleIllEl.dataset.stage = String(stage);
+    }
+
+    // Resource bars
+    const cap = foodStorageCap(s);
+    const setBar = (id, val, max) => {
+      const barEl = el(id);
+      if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, (val / Math.max(1, max)) * 100))}%`;
+    };
+    setBar('settleBarFood', s.res.food, Math.max(cap, 300));
+    setBar('settleBarWood', s.res.wood, 300);
+    setBar('settleBarWarmth', s.res.warmth, 150);
+    setBar('settleBarThreat', s.res.threat, 100);
+    const threatBar = el('settleBarThreat')?.parentElement;
+    if (threatBar) threatBar.classList.toggle('danger', s.res.threat >= 70);
+
+    const setVal = (id, v) => { const e = el(id); if (e) e.textContent = fmt(v); };
+    setVal('settleValFood', s.res.food);
+    setVal('settleValWood', s.res.wood);
+    setVal('settleValWarmth', s.res.warmth);
+    setVal('settleValThreat', s.res.threat);
+
+    // Buildings visual
+    const bldgEl = el('settleBuildings');
+    if (bldgEl) {
+      const bldgs = [
+        { icon: '🏠', name: 'Huts', count: Math.max(0, s.res.huts || 0) },
+        { icon: '🏰', name: 'Walls', count: Math.max(0, s.res.palisade || 0) },
+        { icon: '🏪', name: 'Granaries', count: Math.max(0, s.res.granaries || 0) },
+        { icon: '⚒️', name: 'Workshops', count: Math.max(0, s.res.workshops || 0) },
+        { icon: '📚', name: 'Libraries', count: Math.max(0, s.res.libraries || 0) },
+      ];
+      const parts = [];
+      for (const b of bldgs) {
+        if (b.count <= 0) continue;
+        // Show individual icons for small counts, grouped for large
+        if (b.count <= 6) {
+          const icons = Array(b.count).fill(`<span class="settle-bldg-icon">${b.icon}</span>`).join('');
+          parts.push(`<div class="settle-bldg-group">${icons}<span class="settle-bldg-name">${b.name}</span></div>`);
+        } else {
+          parts.push(`<div class="settle-bldg-group"><span class="settle-bldg-icon">${b.icon}</span><span class="settle-bldg-count">${b.count}</span><span class="settle-bldg-name">${b.name}</span></div>`);
+        }
+      }
+      bldgEl.innerHTML = parts.length ? parts.join('') : '<span class="small" style="opacity:.45; font-style:italic">Your settlement is just getting started... gather resources to unlock construction</span>';
+    }
+
+    // Active builds
+    const buildsEl = el('settleBuilds');
+    if (buildsEl) {
+      const projDefs = [
+        { key: '_hutProgress', req: 12, name: 'Hut', show: () => !!s.unlocked?.construction },
+        { key: '_palProgress', req: 16, name: 'Palisade', show: () => !!s.unlocked?.construction },
+        { key: '_granProgress', req: 22, name: 'Granary', show: () => !!s.unlocked?.construction && !!s.unlocked?.granary },
+        { key: '_workProgress', req: 26, name: 'Workshop', show: () => !!s.unlocked?.construction && !!s.unlocked?.workshop },
+        { key: '_libProgress', req: 30, name: 'Library', show: () => !!s.unlocked?.construction && !!s.unlocked?.library },
+      ];
+      const buildParts = [];
+      for (const pd of projDefs) {
+        if (!pd.show()) continue;
+        const prog = Number(s[pd.key] ?? 0);
+        if (prog < 0.01) continue;
+        const pct = Math.min(100, Math.max(0, (prog / pd.req) * 100));
+        buildParts.push(`<div class="settle-build-item"><span class="settle-build-name">${pd.name}</span><div class="settle-build-bar"><div style="width:${Math.round(pct)}%"></div></div><span class="settle-build-pct">${Math.round(pct)}%</span></div>`);
+      }
+      buildsEl.innerHTML = buildParts.join('');
+    }
+  }
+
   function render(){
     const season = seasonAt(state.t);
     const targets = seasonTargets(state);
     const verEl = el('ver');
     if (verEl) verEl.textContent = `v${GAME_VERSION}`;
     el('clock').textContent = `t=${fmt(state.t)}s | pop=${state.kittens.length}/${housingCap(state)} | mode=${state.mode}`;
+
+    // ═══ Settlement Overview Panel ═══
+    renderSettlement(state, season);
 
     // Curator summary: show what is currently steering the colony.
     if (steeringSummaryEl) steeringSummaryEl.textContent = getSteeringSummary(state);
@@ -10404,8 +10529,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const decLabel = (displayKind === 'rule') ? 'RULE' : (displayKind === 'emergency') ? 'EMERG' : (displayKind === 'commit') ? 'COMMIT' : '';
         const blockedFresh = !!displayFallback;
 
-        // Task display
-        let taskText = escapeHtml(displayTask);
+        // Task display with activity icons
+        const taskIcons = { Forage:'🌾', Farm:'🌽', ChopWood:'🪓', StokeFire:'🔥', Guard:'🛡️', BuildHut:'🏗️', BuildPalisade:'🏗️', BuildGranary:'🏗️', BuildWorkshop:'🏗️', BuildLibrary:'🏗️', Research:'🔬', CraftTools:'⚒️', Rest:'💤', Eat:'🍖', Loaf:'😺', Socialize:'💬', Care:'❤️', Mentor:'📖', PreserveFood:'🥫' };
+        const taskIcon = taskIcons[displayTask] || '';
+        let taskText = (taskIcon ? taskIcon + ' ' : '') + escapeHtml(displayTask);
         if (k._mentor && displayTask === 'Mentor') taskText += ` → #${k._mentor.id}`;
         if (displayFallback) taskText += ` → ${escapeHtml(displayFallback)}`;
 
@@ -10440,32 +10567,53 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const topSkills = Object.entries(k.skills || {}).sort((a,b) => b[1] - a[1]).slice(0, 1);
         const topSkillStr = topSkills.length ? `${topSkills[0][0]}:${topSkills[0][1]}` : '-';
 
+        // Mood face
+        const moodFace = mood >= 0.75 ? '😊' : mood >= 0.5 ? '😐' : mood >= 0.3 ? '😟' : '😫';
+        const healthIcon = health < 0.4 ? ' 🩹' : '';
+
+        // Compact vitals bar (single combined bar)
+        const vBarMini = (val, color) => {
+          const pct = Math.round(val * 100);
+          return `<div class="kc-vbar-mini"><div class="kc-vbar-fill" style="width:${pct}%;background:${color}"></div></div>`;
+        };
+
+        // Trait pills (just first 2)
+        const traitPills = traits.slice(0, 2).map(t => `<span class="kc-trait-pill">${escapeHtml(t)}</span>`).join('');
+
         const cardHTML = `
           <div class="kc-header">
-            <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))} <span class="tag" style="font-size:10px">#${k.id}</span></span>
-            <span class="kc-role">${escapeHtml(k.role ?? '-')}</span>
+            <span class="kc-face">${moodFace}${healthIcon}</span>
+            <div class="kc-identity">
+              <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))}</span>
+              <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')}</span>
+            </div>
           </div>
           <div class="kc-task${blockedFresh ? ' blocked' : ''}">
             <span class="kc-task-label">${taskText}</span>
             ${badges}
           </div>
-          <div class="kc-vitals">
-            ${vBar('E', energy, '#34d399')}
-            ${vBar('HP', health, '#fb7185')}
-            ${vBar('H', hunger, '#fbbf24')}
-            ${vBar('M', mood, '#c4b5fd')}
+          <div class="kc-bars">
+            <div class="kc-bar-row"><span class="kc-bar-label">❤️</span>${vBarMini(health, '#fb7185')}</div>
+            <div class="kc-bar-row"><span class="kc-bar-label">⚡</span>${vBarMini(energy, '#34d399')}</div>
+            <div class="kc-bar-row"><span class="kc-bar-label">🍖</span>${vBarMini(hunger, '#fbbf24')}</div>
           </div>
-          <div class="kc-middle">
-            <canvas class="kc-radar" width="100" height="100"></canvas>
-            <div class="kc-stats">
-              <div class="kc-stat-line"><span class="kc-stat-k">Eff</span><span class="kc-stat-v">${fmt(eff * 100)}%</span></div>
-              <div class="kc-stat-line"><span class="kc-stat-k">Top</span><span class="kc-stat-v">${escapeHtml(topSkillStr)}</span></div>
-              <div class="kc-stat-line"><span class="kc-stat-k">Bloc</span><span class="kc-stat-v"><span class="tag">${escapeHtml(bloc)}</span></span></div>
-              <div class="kc-stat-line"><span class="kc-stat-k">Fit</span><span class="kc-stat-v"><span class="tag" style="border-color:${fitColor};color:${fitColor}">${fitPct}%</span></span></div>
+          ${traitPills ? `<div class="kc-traits-row">${traitPills}</div>` : ''}
+          <div class="kc-detail">
+            <div class="kc-vitals">
+              ${vBar('E', energy, '#34d399')}
+              ${vBar('HP', health, '#fb7185')}
+              ${vBar('H', hunger, '#fbbf24')}
+              ${vBar('M', mood, '#c4b5fd')}
             </div>
-          </div>
-          <div class="kc-footer">
-            ${traits.length ? `<div class="kc-traits">${escapeHtml(traits.join(', '))}</div>` : ''}
+            <div class="kc-middle">
+              <canvas class="kc-radar" width="100" height="100"></canvas>
+              <div class="kc-stats">
+                <div class="kc-stat-line"><span class="kc-stat-k">Eff</span><span class="kc-stat-v">${fmt(eff * 100)}%</span></div>
+                <div class="kc-stat-line"><span class="kc-stat-k">Top</span><span class="kc-stat-v">${escapeHtml(topSkillStr)}</span></div>
+                <div class="kc-stat-line"><span class="kc-stat-k">Bloc</span><span class="kc-stat-v"><span class="tag">${escapeHtml(bloc)}</span></span></div>
+                <div class="kc-stat-line"><span class="kc-stat-k">Fit</span><span class="kc-stat-v"><span class="tag" style="border-color:${fitColor};color:${fitColor}">${fitPct}%</span></span></div>
+              </div>
+            </div>
             ${buddyStr ? `<div class="kc-buddy">${buddyStr}</div>` : ''}
             <div class="kc-why">${escapeHtml(k.why ?? '')}</div>
           </div>
@@ -10473,9 +10621,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
         let card = existingMap.get(key);
         if (card) {
-          // Reuse existing card, update content
+          // Preserve the radar canvas to prevent flash (canvas is redrawn on its own schedule)
+          const oldRadar = card.querySelector('.kc-radar');
           card.className = `kitten-card${warnClass}${kittenPopClass}`;
           card.innerHTML = cardHTML;
+          // Restore the old canvas if we're not redrawing this frame
+          if (oldRadar && !redrawRadar) {
+            const newRadar = card.querySelector('.kc-radar');
+            if (newRadar) newRadar.replaceWith(oldRadar);
+          }
           fragment.appendChild(card);
           existingMap.delete(key);
         } else {
