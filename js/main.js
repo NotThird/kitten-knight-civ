@@ -1704,8 +1704,11 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     s._thoughtTimer = (s._thoughtTimer ?? 0) + 1;
     if (s._thoughtTimer < 2) return;
     s._thoughtTimer = 0;
+
+    const t0 = performance.now();
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
     const nowT = Number(s.t ?? 0);
-    for (const k of (s.kittens ?? [])) {
+    for (const k of kittens) {
       ensureKittenMemory(k);
       const m = k.memory;
       m.thoughts = m.thoughts.filter(t => Number(t?.until ?? 0) > nowT && String(t?.text ?? '').trim());
@@ -1716,6 +1719,28 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (best) m.thought = { text:String(best.text), tone:String(best.tone ?? 'neutral'), priority:Number(best.priority ?? 1), until:Number(best.until ?? nowT + 2) };
       else if (Number(m.thought?.until ?? 0) <= nowT) m.thought = { text:'', tone:'neutral', priority:0, until:0 };
     }
+
+    const elapsedMs = Math.max(0, performance.now() - t0);
+    const pop = Math.max(1, kittens.length);
+    const estAt20 = elapsedMs * (20 / pop);
+    const perf = (s._thoughtPerf && typeof s._thoughtPerf === 'object') ? s._thoughtPerf : {
+      samples: 0,
+      avgMs: 0,
+      maxMs: 0,
+      estAt20AvgMs: 0,
+      estAt20MaxMs: 0,
+      overBudgetCount: 0,
+      budgetMsAt20: 1,
+    };
+    perf.samples = Number(perf.samples ?? 0) + 1;
+    perf.lastMs = elapsedMs;
+    perf.lastEstAt20Ms = estAt20;
+    perf.avgMs = perf.avgMs + ((elapsedMs - perf.avgMs) / perf.samples);
+    perf.estAt20AvgMs = perf.estAt20AvgMs + ((estAt20 - perf.estAt20AvgMs) / perf.samples);
+    perf.maxMs = Math.max(Number(perf.maxMs ?? 0), elapsedMs);
+    perf.estAt20MaxMs = Math.max(Number(perf.estAt20MaxMs ?? 0), estAt20);
+    if (estAt20 > Number(perf.budgetMsAt20 ?? 1)) perf.overBudgetCount = Number(perf.overBudgetCount ?? 0) + 1;
+    s._thoughtPerf = perf;
   }
 
   function runConversationScheduler(s){
@@ -10106,6 +10131,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       ['Culture', 'Norms'],
     ];
     if (devMode) {
+      const thoughtPerf = (state._thoughtPerf && typeof state._thoughtPerf === 'object') ? state._thoughtPerf : null;
+      const thoughtPerfLabel = thoughtPerf
+        ? `${Number(thoughtPerf.lastEstAt20Ms ?? 0).toFixed(2)}ms (avg ${Number(thoughtPerf.estAt20AvgMs ?? 0).toFixed(2)}, max ${Number(thoughtPerf.estAt20MaxMs ?? 0).toFixed(2)})`
+        : 'n/a';
       stats.push(
         ['Jerky', fmt(state.res.jerky ?? 0)],
         ['Fresh/Kitten', fmt(freshPerKitten)],
@@ -10113,6 +10142,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         ['Discipline', `${Math.round(discipline01(state)*100)}%`],
         ['Work pace', `${Math.round(workPaceMul(state)*100)}%`],
         ['Commitment', `x${coordinationMul(state).toFixed(2)}`],
+        ['Thought@20', thoughtPerfLabel],
       );
     }
 
@@ -10185,6 +10215,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
       if (k === 'Commitment') {
         d.title = 'Coordination/commitment multiplier (derived from Discipline + Effective Autonomy). Higher = kittens stick to tasks longer (less thrash); lower = they switch more often (more emergent wandering).';
+      }
+      if (k === 'Thought@20') {
+        d.title = 'Thought bubble scheduler performance estimate normalized to population 20 (target <1.00ms). Format: last (avg, max).';
       }
       if (k === 'Focus-fit') {
         d.dataset.stat = 'focusfit';
