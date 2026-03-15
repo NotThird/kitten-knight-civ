@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T09:19:17.726Z",
+    "lastUpdated": "2026-03-15T09:23:02.152Z",
     "columns": {
         "todo": [
             {
@@ -285,25 +285,6 @@
                 "claimedAt": "2026-03-15T09:10:25.701Z",
                 "completedAt": "2026-03-15T09:11:27.320Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-151",
-                "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:05:21.961Z",
-                "description": "Add speech bubbles to kitten cards with context-aware quips based on traits, mood, activity, relationships. Show emoji mood reactions. At least 30 unique lines. Makes kittens feel alive per Austin full life sim vision.",
-                "acceptanceCriteria": [
-                    "Speech bubbles appear on kitten cards with trait-appropriate text",
-                    "At least 30 unique speech lines",
-                    "Mood emoji visible on card updating with state",
-                    "Bubbles rotate naturally"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T09:16:28.356Z",
-                "completedAt": "2026-03-15T09:19:17.726Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -675,6 +656,27 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T09:04:25.083Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-151",
+                "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.961Z",
+                "description": "Add speech bubbles to kitten cards with context-aware quips based on traits, mood, activity, relationships. Show emoji mood reactions. At least 30 unique lines. Makes kittens feel alive per Austin full life sim vision.",
+                "acceptanceCriteria": [
+                    "Speech bubbles appear on kitten cards with trait-appropriate text",
+                    "At least 30 unique speech lines",
+                    "Mood emoji visible on card updating with state",
+                    "Bubbles rotate naturally"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T09:16:28.356Z",
+                "completedAt": "2026-03-15T09:19:17.726Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T09:23:02.152Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -754,7 +756,7 @@
     },
     "meta": {
         "totalCreated": 155,
-        "totalCompleted": 102,
+        "totalCompleted": 103,
         "pendingQuestion": null
     },
     "nextId": 162
