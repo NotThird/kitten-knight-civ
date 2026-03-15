@@ -294,6 +294,13 @@
       "taskId": "TASK-190",
       "action": "completed",
       "notes": "Implemented partnered birth system with trait inheritance, generation tracking, Gen badges, and legacy spark milestone choice event."
+    },
+    {
+      "agent": "developer",
+      "timestamp": "2026-03-15T14:49:02.931Z",
+      "taskId": "TASK-193",
+      "action": "completed",
+      "notes": "Replaced settlement skyline with inline SVG scene (8 symbols, seasonal overlays, ambient loops, build placement animation)."
     }
   ]
 }

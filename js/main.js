@@ -10230,7 +10230,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     renderGoalTracker(s);
 
-    // Settlement evolution illustration (clearing -> camp -> village -> town)
+    // Settlement evolution illustration (SVG scene: clearing -> camp -> village -> town)
     const settleIllEl = el('settleIllustration');
     if (settleIllEl) {
       const bTotal = Math.max(0,
@@ -10240,30 +10240,98 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         Number(s.res.workshops || 0) +
         Number(s.res.libraries || 0)
       );
-      const pop = Math.max(0, Number(s.kittens?.length || 0));
-      const growthScore = bTotal + Math.floor(pop / 4);
+
       let stage = 0;
-      if (growthScore >= 30) stage = 3;
-      else if (growthScore >= 16) stage = 2;
-      else if (growthScore >= 6) stage = 1;
+      if (bTotal >= 30) stage = 3;
+      else if (bTotal >= 14) stage = 2;
+      else if (bTotal >= 5) stage = 1;
 
       const stageDefs = [
-        { name: 'Clearing', vibe: 'campfire and a lone shelter', skyline: ['s1'] },
-        { name: 'Camp', vibe: 'scattered huts around the hearth', skyline: ['s1', 's1', 's2', 's1'] },
-        { name: 'Village', vibe: 'clustered homes and workshops', skyline: ['s2', 's3', 's2', 's2', 's3'] },
-        { name: 'Town', vibe: 'dense skyline with fortified walls', skyline: ['s3', 's4', 's3', 's2', 's4', 's3'] },
+        { name: 'Clearing', vibe: 'embers and first shelter', slots: 3 },
+        { name: 'Camp', vibe: 'paths and clustered hearths', slots: 6 },
+        { name: 'Village', vibe: 'busy streets and workshops', slots: 10 },
+        { name: 'Town', vibe: 'fortified skyline and banners', slots: 14 },
       ];
       const def = stageDefs[stage] || stageDefs[0];
-      const bars = def.skyline.map((k) => `<span class="settle-structure ${k}"></span>`).join('');
-      settleIllEl.innerHTML = `<div class="settle-stage-label">Settlement: ${def.name} · ${def.vibe}</div><div class="settle-scene"><div class="settle-fire" aria-hidden="true"></div><div class="settle-skyline" aria-hidden="true">${bars}</div></div>`;
+
+      const silhouettes = [
+        'hut', 'hall', 'granary', 'workshop', 'library', 'tower', 'wall', 'lantern',
+      ];
+
+      const placements = [
+        { x: 58, y: 124, k: 'hut' },
+        { x: 90, y: 120, k: 'granary' },
+        { x: 122, y: 118, k: 'hall' },
+        { x: 154, y: 122, k: 'workshop' },
+        { x: 186, y: 118, k: 'library' },
+        { x: 220, y: 120, k: 'hut' },
+        { x: 252, y: 118, k: 'tower' },
+        { x: 284, y: 121, k: 'hall' },
+        { x: 316, y: 119, k: 'wall' },
+        { x: 348, y: 122, k: 'granary' },
+        { x: 380, y: 118, k: 'workshop' },
+        { x: 412, y: 120, k: 'tower' },
+        { x: 444, y: 118, k: 'library' },
+        { x: 476, y: 121, k: 'lantern' },
+      ];
+
+      const useCount = Math.min(def.slots, Math.max(1, Math.min(placements.length, bTotal + 1)));
+      const stagePlaces = placements.slice(0, useCount);
+      const bldgUses = stagePlaces
+        .map((p, i) => `<use href="#settle-${p.k}" x="${p.x}" y="${p.y}" class="settle-svg-building${i >= useCount - 2 ? ' new-build' : ''}" style="animation-delay:${(i * 0.08).toFixed(2)}s"></use>`)
+        .join('');
+
+      const seasonCls = String(season?.name || 'Spring').toLowerCase();
+      const particleCount = seasonCls === 'winter' ? 18 : seasonCls === 'fall' ? 14 : 10;
+      const particles = Array.from({ length: particleCount }, (_, i) => {
+        const x = 20 + ((i * 37) % 470);
+        const y = 14 + ((i * 29) % 70);
+        const d = (1.8 + (i % 4) * 0.6).toFixed(2);
+        const delay = (i * 0.17).toFixed(2);
+        return `<circle cx="${x}" cy="${y}" r="${(i % 3) + 1}" class="season-particle" style="animation-duration:${d}s;animation-delay:${delay}s"></circle>`;
+      }).join('');
+
+      settleIllEl.className = `settle-illustration season-${seasonCls}`;
+      settleIllEl.innerHTML = `<div class="settle-stage-label">Settlement: ${def.name} - ${def.vibe}</div>
+      <svg class="settle-svg" viewBox="0 0 520 160" role="img" aria-label="${def.name} settlement illustration">
+        <defs>
+          <linearGradient id="settleSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fcb66a"/><stop offset="100%" stop-color="#1a2740"/></linearGradient>
+          <linearGradient id="settleHill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#496a5f"/><stop offset="100%" stop-color="#233226"/></linearGradient>
+          <symbol id="settle-hut" viewBox="0 0 24 24"><path d="M2 15 L12 7 L22 15 L22 22 L2 22 Z"/><rect x="9" y="16" width="6" height="6"/></symbol>
+          <symbol id="settle-hall" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11"/><path d="M2 11 L12 4 L22 11 Z"/></symbol>
+          <symbol id="settle-granary" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="12"/><path d="M4 10 L12 5 L20 10 Z"/><rect x="8" y="14" width="8" height="8"/></symbol>
+          <symbol id="settle-workshop" viewBox="0 0 24 24"><rect x="3" y="12" width="18" height="10"/><rect x="7" y="8" width="10" height="4"/><rect x="10" y="3" width="4" height="5"/></symbol>
+          <symbol id="settle-library" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="14"/><rect x="6" y="11" width="2" height="8"/><rect x="10" y="11" width="2" height="8"/><rect x="14" y="11" width="2" height="8"/></symbol>
+          <symbol id="settle-tower" viewBox="0 0 24 24"><rect x="8" y="5" width="8" height="17"/><path d="M7 5 L12 1 L17 5 Z"/></symbol>
+          <symbol id="settle-wall" viewBox="0 0 24 24"><rect x="2" y="14" width="20" height="8"/><rect x="4" y="11" width="3" height="3"/><rect x="10" y="11" width="3" height="3"/><rect x="16" y="11" width="3" height="3"/></symbol>
+          <symbol id="settle-lantern" viewBox="0 0 24 24"><path d="M9 4 L15 4 L14 8 L10 8 Z"/><rect x="8" y="8" width="8" height="10" rx="2"/><rect x="10" y="18" width="4" height="4"/></symbol>
+        </defs>
+        <rect x="0" y="0" width="520" height="160" fill="url(#settleSky)"/>
+        <path d="M0 110 C60 84 140 90 220 112 C310 136 380 120 520 100 L520 160 L0 160 Z" fill="url(#settleHill)" opacity="0.95"/>
+        <path d="M0 124 C80 102 170 106 260 126 C360 145 430 136 520 122 L520 160 L0 160 Z" fill="#1a2a1f" opacity="0.82"/>
+        <path class="settle-path" d="M40 138 C120 126 210 134 300 140 C380 145 440 140 500 134"/>
+        <g class="settle-season-particles">${particles}</g>
+        <g class="settle-banners"><rect x="262" y="98" width="2" height="24"/><path d="M264 102 L278 106 L264 110 Z"/></g>
+        <g class="settle-smoke"><circle cx="78" cy="106" r="4"/><circle cx="84" cy="98" r="3"/><circle cx="88" cy="90" r="2"/></g>
+        <g class="settle-walkers"><circle cx="120" cy="136" r="2"/><circle cx="140" cy="137" r="2"/></g>
+        <g class="settle-buildings">${bldgUses}</g>
+        <rect x="0" y="120" width="520" height="40" class="settle-season-overlay"/>
+      </svg>`;
 
       const prevStage = Number(settleIllEl.dataset.stage ?? -1);
+      const prevTotal = Number(settleIllEl.dataset.btotal ?? 0);
       if (prevStage !== stage) {
         settleIllEl.classList.remove('stage-enter');
         void settleIllEl.offsetWidth;
         settleIllEl.classList.add('stage-enter');
       }
+      if (bTotal > prevTotal) {
+        settleIllEl.classList.remove('build-pop');
+        void settleIllEl.offsetWidth;
+        settleIllEl.classList.add('build-pop');
+      }
       settleIllEl.dataset.stage = String(stage);
+      settleIllEl.dataset.btotal = String(bTotal);
     }
 
     // Resource bars

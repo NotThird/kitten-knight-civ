@@ -1,8 +1,8 @@
 {
     "version": 1,
-    "iteration": 25,
+    "iteration": 40,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T14:24:16.203Z",
+    "lastUpdated": "2026-03-15T14:48:51.301Z",
     "columns": {
         "todo": [
             {
@@ -370,44 +370,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-192",
-                "title": "Design relationship map UI showing kitten bonds, coteries, and trust visually",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:09:56.208Z",
-                "description": "Arbiter gap #3: the memory/conversation/coterie system is deep but barely surfaced. Players cannot see who likes whom, which social circles form, or why mood shifts. Reference: Crusader Kings relationship web makes politics visible. Design a compact relationship map (toggleable overlay or panel) showing kittens as nodes with colored lines for bonds (green friendship, red rivalry, gold mentor). Coterie clusters should be visually grouped. This surfaces the impressive social sim already running underneath.",
-                "acceptanceCriteria": [
-                    "Shows all kittens as nodes with visual bond lines between them",
-                    "Bond types are color-coded (friendship, rivalry, mentorship, neutral)",
-                    "Coterie or social circles are visually grouped or clustered",
-                    "Trust level indicated by line thickness or label",
-                    "Panel is toggleable and does not clutter the main view",
-                    "Hovering or clicking a kitten highlights their connections"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-193",
-                "title": "Implement SVG settlement illustration from TASK-181 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:35:21.947Z",
-                "description": "Replace CSS/emoji settlement with inline SVG scene per TASK-181 spec. Layer stack: sky gradient, hills, buildings (symbol+use), paths, ambient particles. 4 evolution stages (clearing/camp/village/town) driven by building count. Seasonal overlays. Building placement animation. Ambient loops. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Inline SVG replaces current settlement panel with no external assets",
-                    "All 8 building silhouette types render as symbol/use instances",
-                    "4 evolution stages transition based on building count",
-                    "Seasonal overlay classes apply correct tint and particles",
-                    "Building placement animation plays on new construction",
-                    "Ambient motion loops active (smoke, banners, walkers)",
-                    "prefers-reduced-motion respected",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-195",
                 "title": "Design comeback hooks: offline milestones and return-triggered story beats",
                 "assignee": "designer",
@@ -517,29 +479,88 @@
                 "source": "orchestrator",
                 "claimedAt": "2026-03-15T14:16:18.249Z",
                 "testVerdict": "REJECTED"
+            },
+            {
+                "id": "TASK-201",
+                "title": "BREAKTHROUGH: Implement Ember Chronicle narrative chain from TASK-191 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "description": "Implement the 9-beat Ember Chronicle authored narrative chain for minutes 8-20. #1 engagement gap filler. Uses colony state, named kittens, 4 binary choices with branch tracking. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "9 authored beats fire between minutes 8-20 with 60-90s pacing",
+                    "4 binary choices with distinct resource/stat outcomes and persistent branch flags",
+                    "Beats reference named kittens and colony state contextually",
+                    "Chain finale recaps prior choices and grants permanent trait",
+                    "Save/load preserves chain progress"
+                ],
+                "source": "orchestrator",
+                "createdAt": "2026-03-15T14:36:19.318Z",
+                "staleCount": 0
+            },
+            {
+                "id": "TASK-202",
+                "title": "Design kitten matchmaking and naming ceremony player agency hooks",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "description": "Design player agency hooks for kitten lifecycle: matchmaking suggestions, naming ceremonies for newborns, eulogy choices on death. Creates emotional investment in the life simulation.",
+                "acceptanceCriteria": [
+                    "Matchmaking UI spec allowing player to suggest kitten pairings",
+                    "Naming ceremony event design triggered on births",
+                    "Eulogy choice event design triggered on kitten death",
+                    "Integration points with aging system and relationship system"
+                ],
+                "source": "orchestrator",
+                "createdAt": "2026-03-15T14:36:19.320Z",
+                "staleCount": 0
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-191",
-                "title": "Design authored mid-game narrative event scripts for minutes 8-20",
+                "id": "TASK-192",
+                "title": "Design relationship map UI showing kitten bonds, coteries, and trust visually",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T13:09:52.646Z",
-                "description": "Arbiter identifies the #1 engagement gap: after Libraries unlock (~8 min), the game goes quiet. Content fallback (TASK-183) fills time but feels procedural. We need 8-10 AUTHORED narrative beats spaced across minutes 8-20 that feel like real story moments. Reference: Cookie Clicker news ticker has authored jokes that surprise; Kittens Game seasonal events tell micro-stories. Each beat should reference specific kittens by name, reference colony history, and offer a meaningful choice or revelation. These scripts feed into Whisker Relics (TASK-184) and the content drip system.",
+                "createdAt": "2026-03-15T13:09:56.208Z",
+                "description": "Arbiter gap #3: the memory/conversation/coterie system is deep but barely surfaced. Players cannot see who likes whom, which social circles form, or why mood shifts. Reference: Crusader Kings relationship web makes politics visible. Design a compact relationship map (toggleable overlay or panel) showing kittens as nodes with colored lines for bonds (green friendship, red rivalry, gold mentor). Coterie clusters should be visually grouped. This surfaces the impressive social sim already running underneath.",
                 "acceptanceCriteria": [
-                    "At least 8 authored narrative event scripts with unique dialogue and choices",
-                    "Each event references colony state (population, buildings, relationships) for contextual flavor",
-                    "Events are paced to trigger roughly every 60-90 seconds between minutes 8-20",
-                    "At least 3 events offer meaningful binary choices with different stat outcomes",
-                    "Events feel thematically connected as a discovery chain, not random"
+                    "Shows all kittens as nodes with visual bond lines between them",
+                    "Bond types are color-coded (friendship, rivalry, mentorship, neutral)",
+                    "Coterie or social circles are visually grouped or clustered",
+                    "Trust level indicated by line thickness or label",
+                    "Panel is toggleable and does not clutter the main view",
+                    "Hovering or clicking a kitten highlights their connections"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T14:11:55.002Z",
-                "completedAt": "2026-03-15T14:13:14.971Z",
+                "claimedAt": "2026-03-15T14:41:59.147Z",
+                "completedAt": "2026-03-15T14:43:05.063Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-193",
+                "title": "Implement SVG settlement illustration from TASK-181 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:35:21.947Z",
+                "description": "Replace CSS/emoji settlement with inline SVG scene per TASK-181 spec. Layer stack: sky gradient, hills, buildings (symbol+use), paths, ambient particles. 4 evolution stages (clearing/camp/village/town) driven by building count. Seasonal overlays. Building placement animation. Ambient loops. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Inline SVG replaces current settlement panel with no external assets",
+                    "All 8 building silhouette types render as symbol/use instances",
+                    "4 evolution stages transition based on building count",
+                    "Seasonal overlay classes apply correct tint and particles",
+                    "Building placement animation plays on new construction",
+                    "Ambient motion loops active (smoke, banners, walkers)",
+                    "prefers-reduced-motion respected",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T14:46:15.322Z",
+                "completedAt": "2026-03-15T14:48:51.301Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1338,6 +1359,28 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T14:04:42.330Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-191",
+                "title": "Design authored mid-game narrative event scripts for minutes 8-20",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:09:52.646Z",
+                "description": "Arbiter identifies the #1 engagement gap: after Libraries unlock (~8 min), the game goes quiet. Content fallback (TASK-183) fills time but feels procedural. We need 8-10 AUTHORED narrative beats spaced across minutes 8-20 that feel like real story moments. Reference: Cookie Clicker news ticker has authored jokes that surprise; Kittens Game seasonal events tell micro-stories. Each beat should reference specific kittens by name, reference colony history, and offer a meaningful choice or revelation. These scripts feed into Whisker Relics (TASK-184) and the content drip system.",
+                "acceptanceCriteria": [
+                    "At least 8 authored narrative event scripts with unique dialogue and choices",
+                    "Each event references colony state (population, buildings, relationships) for contextual flavor",
+                    "Events are paced to trigger roughly every 60-90 seconds between minutes 8-20",
+                    "At least 3 events offer meaningful binary choices with different stat outcomes",
+                    "Events feel thematically connected as a discovery chain, not random"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T14:11:55.002Z",
+                "completedAt": "2026-03-15T14:13:14.971Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T14:34:39.980Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1542,9 +1585,10 @@
         ]
     },
     "meta": {
-        "totalCreated": 191,
-        "totalCompleted": 121,
-        "pendingQuestion": null
+        "totalCreated": 193,
+        "totalCompleted": 122,
+        "pendingQuestion": null,
+        "updatedAt": "2026-03-15T14:36:19.320Z"
     },
-    "nextId": 201
+    "nextId": 203
 }

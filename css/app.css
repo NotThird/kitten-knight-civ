@@ -661,18 +661,12 @@
     }
     .settle-illustration {
       flex: 0 0 100%;
-      background: linear-gradient(180deg, rgba(255,170,92,.12), rgba(8,12,20,.3));
+      background: linear-gradient(180deg, rgba(255,170,92,.10), rgba(8,12,20,.35));
       border: 1px solid rgba(255,180,110,.2);
       border-radius: 12px;
       padding: 8px 12px 10px;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
-    }
-    .settle-scene {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 10px;
-      min-height: 48px;
+      overflow: hidden;
     }
     .settle-stage-label {
       font-size: 11px;
@@ -682,40 +676,93 @@
       margin-bottom: 6px;
       opacity: .95;
     }
-    .settle-skyline {
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-      min-height: 34px;
+    .settle-svg {
+      width: 100%;
+      height: 120px;
+      display: block;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.15);
     }
-    .settle-structure {
-      border: 1px solid rgba(255,214,170,.35);
-      background: linear-gradient(180deg, rgba(255,196,127,.65), rgba(168,95,48,.85));
-      border-radius: 4px 4px 2px 2px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    .settle-svg .settle-buildings use {
+      fill: rgba(248, 214, 171, .92);
+      stroke: rgba(88, 48, 24, .5);
+      stroke-width: .6;
+      transform-origin: center;
     }
-    .settle-structure.s1 { width: 10px; height: 14px; }
-    .settle-structure.s2 { width: 12px; height: 20px; }
-    .settle-structure.s3 { width: 14px; height: 26px; }
-    .settle-structure.s4 { width: 16px; height: 32px; }
-    .settle-fire {
-      width: 16px;
-      height: 16px;
-      border-radius: 50% 50% 46% 46%;
-      background: radial-gradient(circle at 50% 32%, #ffd58f 0%, #ff9f47 48%, #e35b24 100%);
-      box-shadow: 0 0 10px rgba(255,157,69,.65);
-      animation: settleFlicker 1.8s ease-in-out infinite;
+    .settle-svg .settle-path {
+      fill: none;
+      stroke: rgba(226, 177, 124, .45);
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .settle-svg .settle-smoke circle {
+      fill: rgba(232, 239, 252, .55);
+      animation: settleSmoke 4.4s ease-in-out infinite;
+    }
+    .settle-svg .settle-smoke circle:nth-child(2) { animation-delay: .7s; }
+    .settle-svg .settle-smoke circle:nth-child(3) { animation-delay: 1.2s; }
+    .settle-svg .settle-banners {
+      fill: rgba(251, 191, 36, .95);
+      animation: settleBanner 2.2s ease-in-out infinite;
+      transform-origin: 264px 104px;
+    }
+    .settle-svg .settle-walkers circle {
+      fill: rgba(231, 240, 255, .95);
+      animation: settleWalk 6s linear infinite;
+    }
+    .settle-svg .settle-walkers circle:nth-child(2) { animation-delay: 2.4s; }
+    .settle-svg .season-particle {
+      fill: rgba(255,255,255,.45);
+      animation: settleParticle 2.6s ease-in-out infinite;
+    }
+    .settle-svg .settle-season-overlay {
+      fill: rgba(255,255,255,.05);
+      pointer-events: none;
+    }
+    .settle-illustration.season-spring .settle-season-overlay { fill: rgba(52,211,153,.09); }
+    .settle-illustration.season-summer .settle-season-overlay { fill: rgba(251,191,36,.11); }
+    .settle-illustration.season-fall .settle-season-overlay { fill: rgba(245,158,11,.13); }
+    .settle-illustration.season-winter .settle-season-overlay { fill: rgba(125,211,252,.14); }
+    .settle-illustration.build-pop .settle-svg-building.new-build {
+      animation: settleBuildPop .5s ease-out both;
     }
     .settle-illustration.stage-enter {
       animation: settleStageEnter .45s ease-out;
     }
-    @keyframes settleFlicker {
-      0%,100% { transform: scale(1); opacity: .9; }
-      50% { transform: scale(1.08); opacity: 1; }
+    @keyframes settleSmoke {
+      0% { transform: translateY(0); opacity: .25; }
+      50% { opacity: .65; }
+      100% { transform: translateY(-12px); opacity: 0; }
+    }
+    @keyframes settleBanner {
+      0%,100% { transform: skewY(0deg); }
+      50% { transform: skewY(7deg); }
+    }
+    @keyframes settleWalk {
+      0% { transform: translateX(0); opacity: .85; }
+      50% { opacity: 1; }
+      100% { transform: translateX(120px); opacity: .12; }
+    }
+    @keyframes settleParticle {
+      0% { transform: translateY(0); opacity: .15; }
+      50% { opacity: .55; }
+      100% { transform: translateY(8px); opacity: .05; }
+    }
+    @keyframes settleBuildPop {
+      0% { transform: translateY(10px) scale(.85); opacity: .35; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
     }
     @keyframes settleStageEnter {
       0% { transform: translateY(5px) scale(.985); opacity: .55; }
       100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .settle-illustration,
+      .settle-illustration * {
+        animation: none !important;
+        transition: none !important;
+      }
     }
 
     .settle-status {
