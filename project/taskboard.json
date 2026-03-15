@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T09:23:02.152Z",
+    "lastUpdated": "2026-03-15T09:49:39.609Z",
     "columns": {
         "todo": [
             {
@@ -213,23 +213,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-159",
-                "title": "Design kitten memory and conversation system with visible thought bubbles",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T09:09:41.964Z",
-                "description": "Austin wants kittens with REAL inner lives. Design a system where kittens remember significant events (survived a raid, built first hut, lost a friend), reference those memories in thought bubbles, and have visible conversations with nearby kittens. Reference: Dwarf Fortress thought system, RimWorld social logs. Conversations should reveal personality. Memories should decay over time but landmark ones persist. This is the core of the micro universe of growth directive.",
-                "acceptanceCriteria": [
-                    "Memory data structure defined: event type, timestamp, emotional weight, decay rate",
-                    "Conversation trigger rules specified: proximity, mood thresholds, relationship level",
-                    "At least 8 conversation templates covering different personality archetypes",
-                    "Thought bubble display spec: timing, positioning on kitten cards, fade behavior",
-                    "Memory-driven dialogue examples showing how past events influence conversations"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-160",
                 "title": "Design inter-settlement trading and visitor system",
                 "assignee": "designer",
@@ -262,29 +245,113 @@
                     "Chronicle entries reference specific kittens, their traits, and the situation context"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-163",
+                "title": "Add visible relationship lines between kittens in colony tank",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:36:07.202Z",
+                "description": "Kittens in the colony tank should show visible colored lines for friendships, rivalries, mentorships. When kittens interact socially, show a brief animation. Makes colony feel alive at a glance. Depends on TASK-152.",
+                "acceptanceCriteria": [
+                    "Colored lines shown between kitten dots for different relationship types",
+                    "Lines fade as relationships form or break",
+                    "At least one interaction animation for social actions",
+                    "Smooth performance with 20+ kittens"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-164",
+                "title": "Add first-30-seconds wow moment: animated first birth and first build",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:36:07.238Z",
+                "description": "New players need visual spectacle in first 30 seconds. First kitten birth gets animated entrance with glow and meow SFX. First building gets brief construction animation in settlement panel. One-time moments tracked in save.",
+                "acceptanceCriteria": [
+                    "First kitten birth triggers unique animated entrance in colony view",
+                    "First building shows brief animation in settlement panel",
+                    "Both fire only once per playthrough via save tracking",
+                    "Animations are subtle but noticeable"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-165",
+                "title": "Design always-visible kitten life-at-a-glance layer for colony tank",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:39:34.977Z",
+                "description": "Critic identifies that kittens rich inner lives (skills, moods, coteries, grievances) are buried behind click-to-inspect. The colony tank should surface kitten individuality WITHOUT clicking. Reference: Cividle shows villagers walking with visible roles. Design a system where the colony tank dot/emoji for each kitten passively communicates: (1) current mood via color/glow, (2) active relationship via proximity clustering, (3) current activity via micro-animation or icon overlay, (4) notable status (sick, in love, grieving) via persistent indicator. Goal: a player glancing at the tank should immediately feel these are individuals not dots.",
+                "acceptanceCriteria": [
+                    "Design doc specifies visual encoding for at least 4 kitten states visible without clicking",
+                    "Design uses only CSS animations and emoji - no canvas or heavy JS",
+                    "Design includes before/after mockup showing how tank reads differently",
+                    "Design addresses visual clutter at 20+ kittens - must scale gracefully"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-166",
+                "title": "Implement animated settlement building construction sequences",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:39:37.835Z",
+                "description": "TASK-149 (settlement evolution) shipped static CSS skylines, but the critic notes it still reads as a static drawing. When a new building is constructed, there should be a visible construction animation - scaffolding appearing, building rising, completion celebration. Reference: Realm Grinder shows buildings appearing with sparkle effects. Use CSS transitions/keyframes only - no heavy JS animation libraries. The settlement panel should feel alive, not like a backdrop.",
+                "acceptanceCriteria": [
+                    "New building construction triggers a 2-3 second CSS animation showing the building appearing",
+                    "Animation includes at least scaffolding-to-complete or grow-in-place visual",
+                    "A small celebration particle or glow effect plays on completion",
+                    "Existing settlement layout is not broken - animation enhances current CSS skyline system",
+                    "Performance stays smooth with multiple buildings animating in quick succession"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-156",
-                "title": "Design dramatic consequence reveals for curator policy choices",
+                "id": "TASK-159",
+                "title": "Design kitten memory and conversation system with visible thought bubbles",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T08:39:44.329Z",
-                "description": "Curator controls feel too subtle - effects are statistical nudges, not dramatic outcomes. Design a consequence reveal system: when a major policy decision plays out, show the player what happened. Reference Reigns card-flip reveals. Choosing Defend leads to wall defense scene, Expand leads to new territory. Failed choices should be dramatic (famine, uprising). Ties to TASK-150 event choice system.",
+                "createdAt": "2026-03-15T09:09:41.964Z",
+                "description": "Austin wants kittens with REAL inner lives. Design a system where kittens remember significant events (survived a raid, built first hut, lost a friend), reference those memories in thought bubbles, and have visible conversations with nearby kittens. Reference: Dwarf Fortress thought system, RimWorld social logs. Conversations should reveal personality. Memories should decay over time but landmark ones persist. This is the core of the micro universe of growth directive.",
                 "acceptanceCriteria": [
-                    "Design covers at least 4 policy-outcome pairings with dramatic reveals",
-                    "Specifies visual treatment for positive vs negative outcomes",
-                    "Defines connection to TASK-150 event choice system",
-                    "Includes narrative text templates for outcomes",
-                    "Specifies timing: choice to delay to consequence reveal"
+                    "Memory data structure defined: event type, timestamp, emotional weight, decay rate",
+                    "Conversation trigger rules specified: proximity, mood thresholds, relationship level",
+                    "At least 8 conversation templates covering different personality archetypes",
+                    "Thought bubble display spec: timing, positioning on kitten cards, fade behavior",
+                    "Memory-driven dialogue examples showing how past events influence conversations"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T09:10:25.701Z",
-                "completedAt": "2026-03-15T09:11:27.320Z",
+                "claimedAt": "2026-03-15T09:40:27.116Z",
+                "completedAt": "2026-03-15T09:41:52.500Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-162",
+                "title": "Implement dramatic visual event interrupts with screen effects",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:36:07.166Z",
+                "description": "When major events fire, produce dramatic full-screen visual effects: screen darkening for winter, red flash for raids, shake for earthquakes, warm glow for festivals. Use CSS animations. Reference TASK-156 design for timing.",
+                "acceptanceCriteria": [
+                    "At least 4 event types produce distinct full-screen visual effects",
+                    "Effects use CSS animations and respect prefers-reduced-motion",
+                    "Winter arrival darkens the entire game UI gradually",
+                    "Effects auto-dismiss within 3 seconds"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T09:46:14.029Z",
+                "completedAt": "2026-03-15T09:49:39.609Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -677,6 +744,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T09:23:02.152Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-156",
+                "title": "Design dramatic consequence reveals for curator policy choices",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:39:44.329Z",
+                "description": "Curator controls feel too subtle - effects are statistical nudges, not dramatic outcomes. Design a consequence reveal system: when a major policy decision plays out, show the player what happened. Reference Reigns card-flip reveals. Choosing Defend leads to wall defense scene, Expand leads to new territory. Failed choices should be dramatic (famine, uprising). Ties to TASK-150 event choice system.",
+                "acceptanceCriteria": [
+                    "Design covers at least 4 policy-outcome pairings with dramatic reveals",
+                    "Specifies visual treatment for positive vs negative outcomes",
+                    "Defines connection to TASK-150 event choice system",
+                    "Includes narrative text templates for outcomes",
+                    "Specifies timing: choice to delay to consequence reveal"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T09:10:25.701Z",
+                "completedAt": "2026-03-15T09:11:27.320Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T09:34:37.108Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -755,9 +844,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 155,
-        "totalCompleted": 103,
+        "totalCreated": 160,
+        "totalCompleted": 104,
         "pendingQuestion": null
     },
-    "nextId": 162
+    "nextId": 167
 }

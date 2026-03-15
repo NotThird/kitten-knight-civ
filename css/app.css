@@ -357,6 +357,68 @@
     .milestone-burst.saga { box-shadow: 0 0 0 1px rgba(251,191,36,.25), 0 10px 28px rgba(245,158,11,.28); }
     .milestone-burst.mythic { box-shadow: 0 0 0 1px rgba(167,139,250,.30), 0 10px 30px rgba(139,92,246,.30); }
 
+    .event-interrupt-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .event-interrupt {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      animation: eventInterruptFlash var(--event-dur, 900ms) ease-out forwards;
+      will-change: opacity, transform, filter;
+    }
+    .event-interrupt.event-fx-raid-hit {
+      background: radial-gradient(circle at 50% 45%, rgba(248,113,113,.38), rgba(127,29,29,.30) 55%, rgba(0,0,0,.28));
+      animation-name: eventInterruptRaidHit;
+    }
+    .event-interrupt.event-fx-raid-repel {
+      background: radial-gradient(circle at 50% 40%, rgba(56,189,248,.26), rgba(30,64,175,.18) 52%, rgba(2,6,23,.20));
+      animation-name: eventInterruptRaidRepel;
+    }
+    .event-interrupt.event-fx-winter-arrival {
+      background: radial-gradient(circle at 50% 40%, rgba(191,219,254,.12), rgba(30,58,138,.16) 56%, rgba(2,6,23,.35));
+      animation-name: eventInterruptWinter;
+    }
+    .event-interrupt.event-fx-festival {
+      background: radial-gradient(circle at 50% 60%, rgba(251,191,36,.22), rgba(249,115,22,.12) 58%, rgba(2,6,23,.14));
+      animation-name: eventInterruptFestival;
+    }
+
+    @keyframes eventInterruptFlash {
+      0% { opacity: 0; }
+      15% { opacity: .18; }
+      100% { opacity: 0; }
+    }
+    @keyframes eventInterruptRaidHit {
+      0% { opacity: 0; }
+      12% { opacity: .42; }
+      36% { opacity: .16; }
+      60% { opacity: .28; }
+      100% { opacity: 0; }
+    }
+    @keyframes eventInterruptRaidRepel {
+      0% { opacity: 0; }
+      18% { opacity: .24; }
+      48% { opacity: .10; }
+      100% { opacity: 0; }
+    }
+    @keyframes eventInterruptWinter {
+      0% { opacity: 0; }
+      25% { opacity: .20; }
+      70% { opacity: .12; }
+      100% { opacity: 0; }
+    }
+    @keyframes eventInterruptFestival {
+      0% { opacity: 0; }
+      20% { opacity: .26; }
+      48% { opacity: .12; }
+      100% { opacity: 0; }
+    }
+
     .active-play-event-host {
       position: fixed;
       left: 12px;
@@ -441,6 +503,7 @@
       .feedback-sentiment,
       .resource-flyup,
       .milestone-burst,
+      .event-interrupt,
       .active-play-event,
       .stat .v.pulse-good,
       .stat .v.pulse-warn,
@@ -460,6 +523,9 @@
       .resource-flyup {
         opacity: .9;
         transform: none;
+      }
+      .event-interrupt {
+        opacity: .14;
       }
     }
 

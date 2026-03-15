@@ -1291,6 +1291,64 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }).join('');
   }
 
+  // --- Full-screen event interrupt FX (contextual cinematic flashes)
+  const eventInterruptFx = { active: [], layer: null };
+
+  function prefersReducedMotion(){
+    try { return !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches; }
+    catch (_) { return false; }
+  }
+
+  function ensureEventInterruptLayer(){
+    if (eventInterruptFx.layer && document.body.contains(eventInterruptFx.layer)) return eventInterruptFx.layer;
+    const d = document.createElement('div');
+    d.className = 'event-interrupt-layer';
+    document.body.appendChild(d);
+    eventInterruptFx.layer = d;
+    return d;
+  }
+
+  function triggerEventInterrupt(type){
+    const presets = {
+      'raid-hit': { cls:'event-fx-raid-hit', dur: 920 },
+      'raid-repel': { cls:'event-fx-raid-repel', dur: 860 },
+      'winter-arrival': { cls:'event-fx-winter-arrival', dur: 2200 },
+      'festival': { cls:'event-fx-festival', dur: 1700 },
+    };
+    const p = presets[String(type || '')];
+    if (!p) return;
+
+    const reduced = prefersReducedMotion();
+    const dur = reduced ? Math.min(450, p.dur) : p.dur;
+    const nowMs = Date.now();
+    eventInterruptFx.active.push({
+      id: `${String(type)}-${nowMs}-${Math.floor(Math.random()*1e6)}`,
+      cls: p.cls,
+      reduced,
+      until: nowMs + dur,
+      dur,
+    });
+    if (eventInterruptFx.active.length > 6) eventInterruptFx.active.splice(0, eventInterruptFx.active.length - 6);
+  }
+
+  function renderEventInterrupts(){
+    const nowMs = Date.now();
+    eventInterruptFx.active = eventInterruptFx.active.filter(x => Number(x?.until ?? 0) > nowMs);
+
+    const layer = ensureEventInterruptLayer();
+    if (!eventInterruptFx.active.length) {
+      layer.innerHTML = '';
+      return;
+    }
+
+    layer.innerHTML = eventInterruptFx.active.map((x) => {
+      const cls = escapeHtml(String(x?.cls ?? ''));
+      const rm = x?.reduced ? ' reduced' : '';
+      const dur = Math.max(100, Number(x?.dur ?? 500));
+      return `<div class="event-interrupt ${cls}${rm}" style="--event-dur:${dur}ms"></div>`;
+    }).join('');
+  }
+
   // --- Personality / micro-emergence
   // Kittens have soft preferences (likes/dislikes). This does NOT hard-lock actions; it just nudges.
   function rand01At(t, salt=0){
@@ -3766,6 +3824,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Tiny immediate happiness bump.
     for (const k of (s.kittens ?? [])) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.05);
+    triggerEventInterrupt('festival');
 
     return { ok:true, msg:`Festival held (-${c.food} food, -${c.wood} wood). Mood rises for ~50s.` };
   }
@@ -5340,6 +5399,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             ? 'Season change → Fall. Late-Fall increases prep targets (food+warmth); start stockpiling before Winter.'
             : 'Season change → Summer. Best time to build up science and long-run infrastructure.';
 
+      if (season.name === 'Winter') triggerEventInterrupt('winter-arrival');
+
       // chart marker
       state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
       state._trendEvents.push({ t: Number(state.t ?? 0), kind:'season', label:`${from}?${season.name}`, color:'rgba(255,255,255,.10)' });
@@ -6258,6 +6319,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             k.grievance = clamp01(Number(k.grievance ?? 0) * 0.96);
           }
           log(`RAID REPELLED! (guards ${guards}, palisade ${pal}) Threat pushed back.`);
+          triggerEventInterrupt('raid-repel');
           playSfx('raid');
           feed('Raid repelled. The colony feels safer.');
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
@@ -6287,6 +6349,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           }
 
           log(`RAID! Lost ${fmt(stealFood)} food + ${fmt(stealWood)} wood. Injuries reported. (mitigation x${mitigate.toFixed(2)}; guards ${guards}, palisade ${pal})`);
+          triggerEventInterrupt('raid-hit');
           playSfx('raid');
           feed(`Raid hit the colony. Lost ${fmt(stealFood)} food and ${fmt(stealWood)} wood.`);
           state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
@@ -9508,6 +9571,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Society feed
     if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
     renderMilestonesFx();
+    renderEventInterrupts();
     renderActivePlayEvent();
     renderActiveChoiceEvent();
 
