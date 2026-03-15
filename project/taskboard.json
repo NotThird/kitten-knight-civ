@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T12:54:08.712Z",
+    "lastUpdated": "2026-03-15T13:19:37.873Z",
     "columns": {
         "todo": [
             {
@@ -336,23 +336,6 @@
                 "staleCount": 0
             },
             {
-                "id": "TASK-181",
-                "title": "Design SVG-based settlement illustration with animated building silhouettes",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:09:54.225Z",
-                "description": "Arbiter review calls out settlement evolution as using CSS divs with emoji and text labels. Austin wants visible growth that creates WOW. Design an SVG-based settlement illustration: silhouette buildings that appear and grow as built, smoke from chimneys, tiny kitten figures walking paths, seasonal overlays. Reference Kittens Game resource panel, Realm Grinder faction backgrounds. Keep minimal (SVG paths, no heavy assets) but aspirational.",
-                "acceptanceCriteria": [
-                    "Design doc specifies SVG building silhouettes for each structure type",
-                    "Includes animation specs for building placement and ambient motion",
-                    "Defines seasonal visual overlays for winter spring summer autumn",
-                    "Specifies layout changes across evolution stages clearing to camp to village to town",
-                    "All visuals achievable with inline SVG plus CSS animations no external assets"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-182",
                 "title": "Implement kitten personal goals display on cards with progress indicators",
                 "assignee": "developer",
@@ -368,25 +351,6 @@
                     "At least 3 distinct goal types are visually distinguishable"
                 ],
                 "source": "strategist"
-            },
-            {
-                "id": "TASK-184",
-                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:36:13.064Z",
-                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Curiosity meter accumulates based on population, libraries, exploration, season",
-                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
-                    "All 6 relics unlock sequentially with chronicle entries",
-                    "Each relic unlocks its specified mechanic",
-                    "Discoveries spaced ~9-12 min apart in typical mid-game",
-                    "State persisted in save data",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
             },
             {
                 "id": "TASK-185",
@@ -438,32 +402,126 @@
                     "parse_check and smoke_test pass"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-189",
+                "title": "BREAKTHROUGH: Implement kitten aging lifecycle with life stages and natural passing",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:28.112Z",
+                "description": "Implement the core aging system from TASK-177 design: age progression tick (1 year = 180s), 4 life stages (kitten/adult/elder/twilight) with stat modifiers, natural passing with twilight probability curve, memorial chronicle entries on death, colony grief modifier. This is the foundation — trait inheritance and births come in a follow-up. Wire into sim.js tick loop, add stage badges to kitten cards.",
+                "acceptanceCriteria": [
+                    "Kittens age continuously at 1 year per 180 real seconds",
+                    "Life stage transitions at correct thresholds (0-2 kitten, 2-9 adult, 9-12.5 elder, 12.5+ twilight)",
+                    "Each stage applies correct work/learning modifiers",
+                    "Twilight kittens have probability-based natural passing",
+                    "Death triggers memorial chronicle entry with name and achievements",
+                    "Colony grief mood modifier applied on passing (-4 baseline for 90s)",
+                    "Anti-collapse: passing chance halved when population <= 4",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-190",
+                "title": "BREAKTHROUGH: Implement birth system with trait inheritance and generation tracking",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:30.477Z",
+                "description": "Second half of TASK-177 aging design: birth eligibility checks (partnered adults, bond>=65, food ratio>=0.85, pop less than capacity+2), birth chance formula with bond/food/crowd/season factors, offspring trait inheritance with dominance weighting and 20% mutation chance, generation tracking (Gen N badges), generation milestone vignettes with Legacy Spark selection. Requires aging system to be in place first.",
+                "acceptanceCriteria": [
+                    "Eligible adult pairs can produce offspring based on birth chance formula",
+                    "Offspring inherit 3 traits using dominance-weighted parent pool + mutation",
+                    "Generation counter increments correctly (max parent gen + 1)",
+                    "Gen badge displays on kitten cards",
+                    "First adult of new generation triggers milestone vignette",
+                    "Legacy Spark selection offered at generation milestones (4 options)",
+                    "Birth cooldown of 12 real minutes per pair enforced",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-191",
+                "title": "Design authored mid-game narrative event scripts for minutes 8-20",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:09:52.646Z",
+                "description": "Arbiter identifies the #1 engagement gap: after Libraries unlock (~8 min), the game goes quiet. Content fallback (TASK-183) fills time but feels procedural. We need 8-10 AUTHORED narrative beats spaced across minutes 8-20 that feel like real story moments. Reference: Cookie Clicker news ticker has authored jokes that surprise; Kittens Game seasonal events tell micro-stories. Each beat should reference specific kittens by name, reference colony history, and offer a meaningful choice or revelation. These scripts feed into Whisker Relics (TASK-184) and the content drip system.",
+                "acceptanceCriteria": [
+                    "At least 8 authored narrative event scripts with unique dialogue and choices",
+                    "Each event references colony state (population, buildings, relationships) for contextual flavor",
+                    "Events are paced to trigger roughly every 60-90 seconds between minutes 8-20",
+                    "At least 3 events offer meaningful binary choices with different stat outcomes",
+                    "Events feel thematically connected as a discovery chain, not random"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-192",
+                "title": "Design relationship map UI showing kitten bonds, coteries, and trust visually",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:09:56.208Z",
+                "description": "Arbiter gap #3: the memory/conversation/coterie system is deep but barely surfaced. Players cannot see who likes whom, which social circles form, or why mood shifts. Reference: Crusader Kings relationship web makes politics visible. Design a compact relationship map (toggleable overlay or panel) showing kittens as nodes with colored lines for bonds (green friendship, red rivalry, gold mentor). Coterie clusters should be visually grouped. This surfaces the impressive social sim already running underneath.",
+                "acceptanceCriteria": [
+                    "Shows all kittens as nodes with visual bond lines between them",
+                    "Bond types are color-coded (friendship, rivalry, mentorship, neutral)",
+                    "Coterie or social circles are visually grouped or clustered",
+                    "Trust level indicated by line thickness or label",
+                    "Panel is toggleable and does not clutter the main view",
+                    "Hovering or clicking a kitten highlights their connections"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-177",
-                "title": "Design kitten aging, life stages, and generational inheritance system",
+                "id": "TASK-181",
+                "title": "Design SVG-based settlement illustration with animated building silhouettes",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "description": "TASK-153 (implement aging/generations) is a complex system that needs a design spec first. Austin wants a micro universe of growth — kittens that age, form families, pass on traits, and leave legacies. Reference: CK3 trait inheritance with dominant/recessive mechanics, RimWorld aging with meaningful elder roles, Dwarf Fortress generational legends. Key design questions: How fast should kittens age relative to game ticks? What are the life stage thresholds and bonuses? How does trait inheritance work (which traits dominate, mutation rates)? How do deaths affect relationships and morale? How does population balance work (births vs deaths vs carrying capacity)? Should elders have unique actions (storytelling, mentoring)? How do generations interact with prestige resets? Design must integrate with existing personality traits, coterie system, and the new relationship system (TASK-152).",
+                "createdAt": "2026-03-15T12:09:54.225Z",
+                "description": "Arbiter review calls out settlement evolution as using CSS divs with emoji and text labels. Austin wants visible growth that creates WOW. Design an SVG-based settlement illustration: silhouette buildings that appear and grow as built, smoke from chimneys, tiny kitten figures walking paths, seasonal overlays. Reference Kittens Game resource panel, Realm Grinder faction backgrounds. Keep minimal (SVG paths, no heavy assets) but aspirational.",
                 "acceptanceCriteria": [
-                    "Life stage progression defined with age thresholds, stat modifiers, and visual indicators for each stage (kitten/adult/elder)",
-                    "Trait inheritance rules specified: which traits can be inherited, dominance hierarchy, mutation chance and pool",
-                    "Population lifecycle balance model: birth rate formula, death triggers, carrying capacity interaction",
-                    "Elder-specific mechanics designed (wisdom bonuses, mentoring, memorial events on death)",
-                    "Integration points documented for relationships (TASK-152), coteries, personality system, and prestige layers",
-                    "Generational tracking spec: family trees, generation counter, legacy bonuses per generation survived"
+                    "Design doc specifies SVG building silhouettes for each structure type",
+                    "Includes animation specs for building placement and ambient motion",
+                    "Defines seasonal visual overlays for winter spring summer autumn",
+                    "Specifies layout changes across evolution stages clearing to camp to village to town",
+                    "All visuals achievable with inline SVG plus CSS animations no external assets"
                 ],
                 "source": "strategist",
-                "status": "todo",
-                "createdAt": "2026-03-15T11:10:39.533Z",
-                "staleCount": 0,
-                "claimedAt": "2026-03-15T12:41:51.884Z",
-                "completedAt": "2026-03-15T12:42:57.094Z",
+                "claimedAt": "2026-03-15T13:11:57.609Z",
+                "completedAt": "2026-03-15T13:13:22.660Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-184",
+                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:13.064Z",
+                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Curiosity meter accumulates based on population, libraries, exploration, season",
+                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
+                    "All 6 relics unlock sequentially with chronicle entries",
+                    "Each relic unlocks its specified mechanic",
+                    "Discoveries spaced ~9-12 min apart in typical mid-game",
+                    "State persisted in save data",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T13:16:15.843Z",
+                "completedAt": "2026-03-15T13:19:37.873Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1144,6 +1202,31 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T12:54:08.712Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-177",
+                "title": "Design kitten aging, life stages, and generational inheritance system",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "description": "TASK-153 (implement aging/generations) is a complex system that needs a design spec first. Austin wants a micro universe of growth — kittens that age, form families, pass on traits, and leave legacies. Reference: CK3 trait inheritance with dominant/recessive mechanics, RimWorld aging with meaningful elder roles, Dwarf Fortress generational legends. Key design questions: How fast should kittens age relative to game ticks? What are the life stage thresholds and bonuses? How does trait inheritance work (which traits dominate, mutation rates)? How do deaths affect relationships and morale? How does population balance work (births vs deaths vs carrying capacity)? Should elders have unique actions (storytelling, mentoring)? How do generations interact with prestige resets? Design must integrate with existing personality traits, coterie system, and the new relationship system (TASK-152).",
+                "acceptanceCriteria": [
+                    "Life stage progression defined with age thresholds, stat modifiers, and visual indicators for each stage (kitten/adult/elder)",
+                    "Trait inheritance rules specified: which traits can be inherited, dominance hierarchy, mutation chance and pool",
+                    "Population lifecycle balance model: birth rate formula, death triggers, carrying capacity interaction",
+                    "Elder-specific mechanics designed (wisdom bonuses, mentoring, memorial events on death)",
+                    "Integration points documented for relationships (TASK-152), coteries, personality system, and prestige layers",
+                    "Generational tracking spec: family trees, generation counter, legacy bonuses per generation survived"
+                ],
+                "source": "strategist",
+                "status": "todo",
+                "createdAt": "2026-03-15T11:10:39.533Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-15T12:41:51.884Z",
+                "completedAt": "2026-03-15T12:42:57.094Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T13:04:37.049Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1294,9 +1377,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 179,
-        "totalCompleted": 116,
+        "totalCreated": 183,
+        "totalCompleted": 117,
         "pendingQuestion": null
     },
-    "nextId": 189
+    "nextId": 193
 }

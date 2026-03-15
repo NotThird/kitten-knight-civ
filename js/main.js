@@ -1026,7 +1026,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.lastSpawnAt = nowT;
     ap.pitySec = 0;
     if (source) ap.chainReady = null;
-    ap.nextAt = nowT + rollActivePlayDelay();
+    ap.nextAt = nowT + rollActivePlayDelay() * whiskerGoldenDelayMul(s);
     markContentBeat(s, 'golden-moment');
     triggerEventInterrupt('golden-moment');
     playSfx('unlock');
@@ -2811,6 +2811,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ensureResearchState(state);
   ensureAudioState(state);
   ensureActivePlayState(state);
+  ensureWhiskerRelicsState(state);
   state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), revealStage: 0 };
   state.meta.revealStage = Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(Number(state.meta.revealStage ?? 0) || 0)));
 
@@ -3171,7 +3172,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Forage');
         const wp = workPaceMul(s);
-        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 1.85 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * whiskerRelicMul(s, 'food') * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.04 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.04 * wp * fx.hungerMult);
@@ -3228,7 +3229,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Farm');
         const wp = workPaceMul(s);
-        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 2.35 * fx.outputMult * winterPenalty * toolsBonus(s) * activePlayProdMul(s) * whiskerRelicMul(s, 'food') * dt * eff * mom * wp;
         s.res.food += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.025 * wp * fx.hungerMult);
@@ -3242,7 +3243,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'ChopWood');
         const wp = workPaceMul(s);
-        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 1.05 * fx.outputMult * toolsBonus(s) * activePlayProdMul(s) * whiskerRelicMul(s, 'wood') * dt * eff * mom * wp;
         s.res.wood += out;
         k.energy = clamp01(k.energy - dt * 0.05 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.035 * wp * fx.hungerMult);
@@ -3509,7 +3510,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           doFallback(s, k, dt, 'Research', 'CraftTools blocked by reserve → Research');
           return;
         }
-        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
+        const made = craft * 0.55 * workshopBonus(s) * activePlayProdMul(s) * whiskerRelicMul(s, 'tools') * mom * eternityMandateMul(s, 'tools') * (eternityHas(s, 'et_ancestral_forge') ? 1.15 : 1.00); // workshops improve throughput
         spendUpToReserve(s,'wood', craft * 0.55);
         spendUpToReserve(s,'science', craft * 0.40);
         s.res.tools = (s.res.tools ?? 0) + made;
@@ -3636,7 +3637,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const eff = efficiency(s, k);
         const mom = momentumMul(k, 'Research');
         const wp = workPaceMul(s);
-        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * dt * eff * mom * wp;
+        const out = 0.95 * fx.outputMult * libraryBonus(s) * legacyResearchMul(s) * activePlayProdMul(s) * whiskerRelicMul(s, 'science') * dt * eff * mom * wp;
         s.res.science += out;
         k.energy = clamp01(k.energy - dt * 0.035 * wp * fx.fatigueMult);
         k.hunger = clamp01(k.hunger + dt * 0.03 * wp * fx.hungerMult);
@@ -7102,6 +7103,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
     tickMidgameMilestones(state);
+    tickWhiskerRelics(state);
     tickContentFallback(state);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
@@ -9730,6 +9732,111 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     s.midgame.goalCelebrateUntil = Number(s.midgame.goalCelebrateUntil ?? 0) || 0;
   }
 
+  function ensureWhiskerRelicsState(s){
+    s.whiskerRelics = (s.whiskerRelics && typeof s.whiskerRelics === 'object') ? s.whiskerRelics : {};
+    const wr = s.whiskerRelics;
+    wr.active = !!wr.active;
+    wr.curiosity = Math.max(0, Number(wr.curiosity ?? 0) || 0);
+    wr.totalCuriosity = Math.max(0, Number(wr.totalCuriosity ?? 0) || 0);
+    wr.nextThreshold = Math.max(80, Number(wr.nextThreshold ?? 600) || 600);
+    wr.unlocked = Array.isArray(wr.unlocked) ? wr.unlocked.slice(0, 6) : [];
+    wr.history = Array.isArray(wr.history) ? wr.history : [];
+    wr.lastTickAt = Number(wr.lastTickAt ?? Number(s.t ?? 0)) || Number(s.t ?? 0);
+    wr.lastUnlockAt = Number(wr.lastUnlockAt ?? 0) || 0;
+    wr.pulseAt = Number(wr.pulseAt ?? Number(s.t ?? 0) + 90) || (Number(s.t ?? 0) + 90);
+    wr.pulseIndex = Math.max(0, Math.floor(Number(wr.pulseIndex ?? 0) || 0));
+  }
+
+  const WHISKER_RELICS = [
+    { id:'sun-etched-compass', title:'Sun-Etched Compass', desc:'Scouts map safer foraging loops. +8% food output.', unlock:(s)=>{ s.res.food = Math.max(0, Number(s.res.food ?? 0) + 40); } },
+    { id:'hushwood-gear', title:'Hushwood Gear', desc:'Carvers recover resilient timber patterns. +10% wood output.', unlock:(s)=>{ s.res.wood = Math.max(0, Number(s.res.wood ?? 0) + 36); } },
+    { id:'ember-codex', title:'Ember Codex', desc:'Ancient notation boosts scholars. +12% research output.', unlock:(s)=>{ s.res.science = Math.max(0, Number(s.res.science ?? 0) + 110); } },
+    { id:'bronze-paw-anvil', title:'Bronze Paw Anvil', desc:'Toolsmiths inherit forgotten templates. +12% tool crafting output.', unlock:(s)=>{ s.res.tools = Math.max(0, Number(s.res.tools ?? 0) + 20); } },
+    { id:'lantern-oath', title:'Lantern Oath', desc:'Colony rituals steady morale. Small dissent decay and mood uplift pulses.', unlock:(s)=>{ s.social = (s.social && typeof s.social === 'object') ? s.social : {}; s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - 0.03); } },
+    { id:'starbound-reliquary', title:'Starbound Reliquary', desc:'Relic network harmonizes pacing. Golden moments arrive faster and rewards spike.', unlock:(s)=>{ ensureActivePlayState(s); s.activePlay.reputation = Math.max(-100, Math.min(100, Number(s.activePlay.reputation ?? 0) + 8)); } },
+  ];
+
+  function whiskerRelicActive(s, id){
+    ensureWhiskerRelicsState(s);
+    return !!s.whiskerRelics.unlocked?.includes(id);
+  }
+
+  function whiskerRelicMul(s, kind){
+    let mul = 1;
+    if (kind === 'food' && whiskerRelicActive(s, 'sun-etched-compass')) mul *= 1.08;
+    if (kind === 'wood' && whiskerRelicActive(s, 'hushwood-gear')) mul *= 1.10;
+    if (kind === 'science' && whiskerRelicActive(s, 'ember-codex')) mul *= 1.12;
+    if (kind === 'tools' && whiskerRelicActive(s, 'bronze-paw-anvil')) mul *= 1.12;
+    return mul;
+  }
+
+  function whiskerGoldenDelayMul(s){
+    return whiskerRelicActive(s, 'starbound-reliquary') ? 0.82 : 1;
+  }
+
+  function whiskerRelicUnlock(s, relic){
+    ensureWhiskerRelicsState(s);
+    const wr = s.whiskerRelics;
+    if (!relic || wr.unlocked.includes(relic.id)) return false;
+    wr.unlocked.push(relic.id);
+    wr.lastUnlockAt = Number(s.t ?? 0);
+    wr.history.push({ id: relic.id, at: Number(s.t ?? 0) });
+    if (wr.history.length > 30) wr.history.splice(0, wr.history.length - 30);
+    if (typeof relic.unlock === 'function') relic.unlock(s);
+    wr.curiosity = 0;
+    wr.nextThreshold = 540 + Math.random() * 180;
+    feed(`Whisker Relic discovered: ${relic.title}. ${relic.desc}`);
+    log(`Relic unlocked: ${relic.title}.`);
+    triggerEventInterrupt('golden-moment');
+    markContentBeat(s, `relic:${relic.id}`);
+    playSfx('milestone');
+    return true;
+  }
+
+  function tickWhiskerRelics(s){
+    ensureWhiskerRelicsState(s);
+    const wr = s.whiskerRelics;
+    const nowT = Number(s.t ?? 0);
+    const dt = Math.max(0, nowT - Number(wr.lastTickAt ?? nowT));
+    wr.lastTickAt = nowT;
+
+    const libs = Number(s?.res?.libraries ?? 0);
+    const pop = Number(s?.kittens?.length ?? 0);
+    const postEternity = Number(s?.eternity?.resets ?? 0) >= 1;
+    const canActivate = !!s?.unlocked?.library && postEternity && pop >= 12 && nowT >= 1500;
+    if (!canActivate) return;
+
+    if (!wr.active) {
+      wr.active = true;
+      feed('Whisker Relics awaken: curiosity stirs in the colony archives.');
+      log('Whisker Relics chain activated.');
+      markContentBeat(s, 'relic:chain-start');
+    }
+
+    if (wr.unlocked.length >= WHISKER_RELICS.length) return;
+
+    const season = seasonAt(nowT);
+    const seasonMul = season.name === 'Winter' ? 0.90 : season.name === 'Fall' ? 1.06 : season.name === 'Spring' ? 1.08 : 1.00;
+    const explorationSignal = (Number(s?.activePlay?.seen ?? 0) * 0.005) + ((s?.midgame?.unlocked?.['expedition-charter']) ? 0.12 : 0);
+    const ratePerSec = (0.14 + pop * 0.006 + libs * 0.035 + explorationSignal) * seasonMul;
+    const gain = ratePerSec * dt;
+    wr.curiosity += gain;
+    wr.totalCuriosity += gain;
+
+    if (wr.curiosity >= wr.nextThreshold) {
+      const relic = WHISKER_RELICS[wr.unlocked.length];
+      whiskerRelicUnlock(s, relic);
+    }
+
+    if (whiskerRelicActive(s, 'lantern-oath') && nowT >= Number(wr.pulseAt ?? 0)) {
+      s.social = (s.social && typeof s.social === 'object') ? s.social : {};
+      s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - 0.008);
+      const kittens = Array.isArray(s.kittens) ? s.kittens : [];
+      for (const k of kittens) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.005);
+      wr.pulseAt = nowT + 95;
+    }
+  }
+
   const MIDGAME_MILESTONE_DEFS = [
     {
       id: 'archive-ledger',
@@ -9801,6 +9908,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (def.id === 'archive-ledger') pushGoal('mid-archive-ledger', 'Discovery: Archive Ledger', scienceNow, 1700, { unit: 'science', priority: 0 });
       if (def.id === 'starlight-observatory') pushGoal('mid-starlight-observatory', 'Discovery: Starlight Observatory', scienceNow, 2600, { unit: 'science', priority: 0.5 });
       if (def.id === 'expedition-charter') pushGoal('mid-expedition-charter', 'Discovery: Expedition Charter', Number(s.kittens?.length ?? 0), 18, { unit: 'kittens', priority: 0.8 });
+    }
+
+    ensureWhiskerRelicsState(s);
+    const wr = s.whiskerRelics;
+    if (wr.active && Number(wr.unlocked?.length ?? 0) < WHISKER_RELICS.length) {
+      pushGoal('mid-whisker-curiosity', `Whisker Relic ${Number(wr.unlocked.length) + 1}/6`, Number(wr.curiosity ?? 0), Number(wr.nextThreshold ?? 600), { unit: 'curiosity', priority: 0.4 });
     }
 
     entries.sort((a, b) => (a.priority - b.priority) || (b.pct - a.pct));
