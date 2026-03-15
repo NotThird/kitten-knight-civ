@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T13:50:22.567Z",
+    "lastUpdated": "2026-03-15T13:54:12.013Z",
     "columns": {
         "todo": [
             {
@@ -534,29 +534,6 @@
                 "claimedAt": "2026-03-15T13:41:51.734Z",
                 "completedAt": "2026-03-15T13:42:43.746Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-189",
-                "title": "BREAKTHROUGH: Implement kitten aging lifecycle with life stages and natural passing",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:05:28.112Z",
-                "description": "Implement the core aging system from TASK-177 design: age progression tick (1 year = 180s), 4 life stages (kitten/adult/elder/twilight) with stat modifiers, natural passing with twilight probability curve, memorial chronicle entries on death, colony grief modifier. This is the foundation — trait inheritance and births come in a follow-up. Wire into sim.js tick loop, add stage badges to kitten cards.",
-                "acceptanceCriteria": [
-                    "Kittens age continuously at 1 year per 180 real seconds",
-                    "Life stage transitions at correct thresholds (0-2 kitten, 2-9 adult, 9-12.5 elder, 12.5+ twilight)",
-                    "Each stage applies correct work/learning modifiers",
-                    "Twilight kittens have probability-based natural passing",
-                    "Death triggers memorial chronicle entry with name and achievements",
-                    "Colony grief mood modifier applied on passing (-4 baseline for 90s)",
-                    "Anti-collapse: passing chance halved when population <= 4",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T13:46:20.132Z",
-                "completedAt": "2026-03-15T13:50:22.567Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1308,6 +1285,31 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T13:34:40.991Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-189",
+                "title": "BREAKTHROUGH: Implement kitten aging lifecycle with life stages and natural passing",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:28.112Z",
+                "description": "Implement the core aging system from TASK-177 design: age progression tick (1 year = 180s), 4 life stages (kitten/adult/elder/twilight) with stat modifiers, natural passing with twilight probability curve, memorial chronicle entries on death, colony grief modifier. This is the foundation — trait inheritance and births come in a follow-up. Wire into sim.js tick loop, add stage badges to kitten cards.",
+                "acceptanceCriteria": [
+                    "Kittens age continuously at 1 year per 180 real seconds",
+                    "Life stage transitions at correct thresholds (0-2 kitten, 2-9 adult, 9-12.5 elder, 12.5+ twilight)",
+                    "Each stage applies correct work/learning modifiers",
+                    "Twilight kittens have probability-based natural passing",
+                    "Death triggers memorial chronicle entry with name and achievements",
+                    "Colony grief mood modifier applied on passing (-4 baseline for 90s)",
+                    "Anti-collapse: passing chance halved when population <= 4",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T13:46:20.132Z",
+                "completedAt": "2026-03-15T13:50:22.567Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T13:54:12.013Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1459,7 +1461,7 @@
     },
     "meta": {
         "totalCreated": 187,
-        "totalCompleted": 119,
+        "totalCompleted": 120,
         "pendingQuestion": null
     },
     "nextId": 197

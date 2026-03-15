@@ -1,26 +1,26 @@
 {
-  "timestamp": "2026-03-15T13:29:31.269Z",
-  "iteration": 37,
+  "timestamp": "$(Get-Date -Format o)",
+  "iteration": 25,
   "cronHealth": {
     "healthy": [
-      "forge-oracle",
-      "forge-forgeleader",
-      "forge-architect",
-      "forge-codesmith",
-      "forge-gauntlet",
-      "forge-arbiter",
-      "forge-watchdog",
-      "forge-sentinel",
-      "forge-strategist"
+      "Oracle (Prophet)",
+      "ForgeLeader (Orchestrator)",
+      "Architect (Designer)",
+      "CodeSmith (Developer)",
+      "Gauntlet (Tester)",
+      "Arbiter (Critic)",
+      "Watchdog",
+      "Sentinel",
+      "Strategist (Research & Planning)"
     ],
     "failing": [],
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 27,
+    "todo": 29,
     "claimed": 0,
     "review": 1,
-    "done": 33,
+    "done": 35,
     "blocked": 8,
     "staleTasks": [],
     "status": "stalled"
@@ -30,20 +30,22 @@
       "developer"
     ],
     "lastCycleSilent": [
+      "oracle",
       "architect",
+      "tester",
+      "arbiter",
+      "watchdog",
       "sentinel",
       "strategist",
-      "orchestrator",
-      "arbiter",
-      "gauntlet"
+      "leader"
     ],
     "errors": []
   },
   "convergence": {
-    "currentScore": 7.5,
+    "currentScore": 7.6,
     "threshold": 9.0,
     "consecutiveAbove": 0,
-    "iteration": 37,
+    "iteration": 38,
     "maxIterations": 50,
     "status": "stalled"
   }
