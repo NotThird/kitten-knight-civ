@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T12:18:41.317Z",
+    "lastUpdated": "2026-03-15T12:24:11.860Z",
     "columns": {
         "todo": [
             {
@@ -437,6 +437,26 @@
                     "At least 3 distinct goal types are visually distinguishable"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-179",
+                "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T11:35:25.662Z",
+                "description": "STAGNATION BREAKER. Two-part fix for mid-game content vacuum flagged 4 consecutive cycles. Part 1: Persistent next-goal tracker widget in UI header. Part 2: Mid-game milestone unlocks dripping every 5-10 minutes post-Library. Eliminates the 10+ minute dead zone between Library and Eternity.\n\n[REJECTED 2026-03-15T12:24:11.860Z] Fails AC: no guaranteed <10 min content cadence; milestones are threshold-only with no fallback pacing.",
+                "acceptanceCriteria": [
+                    "Persistent goal tracker widget visible in UI header at all times",
+                    "Goal tracker updates dynamically based on closest achievable unlock",
+                    "At least 3 new mid-game milestones unlock between Library and Eternity tiers",
+                    "Each milestone produces a visible notification or event",
+                    "No 10+ minute stretch without new content appearing during active play",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T12:16:15.624Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -460,27 +480,6 @@
                 "claimedAt": "2026-03-15T12:11:31.343Z",
                 "completedAt": "2026-03-15T12:13:17.421Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-179",
-                "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T11:35:25.662Z",
-                "description": "STAGNATION BREAKER. Two-part fix for mid-game content vacuum flagged 4 consecutive cycles. Part 1: Persistent next-goal tracker widget in UI header. Part 2: Mid-game milestone unlocks dripping every 5-10 minutes post-Library. Eliminates the 10+ minute dead zone between Library and Eternity.",
-                "acceptanceCriteria": [
-                    "Persistent goal tracker widget visible in UI header at all times",
-                    "Goal tracker updates dynamically based on closest achievable unlock",
-                    "At least 3 new mid-game milestones unlock between Library and Eternity tiers",
-                    "Each milestone produces a visible notification or event",
-                    "No 10+ minute stretch without new content appearing during active play",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T12:16:15.624Z",
-                "completedAt": "2026-03-15T12:18:41.317Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
