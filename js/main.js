@@ -1701,6 +1701,34 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     return out;
   }
 
+  const AGE_SECONDS_PER_YEAR = 180;
+  const STAGE_KITTEN_MAX = 2;
+  const STAGE_ADULT_MAX = 9;
+  const STAGE_ELDER_MAX = 12.5;
+
+  function lifeStageForAgeYears(ageYears){
+    const a = Math.max(0, Number(ageYears ?? 0));
+    if (a < STAGE_KITTEN_MAX) return 'kitten';
+    if (a < STAGE_ADULT_MAX) return 'adult';
+    if (a < STAGE_ELDER_MAX) return 'elder';
+    return 'twilight';
+  }
+
+  function stageBadge(stage){
+    if (stage === 'kitten') return 'Kitten';
+    if (stage === 'adult') return 'Adult';
+    if (stage === 'elder') return 'Elder';
+    return 'Twilight';
+  }
+
+  function ensureKittenLifecycle(k){
+    if (!k || typeof k !== 'object') return;
+    k.birthTime = Math.max(0, Number(k.birthTime ?? state?.t ?? 0));
+    const ageYears = Math.max(0, Number(k.ageYears ?? ((Number(state?.t ?? 0) - Number(k.birthTime ?? 0)) / AGE_SECONDS_PER_YEAR)));
+    k.ageYears = ageYears;
+    k.lifeStage = lifeStageForAgeYears(ageYears);
+  }
+
   function makeKitten(id, birthTime){
     const t0 = Number(birthTime ?? 0);
     const traits = genTraits(id);
@@ -1715,6 +1743,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       hunger: 0.2,
       // Health: 1.0 = healthy, lower = sick/injured (reduces efficiency). Recovers via Rest/Eat + good warmth.
       health: 1.0,
+      // Lifecycle: 1 in-game year = 180 real seconds.
+      birthTime: t0,
+      ageYears: 0,
+      lifeStage: 'kitten',
       // Mood: 0..1. Softly affects efficiency + preferences (adds "civ sim" texture without hard locks).
       mood: 0.55,
       skills: { Foraging:1, Farming:1, Woodcutting:1, Building:1, Scholarship:1, Combat:1, Cooking:1, Social:1, Survival:1, Athletics:1 },
@@ -2814,6 +2846,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ensureWhiskerRelicsState(state);
   state.meta = state.meta ?? { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), revealStage: 0 };
   state.meta.revealStage = Math.max(0, Math.min(REVEAL_STAGE_MAX, Math.floor(Number(state.meta.revealStage ?? 0) || 0)));
+  for (const k of (state.kittens ?? [])) ensureKittenLifecycle(k);
+  state.grief = (state.grief && typeof state.grief === 'object') ? state.grief : { until:0, magnitude:4 };
 
   // --- Offline progress (tiny idle-game slice)
   // On boot, we simulate a capped amount of time since the last save.
@@ -3711,15 +3745,18 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   // Main XP function: distributes XP across micro-skills for a task, or awards directly.
   // Signature: gainSkillXP(state, kitten, taskOrSkill, amount)
   function gainSkillXP(s, k, taskOrSkill, amt){
+    const stage = String(k?.lifeStage ?? 'adult');
+    const learnMul = (stage === 'kitten') ? 1.35 : (stage === 'elder') ? 1.10 : (stage === 'twilight') ? 0.90 : 1.00;
+    const scaledAmt = Math.max(0, Number(amt ?? 0)) * learnMul;
     const entries = TASK_SKILL_MAP[taskOrSkill];
     if (entries) {
       // Distribute across micro-skills based on TASK_SKILL_MAP rates
       for (const [skillId, rate] of entries) {
-        awardMicroSkillXP(s, k, skillId, amt * rate);
+        awardMicroSkillXP(s, k, skillId, scaledAmt * rate);
       }
     } else {
       // Direct skill/category XP (backward compat for Mentor target teaching, etc.)
-      awardMicroSkillXP(s, k, taskOrSkill, amt);
+      awardMicroSkillXP(s, k, taskOrSkill, scaledAmt);
     }
   }
 
@@ -3743,6 +3780,84 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!k || !task) return;
     if (!k.activityTime || typeof k.activityTime !== 'object') k.activityTime = {};
     k.activityTime[task] = (k.activityTime[task] ?? 0) + dt;
+  }
+
+  function memorialSummary(k){
+    const top = topSkillInfo(k);
+    const age = Number(k?.ageYears ?? 0);
+    const role = String(k?.role ?? 'Generalist');
+    return `${String(k?.name ?? 'A kitten')} passed at age ${age.toFixed(1)} (${stageBadge(String(k?.lifeStage ?? 'twilight'))}). Top skill: ${String(top.skill ?? 'General')}. Last role: ${role}.`;
+  }
+
+  function onNaturalPassing(s, k){
+    const msg = memorialSummary(k);
+    log(`Memorial: ${msg}`);
+    feed(`Memorial: ${msg}`);
+    kittenLog(k, 'milestone', { what: 'Passed', detail: msg });
+
+    s.grief = (s.grief && typeof s.grief === 'object') ? s.grief : { until:0, magnitude:4 };
+    const nowT = Number(s.t ?? 0);
+    s.grief.until = Math.max(Number(s.grief.until ?? 0), nowT + 90);
+    s.grief.magnitude = Math.max(4, Number(s.grief.magnitude ?? 4));
+
+    for (const kk of (Array.isArray(s.kittens) ? s.kittens : [])) {
+      if (!kk || kk === k) continue;
+      kk.mood = clamp01(Number(kk.mood ?? 0.55) - 0.04);
+    }
+  }
+
+  function tickLifecycle(s, dt){
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (!kittens.length) return;
+
+    for (const k of kittens) {
+      ensureKittenLifecycle(k);
+      const prevStage = String(k.lifeStage ?? 'kitten');
+      k.ageYears = Math.max(0, Number(k.ageYears ?? 0) + (Math.max(0, Number(dt ?? 0)) / AGE_SECONDS_PER_YEAR));
+      k.lifeStage = lifeStageForAgeYears(k.ageYears);
+      if (k.lifeStage !== prevStage) {
+        kittenLog(k, 'milestone', { what: 'Life Stage', detail: `${stageBadge(prevStage)} → ${stageBadge(k.lifeStage)}` });
+      }
+
+      if (k.lifeStage === 'kitten') {
+        const safe = new Set(['Eat','Rest','Loaf','Socialize','Care','Mentor']);
+        if (!safe.has(String(k.task ?? ''))) {
+          k.task = 'Mentor';
+          k.why = 'Learning years (no labor)';
+        }
+      }
+    }
+
+    const alive = [];
+    const nowPop = kittens.length;
+    for (const k of kittens) {
+      let passed = false;
+      if (String(k.lifeStage) === 'twilight') {
+        const over = Math.max(0, Number(k.ageYears ?? 12.5) - 12.5);
+        let ratePerSec = Math.min(0.06, 0.002 + over * 0.004);
+        if (nowPop <= 4) ratePerSec *= 0.5;
+        const chance = 1 - Math.exp(-ratePerSec * Math.max(0, Number(dt ?? 0)));
+        if (Math.random() < chance) passed = true;
+      }
+
+      if (passed) onNaturalPassing(s, k);
+      else alive.push(k);
+    }
+
+    s.kittens = alive;
+
+    s.grief = (s.grief && typeof s.grief === 'object') ? s.grief : { until:0, magnitude:4 };
+    const gUntil = Number(s.grief.until ?? 0);
+    if (gUntil > Number(s.t ?? 0)) {
+      const gMag = Math.max(0, Number(s.grief.magnitude ?? 4));
+      const moodDrainPerSec = (gMag / 100) / 90;
+      for (const k of s.kittens) {
+        k.mood = clamp01(Number(k.mood ?? 0.55) - moodDrainPerSec * Math.max(0, Number(dt ?? 0)));
+      }
+    } else {
+      s.grief.until = 0;
+      s.grief.magnitude = 4;
+    }
   }
 
   // Mood band labels (for life log entries)
@@ -6813,6 +6928,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     applyUnlocks();
     tryAdvanceRevealStage(state);
     tickPressures(dt);
+    tickLifecycle(state, dt);
     tickActivePlayEvents();
 
     // Trends sampling (charts): 1Hz, last ~2 minutes
@@ -11478,7 +11594,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             <span class="kc-face">${moodFace}${healthIcon}</span>
             <div class="kc-identity">
               <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))}</span>
-              <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')}</span>
+              <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')} <span class="tag" style="font-size:10px">${escapeHtml(stageBadge(String(k.lifeStage ?? 'adult')))}</span></span>
             </div>
             <span class="kc-mood-react" title="Current mood reaction">${reactionText}</span>
           </div>

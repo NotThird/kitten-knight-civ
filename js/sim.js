@@ -95,7 +95,11 @@ export function efficiency(s, k){
   const mood = clamp01(Number(k?.mood ?? 0.55));
   const moodMul = 0.88 + 0.24 * mood; // 0.88..1.12
 
-  return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul * moodMul);
+  // Lifecycle work modifiers.
+  const stage = String(k?.lifeStage ?? 'adult');
+  const ageWorkMul = (stage === 'kitten') ? 0.15 : (stage === 'elder') ? 0.88 : (stage === 'twilight') ? 0.70 : 1.00;
+
+  return Math.max(0.20, energyMul * hungerMul * coldMul * healthMul * moodMul * ageWorkMul);
 }
 
 // --- Momentum (emergent specialization via "getting in the groove")

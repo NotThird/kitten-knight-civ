@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T13:24:20.594Z",
+    "lastUpdated": "2026-03-15T13:50:22.567Z",
     "columns": {
         "todo": [
             {
@@ -370,23 +370,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-187",
-                "title": "Design mid-game building unlock chain with new kitten activities",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:40:50.311Z",
-                "description": "The critic identifies a gap between Libraries unlock and Eternity where no new GAMEPLAY unlocks occur. Design 3-4 new buildings that unlock in the mid-game, each introducing a new kitten activity or mechanic. Reference: Kittens Game unlocks new buildings that change what kittens DO. Each building should add a new kitten job/activity, not just a production bonus. Examples: Training Grounds for combat skill, Scriptorium for culture resource, Watchtower for scouting, Market for trade. These should integrate with existing systems.",
-                "acceptanceCriteria": [
-                    "3-4 mid-game buildings defined with unlock conditions between Libraries and Eternity",
-                    "Each building introduces a new kitten activity/job type",
-                    "Resource costs and production effects specified",
-                    "Integration points with exploration, trading, and Whisker Relics systems documented",
-                    "Unlock pacing ensures a new building every 10-15 minutes of mid-game play"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-188",
                 "title": "Tune golden moment frequency and add 3 new mid-game choice templates",
                 "assignee": "developer",
@@ -402,26 +385,6 @@
                     "parse_check and smoke_test pass"
                 ],
                 "source": "strategist"
-            },
-            {
-                "id": "TASK-189",
-                "title": "BREAKTHROUGH: Implement kitten aging lifecycle with life stages and natural passing",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:05:28.112Z",
-                "description": "Implement the core aging system from TASK-177 design: age progression tick (1 year = 180s), 4 life stages (kitten/adult/elder/twilight) with stat modifiers, natural passing with twilight probability curve, memorial chronicle entries on death, colony grief modifier. This is the foundation — trait inheritance and births come in a follow-up. Wire into sim.js tick loop, add stage badges to kitten cards.",
-                "acceptanceCriteria": [
-                    "Kittens age continuously at 1 year per 180 real seconds",
-                    "Life stage transitions at correct thresholds (0-2 kitten, 2-9 adult, 9-12.5 elder, 12.5+ twilight)",
-                    "Each stage applies correct work/learning modifiers",
-                    "Twilight kittens have probability-based natural passing",
-                    "Death triggers memorial chronicle entry with name and achievements",
-                    "Colony grief mood modifier applied on passing (-4 baseline for 90s)",
-                    "Anti-collapse: passing chance halved when population <= 4",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
             },
             {
                 "id": "TASK-190",
@@ -477,29 +440,123 @@
                     "Hovering or clicking a kitten highlights their connections"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-193",
+                "title": "Implement SVG settlement illustration from TASK-181 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:35:21.947Z",
+                "description": "Replace CSS/emoji settlement with inline SVG scene per TASK-181 spec. Layer stack: sky gradient, hills, buildings (symbol+use), paths, ambient particles. 4 evolution stages (clearing/camp/village/town) driven by building count. Seasonal overlays. Building placement animation. Ambient loops. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Inline SVG replaces current settlement panel with no external assets",
+                    "All 8 building silhouette types render as symbol/use instances",
+                    "4 evolution stages transition based on building count",
+                    "Seasonal overlay classes apply correct tint and particles",
+                    "Building placement animation plays on new construction",
+                    "Ambient motion loops active (smoke, banners, walkers)",
+                    "prefers-reduced-motion respected",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-194",
+                "title": "Implement kitten relationship panel with visual bond network",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:35:24.976Z",
+                "description": "Surface the existing coterie/trust/conversation system visually. Add a relationship panel showing kitten bonds as a network: nodes=kittens, edges=relationships colored by type (friendship green, rivalry red, mentor gold). Show bond strength. Add bond indicators on kitten cards. Makes social simulation VISIBLE to players.",
+                "acceptanceCriteria": [
+                    "Relationship panel shows kitten bond network with typed colored edges",
+                    "Bond strength and type visible on hover or tap",
+                    "Kitten cards show top 1-2 relationship indicators",
+                    "Panel updates live as relationships change",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-195",
+                "title": "Design comeback hooks: offline milestones and return-triggered story beats",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:40:04.925Z",
+                "description": "The engagement gap extends between sessions. Great incrementals pull players back: Cookie Clicker golden cookies accumulate offline, Kittens Game has seasonal transitions, NGU IDLE adventure rewards stack. KKC offline progress modal is celebratory but one-note. Design 3-4 offline milestone types that only trigger on return: a kitten had a baby while away, a new building completed, a relationship formed or broke, a wandering stranger arrived waiting for a decision. Each should feel like look what happened while you were gone and require a player choice to resolve.",
+                "acceptanceCriteria": [
+                    "At least 4 distinct offline milestone types designed with narrative flavor",
+                    "Each milestone includes a player choice or acknowledgment moment on return",
+                    "Milestones reference colony state changes that occurred during offline time",
+                    "Pacing rules: no more than 3 milestones per return to avoid overwhelm",
+                    "At least one milestone involves kitten social dynamics (birth, relationship, conflict)"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-196",
+                "title": "Design colony reputation and visitor encounter system for mid-game depth",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:40:07.940Z",
+                "description": "After Libraries the mid-game feels same-y. Reference: Realm Grinder faction reputation unlocks new mechanics; Kittens Game trade ships bring resources AND story. Design a reputation system where colony choices (curator policies, event decisions) build a reputation score attracting different visitor types. Friendly reputation draws merchants and scholars. Fierce reputation draws warriors and challenges. This gives accumulated choices CONSEQUENCES and creates mid-game identity. Visitors arrive as golden-moment-style interrupts with unique choices. Connects to trading design TASK-160 and exploration TASK-154.",
+                "acceptanceCriteria": [
+                    "Reputation system with at least 2 axes (e.g. friendly/fierce, isolationist/cosmopolitan)",
+                    "At least 4 visitor types tied to reputation thresholds",
+                    "Each visitor type offers unique choices with different resource or mechanic outcomes",
+                    "Reputation changes based on existing curator policy decisions and event choices",
+                    "Design connects to trading design TASK-160 and exploration TASK-154"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-181",
-                "title": "Design SVG-based settlement illustration with animated building silhouettes",
+                "id": "TASK-187",
+                "title": "Design mid-game building unlock chain with new kitten activities",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T12:09:54.225Z",
-                "description": "Arbiter review calls out settlement evolution as using CSS divs with emoji and text labels. Austin wants visible growth that creates WOW. Design an SVG-based settlement illustration: silhouette buildings that appear and grow as built, smoke from chimneys, tiny kitten figures walking paths, seasonal overlays. Reference Kittens Game resource panel, Realm Grinder faction backgrounds. Keep minimal (SVG paths, no heavy assets) but aspirational.",
+                "createdAt": "2026-03-15T12:40:50.311Z",
+                "description": "The critic identifies a gap between Libraries unlock and Eternity where no new GAMEPLAY unlocks occur. Design 3-4 new buildings that unlock in the mid-game, each introducing a new kitten activity or mechanic. Reference: Kittens Game unlocks new buildings that change what kittens DO. Each building should add a new kitten job/activity, not just a production bonus. Examples: Training Grounds for combat skill, Scriptorium for culture resource, Watchtower for scouting, Market for trade. These should integrate with existing systems.",
                 "acceptanceCriteria": [
-                    "Design doc specifies SVG building silhouettes for each structure type",
-                    "Includes animation specs for building placement and ambient motion",
-                    "Defines seasonal visual overlays for winter spring summer autumn",
-                    "Specifies layout changes across evolution stages clearing to camp to village to town",
-                    "All visuals achievable with inline SVG plus CSS animations no external assets"
+                    "3-4 mid-game buildings defined with unlock conditions between Libraries and Eternity",
+                    "Each building introduces a new kitten activity/job type",
+                    "Resource costs and production effects specified",
+                    "Integration points with exploration, trading, and Whisker Relics systems documented",
+                    "Unlock pacing ensures a new building every 10-15 minutes of mid-game play"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T13:11:57.609Z",
-                "completedAt": "2026-03-15T13:13:22.660Z",
+                "claimedAt": "2026-03-15T13:41:51.734Z",
+                "completedAt": "2026-03-15T13:42:43.746Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-189",
+                "title": "BREAKTHROUGH: Implement kitten aging lifecycle with life stages and natural passing",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:28.112Z",
+                "description": "Implement the core aging system from TASK-177 design: age progression tick (1 year = 180s), 4 life stages (kitten/adult/elder/twilight) with stat modifiers, natural passing with twilight probability curve, memorial chronicle entries on death, colony grief modifier. This is the foundation — trait inheritance and births come in a follow-up. Wire into sim.js tick loop, add stage badges to kitten cards.",
+                "acceptanceCriteria": [
+                    "Kittens age continuously at 1 year per 180 real seconds",
+                    "Life stage transitions at correct thresholds (0-2 kitten, 2-9 adult, 9-12.5 elder, 12.5+ twilight)",
+                    "Each stage applies correct work/learning modifiers",
+                    "Twilight kittens have probability-based natural passing",
+                    "Death triggers memorial chronicle entry with name and achievements",
+                    "Colony grief mood modifier applied on passing (-4 baseline for 90s)",
+                    "Anti-collapse: passing chance halved when population <= 4",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T13:46:20.132Z",
+                "completedAt": "2026-03-15T13:50:22.567Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1229,6 +1286,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T13:24:20.594Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-181",
+                "title": "Design SVG-based settlement illustration with animated building silhouettes",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:09:54.225Z",
+                "description": "Arbiter review calls out settlement evolution as using CSS divs with emoji and text labels. Austin wants visible growth that creates WOW. Design an SVG-based settlement illustration: silhouette buildings that appear and grow as built, smoke from chimneys, tiny kitten figures walking paths, seasonal overlays. Reference Kittens Game resource panel, Realm Grinder faction backgrounds. Keep minimal (SVG paths, no heavy assets) but aspirational.",
+                "acceptanceCriteria": [
+                    "Design doc specifies SVG building silhouettes for each structure type",
+                    "Includes animation specs for building placement and ambient motion",
+                    "Defines seasonal visual overlays for winter spring summer autumn",
+                    "Specifies layout changes across evolution stages clearing to camp to village to town",
+                    "All visuals achievable with inline SVG plus CSS animations no external assets"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T13:11:57.609Z",
+                "completedAt": "2026-03-15T13:13:22.660Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T13:34:40.991Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1379,9 +1458,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 183,
-        "totalCompleted": 118,
+        "totalCreated": 187,
+        "totalCompleted": 119,
         "pendingQuestion": null
     },
-    "nextId": 193
+    "nextId": 197
 }
