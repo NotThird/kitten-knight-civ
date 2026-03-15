@@ -853,9 +853,12 @@
 /* ── Simplified card layout ── */
 .kc-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .kc-face   { font-size:30px; line-height:1; flex-shrink:0; }
-.kc-identity { display:flex; flex-direction:column; min-width:0; }
+.kc-identity { display:flex; flex-direction:column; min-width:0; flex:1; }
 .kc-name   { font-size:14px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .kc-role   { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+.kc-mood-react { font-size:13px; color:#fef3c7; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.24); border-radius:999px; padding:2px 8px; white-space:nowrap; }
+.kc-speech { margin:-2px 0 8px; padding:6px 10px; border-radius:10px; border:1px solid rgba(196,181,253,.26); background:linear-gradient(180deg, rgba(196,181,253,.16), rgba(96,165,250,.07)); color:#e5e7eb; font-size:11px; line-height:1.3; position:relative; }
+.kc-speech::after { content:''; position:absolute; left:14px; bottom:-6px; width:10px; height:10px; background:rgba(122,116,196,.45); border-right:1px solid rgba(196,181,253,.26); border-bottom:1px solid rgba(196,181,253,.26); transform:rotate(45deg); }
 
 .kc-trait-fx {
   display:inline-block; width:8px; height:8px; border-radius:50%; margin-left:6px;

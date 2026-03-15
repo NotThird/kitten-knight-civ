@@ -10610,6 +10610,10 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const displayCache = window._kittenDisplayCache;
     const DISPLAY_HOLD_MS = 3000;
 
+    // Personality speech bubble cache (transient UI state only, never saved)
+    if (!window._kittenSpeechCache) window._kittenSpeechCache = {};
+    const speechCache = window._kittenSpeechCache;
+
     const entries = state.kittens.map((k, idx) => ({ k, idx }));
 
     function sortValFor(k, key){
@@ -10670,6 +10674,53 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (_ccEl) _ccEl.textContent = filterText
       ? `${filtered.length} / ${entries.length}`
       : `${entries.length} kittens`;
+
+    const speechByMood = {
+      upbeat: ['What a glorious shift!', 'I can carry this colony today.', 'Paws up - we are thriving!', 'I feel unstoppable right now.', 'Another win for the whisker guild.', 'Best day to build big dreams.'],
+      steady: ['One paw after another.', 'Keeping the routine smooth.', 'I have got this covered.', 'Steady work, steady hearts.', 'I am on task and on time.', 'Quiet progress still counts.'],
+      low: ['I need a minute to breathe.', 'This shift feels heavy.', 'Could use a little support.', 'I am trying, just tired.', 'Can we slow down a bit?', 'Morale is wobbling today.'],
+      crisis: ['Everything feels like too much.', 'I am hanging on by a whisker.', 'Please tell me help is coming.', 'This is panic territory.', 'I need safety, now.', 'I cannot keep this pace.']
+    };
+    const speechByTask = {
+      Forage:['Berry run time.', 'Sniffing out every scrap.', 'Fields first, feasts later.'],
+      Farm:['These crops will save winter.', 'Rows, rhythm, repeat.', 'Water, weed, harvest.'],
+      ChopWood:['Timber for the township.', 'Logs now, warmth later.', 'Axe true, stack higher.'],
+      Guard:['Eyes open on the walls.', 'No raid gets through me.', 'Shield up, tail steady.'],
+      Research:['New idea in progress.', 'Science before sunrise.', 'Notebook full of sparks.'],
+      BuildHut:['One beam at a time.', 'This hut will hold a family.', 'Building room for tomorrow.'],
+      BuildPalisade:['Raise the wall higher.', 'Strong walls, safer nights.', 'Fortify every corner.'],
+      BuildGranary:['Food security starts here.', 'Granary first, panic later.', 'Storage is survival.'],
+      BuildWorkshop:['Workshop coming online.', 'Tools make everything faster.', 'Craft lane under construction.'],
+      BuildLibrary:['Shelves for future legends.', 'Knowledge needs a home.', 'Library plans are set.'],
+      Socialize:['Checking in with my crew.', 'Talk first, tension second.', 'Keeping friendships warm.'],
+      Care:['Bandages and kind words.', 'Nobody gets left behind.', 'Healing shift underway.'],
+      Mentor:['Passing on what I learned.', 'Teaching time, paws on.', 'Skill today, mastery tomorrow.'],
+      PreserveFood:['Jerky bank is growing.', 'Saving supplies for snow days.', 'Preserve now, feast later.']
+    };
+    const speechByTrait = {
+      Brave:['Danger does not scare me.', 'I stand first when storms hit.', 'I can handle the hard jobs.'],
+      Studious:['There is always more to learn.', 'Patterns are becoming clear.', 'Let me test one more theory.'],
+      Builder:['Give me materials and space.', 'I was made for construction.', 'Blueprint brain activated.'],
+      Caretaker:['If one hurts, we all hurt.', 'I watch over the little ones.', 'Kindness keeps us together.'],
+      Forager:['I can find value anywhere.', 'Nothing useful stays hidden.', 'My nose knows the route.']
+    };
+    const moodReactions = {
+      upbeat:['✨','💪','😸','🎉'],
+      steady:['👍','🙂','🧭','✅'],
+      low:['😿','🫠','💭','🫶'],
+      crisis:['🚨','😾','⚠️','🆘']
+    };
+    function speechMoodBand(mood){
+      if (mood >= 0.78) return 'upbeat';
+      if (mood >= 0.52) return 'steady';
+      if (mood >= 0.30) return 'low';
+      return 'crisis';
+    }
+    function pickLine(pool, seed){
+      const arr = Array.isArray(pool) ? pool : [];
+      if (!arr.length) return '';
+      return arr[Math.abs(Number(seed) || 0) % arr.length];
+    }
 
     if (kittenGridEl) {
       // Throttle radar re-renders (skills change slowly)
@@ -10774,6 +10825,29 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const moodFace = mood >= 0.75 ? '😊' : mood >= 0.5 ? '😐' : mood >= 0.3 ? '😟' : '😫';
         const healthIcon = health < 0.4 ? ' 🩹' : '';
 
+        const moodBand = speechMoodBand(mood);
+        const trait0 = Array.isArray(traits) && traits.length ? String(traits[0]) : '';
+        const taskPool = speechByTask[String(displayTask || '')] ?? [];
+        const traitPool = speechByTrait[trait0] ?? [];
+        const moodPool = speechByMood[moodBand] ?? [];
+        const socialPool = [];
+        if (buddy && buddyNeedPct >= 70) socialPool.push('I miss my buddy right now.');
+        if (fitPct <= 45) socialPool.push(`I am not aligned with ${bloc} priorities.`);
+        if (fitPct >= 80) socialPool.push(`This ${bloc} plan fits me perfectly.`);
+        const speechPool = moodPool.concat(taskPool, traitPool, socialPool);
+
+        const sCache = speechCache[cacheKey] ?? { line:'', until:0 };
+        const speechSeed = (Number(state.t ?? 0) + Number(k.id ?? 0) * 13 + Number(fitPct ?? 0));
+        const rotateMs = (9000 + (Number(k.id ?? 0) % 5) * 1700);
+        let speechLine = sCache.line;
+        if (!speechLine || performance.now() >= Number(sCache.until ?? 0)) {
+          speechLine = pickLine(speechPool, speechSeed) || pickLine(moodPool, speechSeed);
+          speechCache[cacheKey] = { line: speechLine, until: performance.now() + rotateMs };
+        }
+
+        const reacts = moodReactions[moodBand] ?? ['💬'];
+        const reactionText = `${reacts[(Number(k.id ?? 0) + Math.floor(Number(state.t ?? 0) / 7)) % reacts.length]} ${moodFace}`;
+
         // Compact vitals bar (single combined bar)
         const vBarMini = (val, color) => {
           const pct = Math.round(val * 100);
@@ -10790,7 +10864,9 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
               <span class="kc-name">${escapeHtml(k.name ?? ('Kitten ' + k.id))}</span>
               <span class="kc-role">${escapeHtml(k.role ?? 'Generalist')}</span>
             </div>
+            <span class="kc-mood-react" title="Current mood reaction">${reactionText}</span>
           </div>
+          <div class="kc-speech" title="Kitten personality line">${escapeHtml(speechLine)}</div>
           <div class="kc-task${blockedFresh ? ' blocked' : ''}">
             <span class="kc-task-label">${taskText}</span>
             ${badges}

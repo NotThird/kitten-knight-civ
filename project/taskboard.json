@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T08:53:08.014Z",
+    "lastUpdated": "2026-03-15T09:19:17.726Z",
     "columns": {
         "todo": [
             {
@@ -129,22 +129,6 @@
                 "reclassifiedReason": "Statistics panel is Tier 1 engagement (completionist driver), not Tier 5 infrastructure. Cookie Clicker, Antimatter Dimensions, NGU IDLE all use stats pages as core engagement loops."
             },
             {
-                "id": "TASK-151",
-                "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:05:21.961Z",
-                "description": "Add speech bubbles to kitten cards with context-aware quips based on traits, mood, activity, relationships. Show emoji mood reactions. At least 30 unique lines. Makes kittens feel alive per Austin full life sim vision.",
-                "acceptanceCriteria": [
-                    "Speech bubbles appear on kitten cards with trait-appropriate text",
-                    "At least 30 unique speech lines",
-                    "Mood emoji visible on card updating with state",
-                    "Bubbles rotate naturally"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-152",
                 "title": "Implement kitten relationship system with friendships, rivalries, and mentorships",
                 "assignee": "developer",
@@ -196,23 +180,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-156",
-                "title": "Design dramatic consequence reveals for curator policy choices",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:39:44.329Z",
-                "description": "Curator controls feel too subtle - effects are statistical nudges, not dramatic outcomes. Design a consequence reveal system: when a major policy decision plays out, show the player what happened. Reference Reigns card-flip reveals. Choosing Defend leads to wall defense scene, Expand leads to new territory. Failed choices should be dramatic (famine, uprising). Ties to TASK-150 event choice system.",
-                "acceptanceCriteria": [
-                    "Design covers at least 4 policy-outcome pairings with dramatic reveals",
-                    "Specifies visual treatment for positive vs negative outcomes",
-                    "Defines connection to TASK-150 event choice system",
-                    "Includes narrative text templates for outcomes",
-                    "Specifies timing: choice to delay to consequence reveal"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-157",
                 "title": "Implement seasonal events with real gameplay consequences",
                 "assignee": "developer",
@@ -228,29 +195,115 @@
                     "Events have both positive and negative outcomes based on colony state"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-158",
+                "title": "Implement visual event vignette overlay system from TASK-155 design",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:04:46.422Z",
+                "description": "Implement the 6 event vignette types designed in TASK-155: raid, discovery, celebration, seasonal, milestone, social. CSS/HTML overlays with animations. Hook into existing chronicle/event system. Include cooldown and priority rules to avoid spam.",
+                "acceptanceCriteria": [
+                    "All 6 vignette types render correctly on their trigger events",
+                    "Animations match TASK-155 timing specs with auto-dismiss and no play blocking",
+                    "Cooldown system prevents vignette spam",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-159",
+                "title": "Design kitten memory and conversation system with visible thought bubbles",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:09:41.964Z",
+                "description": "Austin wants kittens with REAL inner lives. Design a system where kittens remember significant events (survived a raid, built first hut, lost a friend), reference those memories in thought bubbles, and have visible conversations with nearby kittens. Reference: Dwarf Fortress thought system, RimWorld social logs. Conversations should reveal personality. Memories should decay over time but landmark ones persist. This is the core of the micro universe of growth directive.",
+                "acceptanceCriteria": [
+                    "Memory data structure defined: event type, timestamp, emotional weight, decay rate",
+                    "Conversation trigger rules specified: proximity, mood thresholds, relationship level",
+                    "At least 8 conversation templates covering different personality archetypes",
+                    "Thought bubble display spec: timing, positioning on kitten cards, fade behavior",
+                    "Memory-driven dialogue examples showing how past events influence conversations"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-160",
+                "title": "Design inter-settlement trading and visitor system",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:09:42.011Z",
+                "description": "Austin listed trading with other settlements as a key gameplay addition. Design a system where NPC settlements exist on a world map and periodically send traders or visitors. Traders offer resources the colony lacks in exchange for surplus. Visitors may join the colony, bring news, or request help (creating choice events). Reference: Kittens Game trade routes, Cividle diplomacy. Ties into exploration system (TASK-154).",
+                "acceptanceCriteria": [
+                    "World map concept with 3-5 NPC settlement archetypes defined",
+                    "Trade offer generation rules: what they want, what they offer, fairness calculation",
+                    "Visitor event templates: trader, refugee, diplomat, spy with distinct mechanics",
+                    "Integration points with exploration system (TASK-154) specified",
+                    "Trade reputation system that affects future offer quality"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-161",
+                "title": "Implement emergent narrative log with named memorable moments",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:09:42.054Z",
+                "description": "Austin wants memorable narrative moments like Nimble Button saved the colony during the Great Blizzard. Build a narrative engine that detects significant gameplay moments and generates named, memorable log entries with kitten names and dramatic language. These appear in a persistent colony chronicle. Reference: Dwarf Fortress legends mode, RimWorld art descriptions. Each playthrough should feel unique.",
+                "acceptanceCriteria": [
+                    "At least 10 narrative trigger types covering combat, building, social, and seasonal events",
+                    "Named moment generation using kitten names and personality-appropriate adjectives",
+                    "Persistent colony chronicle UI panel showing recent and pinned memorable moments",
+                    "Moments rated by significance: minor (fade after 5), major (persist), legendary (permanent)",
+                    "Chronicle entries reference specific kittens, their traits, and the situation context"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-155",
-                "title": "Design visual storytelling moments for colony events",
+                "id": "TASK-156",
+                "title": "Design dramatic consequence reveals for curator policy choices",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T08:39:44.285Z",
-                "description": "The game is 90% monospace text. When dramatic things happen, players see log lines instead of visual moments. Design visual event vignettes: brief animated scenes that show key moments. Reference RimWorld art tabs and Kittens Game calendar events. Use lightweight CSS/HTML, not canvas. Examples: kitten silhouette defending walls during raid, snowfall overlay in winter, campfire during festivals.",
+                "createdAt": "2026-03-15T08:39:44.329Z",
+                "description": "Curator controls feel too subtle - effects are statistical nudges, not dramatic outcomes. Design a consequence reveal system: when a major policy decision plays out, show the player what happened. Reference Reigns card-flip reveals. Choosing Defend leads to wall defense scene, Expand leads to new territory. Failed choices should be dramatic (famine, uprising). Ties to TASK-150 event choice system.",
                 "acceptanceCriteria": [
-                    "Design doc specifies at least 6 visual event types (raid, discovery, celebration, seasonal, milestone, social)",
-                    "Each event type has a mockup or description of visual composition",
-                    "Specifies integration with existing chronicle/event system",
-                    "Uses CSS animations and HTML overlays only",
-                    "Includes timing: how long vignettes display and how they dismiss"
+                    "Design covers at least 4 policy-outcome pairings with dramatic reveals",
+                    "Specifies visual treatment for positive vs negative outcomes",
+                    "Defines connection to TASK-150 event choice system",
+                    "Includes narrative text templates for outcomes",
+                    "Specifies timing: choice to delay to consequence reveal"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T08:40:23.279Z",
-                "completedAt": "2026-03-15T08:41:39.186Z",
+                "claimedAt": "2026-03-15T09:10:25.701Z",
+                "completedAt": "2026-03-15T09:11:27.320Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-151",
+                "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.961Z",
+                "description": "Add speech bubbles to kitten cards with context-aware quips based on traits, mood, activity, relationships. Show emoji mood reactions. At least 30 unique lines. Makes kittens feel alive per Austin full life sim vision.",
+                "acceptanceCriteria": [
+                    "Speech bubbles appear on kitten cards with trait-appropriate text",
+                    "At least 30 unique speech lines",
+                    "Mood emoji visible on card updating with state",
+                    "Bubbles rotate naturally"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T09:16:28.356Z",
+                "completedAt": "2026-03-15T09:19:17.726Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -600,6 +653,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T08:53:08.014Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-155",
+                "title": "Design visual storytelling moments for colony events",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:39:44.285Z",
+                "description": "The game is 90% monospace text. When dramatic things happen, players see log lines instead of visual moments. Design visual event vignettes: brief animated scenes that show key moments. Reference RimWorld art tabs and Kittens Game calendar events. Use lightweight CSS/HTML, not canvas. Examples: kitten silhouette defending walls during raid, snowfall overlay in winter, campfire during festivals.",
+                "acceptanceCriteria": [
+                    "Design doc specifies at least 6 visual event types (raid, discovery, celebration, seasonal, milestone, social)",
+                    "Each event type has a mockup or description of visual composition",
+                    "Specifies integration with existing chronicle/event system",
+                    "Uses CSS animations and HTML overlays only",
+                    "Includes timing: how long vignettes display and how they dismiss"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T08:40:23.279Z",
+                "completedAt": "2026-03-15T08:41:39.186Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T09:04:25.083Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -678,9 +753,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 151,
-        "totalCompleted": 101,
+        "totalCreated": 155,
+        "totalCompleted": 102,
         "pendingQuestion": null
     },
-    "nextId": 158
+    "nextId": 162
 }
