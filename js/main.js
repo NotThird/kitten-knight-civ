@@ -686,8 +686,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     s.activePlay = (s.activePlay && typeof s.activePlay === 'object') ? s.activePlay : {};
     const ap = s.activePlay;
     const tNow = Number(s.t ?? 0) || 0;
-    if (!Number.isFinite(ap.nextAt)) ap.nextAt = tNow + 70;
-    ap.nextAt = Math.max(tNow + 5, Number(ap.nextAt) || (tNow + 70));
+    if (!Number.isFinite(ap.nextAt)) ap.nextAt = tNow + 220;
+    ap.nextAt = Math.max(tNow + 15, Number(ap.nextAt) || (tNow + 220));
     ap.active = (ap.active && typeof ap.active === 'object') ? ap.active : null;
     ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
     ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
@@ -696,63 +696,91 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.choiceQueue = Array.isArray(ap.choiceQueue) ? ap.choiceQueue : [];
     ap.choiceHistory = Array.isArray(ap.choiceHistory) ? ap.choiceHistory : [];
     ap.choiceCooldownUntil = Number(ap.choiceCooldownUntil ?? 0) || 0;
+    ap.reputation = Math.max(-100, Math.min(100, Number(ap.reputation ?? 0) || 0));
+    ap.lastSpawnAt = Number(ap.lastSpawnAt ?? 0) || 0;
+    ap.pitySec = Math.max(0, Number(ap.pitySec ?? 0) || 0);
+    ap.chainReady = ap.chainReady && typeof ap.chainReady === 'object' ? ap.chainReady : null;
   }
 
   function rollActivePlayDelay(){
-    return 60 + Math.random() * 60;
+    return 180 + Math.random() * 300;
   }
 
-  const CHOICE_EVENT_TEMPLATES = [
-    { id:'winter_stores', tags:['season:winter'], title:'Winter Stores Running Low', body:'The quartermasters warn that fresh stores are dropping faster than planned.',
+  function activeTier(s){
+    const libs = Number(s?.res?.libraries ?? 0);
+    const works = Number(s?.res?.workshops ?? 0);
+    const pop = Number(s?.kittens?.length ?? 0);
+    const sci = Number(s?.res?.science ?? 0);
+    if (libs >= 3 || sci >= 1800 || pop >= 20) return 3;
+    if (libs >= 1 || works >= 2 || sci >= 700 || pop >= 13) return 2;
+    return 1;
+  }
+
+  function scaleByTier(base, tier){
+    const t = Math.max(1, Math.min(3, Number(tier ?? 1) || 1));
+    return Math.max(0, Number(base ?? 0) * (1 + (t - 1) * 0.42));
+  }
+
+  const GOLDEN_MOMENT_TEMPLATES = [
+    {
+      id:'wandering_trader',
+      title:'Wandering Trader Caravan',
+      body:'A caravan offers unusual goods in exchange for immediate commitments.',
+      interrupt:'festival',
       choices:[
-        { label:'Ration now', tone:'bad', effects:{ rations:'Tight', moodDelta:-0.04, grievanceDelta:0.03, food:24 }, log:'Council orders tight rations. Stores stabilize, morale dips.' },
-        { label:'Push preserve crews', tone:'warn', effects:{ policy:{ PreserveFood:0.3, Forage:0.15 }, food:8, wood:-6 }, log:'Work crews shift into preservation and forage triage.' },
-        { label:'Hold feast morale', tone:'good', effects:{ rations:'Feast', moodDelta:0.06, food:-28, social:{ dissent:-0.05 } }, log:'A morale feast steadies hearts, but burns supplies.' },
+        { label:'Buy supply crates', tone:'good', outcomes:{ food:22, wood:12, science:-28, rep:+4 }, log:'The caravan leaves behind full supply carts.' },
+        { label:'Trade for schematics', tone:'warn', outcomes:{ science:34, tools:8, food:-24, rep:+2 }, log:'You trade provisions for new workshop schematics.' },
+        { label:'Tax the caravan', tone:'bad', outcomes:{ food:14, wood:16, social:{ dissent:+0.03 }, rep:-6, risk:+0.05 }, log:'You seize goods by force; people whisper about it.' }
       ]
     },
-    { id:'spring_charter', tags:['season:spring'], title:'Spring Charter Debate', body:'With winter passed, the colony debates whether to expand quickly or consolidate.',
+    {
+      id:'frontier_oath',
+      title:'Frontier Oath Gathering',
+      body:'Leaders request a public oath to steer the next season.',
+      interrupt:'winter-arrival',
       choices:[
-        { label:'Expand bold', tone:'good', effects:{ mode:'Expand', prio:{ prioProgress:0.12 }, wood:10 }, log:'Builders gain priority under a spring expansion charter.' },
-        { label:'Steady consolidation', tone:'neutral', effects:{ mode:'Survive', prio:{ prioSafety:0.10 }, social:{ dissent:-0.03 } }, log:'The charter favors stability and measured growth.' },
+        { label:'Oath of mutual aid', tone:'good', outcomes:{ social:{ dissent:-0.05 }, moodDelta:+0.04, rep:+5 }, log:'The colony pledges to keep no family behind.' },
+        { label:'Oath of iron discipline', tone:'warn', outcomes:{ discipline:+0.08, social:{ dissent:+0.01 }, grievanceDelta:+0.03, rep:-2, risk:-0.03 }, log:'Order tightens and patrol lines sharpen.' },
+        { label:'Oath of progress', tone:'neutral', outcomes:{ prio:{ prioProgress:+0.12 }, science:26, rep:+1, chain:'archive_discovery' }, log:'Scribes and builders gain broad mandate.' }
       ]
     },
-    { id:'raid_aftermath', tags:['raid:hit'], title:'Raid Aftermath Council', body:'The colony is shaken after the attack. Leaders demand a direction.',
+    {
+      id:'border_incident',
+      title:'Border Incident',
+      body:'Scouts report a rival probing your perimeter at dusk.',
+      interrupt:'raid-hit',
       choices:[
-        { label:'Fortify hard', tone:'warn', effects:{ mode:'Defend', policy:{ Guard:0.35, BuildPalisade:0.35 }, social:{ dissent:-0.02 } }, log:'Emergency fortification orders are approved.' },
-        { label:'Care for wounded', tone:'good', effects:{ policy:{ Care:0.4, Socialize:0.2 }, moodDelta:0.05, healthDelta:0.05, food:-10 }, log:'Resources are diverted to recovery and care.' },
+        { label:'Pay tribute to avoid bloodshed', tone:'warn', outcomes:{ food:-18, wood:-12, social:{ dissent:-0.01 }, rep:+2, risk:-0.07 }, log:'Tribute buys a tense but quiet night.' },
+        { label:'Set an ambush', tone:'bad', outcomes:{ tools:-6, rep:-3, risk:+0.08, rewardsOnWin:{ science:36, tools:10 } }, log:'You prepare a risky ambush.' },
+        { label:'Fortify openly', tone:'good', outcomes:{ policy:{ Guard:+0.22, BuildPalisade:+0.2 }, warmth:8, rep:+3, risk:-0.05 }, log:'Visible defenses deter opportunists.' }
       ]
     },
-    { id:'victory_window', tags:['raid:repel'], title:'Victory Window', body:'Raiders were repelled. Momentum and confidence are high.',
+    {
+      id:'moonlit_festival',
+      title:'Moonlit Festival Offer',
+      body:'Artists propose a rare festival that could reset colony mood.',
+      interrupt:'festival',
       choices:[
-        { label:'Counter-drill doctrine', tone:'warn', effects:{ policy:{ Guard:0.2, Research:-0.1 }, social:{ dissent:-0.02 }, warmth:6 }, log:'The colony doubles down on readiness drills.' },
-        { label:'Convert momentum to progress', tone:'good', effects:{ mode:'Advance', policy:{ Research:0.3, CraftTools:0.2 }, science:24 }, log:'Victory morale is redirected into research and tools.' },
+        { label:'Fund the celebration', tone:'good', outcomes:{ food:-22, wood:-10, moodDelta:+0.07, social:{ dissent:-0.06 }, rep:+6 }, log:'Lanterns light the camp and tensions melt.' },
+        { label:'Sponsor a modest feast', tone:'neutral', outcomes:{ food:-12, moodDelta:+0.03, social:{ dissent:-0.03 }, rep:+2 }, log:'A modest feast keeps spirits up.' },
+        { label:'Decline and save stores', tone:'warn', outcomes:{ food:+8, moodDelta:-0.03, grievanceDelta:+0.02, rep:-4 }, log:'Stores are preserved, but many feel snubbed.' }
       ]
     },
-    { id:'new_knowledge', tags:['unlock:any'], title:'New Knowledge Priority', body:'A new technology unlocks fresh opportunities. Which lane gets immediate backing?',
+    {
+      id:'archive_discovery',
+      title:'Buried Archive Discovery',
+      body:'Dig crews uncover sealed tablets beneath an old shrine.',
+      interrupt:'raid-repel',
+      chainOnly:true,
       choices:[
-        { label:'Fund scholars', tone:'good', effects:{ science:20, policy:{ Research:0.25 }, prio:{ prioProgress:0.10 } }, log:'Scholars receive immediate support to exploit new methods.' },
-        { label:'Field practical rollout', tone:'neutral', effects:{ tools:8, wood:12, policy:{ CraftTools:0.25, ChopWood:0.15 } }, log:'Practical crews adopt the tech in workshops and yards.' },
-      ]
-    },
-    { id:'population_boom', tags:['milestone:pop'], title:'Population Boom', body:'The colony has reached a new population tier. Coordination strain rises.',
-      choices:[
-        { label:'Appoint foremen', tone:'warn', effects:{ discipline:0.08, moodDelta:-0.03, social:{ dissent:-0.02 } }, log:'Foremen appointed; efficiency rises with stricter oversight.' },
-        { label:'Build commons first', tone:'good', effects:{ policy:{ Socialize:0.25, Care:0.25 }, moodDelta:0.05, wood:-10 }, log:'Shared commons projects improve cohesion.' },
-      ]
-    },
-    { id:'granary_choice', tags:['season:fall'], title:'Autumn Granary Choice', body:'Harvest is strong but storage is limited. The steward asks for direction.',
-      choices:[
-        { label:'Invest in storage', tone:'good', effects:{ policy:{ BuildGranary:0.35, PreserveFood:0.2 }, wood:-12 }, log:'Storage expansion is prioritized before winter.' },
-        { label:'Spend on industry now', tone:'warn', effects:{ policy:{ BuildWorkshop:0.28, Research:0.12 }, science:14 }, log:'The council favors immediate industry momentum.' },
-      ]
-    },
-    { id:'morale_crossroads', tags:['milestone:dissent'], title:'Morale Crossroads', body:'Tension is visible in daily life. Leaders ask for a social direction.',
-      choices:[
-        { label:'Conciliatory council', tone:'good', effects:{ social:{ dissent:-0.07 }, moodDelta:0.04, science:-12 }, log:'A conciliatory council eases dissent.' },
-        { label:'Impose order', tone:'bad', effects:{ discipline:0.10, social:{ dissent:-0.02 }, moodDelta:-0.05, grievanceDelta:0.05 }, log:'Order is restored, but resentment grows.' },
+        { label:'Open immediately', tone:'good', outcomes:{ science:48, tools:12, rep:+4 }, log:'The tablets reveal practical techniques.' },
+        { label:'Catalog carefully', tone:'neutral', outcomes:{ science:34, policy:{ Research:+0.15 }, rep:+2, risk:-0.02 }, log:'Scholars preserve the find methodically.' },
+        { label:'Sell to collectors', tone:'warn', outcomes:{ food:24, wood:18, rep:-5 }, log:'The archive is sold for quick wealth.' }
       ]
     },
   ];
+
+  const CHOICE_EVENT_TEMPLATES = GOLDEN_MOMENT_TEMPLATES;
 
   function queueChoiceEvent(s, template, meta={}){
     ensureActivePlayState(s);
@@ -763,24 +791,28 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (q.length >= 2) return false;
     const t = template;
     if (!t || !Array.isArray(t.choices) || t.choices.length < 2) return false;
+    const tier = activeTier(s);
     const payload = {
       id: String(t.id || 'choice'),
-      title: String(t.title || 'Colony choice'),
+      title: String(t.title || 'Golden Moment'),
       body: String(t.body || ''),
+      interrupt: String(t.interrupt || 'festival'),
+      tier,
       choices: t.choices.map((c, i) => ({
         id: `${String(t.id || 'choice')}_${i}`,
         label: String(c.label || `Choice ${i+1}`),
         tone: String(c.tone || 'neutral'),
-        effects: c.effects || {},
+        outcomes: c.outcomes || c.effects || {},
         log: String(c.log || ''),
       })),
-      source: String(meta.source || 'context'),
+      source: String(meta.source || 'golden-moment'),
       createdAt: nowT,
+      expiresAt: nowT + 24,
     };
     q.push(payload);
     ap.choiceQueue = q;
     if (!ap.choice) ap.choice = q.shift();
-    ap.choiceCooldownUntil = nowT + 20;
+    ap.choiceCooldownUntil = nowT + 24;
     return true;
   }
 
@@ -798,11 +830,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
   function applyChoiceEffects(s, choice){
     if (!choice || typeof choice !== 'object') return;
-    const fx = choice.effects || {};
-    const addRes = (k, v) => { s.res[k] = Math.max(0, Number(s.res[k] ?? 0) + Number(v ?? 0)); };
-    for (const k of ['food','wood','warmth','science','tools']) if (k in fx) addRes(k, fx[k]);
+    const fx = choice.outcomes || choice.effects || {};
+    const tier = activeTier(s);
+    const addRes = (k, v, scaled=true) => {
+      const amt = scaled ? scaleByTier(v, tier) : Number(v ?? 0);
+      s.res[k] = Math.max(0, Number(s.res[k] ?? 0) + amt);
+    };
+    for (const k of ['food','wood','warmth','science','tools']) if (k in fx) addRes(k, fx[k], true);
 
-    if (fx.mode) setModeCore(String(fx.mode), `Event: ${choice.label}`);
+    if (fx.mode) setModeCore(String(fx.mode), `Golden moment: ${choice.label}`);
     if (fx.rations && ['Tight','Normal','Feast'].includes(String(fx.rations))) s.rations = String(fx.rations);
 
     s.director = s.director ?? {};
@@ -837,6 +873,26 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       }
     }
 
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    if (Number.isFinite(Number(fx.rep))) ap.reputation = Math.max(-100, Math.min(100, Number(ap.reputation ?? 0) + Number(fx.rep)));
+    if (Number.isFinite(Number(fx.risk))) s.res.threat = Math.max(0, Number(s.res.threat ?? 0) + Number(fx.risk) * 28);
+    if (fx.rewardsOnWin && Number(fx.risk ?? 0) > 0) {
+      const hit = Math.random() < Number(fx.risk);
+      if (!hit) {
+        for (const [k,v] of Object.entries(fx.rewardsOnWin)) if (['food','wood','warmth','science','tools'].includes(k)) addRes(k, v, true);
+        log('Risk gamble paid off.');
+      } else {
+        s.social = s.social ?? { dissent:0 };
+        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + 0.02);
+        log('Risk gamble backfired.');
+      }
+    }
+    if (fx.chain) {
+      const chain = GOLDEN_MOMENT_TEMPLATES.find(x => x.id === String(fx.chain));
+      if (chain) ap.chainReady = { id: chain.id, at: Number(s.t ?? 0) + 45 };
+    }
+
     log(choice.log || `Decision applied: ${choice.label}.`);
   }
 
@@ -849,7 +905,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (!choice) return false;
     applyChoiceEffects(state, choice);
     ap.choiceHistory = Array.isArray(ap.choiceHistory) ? ap.choiceHistory : [];
-    ap.choiceHistory.push({ t: Number(state.t ?? 0), eventId: ev.id, choice: choice.label });
+    ap.choiceHistory.push({ t: Number(state.t ?? 0), eventId: ev.id, choice: choice.label, tier: ev.tier, rep: Number(ap.reputation ?? 0) });
     if (ap.choiceHistory.length > 24) ap.choiceHistory.splice(0, ap.choiceHistory.length - 24);
     ap.choice = null;
     if (Array.isArray(ap.choiceQueue) && ap.choiceQueue.length > 0) ap.choice = ap.choiceQueue.shift();
@@ -870,10 +926,13 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ev = ap.choice;
     if (!ev) { host.innerHTML = ''; return; }
 
+    const left = Math.max(0, Number(ev.expiresAt ?? 0) - Number(state.t ?? 0));
+    const ringPct = Math.max(0, Math.min(100, (left / 24) * 100));
+    const rep = Number(ap.reputation ?? 0);
     const buttons = (ev.choices || []).map((c) =>
       `<button type="button" class="active-choice-btn ${c.tone || 'neutral'}" data-choice-id="${c.id}">${c.label}</button>`
     ).join('');
-    host.innerHTML = `<div class="active-choice-modal"><div class="active-choice-card"><div class="active-choice-kicker">Colony Decision</div><h3>${ev.title}</h3><p>${ev.body}</p><div class="active-choice-actions">${buttons}</div></div></div>`;
+    host.innerHTML = `<div class="active-choice-modal"><div class="active-choice-card"><div class="active-choice-kicker">Golden Moment • Tier ${ev.tier || 1}</div><h3>${ev.title}</h3><p>${ev.body}</p><div class="active-choice-meta"><span>Reputation ${rep >= 0 ? '+' : ''}${rep}</span><span class="timer-ring" style="--ring:${ringPct}%">${Math.ceil(left)}s</span></div><div class="active-choice-actions">${buttons}</div></div></div>`;
   }
 
   function activePlayProdMul(s){
@@ -887,27 +946,29 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ap = s.activePlay;
     if (ap.active) return;
     const nowT = Number(s.t ?? 0);
-    const types = [
-      { id:'sunbeam_cache', label:'Sunbeam Cache', reward:'burst', burst:{ food: 26, wood: 14 } },
-      { id:'scholar_scroll', label:'Scholar Scroll', reward:'burst', burst:{ science: 20, tools: 5 } },
-      { id:'forge_surge', label:'Forge Surge', reward:'boost', mul: 2.0, duration: 30 },
-      { id:'harvest_blessing', label:'Harvest Blessing', reward:'boost', mul: 1.8, duration: 30 },
-      { id:'knight_tithe', label:'Knight Tithe', reward:'burst', burst:{ food: 14, wood: 20, science: 8 } },
-    ];
-    const pick = types[Math.floor(Math.random() * types.length)] ?? types[0];
+    const tier = activeTier(s);
+    const source = ap.chainReady && nowT >= Number(ap.chainReady.at ?? Infinity)
+      ? GOLDEN_MOMENT_TEMPLATES.find(x => x.id === ap.chainReady.id)
+      : null;
+    const pool = GOLDEN_MOMENT_TEMPLATES.filter(x => !x.chainOnly);
+    const pick = source || pool[Math.floor(Math.random() * pool.length)] || pool[0];
+    if (!pick) return;
+
     ap.active = {
       id: String(pick.id),
-      label: String(pick.label),
-      reward: String(pick.reward),
-      burst: pick.burst ? { ...pick.burst } : null,
-      mul: Number(pick.mul ?? 1),
-      duration: Number(pick.duration ?? 0),
+      label: String(pick.title || pick.id),
+      tier,
       spawnedAt: nowT,
-      expiresAt: nowT + 10,
+      expiresAt: nowT + 18,
+      templateId: pick.id,
     };
+    ap.lastSpawnAt = nowT;
+    ap.pitySec = 0;
+    if (source) ap.chainReady = null;
     ap.nextAt = nowT + rollActivePlayDelay();
+    triggerEventInterrupt('golden-moment');
     playSfx('unlock');
-    log(`Active event: ${pick.label} appeared (10s).`);
+    log(`Golden moment: ${pick.title} (Tier ${tier})`);
   }
 
   function claimActivePlayEvent(s){
@@ -915,30 +976,15 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ap = s.activePlay;
     const ev = ap.active;
     if (!ev) return false;
-
-    const pop = Math.max(1, Number(s.kittens?.length ?? 1));
-    if (ev.reward === 'boost') {
-      ap.boostMul = Math.max(1.6, Number(ev.mul ?? 2));
-      ap.boostUntil = Math.max(Number(ap.boostUntil ?? 0), Number(s.t ?? 0) + Math.max(15, Number(ev.duration ?? 30)));
-      log(`${ev.label}: production surge active (${ap.boostMul.toFixed(2)}x for ${Math.max(1, Math.ceil(ap.boostUntil - Number(s.t ?? 0)))}s).`);
-    } else {
-      const burst = ev.burst ?? { food: 18, wood: 10 };
-      const food = Math.max(0, Number(burst.food ?? 0) * (1 + pop * 0.04));
-      const wood = Math.max(0, Number(burst.wood ?? 0) * (1 + pop * 0.03));
-      const science = Math.max(0, Number(burst.science ?? 0) * (1 + pop * 0.03));
-      const tools = Math.max(0, Number(burst.tools ?? 0) * (1 + pop * 0.02));
-      s.res.food = Number(s.res.food ?? 0) + food;
-      s.res.wood = Number(s.res.wood ?? 0) + wood;
-      s.res.science = Number(s.res.science ?? 0) + science;
-      s.res.tools = Number(s.res.tools ?? 0) + tools;
-      log(`${ev.label}: cache recovered (+${fmt(food)} food, +${fmt(wood)} wood${science > 0 ? `, +${fmt(science)} science` : ''}${tools > 0 ? `, +${fmt(tools)} tools` : ''}).`);
-    }
-
+    const tmpl = GOLDEN_MOMENT_TEMPLATES.find(x => x.id === String(ev.templateId || ev.id));
+    if (!tmpl) return false;
+    const queued = queueChoiceEvent(s, tmpl, { source:'golden-moment' });
     ap.active = null;
     ap.seen = Math.max(0, Number(ap.seen ?? 0) + 1);
     playSfx('milestone');
+    if (!queued) log('Moment arrived, but another decision is already pending.');
     save();
-    return true;
+    return queued;
   }
 
   function tickActivePlayEvents(){
@@ -946,18 +992,26 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const ap = state.activePlay;
     const nowT = Number(state.t ?? 0);
 
+    if (ap.choice && nowT >= Number(ap.choice.expiresAt ?? Infinity)) {
+      log(`${ap.choice.title}: the moment passed.`);
+      ap.choice = null;
+      if (Array.isArray(ap.choiceQueue) && ap.choiceQueue.length > 0) ap.choice = ap.choiceQueue.shift();
+    }
+
     if (ap.active && nowT >= Number(ap.active.expiresAt ?? 0)) {
-      log(`${ap.active.label} faded.`);
+      log(`${ap.active.label} faded before you could react.`);
       ap.active = null;
     }
 
-    if (nowT >= Number(ap.nextAt ?? Infinity) && !ap.active && !state.paused) {
-      spawnActivePlayEvent(state);
+    if (!ap.active && !ap.choice && !state.paused) {
+      const gap = Math.max(0, nowT - Number(ap.lastSpawnAt ?? nowT));
+      ap.pitySec = gap;
+      const due = nowT >= Number(ap.nextAt ?? Infinity);
+      const pity = gap >= 480;
+      if (due || pity) spawnActivePlayEvent(state);
     }
 
-    if (nowT >= Number(ap.boostUntil ?? 0)) {
-      ap.boostMul = 1;
-    }
+    if (nowT >= Number(ap.boostUntil ?? 0)) ap.boostMul = 1;
   }
 
   function renderActivePlayEvent(){
@@ -981,8 +1035,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     const left = Math.max(0, Number(ev.expiresAt ?? 0) - Number(state.t ?? 0));
-    const cta = (ev.reward === 'boost') ? `${Number(ev.mul ?? 2).toFixed(1)}x production` : 'Claim cache';
-    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event" type="button"><div class="title">${ev.label}</div><div class="desc">Tap for ${cta} • ${Math.ceil(left)}s</div></button>`;
+    const pct = Math.max(0, Math.min(100, (left / 18) * 100));
+    host.innerHTML = `<button id="activePlayEventBtn" class="active-play-event" type="button"><div class="title">⚡ Golden Moment</div><div class="desc">${ev.label} • Tier ${ev.tier} • ${Math.ceil(left)}s</div><div class="ring" style="--ring:${pct}%"></div></button>`;
   }
 
   function audioCtx(){
@@ -1314,6 +1368,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       'raid-repel': { cls:'event-fx-raid-repel', dur: 860 },
       'winter-arrival': { cls:'event-fx-winter-arrival', dur: 2200 },
       'festival': { cls:'event-fx-festival', dur: 1700 },
+      'golden-moment': { cls:'event-fx-golden-moment', dur: 1150 },
     };
     const p = presets[String(type || '')];
     if (!p) return;
@@ -6963,6 +7018,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
+    tickMidgameMilestones(state);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
@@ -9580,6 +9636,139 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
   }
 
+  function ensureMidgameMilestonesState(s){
+    s.midgame = (s.midgame && typeof s.midgame === 'object') ? s.midgame : {};
+    s.midgame.unlocked = (s.midgame.unlocked && typeof s.midgame.unlocked === 'object') ? s.midgame.unlocked : {};
+    s.midgame.history = Array.isArray(s.midgame.history) ? s.midgame.history : [];
+    s.midgame.lastAt = Number(s.midgame.lastAt ?? 0) || 0;
+    s.midgame.lastContentAt = Number(s.midgame.lastContentAt ?? Number(s.t ?? 0)) || Number(s.t ?? 0);
+    s.midgame.lastGoalSig = String(s.midgame.lastGoalSig ?? '');
+    s.midgame.goalCelebrateUntil = Number(s.midgame.goalCelebrateUntil ?? 0) || 0;
+  }
+
+  const MIDGAME_MILESTONE_DEFS = [
+    {
+      id: 'archive-ledger',
+      title: 'Archive Ledger',
+      desc: 'Scribes map production losses and reduce spoilage.',
+      check: (s) => Number(s?.res?.libraries ?? 0) >= 1 && Number(s?.res?.science ?? 0) >= 1700,
+      apply: (s) => {
+        s.res.jerky = Number(s.res.jerky ?? 0) + 15;
+      },
+      interrupt: 'festival',
+    },
+    {
+      id: 'expedition-charter',
+      title: 'Expedition Charter',
+      desc: 'Scouts return with mapped routes and rare salvage.',
+      check: (s) => Number(s?.kittens?.length ?? 0) >= 18 && Number(s?.res?.workshops ?? 0) >= 2,
+      apply: (s) => {
+        s.res.tools = Number(s.res.tools ?? 0) + 18;
+        s.res.wood = Number(s.res.wood ?? 0) + 30;
+      },
+      interrupt: 'raid-repel',
+    },
+    {
+      id: 'starlight-observatory',
+      title: 'Starlight Observatory',
+      desc: 'Night scholars uncover predictive patterns for safer growth.',
+      check: (s) => Number(s?.res?.libraries ?? 0) >= 2 && Number(s?.res?.science ?? 0) >= 2600 && Number(s?.res?.threat ?? 0) <= 65,
+      apply: (s) => {
+        s.res.science = Number(s.res.science ?? 0) + 120;
+        s.social = (s.social && typeof s.social === 'object') ? s.social : {};
+        s.social.dissent = Math.max(0, Number(s.social.dissent ?? 0) - 0.04);
+      },
+      interrupt: 'winter-arrival',
+    },
+  ];
+
+  function goalTrackerEntries(s){
+    ensureMidgameMilestonesState(s);
+    const entries = [];
+    const pushGoal = (id, label, cur, need, opts={}) => {
+      const needNum = Math.max(1, Number(need ?? 1));
+      const curNum = Math.max(0, Number(cur ?? 0));
+      if (curNum >= needNum) return;
+      entries.push({
+        id,
+        label,
+        cur: curNum,
+        need: needNum,
+        pct: Math.max(0, Math.min(1, curNum / needNum)),
+        unit: String(opts.unit || ''),
+        priority: Number(opts.priority ?? 100),
+      });
+    };
+
+    const nextUnlock = unlockDefs.find((u) => !s.seenUnlocks?.[u.id]);
+    if (nextUnlock) pushGoal(`unlock-${nextUnlock.id}`, `Unlock ${nextUnlock.name}`, Number(s.res?.science ?? 0), Number(nextUnlock.at ?? 0), { unit: 'science', priority: 4 });
+
+    pushGoal('goal-pop-cap', 'Reach next housing milestone', Number(s.kittens?.length ?? 0), Math.max(3, Number(housingCap(s) ?? 3)), { unit: 'kittens', priority: 3 });
+
+    const libCount = Number(s?.res?.libraries ?? 0);
+    if (libCount < 3) pushGoal('goal-library-3', 'Build Library III', libCount, 3, { unit: 'libraries', priority: 1 });
+
+    const workshopCount = Number(s?.res?.workshops ?? 0);
+    if (workshopCount < 3) pushGoal('goal-workshop-3', 'Build Workshop III', workshopCount, 3, { unit: 'workshops', priority: 2 });
+
+    for (const def of MIDGAME_MILESTONE_DEFS) {
+      if (s.midgame.unlocked?.[def.id]) continue;
+      const scienceNow = Number(s?.res?.science ?? 0);
+      if (def.id === 'archive-ledger') pushGoal('mid-archive-ledger', 'Discovery: Archive Ledger', scienceNow, 1700, { unit: 'science', priority: 0 });
+      if (def.id === 'starlight-observatory') pushGoal('mid-starlight-observatory', 'Discovery: Starlight Observatory', scienceNow, 2600, { unit: 'science', priority: 0.5 });
+      if (def.id === 'expedition-charter') pushGoal('mid-expedition-charter', 'Discovery: Expedition Charter', Number(s.kittens?.length ?? 0), 18, { unit: 'kittens', priority: 0.8 });
+    }
+
+    entries.sort((a, b) => (a.priority - b.priority) || (b.pct - a.pct));
+    return entries.slice(0, 3);
+  }
+
+  function renderGoalTracker(s){
+    const goalsEl = el('settleGoals');
+    if (!goalsEl) return;
+    const entries = goalTrackerEntries(s);
+    if (!entries.length) {
+      goalsEl.innerHTML = '<div class="settle-goal-item is-primary"><div class="settle-goal-name">All tracked goals complete. Push toward Eternity.</div><div class="settle-goal-need">ready</div><div class="settle-goal-bar"><div style="width:100%"></div></div></div>';
+      return;
+    }
+    ensureMidgameMilestonesState(s);
+    const sig = entries.map((x) => x.id).join('|');
+    if (sig !== s.midgame.lastGoalSig) {
+      s.midgame.lastGoalSig = sig;
+      s.midgame.goalCelebrateUntil = Number(s.t ?? 0) + 2;
+    }
+    const pop = Number(s.midgame.goalCelebrateUntil ?? 0) > Number(s.t ?? 0);
+    goalsEl.innerHTML = entries.map((g, i) => {
+      const pct = Math.round(g.pct * 100);
+      const needLeft = Math.max(0, Math.ceil(g.need - g.cur));
+      const unit = g.unit ? ` ${g.unit}` : '';
+      const cls = `settle-goal-item${i === 0 ? ' is-primary' : ''}${pop ? ' goal-pop' : ''}`;
+      return `<div class="${cls}"><div class="settle-goal-name">${escapeHtml(g.label)}</div><div class="settle-goal-need">${needLeft}${escapeHtml(unit)} to go</div><div class="settle-goal-bar"><div style="width:${pct}%"></div></div></div>`;
+    }).join('');
+  }
+
+  function tickMidgameMilestones(s){
+    ensureMidgameMilestonesState(s);
+    const postLibrary = !!s?.unlocked?.library;
+    if (!postLibrary) {
+      s.midgame.lastContentAt = Number(s.t ?? 0);
+      return;
+    }
+    for (const def of MIDGAME_MILESTONE_DEFS) {
+      if (s.midgame.unlocked?.[def.id]) continue;
+      if (!def.check(s)) continue;
+      s.midgame.unlocked[def.id] = Number(s.t ?? 0);
+      s.midgame.lastAt = Number(s.t ?? 0);
+      s.midgame.lastContentAt = Number(s.t ?? 0);
+      s.midgame.history.push({ id: def.id, at: Number(s.t ?? 0) });
+      if (s.midgame.history.length > 24) s.midgame.history.splice(0, s.midgame.history.length - 24);
+      if (typeof def.apply === 'function') def.apply(s);
+      feed(`Mid-game discovery: ${def.title}. ${def.desc}`);
+      triggerEventInterrupt(def.interrupt || 'festival');
+      break;
+    }
+  }
+
   // ═══ Settlement Overview Renderer ═══
   function renderSettlement(s, season) {
     const seasonIcons = { Spring: '🌱', Summer: '☀️', Fall: '🍂', Winter: '❄️' };
@@ -9600,6 +9789,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
 
     const modeEl = el('settleMode');
     if (modeEl) modeEl.textContent = s.mode || 'Survive';
+
+    renderGoalTracker(s);
 
     // Settlement evolution illustration (clearing -> camp -> village -> town)
     const settleIllEl = el('settleIllustration');

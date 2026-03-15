@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T11:54:25.973Z",
+    "lastUpdated": "2026-03-15T12:18:41.317Z",
     "columns": {
         "todo": [
             {
@@ -352,23 +352,6 @@
                 "staleCount": 0
             },
             {
-                "id": "TASK-175",
-                "title": "Design mid-game mystery chain that drip-feeds new mechanics every 10 minutes",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:40:20.292Z",
-                "description": "The critic flagged mid-game content vacuum as the #1 engagement killer. After Library + Eternity unlock, there is a long stretch with no new discoveries. Great incrementals solve this with discovery chains: Cookie Clicker has golden cookie upgrades, Kittens Game has religion/transcendence surprise layers. KKC needs a mid-game mystery chain - perhaps archaeological discoveries, strange visitors with quests, or underground ruins. Each discovery should unlock a small new mechanic, spaced roughly 10 minutes apart. TASK-173 exists for implementation but needs a proper design spec first.",
-                "acceptanceCriteria": [
-                    "Design specifies 5-8 sequential discoveries that each introduce a small new mechanic or modifier",
-                    "Each discovery has a trigger condition based on game progress (time, population, buildings, research)",
-                    "Discoveries are spaced to create roughly 10-minute intervals of anticipation in mid-game",
-                    "Each discovery includes narrative flavor text fitting KKC theme (kittens, settlement, exploration)",
-                    "Design explains how discoveries interact with existing systems (research, prestige, seasonal events)"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-176",
                 "title": "Implement dynamic next-goal tracker widget in UI header",
                 "assignee": "developer",
@@ -406,6 +389,79 @@
                 "staleCount": 0
             },
             {
+                "id": "TASK-180",
+                "title": "Surface kitten bonds and trust on cards and in chronicle feed",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:05:21.192Z",
+                "description": "The memory/conversation/bonds system is rich but invisible to players. Surface relationship data in the UI: show top bond on each kitten card with best friend or rival icon and name, add conversation outcome snippets to chronicle feed, display trust and friction as a small bar or icon pair on cards.",
+                "acceptanceCriteria": [
+                    "Each kitten card shows its strongest bond with name and icon",
+                    "Chronicle feed includes conversation outcome entries when kittens talk",
+                    "Trust/friction visible as icon or micro-bar on kitten stat cards",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-181",
+                "title": "Design SVG-based settlement illustration with animated building silhouettes",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:09:54.225Z",
+                "description": "Arbiter review calls out settlement evolution as using CSS divs with emoji and text labels. Austin wants visible growth that creates WOW. Design an SVG-based settlement illustration: silhouette buildings that appear and grow as built, smoke from chimneys, tiny kitten figures walking paths, seasonal overlays. Reference Kittens Game resource panel, Realm Grinder faction backgrounds. Keep minimal (SVG paths, no heavy assets) but aspirational.",
+                "acceptanceCriteria": [
+                    "Design doc specifies SVG building silhouettes for each structure type",
+                    "Includes animation specs for building placement and ambient motion",
+                    "Defines seasonal visual overlays for winter spring summer autumn",
+                    "Specifies layout changes across evolution stages clearing to camp to village to town",
+                    "All visuals achievable with inline SVG plus CSS animations no external assets"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-182",
+                "title": "Implement kitten personal goals display on cards with progress indicators",
+                "assignee": "developer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:10:06.410Z",
+                "description": "TASK-169 designed kitten personal goals and aspirations. These need to surface visually on kitten cards so players see what each kitten is working toward. Show current goal with a mini progress bar, completed goals as small badges. When a kitten achieves a goal, flash a celebration moment. This ties into engagement by giving players per-kitten investment and reasons to care about individuals.",
+                "acceptanceCriteria": [
+                    "Each kitten card shows current personal goal name and progress bar",
+                    "Completed goals appear as small icon badges on the card",
+                    "Goal achievement triggers a brief visual celebration on the card",
+                    "Goals update dynamically as kittens progress through activities",
+                    "At least 3 distinct goal types are visually distinguishable"
+                ],
+                "source": "strategist"
+            }
+        ],
+        "claimed": [],
+        "review": [
+            {
+                "id": "TASK-175",
+                "title": "Design mid-game mystery chain that drip-feeds new mechanics every 10 minutes",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:40:20.292Z",
+                "description": "The critic flagged mid-game content vacuum as the #1 engagement killer. After Library + Eternity unlock, there is a long stretch with no new discoveries. Great incrementals solve this with discovery chains: Cookie Clicker has golden cookie upgrades, Kittens Game has religion/transcendence surprise layers. KKC needs a mid-game mystery chain - perhaps archaeological discoveries, strange visitors with quests, or underground ruins. Each discovery should unlock a small new mechanic, spaced roughly 10 minutes apart. TASK-173 exists for implementation but needs a proper design spec first.",
+                "acceptanceCriteria": [
+                    "Design specifies 5-8 sequential discoveries that each introduce a small new mechanic or modifier",
+                    "Each discovery has a trigger condition based on game progress (time, population, buildings, research)",
+                    "Discoveries are spaced to create roughly 10-minute intervals of anticipation in mid-game",
+                    "Each discovery includes narrative flavor text fitting KKC theme (kittens, settlement, exploration)",
+                    "Design explains how discoveries interact with existing systems (research, prestige, seasonal events)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T12:11:31.343Z",
+                "completedAt": "2026-03-15T12:13:17.421Z",
+                "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
                 "id": "TASK-179",
                 "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
                 "assignee": "developer",
@@ -421,30 +477,10 @@
                     "No 10+ minute stretch without new content appearing during active play",
                     "parse_check and smoke_test pass"
                 ],
-                "source": "orchestrator"
-            }
-        ],
-        "claimed": [],
-        "review": [
-            {
-                "id": "TASK-174",
-                "title": "Design next-unlock breadcrumb system showing players what to aim for",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:40:20.243Z",
-                "description": "The critic identified that after the first 5 minutes, players lack a clear what-am-I-working-toward-next signal. Great incrementals always show the next carrot: Cookie Clicker shows the next building/upgrade cost, Kittens Game shows greyed-out tech requirements, Antimatter Dimensions shows the next dimension unlock. KKC needs a persistent UI element that dynamically shows the next meaningful unlock based on current progress. This should adapt as the player advances. Reference: NGU IDLE adventure zones showing the next zone as a goal.",
-                "acceptanceCriteria": [
-                    "Design specifies a persistent UI element showing 1-3 upcoming unlocks with progress toward each",
-                    "Each breadcrumb shows what resource or condition is needed and current percentage progress",
-                    "System adapts across game phases (early/mid/late) with different unlock types",
-                    "Includes wireframe showing placement in existing dark-theme layout",
-                    "Specifies how breadcrumbs transition when an unlock is achieved (celebration moment)"
-                ],
-                "source": "strategist",
-                "claimedAt": "2026-03-15T11:41:36.994Z",
-                "completedAt": "2026-03-15T11:42:45.545Z",
-                "outputPath": "agents/designer/output/latest-design.md"
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T12:16:15.624Z",
+                "completedAt": "2026-03-15T12:18:41.317Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1037,6 +1073,28 @@
                 "outputPath": "Implemented golden moments system with 5 types, 3-8 min cadence + pity timer, tier scaling, reputation/risk/chain outcomes, timer ring UI, and event interrupt integration. parse_check + smoke_test pass.",
                 "testedAt": "2026-03-15T11:54:25.973Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-174",
+                "title": "Design next-unlock breadcrumb system showing players what to aim for",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:40:20.243Z",
+                "description": "The critic identified that after the first 5 minutes, players lack a clear what-am-I-working-toward-next signal. Great incrementals always show the next carrot: Cookie Clicker shows the next building/upgrade cost, Kittens Game shows greyed-out tech requirements, Antimatter Dimensions shows the next dimension unlock. KKC needs a persistent UI element that dynamically shows the next meaningful unlock based on current progress. This should adapt as the player advances. Reference: NGU IDLE adventure zones showing the next zone as a goal.",
+                "acceptanceCriteria": [
+                    "Design specifies a persistent UI element showing 1-3 upcoming unlocks with progress toward each",
+                    "Each breadcrumb shows what resource or condition is needed and current percentage progress",
+                    "System adapts across game phases (early/mid/late) with different unlock types",
+                    "Includes wireframe showing placement in existing dark-theme layout",
+                    "Specifies how breadcrumbs transition when an unlock is achieved (celebration moment)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T11:41:36.994Z",
+                "completedAt": "2026-03-15T11:42:45.545Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T12:04:32.358Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1115,9 +1173,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 170,
-        "totalCompleted": 112,
+        "totalCreated": 173,
+        "totalCompleted": 113,
         "pendingQuestion": null
     },
-    "nextId": 180
+    "nextId": 183
 }

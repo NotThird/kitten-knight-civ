@@ -477,6 +477,10 @@
       background: radial-gradient(circle at 50% 60%, rgba(251,191,36,.22), rgba(249,115,22,.12) 58%, rgba(2,6,23,.14));
       animation-name: eventInterruptFestival;
     }
+    .event-interrupt.event-fx-golden-moment {
+      background: radial-gradient(circle at 50% 50%, rgba(250,204,21,.26), rgba(56,189,248,.14) 52%, rgba(2,6,23,.22));
+      animation-name: eventInterruptRaidRepel;
+    }
 
     @keyframes eventInterruptFlash {
       0% { opacity: 0; }
@@ -537,6 +541,12 @@
     }
     .active-play-event .title { font-size: 13px; font-weight: 700; }
     .active-play-event .desc { font-size: 12px; color: rgba(217,226,239,.9); margin-top: 2px; }
+    .active-play-event .ring {
+      margin-top: 8px;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(250,204,21,.8) 0 var(--ring, 100%), rgba(148,163,184,.2) var(--ring, 100%) 100%);
+    }
 
     .active-choice-modal {
       position: fixed;
@@ -559,6 +569,8 @@
     .active-choice-kicker { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
     .active-choice-card h3 { margin: 0 0 6px 0; font-size: 18px; }
     .active-choice-card p { margin: 0; color: #d6e0f0; line-height: 1.4; }
+    .active-choice-meta { margin-top: 8px; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:rgba(217,226,239,.88); }
+    .active-choice-meta .timer-ring { border:1px solid rgba(250,204,21,.45); padding:2px 8px; border-radius:999px; background: linear-gradient(90deg, rgba(250,204,21,.22) 0 var(--ring, 100%), rgba(148,163,184,.12) var(--ring, 100%) 100%); }
     .active-choice-actions { margin-top: 12px; display: grid; gap: 8px; }
     .active-choice-btn {
       text-align: left;
@@ -770,6 +782,57 @@
       border: 1px solid rgba(125,211,252,.25);
       padding: 3px 10px;
       border-radius: 8px;
+    }
+
+    .settle-goals {
+      flex: 1 1 280px;
+      min-width: 240px;
+      display: grid;
+      gap: 6px;
+    }
+    .settle-goal-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 8px;
+      align-items: center;
+      background: rgba(125,211,252,.08);
+      border: 1px solid rgba(125,211,252,.2);
+      border-radius: 10px;
+      padding: 6px 8px;
+    }
+    .settle-goal-item.is-primary {
+      border-color: rgba(251,191,36,.35);
+      background: rgba(251,191,36,.1);
+    }
+    .settle-goal-item.goal-pop {
+      animation: settleGoalPop .45s ease-out;
+    }
+    .settle-goal-name {
+      font-size: 11px;
+      color: #e6edf7;
+      line-height: 1.2;
+    }
+    .settle-goal-need {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .settle-goal-bar {
+      grid-column: 1 / -1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      overflow: hidden;
+    }
+    .settle-goal-bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, #7dd3fc, #34d399);
+      border-radius: 999px;
+      transition: width .35s ease;
+    }
+    @keyframes settleGoalPop {
+      0% { transform: scale(0.98); opacity: .72; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     /* Resource bars */
