@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T08:51:52.442Z",
+    "lastUpdated": "2026-03-15T08:53:08.014Z",
     "columns": {
         "todo": [
             {
@@ -251,25 +251,6 @@
                 "claimedAt": "2026-03-15T08:40:23.279Z",
                 "completedAt": "2026-03-15T08:41:39.186Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-150",
-                "title": "Add interactive event choice system with meaningful consequences",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:05:21.888Z",
-                "description": "Implement popup event system presenting players with 2-3 choices during gameplay. Events trigger based on colony state. Each choice has visible consequences. Target 8-10 event templates. Addresses core engagement gap.",
-                "acceptanceCriteria": [
-                    "Event popup appears with 2-3 clickable choices",
-                    "At least 8 distinct event templates",
-                    "Choices produce visible consequences",
-                    "Events trigger contextually based on colony state"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T08:46:15.259Z",
-                "completedAt": "2026-03-15T08:51:52.442Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -598,6 +579,27 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T08:34:31.168Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-150",
+                "title": "Add interactive event choice system with meaningful consequences",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.888Z",
+                "description": "Implement popup event system presenting players with 2-3 choices during gameplay. Events trigger based on colony state. Each choice has visible consequences. Target 8-10 event templates. Addresses core engagement gap.",
+                "acceptanceCriteria": [
+                    "Event popup appears with 2-3 clickable choices",
+                    "At least 8 distinct event templates",
+                    "Choices produce visible consequences",
+                    "Events trigger contextually based on colony state"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T08:46:15.259Z",
+                "completedAt": "2026-03-15T08:51:52.442Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T08:53:08.014Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -677,7 +679,7 @@
     },
     "meta": {
         "totalCreated": 151,
-        "totalCompleted": 100,
+        "totalCompleted": 101,
         "pendingQuestion": null
     },
     "nextId": 158
