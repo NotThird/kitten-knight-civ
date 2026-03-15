@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T10:20:01.395Z",
+    "lastUpdated": "2026-03-15T10:23:18.992Z",
     "columns": {
         "todo": [
             {
@@ -362,6 +362,27 @@
                     "At least 3 generation-specific unlocks defined (new building, new role, new resource)"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-167",
+                "title": "Implement kitten memory and conversation system with thought bubbles",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:05:13.067Z",
+                "description": "Implement the full design from TASK-159: per-kitten short/episodic memory, belief drift, deterministic conversation scheduler (every 8s), bond tracking, and always-visible thought bubble pills on kitten cards. See agents/designer/output/latest-design.md for complete spec. This is the core life-sim feature Austin demanded.\n\n[REJECTED 2026-03-15T10:23:18.992Z] AC6 unmet: performance requirement (<1ms/frame at pop 20) not instrumented or evidenced; cannot verify acceptance criterion.",
+                "acceptanceCriteria": [
+                    "Each kitten has memory object (short, episodic, bonds, beliefs) initialized on creation and on save load",
+                    "Conversation scheduler runs every 8s, selecting eligible pairs with scored partner selection",
+                    "Conversations produce positive/neutral/tense outcomes affecting mood, friction, trust, dissent",
+                    "Thought bubbles render as visible pills on kitten cards with tone coloring",
+                    "Bubbles auto-select highest priority thought every 2s with proper TTL decay",
+                    "Performance: bubble update under 1ms per frame at pop 20",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T10:16:18.432Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -384,28 +405,6 @@
                 "claimedAt": "2026-03-15T10:11:06.195Z",
                 "completedAt": "2026-03-15T10:12:01.756Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-167",
-                "title": "Implement kitten memory and conversation system with thought bubbles",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:05:13.067Z",
-                "description": "Implement the full design from TASK-159: per-kitten short/episodic memory, belief drift, deterministic conversation scheduler (every 8s), bond tracking, and always-visible thought bubble pills on kitten cards. See agents/designer/output/latest-design.md for complete spec. This is the core life-sim feature Austin demanded.",
-                "acceptanceCriteria": [
-                    "Each kitten has memory object (short, episodic, bonds, beliefs) initialized on creation and on save load",
-                    "Conversation scheduler runs every 8s, selecting eligible pairs with scored partner selection",
-                    "Conversations produce positive/neutral/tense outcomes affecting mood, friction, trust, dissent",
-                    "Thought bubbles render as visible pills on kitten cards with tone coloring",
-                    "Bubbles auto-select highest priority thought every 2s with proper TTL decay",
-                    "Performance: bubble update under 1ms per frame at pop 20",
-                    "parse_check and replay_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T10:16:18.432Z",
-                "completedAt": "2026-03-15T10:20:01.395Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
