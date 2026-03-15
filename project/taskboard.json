@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T08:22:57.653Z",
+    "lastUpdated": "2026-03-15T08:51:52.442Z",
     "columns": {
         "todo": [
             {
@@ -129,22 +129,6 @@
                 "reclassifiedReason": "Statistics panel is Tier 1 engagement (completionist driver), not Tier 5 infrastructure. Cookie Clicker, Antimatter Dimensions, NGU IDLE all use stats pages as core engagement loops."
             },
             {
-                "id": "TASK-150",
-                "title": "Add interactive event choice system with meaningful consequences",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:05:21.888Z",
-                "description": "Implement popup event system presenting players with 2-3 choices during gameplay. Events trigger based on colony state. Each choice has visible consequences. Target 8-10 event templates. Addresses core engagement gap.",
-                "acceptanceCriteria": [
-                    "Event popup appears with 2-3 clickable choices",
-                    "At least 8 distinct event templates",
-                    "Choices produce visible consequences",
-                    "Events trigger contextually based on colony state"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-151",
                 "title": "Surface kitten personality on cards with speech bubbles and mood reactions",
                 "assignee": "developer",
@@ -210,29 +194,82 @@
                     "Kittens gain exploration XP and unlock better discoveries over time"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-156",
+                "title": "Design dramatic consequence reveals for curator policy choices",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:39:44.329Z",
+                "description": "Curator controls feel too subtle - effects are statistical nudges, not dramatic outcomes. Design a consequence reveal system: when a major policy decision plays out, show the player what happened. Reference Reigns card-flip reveals. Choosing Defend leads to wall defense scene, Expand leads to new territory. Failed choices should be dramatic (famine, uprising). Ties to TASK-150 event choice system.",
+                "acceptanceCriteria": [
+                    "Design covers at least 4 policy-outcome pairings with dramatic reveals",
+                    "Specifies visual treatment for positive vs negative outcomes",
+                    "Defines connection to TASK-150 event choice system",
+                    "Includes narrative text templates for outcomes",
+                    "Specifies timing: choice to delay to consequence reveal"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-157",
+                "title": "Implement seasonal events with real gameplay consequences",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:39:44.372Z",
+                "description": "Austin wants dramatic memorable events. Implement seasonal events where each season brings unique events with real consequences. Reference Kittens Game seasons and Cookie Clicker seasonal events. Winter Blizzard (food halved, survival narrative), Spring Festival (morale boost, new kittens), Summer Expedition (exploration bonus), Autumn Harvest (resource surplus). Events should generate narrative chronicle entries featuring specific kittens by name.",
+                "acceptanceCriteria": [
+                    "At least 4 seasonal events (one per season) with distinct gameplay effects",
+                    "Events modify resource production rates or trigger special mechanics",
+                    "Chronicle entries reference specific kittens by name during events",
+                    "Settlement illustration reflects current season visually",
+                    "Events have both positive and negative outcomes based on colony state"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-148",
-                "title": "Design evolving ambient soundscape system tied to colony state",
+                "id": "TASK-155",
+                "title": "Design visual storytelling moments for colony events",
                 "assignee": "designer",
-                "priority": "medium",
+                "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-14T15:40:38.866Z",
-                "description": "Critic identifies sound as the weakest area - 9 SFX with a toggle is functional but minimal. Kittens Game uses subtle ambient audio that shifts with seasons. Cookie Clicker has ascending tones for combos. KKC should have a layered ambient system: base colony hum that thickens with population, seasonal audio shifts (rain, wind), faction-specific motifs, and intensity scaling during events. TASK-143 covers implementation - this task designs the sound architecture and trigger map.",
+                "createdAt": "2026-03-15T08:39:44.285Z",
+                "description": "The game is 90% monospace text. When dramatic things happen, players see log lines instead of visual moments. Design visual event vignettes: brief animated scenes that show key moments. Reference RimWorld art tabs and Kittens Game calendar events. Use lightweight CSS/HTML, not canvas. Examples: kitten silhouette defending walls during raid, snowfall overlay in winter, campfire during festivals.",
                 "acceptanceCriteria": [
-                    "Design doc maps colony states to ambient sound layers (population tiers, seasons, factions)",
-                    "At least 4 distinct ambient layers defined with trigger conditions",
-                    "Layers blend smoothly - no abrupt cuts between states",
-                    "Design specifies how ambient audio coexists with existing 9 SFX",
-                    "Includes volume/mix recommendations for mobile speakers"
+                    "Design doc specifies at least 6 visual event types (raid, discovery, celebration, seasonal, milestone, social)",
+                    "Each event type has a mockup or description of visual composition",
+                    "Specifies integration with existing chronicle/event system",
+                    "Uses CSS animations and HTML overlays only",
+                    "Includes timing: how long vignettes display and how they dismiss"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T08:10:20.991Z",
-                "completedAt": "2026-03-15T08:11:23.612Z",
+                "claimedAt": "2026-03-15T08:40:23.279Z",
+                "completedAt": "2026-03-15T08:41:39.186Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-150",
+                "title": "Add interactive event choice system with meaningful consequences",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.888Z",
+                "description": "Implement popup event system presenting players with 2-3 choices during gameplay. Events trigger based on colony state. Each choice has visible consequences. Target 8-10 event templates. Addresses core engagement gap.",
+                "acceptanceCriteria": [
+                    "Event popup appears with 2-3 clickable choices",
+                    "At least 8 distinct event templates",
+                    "Choices produce visible consequences",
+                    "Events trigger contextually based on colony state"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T08:46:15.259Z",
+                "completedAt": "2026-03-15T08:51:52.442Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -539,6 +576,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T08:22:57.653Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-148",
+                "title": "Design evolving ambient soundscape system tied to colony state",
+                "assignee": "designer",
+                "priority": "medium",
+                "type": "feature",
+                "createdAt": "2026-03-14T15:40:38.866Z",
+                "description": "Critic identifies sound as the weakest area - 9 SFX with a toggle is functional but minimal. Kittens Game uses subtle ambient audio that shifts with seasons. Cookie Clicker has ascending tones for combos. KKC should have a layered ambient system: base colony hum that thickens with population, seasonal audio shifts (rain, wind), faction-specific motifs, and intensity scaling during events. TASK-143 covers implementation - this task designs the sound architecture and trigger map.",
+                "acceptanceCriteria": [
+                    "Design doc maps colony states to ambient sound layers (population tiers, seasons, factions)",
+                    "At least 4 distinct ambient layers defined with trigger conditions",
+                    "Layers blend smoothly - no abrupt cuts between states",
+                    "Design specifies how ambient audio coexists with existing 9 SFX",
+                    "Includes volume/mix recommendations for mobile speakers"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T08:10:20.991Z",
+                "completedAt": "2026-03-15T08:11:23.612Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T08:34:31.168Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -617,9 +676,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 148,
-        "totalCompleted": 99,
+        "totalCreated": 151,
+        "totalCompleted": 100,
         "pendingQuestion": null
     },
-    "nextId": 155
+    "nextId": 158
 }

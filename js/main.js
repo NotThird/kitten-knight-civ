@@ -266,7 +266,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     eternity: { sigils: 0, totalSigils: 0, resets: 0, upgrades: {}, mandate: 'harmony', preserve: 'balanced' },
     research: { unlocked: {}, activeBranch: 'economy', selectedTechId: null, doctrine: null },
     sound: { enabled: false },
-    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0 },
+    activePlay: { nextAt: 70, active: null, boostUntil: 0, boostMul: 1, seen: 0, choice: null, choiceQueue: [], choiceHistory: [], choiceCooldownUntil: 0 },
     meta: { version: GAME_VERSION, seenVersion: '', lastTs: Date.now(), offlineReturnDay: 0, offlineReturnStreak: 0, revealStage: 0 },
     log: [],
     feed: []
@@ -692,10 +692,188 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.boostUntil = Number(ap.boostUntil ?? 0) || 0;
     ap.boostMul = Math.max(1, Number(ap.boostMul ?? 1) || 1);
     ap.seen = Math.max(0, Math.floor(Number(ap.seen ?? 0) || 0));
+    ap.choice = (ap.choice && typeof ap.choice === 'object') ? ap.choice : null;
+    ap.choiceQueue = Array.isArray(ap.choiceQueue) ? ap.choiceQueue : [];
+    ap.choiceHistory = Array.isArray(ap.choiceHistory) ? ap.choiceHistory : [];
+    ap.choiceCooldownUntil = Number(ap.choiceCooldownUntil ?? 0) || 0;
   }
 
   function rollActivePlayDelay(){
     return 60 + Math.random() * 60;
+  }
+
+  const CHOICE_EVENT_TEMPLATES = [
+    { id:'winter_stores', tags:['season:winter'], title:'Winter Stores Running Low', body:'The quartermasters warn that fresh stores are dropping faster than planned.',
+      choices:[
+        { label:'Ration now', tone:'bad', effects:{ rations:'Tight', moodDelta:-0.04, grievanceDelta:0.03, food:24 }, log:'Council orders tight rations. Stores stabilize, morale dips.' },
+        { label:'Push preserve crews', tone:'warn', effects:{ policy:{ PreserveFood:0.3, Forage:0.15 }, food:8, wood:-6 }, log:'Work crews shift into preservation and forage triage.' },
+        { label:'Hold feast morale', tone:'good', effects:{ rations:'Feast', moodDelta:0.06, food:-28, social:{ dissent:-0.05 } }, log:'A morale feast steadies hearts, but burns supplies.' },
+      ]
+    },
+    { id:'spring_charter', tags:['season:spring'], title:'Spring Charter Debate', body:'With winter passed, the colony debates whether to expand quickly or consolidate.',
+      choices:[
+        { label:'Expand bold', tone:'good', effects:{ mode:'Expand', prio:{ prioProgress:0.12 }, wood:10 }, log:'Builders gain priority under a spring expansion charter.' },
+        { label:'Steady consolidation', tone:'neutral', effects:{ mode:'Survive', prio:{ prioSafety:0.10 }, social:{ dissent:-0.03 } }, log:'The charter favors stability and measured growth.' },
+      ]
+    },
+    { id:'raid_aftermath', tags:['raid:hit'], title:'Raid Aftermath Council', body:'The colony is shaken after the attack. Leaders demand a direction.',
+      choices:[
+        { label:'Fortify hard', tone:'warn', effects:{ mode:'Defend', policy:{ Guard:0.35, BuildPalisade:0.35 }, social:{ dissent:-0.02 } }, log:'Emergency fortification orders are approved.' },
+        { label:'Care for wounded', tone:'good', effects:{ policy:{ Care:0.4, Socialize:0.2 }, moodDelta:0.05, healthDelta:0.05, food:-10 }, log:'Resources are diverted to recovery and care.' },
+      ]
+    },
+    { id:'victory_window', tags:['raid:repel'], title:'Victory Window', body:'Raiders were repelled. Momentum and confidence are high.',
+      choices:[
+        { label:'Counter-drill doctrine', tone:'warn', effects:{ policy:{ Guard:0.2, Research:-0.1 }, social:{ dissent:-0.02 }, warmth:6 }, log:'The colony doubles down on readiness drills.' },
+        { label:'Convert momentum to progress', tone:'good', effects:{ mode:'Advance', policy:{ Research:0.3, CraftTools:0.2 }, science:24 }, log:'Victory morale is redirected into research and tools.' },
+      ]
+    },
+    { id:'new_knowledge', tags:['unlock:any'], title:'New Knowledge Priority', body:'A new technology unlocks fresh opportunities. Which lane gets immediate backing?',
+      choices:[
+        { label:'Fund scholars', tone:'good', effects:{ science:20, policy:{ Research:0.25 }, prio:{ prioProgress:0.10 } }, log:'Scholars receive immediate support to exploit new methods.' },
+        { label:'Field practical rollout', tone:'neutral', effects:{ tools:8, wood:12, policy:{ CraftTools:0.25, ChopWood:0.15 } }, log:'Practical crews adopt the tech in workshops and yards.' },
+      ]
+    },
+    { id:'population_boom', tags:['milestone:pop'], title:'Population Boom', body:'The colony has reached a new population tier. Coordination strain rises.',
+      choices:[
+        { label:'Appoint foremen', tone:'warn', effects:{ discipline:0.08, moodDelta:-0.03, social:{ dissent:-0.02 } }, log:'Foremen appointed; efficiency rises with stricter oversight.' },
+        { label:'Build commons first', tone:'good', effects:{ policy:{ Socialize:0.25, Care:0.25 }, moodDelta:0.05, wood:-10 }, log:'Shared commons projects improve cohesion.' },
+      ]
+    },
+    { id:'granary_choice', tags:['season:fall'], title:'Autumn Granary Choice', body:'Harvest is strong but storage is limited. The steward asks for direction.',
+      choices:[
+        { label:'Invest in storage', tone:'good', effects:{ policy:{ BuildGranary:0.35, PreserveFood:0.2 }, wood:-12 }, log:'Storage expansion is prioritized before winter.' },
+        { label:'Spend on industry now', tone:'warn', effects:{ policy:{ BuildWorkshop:0.28, Research:0.12 }, science:14 }, log:'The council favors immediate industry momentum.' },
+      ]
+    },
+    { id:'morale_crossroads', tags:['milestone:dissent'], title:'Morale Crossroads', body:'Tension is visible in daily life. Leaders ask for a social direction.',
+      choices:[
+        { label:'Conciliatory council', tone:'good', effects:{ social:{ dissent:-0.07 }, moodDelta:0.04, science:-12 }, log:'A conciliatory council eases dissent.' },
+        { label:'Impose order', tone:'bad', effects:{ discipline:0.10, social:{ dissent:-0.02 }, moodDelta:-0.05, grievanceDelta:0.05 }, log:'Order is restored, but resentment grows.' },
+      ]
+    },
+  ];
+
+  function queueChoiceEvent(s, template, meta={}){
+    ensureActivePlayState(s);
+    const ap = s.activePlay;
+    const nowT = Number(s.t ?? 0);
+    if (ap.choice || nowT < Number(ap.choiceCooldownUntil ?? 0)) return false;
+    const q = Array.isArray(ap.choiceQueue) ? ap.choiceQueue : [];
+    if (q.length >= 2) return false;
+    const t = template;
+    if (!t || !Array.isArray(t.choices) || t.choices.length < 2) return false;
+    const payload = {
+      id: String(t.id || 'choice'),
+      title: String(t.title || 'Colony choice'),
+      body: String(t.body || ''),
+      choices: t.choices.map((c, i) => ({
+        id: `${String(t.id || 'choice')}_${i}`,
+        label: String(c.label || `Choice ${i+1}`),
+        tone: String(c.tone || 'neutral'),
+        effects: c.effects || {},
+        log: String(c.log || ''),
+      })),
+      source: String(meta.source || 'context'),
+      createdAt: nowT,
+    };
+    q.push(payload);
+    ap.choiceQueue = q;
+    if (!ap.choice) ap.choice = q.shift();
+    ap.choiceCooldownUntil = nowT + 20;
+    return true;
+  }
+
+  function maybeTriggerChoiceEvent(s, tags=[], meta={}){
+    const keys = Array.isArray(tags) ? tags.map(x => String(x || '').toLowerCase()) : [];
+    if (!keys.length) return false;
+    const hit = CHOICE_EVENT_TEMPLATES.filter((tpl) => {
+      const tt = Array.isArray(tpl.tags) ? tpl.tags.map(x => String(x).toLowerCase()) : [];
+      return tt.some((t) => keys.includes(t)) || (tt.includes('unlock:any') && keys.some(k => k.startsWith('unlock:')));
+    });
+    if (!hit.length) return false;
+    const pick = hit[Math.floor(Math.random() * hit.length)] ?? hit[0];
+    return queueChoiceEvent(s, pick, meta);
+  }
+
+  function applyChoiceEffects(s, choice){
+    if (!choice || typeof choice !== 'object') return;
+    const fx = choice.effects || {};
+    const addRes = (k, v) => { s.res[k] = Math.max(0, Number(s.res[k] ?? 0) + Number(v ?? 0)); };
+    for (const k of ['food','wood','warmth','science','tools']) if (k in fx) addRes(k, fx[k]);
+
+    if (fx.mode) setModeCore(String(fx.mode), `Event: ${choice.label}`);
+    if (fx.rations && ['Tight','Normal','Feast'].includes(String(fx.rations))) s.rations = String(fx.rations);
+
+    s.director = s.director ?? {};
+    if (Number.isFinite(Number(fx.discipline))) s.director.discipline = clamp01(Number(s.director.discipline ?? 0.40) + Number(fx.discipline));
+    if (fx.prio && typeof fx.prio === 'object') {
+      for (const k of ['prioFood','prioSafety','prioProgress','prioSocial']) {
+        if (!(k in fx.prio)) continue;
+        const cur = Number(s.director[k] ?? 1.0);
+        s.director[k] = Math.max(0.50, Math.min(1.50, cur + Number(fx.prio[k] ?? 0)));
+      }
+    }
+    if (fx.policy && typeof fx.policy === 'object') {
+      s.policyMult = s.policyMult ?? {};
+      for (const [k, dv] of Object.entries(fx.policy)) {
+        const cur = Number(s.policyMult[k] ?? 1);
+        s.policyMult[k] = Math.max(0, Math.min(2.5, cur + Number(dv ?? 0)));
+      }
+    }
+    if (fx.social && typeof fx.social === 'object') {
+      s.social = s.social ?? { dissent:0 };
+      if (Number.isFinite(Number(fx.social.dissent))) s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + Number(fx.social.dissent));
+    }
+
+    const moodDelta = Number(fx.moodDelta ?? 0);
+    const healthDelta = Number(fx.healthDelta ?? 0);
+    const grievanceDelta = Number(fx.grievanceDelta ?? 0);
+    if (moodDelta || healthDelta || grievanceDelta) {
+      for (const k of (s.kittens ?? [])) {
+        if (moodDelta) k.mood = clamp01(Number(k.mood ?? 0.55) + moodDelta);
+        if (healthDelta) k.health = clamp01(Number(k.health ?? 1) + healthDelta);
+        if (grievanceDelta) k.grievance = clamp01(Number(k.grievance ?? 0) + grievanceDelta);
+      }
+    }
+
+    log(choice.log || `Decision applied: ${choice.label}.`);
+  }
+
+  function chooseActiveChoiceEvent(choiceId){
+    ensureActivePlayState(state);
+    const ap = state.activePlay;
+    const ev = ap.choice;
+    if (!ev) return false;
+    const choice = (ev.choices || []).find(c => c.id === choiceId);
+    if (!choice) return false;
+    applyChoiceEffects(state, choice);
+    ap.choiceHistory = Array.isArray(ap.choiceHistory) ? ap.choiceHistory : [];
+    ap.choiceHistory.push({ t: Number(state.t ?? 0), eventId: ev.id, choice: choice.label });
+    if (ap.choiceHistory.length > 24) ap.choiceHistory.splice(0, ap.choiceHistory.length - 24);
+    ap.choice = null;
+    if (Array.isArray(ap.choiceQueue) && ap.choiceQueue.length > 0) ap.choice = ap.choiceQueue.shift();
+    save();
+    render();
+    return true;
+  }
+
+  function renderActiveChoiceEvent(){
+    ensureActivePlayState(state);
+    const ap = state.activePlay;
+    let host = document.getElementById('activePlayChoiceModalHost');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'activePlayChoiceModalHost';
+      document.body.appendChild(host);
+    }
+    const ev = ap.choice;
+    if (!ev) { host.innerHTML = ''; return; }
+
+    const buttons = (ev.choices || []).map((c) =>
+      `<button type="button" class="active-choice-btn ${c.tone || 'neutral'}" data-choice-id="${c.id}">${c.label}</button>`
+    ).join('');
+    host.innerHTML = `<div class="active-choice-modal"><div class="active-choice-card"><div class="active-choice-kicker">Colony Decision</div><h3>${ev.title}</h3><p>${ev.body}</p><div class="active-choice-actions">${buttons}</div></div></div>`;
   }
 
   function activePlayProdMul(s){
@@ -5088,6 +5266,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         state._trendEvents = Array.isArray(state._trendEvents) ? state._trendEvents : [];
         state._trendEvents.push({ t: Number(state.t ?? 0), kind:'unlock', label:u.name, color:'rgba(125,211,252,.22)' });
         if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
+        maybeTriggerChoiceEvent(state, [`unlock:${String(u.id || '').toLowerCase()}`], { source:'unlock' });
       }
     }
   }
@@ -5205,6 +5384,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       const demandLine = demand ? `Faction demand active: ${demand.axis} bloc (${String(demand.what ?? 'concessions')})` : '';
 
       log(msg + (from ? ` (from ${from})` : '') + `\n${report}\n${targetLine}` + (demandLine ? `\n${demandLine}` : ''));
+      maybeTriggerChoiceEvent(state, [`season:${String(season.name || '').toLowerCase()}`], { source:'season' });
 
       // Civ-sim: faction demands often emerge at season boundaries when priorities naturally shift.
       const fd = maybeStartFactionDemand(state, `season ${from}→${season.name}`);
@@ -5621,6 +5801,26 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           }
         }
       }
+    }
+
+    // Progression milestone trigger: population tiers surface governance events.
+    const popNow = Number(state.kittens?.length ?? 0);
+    state._choicePopMilestone = Math.max(0, Number(state._choicePopMilestone ?? 0) || 0);
+    if (popNow >= 12 && state._choicePopMilestone < 1) {
+      state._choicePopMilestone = 1;
+      maybeTriggerChoiceEvent(state, ['milestone:pop'], { source:'population' });
+    } else if (popNow >= 24 && state._choicePopMilestone < 2) {
+      state._choicePopMilestone = 2;
+      maybeTriggerChoiceEvent(state, ['milestone:pop'], { source:'population' });
+    }
+
+    const dissNow = dissent01(state);
+    state._choiceDissentMilestone = Math.max(0, Number(state._choiceDissentMilestone ?? 0) || 0);
+    if (dissNow >= 0.62 && state._choiceDissentMilestone < 1) {
+      state._choiceDissentMilestone = 1;
+      maybeTriggerChoiceEvent(state, ['milestone:dissent'], { source:'social' });
+    } else if (dissNow <= 0.35) {
+      state._choiceDissentMilestone = 0;
     }
 
     // Director automation: optional auto-tuning for reserves.
@@ -6065,6 +6265,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 45;
           state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'repel' };
+          maybeTriggerChoiceEvent(state, ['raid:repel'], { source:'raid' });
 
           // Norms: raids leave cultural memory. A repelled raid still increases vigilance, but less than a hit.
           state.social = state.social ?? { dissent: 0 };
@@ -6093,6 +6294,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
           if (state._trendEvents.length > 80) state._trendEvents.splice(0, state._trendEvents.length - 80);
           state._recentRaidTimer = 75;
           state._lastRaidOutcome = { t: Number(state.t ?? 0), result:'hit' };
+          maybeTriggerChoiceEvent(state, ['raid:hit'], { source:'raid' });
 
           // Norms: a raid that hits the colony leaves a stronger vigilance scar.
           state.social = state.social ?? { dissent: 0 };
@@ -9307,6 +9509,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (feedEl) feedEl.textContent = (Array.isArray(state.feed) ? state.feed : []).join('\n');
     renderMilestonesFx();
     renderActivePlayEvent();
+    renderActiveChoiceEvent();
 
     // Pause button: show auto-danger pause reason (if any) as a first-class, visible signal.
     const pauseBtn = el('btnPause');
@@ -11373,6 +11576,17 @@ function renderTrends(){
     if (!hit) return;
     e.preventDefault();
     if (claimActivePlayEvent(state)) render();
+  });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const hit = target.closest('[data-choice-id]');
+    if (!hit) return;
+    const id = String(hit.getAttribute('data-choice-id') || '');
+    if (!id) return;
+    e.preventDefault();
+    chooseActiveChoiceEvent(id);
   });
 
   // --- Save export/import/reset (moved behind UI boundary)
