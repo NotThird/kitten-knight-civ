@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T11:19:06.569Z",
+    "lastUpdated": "2026-03-15T11:23:41.630Z",
     "columns": {
         "todo": [
             {
@@ -444,27 +444,6 @@
                 "claimedAt": "2026-03-15T11:11:34.396Z",
                 "completedAt": "2026-03-15T11:12:57.986Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-172",
-                "title": "Implement colony tank life-at-a-glance layer from TASK-165 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "description": "Implement the approved TASK-165 design: mood aura rings, activity glyphs, status pins, and relationship proximity clustering on colony tank kitten dots. CSS+emoji only, no canvas.",
-                "acceptanceCriteria": [
-                    "Each tank kitten shows colored mood aura based on mood scalar",
-                    "Activity glyph emoji visible on each kitten showing current task",
-                    "Relationship proximity - bonded kittens cluster closer together",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "status": "todo",
-                "createdAt": "2026-03-15T10:35:30.803Z",
-                "staleCount": 0,
-                "claimedAt": "2026-03-15T11:16:16.544Z",
-                "completedAt": "2026-03-15T11:19:06.569Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -989,6 +968,29 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T11:04:29.539Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-172",
+                "title": "Implement colony tank life-at-a-glance layer from TASK-165 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "description": "Implement the approved TASK-165 design: mood aura rings, activity glyphs, status pins, and relationship proximity clustering on colony tank kitten dots. CSS+emoji only, no canvas.",
+                "acceptanceCriteria": [
+                    "Each tank kitten shows colored mood aura based on mood scalar",
+                    "Activity glyph emoji visible on each kitten showing current task",
+                    "Relationship proximity - bonded kittens cluster closer together",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "status": "todo",
+                "createdAt": "2026-03-15T10:35:30.803Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-15T11:16:16.544Z",
+                "completedAt": "2026-03-15T11:19:06.569Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T11:23:41.630Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1068,7 +1070,7 @@
     },
     "meta": {
         "totalCreated": 168,
-        "totalCompleted": 109,
+        "totalCompleted": 110,
         "pendingQuestion": null
     },
     "nextId": 178
