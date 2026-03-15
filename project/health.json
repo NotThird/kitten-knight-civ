@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-15T12:29:29.778Z",
-  "iteration": 35,
+  "timestamp": "2026-03-15T13:00:00.000Z",
+  "iteration": 36,
   "cronHealth": {
     "healthy": [
       "forge-oracle",
@@ -17,13 +17,13 @@
     "disabled": []
   },
   "pipelineHealth": {
-    "todo": 26,
+    "todo": 25,
     "claimed": 0,
     "review": 1,
-    "done": 28,
-    "blocked": 4,
+    "done": 31,
+    "blocked": 8,
     "staleTasks": [],
-    "status": "healthy"
+    "status": "stalled"
   },
   "agentActivity": {
     "lastCycleActive": [
@@ -32,21 +32,22 @@
     "lastCycleSilent": [
       "oracle",
       "architect",
-      "tester",
+      "codesmith",
+      "gauntlet",
       "arbiter",
-      "sentinel",
       "watchdog",
+      "sentinel",
       "strategist",
       "forgeleader"
     ],
     "errors": []
   },
   "convergence": {
-    "currentScore": 7.5,
+    "currentScore": 7.6,
     "threshold": 9,
     "consecutiveAbove": 0,
-    "iteration": 35,
+    "iteration": 36,
     "maxIterations": 50,
-    "status": "phase2-stalled"
+    "status": "stalled"
   }
 }
