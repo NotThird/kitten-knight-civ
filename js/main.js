@@ -781,6 +781,66 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
   ];
 
   const CHOICE_EVENT_TEMPLATES = GOLDEN_MOMENT_TEMPLATES;
+  const CONTENT_FALLBACK_DEAD_ZONE_SEC = 480;
+  const CONTENT_FALLBACK_TEMPLATES = [
+    {
+      id:'campfire-rumor',
+      title:'Campfire Rumor Circle',
+      body:'A rumor chain spreads from one fire to the next, nudging kittens to trade stories and settle old worries.',
+      interrupt:'festival',
+      apply:(s) => {
+        s.res.science = Math.max(0, Number(s?.res?.science ?? 0) + 16);
+        s.social = s.social ?? { dissent:0 };
+        s.social.dissent = clamp01(Number(s.social.dissent ?? 0) - 0.015);
+      },
+    },
+    {
+      id:'tideline-cache',
+      title:'Tideline Cache Found',
+      body:'Young scouts recover a forgotten stash near the marsh edge.',
+      interrupt:'raid-repel',
+      apply:(s) => {
+        s.res.food = Math.max(0, Number(s?.res?.food ?? 0) + 12);
+        s.res.wood = Math.max(0, Number(s?.res?.wood ?? 0) + 10);
+      },
+    },
+    {
+      id:'elder-anecdote',
+      title:'Elder Anecdote Night',
+      body:'An elder retells a close-call from the founding winters; morale steadies.',
+      interrupt:'winter-arrival',
+      apply:(s) => {
+        for (const k of (s.kittens ?? [])) k.mood = clamp01(Number(k.mood ?? 0.55) + 0.015);
+      },
+    },
+    {
+      id:'crafting-surge',
+      title:'Crafting Surge',
+      body:'Workshop teams improvise a smarter workflow after an impromptu challenge.',
+      interrupt:'festival',
+      apply:(s) => {
+        s.res.tools = Math.max(0, Number(s?.res?.tools ?? 0) + 9);
+        s.res.science = Math.max(0, Number(s?.res?.science ?? 0) + 10);
+      },
+    },
+    {
+      id:'forager-bloom',
+      title:'Forager Bloom Report',
+      body:'Foragers map a new pocket of herbs and roots beyond the ridge.',
+      interrupt:'raid-hit',
+      apply:(s) => {
+        s.res.food = Math.max(0, Number(s?.res?.food ?? 0) + 18);
+        s.res.warmth = Math.max(0, Number(s?.res?.warmth ?? 0) + 6);
+      },
+    },
+  ];
+
+  function markContentBeat(s, source='content'){
+    if (!s || typeof s !== 'object') return;
+    ensureMidgameMilestonesState(s);
+    s.midgame.lastContentAt = Number(s.t ?? 0);
+    s.midgame.lastContentSource = String(source || 'content');
+  }
 
   function queueChoiceEvent(s, template, meta={}){
     ensureActivePlayState(s);
@@ -813,6 +873,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.choiceQueue = q;
     if (!ap.choice) ap.choice = q.shift();
     ap.choiceCooldownUntil = nowT + 24;
+    markContentBeat(s, String(meta.source || 'choice-event'));
     return true;
   }
 
@@ -966,6 +1027,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     ap.pitySec = 0;
     if (source) ap.chainReady = null;
     ap.nextAt = nowT + rollActivePlayDelay();
+    markContentBeat(s, 'golden-moment');
     triggerEventInterrupt('golden-moment');
     playSfx('unlock');
     log(`Golden moment: ${pick.title} (Tier ${tier})`);
@@ -1014,7 +1076,27 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     if (nowT >= Number(ap.boostUntil ?? 0)) ap.boostMul = 1;
   }
 
+  function tickContentFallback(s){
+    if (!s || s.paused) return;
+    ensureMidgameMilestonesState(s);
+    const nowT = Number(s.t ?? 0);
+    const last = Number(s.midgame.lastContentAt ?? nowT);
+    if (nowT - last < CONTENT_FALLBACK_DEAD_ZONE_SEC) return;
+
+    const pool = Array.isArray(CONTENT_FALLBACK_TEMPLATES) ? CONTENT_FALLBACK_TEMPLATES : [];
+    if (!pool.length) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+    if (!pick) return;
+
+    if (typeof pick.apply === 'function') pick.apply(s);
+    feed(`Filler beat: ${pick.title}. ${pick.body}`);
+    log(`Fallback content beat: ${pick.title}.`);
+    triggerEventInterrupt(String(pick.interrupt || 'festival'));
+    markContentBeat(s, `fallback:${pick.id || 'event'}`);
+  }
+
   function renderActivePlayEvent(){
+
     ensureActivePlayState(state);
     const ap = state.activePlay;
     let host = document.getElementById('activePlayEventHost');
@@ -1287,6 +1369,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     }
 
     feed(`Milestone unlocked: ${String(def?.title ?? key)}.`);
+    markContentBeat(s, `milestone:${key}`);
     playSfx('milestone');
 
     const nowMs = Date.now();
@@ -7019,6 +7102,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     // Milestones: persisted unlock history + short inline celebration bursts.
     tickMilestones(state);
     tickMidgameMilestones(state);
+    tickContentFallback(state);
 
     // Transient trend sampling (for per-kitten graphs — stripped on save)
     state._trendTimer = (state._trendTimer ?? 0) + dt;
@@ -9759,7 +9843,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       if (!def.check(s)) continue;
       s.midgame.unlocked[def.id] = Number(s.t ?? 0);
       s.midgame.lastAt = Number(s.t ?? 0);
-      s.midgame.lastContentAt = Number(s.t ?? 0);
+      markContentBeat(s, `discovery:${def.id}`);
       s.midgame.history.push({ id: def.id, at: Number(s.t ?? 0) });
       if (s.midgame.history.length > 24) s.midgame.history.splice(0, s.midgame.history.length - 24);
       if (typeof def.apply === 'function') def.apply(s);

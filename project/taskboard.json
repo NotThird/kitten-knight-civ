@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T12:24:11.860Z",
+    "lastUpdated": "2026-03-15T12:48:30.209Z",
     "columns": {
         "todo": [
             {
@@ -247,22 +247,6 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-163",
-                "title": "Add visible relationship lines between kittens in colony tank",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T09:36:07.202Z",
-                "description": "Kittens in the colony tank should show visible colored lines for friendships, rivalries, mentorships. When kittens interact socially, show a brief animation. Makes colony feel alive at a glance. Depends on TASK-152.",
-                "acceptanceCriteria": [
-                    "Colored lines shown between kitten dots for different relationship types",
-                    "Lines fade as relationships form or break",
-                    "At least one interaction animation for social actions",
-                    "Smooth performance with 20+ kittens"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-164",
                 "title": "Add first-30-seconds wow moment: animated first birth and first build",
                 "assignee": "developer",
@@ -352,59 +336,6 @@
                 "staleCount": 0
             },
             {
-                "id": "TASK-176",
-                "title": "Implement dynamic next-goal tracker widget in UI header",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:40:20.336Z",
-                "description": "Players need a persistent breadcrumb showing what to work toward next. Implement a compact tracker in the settlement overview area showing 1-3 upcoming unlocks with progress bars. Should pull from game state to determine the nearest achievable goals (next building, next research, next prestige threshold, next population milestone). Updates in real-time as resources change. When a goal is achieved, brief celebration animation before cycling to next goal.",
-                "acceptanceCriteria": [
-                    "Widget displays 1-3 upcoming goals with name, progress bar, and resource needed",
-                    "Goals dynamically update based on current game state and proximity to unlock",
-                    "Achieving a goal triggers a brief visual celebration (glow, pulse, or confetti)",
-                    "Widget fits within existing settlement overview header without disrupting layout",
-                    "Goals span different systems: buildings, research, prestige, population milestones"
-                ],
-                "source": "strategist"
-            },
-            {
-                "id": "TASK-177",
-                "title": "Design kitten aging, life stages, and generational inheritance system",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "description": "TASK-153 (implement aging/generations) is a complex system that needs a design spec first. Austin wants a micro universe of growth — kittens that age, form families, pass on traits, and leave legacies. Reference: CK3 trait inheritance with dominant/recessive mechanics, RimWorld aging with meaningful elder roles, Dwarf Fortress generational legends. Key design questions: How fast should kittens age relative to game ticks? What are the life stage thresholds and bonuses? How does trait inheritance work (which traits dominate, mutation rates)? How do deaths affect relationships and morale? How does population balance work (births vs deaths vs carrying capacity)? Should elders have unique actions (storytelling, mentoring)? How do generations interact with prestige resets? Design must integrate with existing personality traits, coterie system, and the new relationship system (TASK-152).",
-                "acceptanceCriteria": [
-                    "Life stage progression defined with age thresholds, stat modifiers, and visual indicators for each stage (kitten/adult/elder)",
-                    "Trait inheritance rules specified: which traits can be inherited, dominance hierarchy, mutation chance and pool",
-                    "Population lifecycle balance model: birth rate formula, death triggers, carrying capacity interaction",
-                    "Elder-specific mechanics designed (wisdom bonuses, mentoring, memorial events on death)",
-                    "Integration points documented for relationships (TASK-152), coteries, personality system, and prestige layers",
-                    "Generational tracking spec: family trees, generation counter, legacy bonuses per generation survived"
-                ],
-                "source": "strategist",
-                "status": "todo",
-                "createdAt": "2026-03-15T11:10:39.533Z",
-                "staleCount": 0
-            },
-            {
-                "id": "TASK-180",
-                "title": "Surface kitten bonds and trust on cards and in chronicle feed",
-                "assignee": "developer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:05:21.192Z",
-                "description": "The memory/conversation/bonds system is rich but invisible to players. Surface relationship data in the UI: show top bond on each kitten card with best friend or rival icon and name, add conversation outcome snippets to chronicle feed, display trust and friction as a small bar or icon pair on cards.",
-                "acceptanceCriteria": [
-                    "Each kitten card shows its strongest bond with name and icon",
-                    "Chronicle feed includes conversation outcome entries when kittens talk",
-                    "Trust/friction visible as icon or micro-bar on kitten stat cards",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator"
-            },
-            {
                 "id": "TASK-181",
                 "title": "Design SVG-based settlement illustration with animated building silhouettes",
                 "assignee": "designer",
@@ -439,47 +370,120 @@
                 "source": "strategist"
             },
             {
-                "id": "TASK-179",
-                "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
+                "id": "TASK-184",
+                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
                 "assignee": "developer",
                 "priority": "critical",
                 "type": "feature",
-                "createdAt": "2026-03-15T11:35:25.662Z",
-                "description": "STAGNATION BREAKER. Two-part fix for mid-game content vacuum flagged 4 consecutive cycles. Part 1: Persistent next-goal tracker widget in UI header. Part 2: Mid-game milestone unlocks dripping every 5-10 minutes post-Library. Eliminates the 10+ minute dead zone between Library and Eternity.\n\n[REJECTED 2026-03-15T12:24:11.860Z] Fails AC: no guaranteed <10 min content cadence; milestones are threshold-only with no fallback pacing.",
+                "createdAt": "2026-03-15T12:36:13.064Z",
+                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
                 "acceptanceCriteria": [
-                    "Persistent goal tracker widget visible in UI header at all times",
-                    "Goal tracker updates dynamically based on closest achievable unlock",
-                    "At least 3 new mid-game milestones unlock between Library and Eternity tiers",
-                    "Each milestone produces a visible notification or event",
-                    "No 10+ minute stretch without new content appearing during active play",
+                    "Curiosity meter accumulates based on population, libraries, exploration, season",
+                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
+                    "All 6 relics unlock sequentially with chronicle entries",
+                    "Each relic unlocks its specified mechanic",
+                    "Discoveries spaced ~9-12 min apart in typical mid-game",
+                    "State persisted in save data",
                     "parse_check and smoke_test pass"
                 ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T12:16:15.624Z",
-                "testVerdict": "REJECTED"
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-185",
+                "title": "Implement kitten relationship panel with visual bond lines in colony tank",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:13.141Z",
+                "description": "Surface existing relationship/bond data in UI. Add relationship lines between bonded kittens in colony tank. Add relationships section on kitten cards showing bonds with trust/friction. Consolidates TASK-163 and TASK-180.",
+                "acceptanceCriteria": [
+                    "Colony tank shows visual lines between bonded kittens with color coding",
+                    "Line thickness scales with bond strength",
+                    "Kitten cards show relationships section with trust/friction values",
+                    "Hovering a kitten highlights their relationship lines",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-187",
+                "title": "Design mid-game building unlock chain with new kitten activities",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:40:50.311Z",
+                "description": "The critic identifies a gap between Libraries unlock and Eternity where no new GAMEPLAY unlocks occur. Design 3-4 new buildings that unlock in the mid-game, each introducing a new kitten activity or mechanic. Reference: Kittens Game unlocks new buildings that change what kittens DO. Each building should add a new kitten job/activity, not just a production bonus. Examples: Training Grounds for combat skill, Scriptorium for culture resource, Watchtower for scouting, Market for trade. These should integrate with existing systems.",
+                "acceptanceCriteria": [
+                    "3-4 mid-game buildings defined with unlock conditions between Libraries and Eternity",
+                    "Each building introduces a new kitten activity/job type",
+                    "Resource costs and production effects specified",
+                    "Integration points with exploration, trading, and Whisker Relics systems documented",
+                    "Unlock pacing ensures a new building every 10-15 minutes of mid-game play"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-188",
+                "title": "Tune golden moment frequency and add 3 new mid-game choice templates",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:40:55.890Z",
+                "description": "Critic notes golden moments fire too infrequently to carry mid-game engagement. Two changes: 1 - Increase golden moment check frequency or lower trigger thresholds so players see 1-2 choice events per 10-minute window during active play. 2 - Add 3 new mid-game choice event templates that reference the social simulation, e.g. two kittens in rivalry ask player to mediate, a kitten with high curiosity wants to leave on expedition, a visiting stranger offers to teach a rare skill. These should use the existing memory/conversation system data to feel emergent. Reference: Cookie Clicker golden cookies appear every 5-15 min.",
+                "acceptanceCriteria": [
+                    "Golden moment average frequency increased to 1-2 per 10 minutes of active mid-game play",
+                    "3 new choice event templates added that reference kitten relationships or personality",
+                    "Events use data from memory/conversation system for bond names and trait references",
+                    "Frequency config is tunable via a single constant",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-175",
-                "title": "Design mid-game mystery chain that drip-feeds new mechanics every 10 minutes",
+                "id": "TASK-177",
+                "title": "Design kitten aging, life stages, and generational inheritance system",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T10:40:20.292Z",
-                "description": "The critic flagged mid-game content vacuum as the #1 engagement killer. After Library + Eternity unlock, there is a long stretch with no new discoveries. Great incrementals solve this with discovery chains: Cookie Clicker has golden cookie upgrades, Kittens Game has religion/transcendence surprise layers. KKC needs a mid-game mystery chain - perhaps archaeological discoveries, strange visitors with quests, or underground ruins. Each discovery should unlock a small new mechanic, spaced roughly 10 minutes apart. TASK-173 exists for implementation but needs a proper design spec first.",
+                "description": "TASK-153 (implement aging/generations) is a complex system that needs a design spec first. Austin wants a micro universe of growth — kittens that age, form families, pass on traits, and leave legacies. Reference: CK3 trait inheritance with dominant/recessive mechanics, RimWorld aging with meaningful elder roles, Dwarf Fortress generational legends. Key design questions: How fast should kittens age relative to game ticks? What are the life stage thresholds and bonuses? How does trait inheritance work (which traits dominate, mutation rates)? How do deaths affect relationships and morale? How does population balance work (births vs deaths vs carrying capacity)? Should elders have unique actions (storytelling, mentoring)? How do generations interact with prestige resets? Design must integrate with existing personality traits, coterie system, and the new relationship system (TASK-152).",
                 "acceptanceCriteria": [
-                    "Design specifies 5-8 sequential discoveries that each introduce a small new mechanic or modifier",
-                    "Each discovery has a trigger condition based on game progress (time, population, buildings, research)",
-                    "Discoveries are spaced to create roughly 10-minute intervals of anticipation in mid-game",
-                    "Each discovery includes narrative flavor text fitting KKC theme (kittens, settlement, exploration)",
-                    "Design explains how discoveries interact with existing systems (research, prestige, seasonal events)"
+                    "Life stage progression defined with age thresholds, stat modifiers, and visual indicators for each stage (kitten/adult/elder)",
+                    "Trait inheritance rules specified: which traits can be inherited, dominance hierarchy, mutation chance and pool",
+                    "Population lifecycle balance model: birth rate formula, death triggers, carrying capacity interaction",
+                    "Elder-specific mechanics designed (wisdom bonuses, mentoring, memorial events on death)",
+                    "Integration points documented for relationships (TASK-152), coteries, personality system, and prestige layers",
+                    "Generational tracking spec: family trees, generation counter, legacy bonuses per generation survived"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T12:11:31.343Z",
-                "completedAt": "2026-03-15T12:13:17.421Z",
+                "status": "todo",
+                "createdAt": "2026-03-15T11:10:39.533Z",
+                "staleCount": 0,
+                "claimedAt": "2026-03-15T12:41:51.884Z",
+                "completedAt": "2026-03-15T12:42:57.094Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-183",
+                "title": "Implement time-based content fallback to guarantee no 10-min dead zones",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:12.986Z",
+                "description": "Add a fallback pacing timer that triggers minor content events if no milestone or golden moment has fired in 8+ minutes of active play. Use existing chronicle feed and event interrupt system.",
+                "acceptanceCriteria": [
+                    "Fallback timer fires a content event if no milestone/golden moment/discovery in 8 min of active play",
+                    "At least 5 distinct fallback event templates exist",
+                    "Fallback events provide small gameplay bonuses or narrative flavor",
+                    "Timer resets whenever any content event fires",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T12:46:20.311Z",
+                "completedAt": "2026-03-15T12:48:30.209Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1094,6 +1098,50 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T12:04:32.358Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-175",
+                "title": "Design mid-game mystery chain that drip-feeds new mechanics every 10 minutes",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:40:20.292Z",
+                "description": "The critic flagged mid-game content vacuum as the #1 engagement killer. After Library + Eternity unlock, there is a long stretch with no new discoveries. Great incrementals solve this with discovery chains: Cookie Clicker has golden cookie upgrades, Kittens Game has religion/transcendence surprise layers. KKC needs a mid-game mystery chain - perhaps archaeological discoveries, strange visitors with quests, or underground ruins. Each discovery should unlock a small new mechanic, spaced roughly 10 minutes apart. TASK-173 exists for implementation but needs a proper design spec first.",
+                "acceptanceCriteria": [
+                    "Design specifies 5-8 sequential discoveries that each introduce a small new mechanic or modifier",
+                    "Each discovery has a trigger condition based on game progress (time, population, buildings, research)",
+                    "Discoveries are spaced to create roughly 10-minute intervals of anticipation in mid-game",
+                    "Each discovery includes narrative flavor text fitting KKC theme (kittens, settlement, exploration)",
+                    "Design explains how discoveries interact with existing systems (research, prestige, seasonal events)"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T12:11:31.343Z",
+                "completedAt": "2026-03-15T12:13:17.421Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T12:34:32.471Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-179",
+                "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T11:35:25.662Z",
+                "description": "STAGNATION BREAKER. Two-part fix for mid-game content vacuum flagged 4 consecutive cycles. Part 1: Persistent next-goal tracker widget in UI header. Part 2: Mid-game milestone unlocks dripping every 5-10 minutes post-Library. Eliminates the 10+ minute dead zone between Library and Eternity.\n\n[REJECTED 2026-03-15T12:24:11.860Z] Fails AC: no guaranteed <10 min content cadence; milestones are threshold-only with no fallback pacing.",
+                "acceptanceCriteria": [
+                    "Persistent goal tracker widget visible in UI header at all times",
+                    "Goal tracker updates dynamically based on closest achievable unlock",
+                    "At least 3 new mid-game milestones unlock between Library and Eternity tiers",
+                    "Each milestone produces a visible notification or event",
+                    "No 10+ minute stretch without new content appearing during active play",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T12:34:58.398Z",
+                "testVerdict": "APPROVED",
+                "completedAt": "2026-03-15T12:35:00.384Z",
+                "testedAt": "2026-03-15T12:35:02.311Z"
             }
         ],
         "blocked": [
@@ -1168,13 +1216,85 @@
                 "source": "strategist",
                 "createdAt": "2026-03-12T19:55:15.499Z",
                 "blockedReason": "Tier 5 visual polish — particle effects are not gameplay mechanics. Deprioritized per priority stack."
+            },
+            {
+                "id": "TASK-186",
+                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:23.264Z",
+                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Curiosity meter accumulates based on population, libraries, exploration, season",
+                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
+                    "All 6 relics unlock sequentially with chronicle entries",
+                    "Each relic unlocks its specified mechanic",
+                    "Discoveries spaced ~9-12 min apart in typical mid-game",
+                    "State persisted in save data",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Duplicate of TASK-184"
+            },
+            {
+                "id": "TASK-163",
+                "title": "Add visible relationship lines between kittens in colony tank",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:36:07.202Z",
+                "description": "Kittens in the colony tank should show visible colored lines for friendships, rivalries, mentorships. When kittens interact socially, show a brief animation. Makes colony feel alive at a glance. Depends on TASK-152.",
+                "acceptanceCriteria": [
+                    "Colored lines shown between kitten dots for different relationship types",
+                    "Lines fade as relationships form or break",
+                    "At least one interaction animation for social actions",
+                    "Smooth performance with 20+ kittens"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Superseded by TASK-185"
+            },
+            {
+                "id": "TASK-180",
+                "title": "Surface kitten bonds and trust on cards and in chronicle feed",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:05:21.192Z",
+                "description": "The memory/conversation/bonds system is rich but invisible to players. Surface relationship data in the UI: show top bond on each kitten card with best friend or rival icon and name, add conversation outcome snippets to chronicle feed, display trust and friction as a small bar or icon pair on cards.",
+                "acceptanceCriteria": [
+                    "Each kitten card shows its strongest bond with name and icon",
+                    "Chronicle feed includes conversation outcome entries when kittens talk",
+                    "Trust/friction visible as icon or micro-bar on kitten stat cards",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "blockedReason": "Superseded by TASK-185"
+            },
+            {
+                "id": "TASK-176",
+                "title": "Implement dynamic next-goal tracker widget in UI header",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:40:20.336Z",
+                "description": "Players need a persistent breadcrumb showing what to work toward next. Implement a compact tracker in the settlement overview area showing 1-3 upcoming unlocks with progress bars. Should pull from game state to determine the nearest achievable goals (next building, next research, next prestige threshold, next population milestone). Updates in real-time as resources change. When a goal is achieved, brief celebration animation before cycling to next goal.",
+                "acceptanceCriteria": [
+                    "Widget displays 1-3 upcoming goals with name, progress bar, and resource needed",
+                    "Goals dynamically update based on current game state and proximity to unlock",
+                    "Achieving a goal triggers a brief visual celebration (glow, pulse, or confetti)",
+                    "Widget fits within existing settlement overview header without disrupting layout",
+                    "Goals span different systems: buildings, research, prestige, population milestones"
+                ],
+                "source": "strategist",
+                "blockedReason": "Already implemented by TASK-179"
             }
         ]
     },
     "meta": {
-        "totalCreated": 173,
-        "totalCompleted": 113,
+        "totalCreated": 179,
+        "totalCompleted": 115,
         "pendingQuestion": null
     },
-    "nextId": 183
+    "nextId": 189
 }
