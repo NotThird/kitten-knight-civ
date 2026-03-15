@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T13:19:37.873Z",
+    "lastUpdated": "2026-03-15T13:24:20.594Z",
     "columns": {
         "todo": [
             {
@@ -500,28 +500,6 @@
                 "claimedAt": "2026-03-15T13:11:57.609Z",
                 "completedAt": "2026-03-15T13:13:22.660Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-184",
-                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T12:36:13.064Z",
-                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
-                "acceptanceCriteria": [
-                    "Curiosity meter accumulates based on population, libraries, exploration, season",
-                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
-                    "All 6 relics unlock sequentially with chronicle entries",
-                    "Each relic unlocks its specified mechanic",
-                    "Discoveries spaced ~9-12 min apart in typical mid-game",
-                    "State persisted in save data",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T13:16:15.843Z",
-                "completedAt": "2026-03-15T13:19:37.873Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -1227,6 +1205,30 @@
                 "outputPath": "agents/designer/output/latest-design.md",
                 "testedAt": "2026-03-15T13:04:37.049Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-184",
+                "title": "Implement Whisker Relics mid-game discovery chain from TASK-175 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T12:36:13.064Z",
+                "description": "Implement the 6-relic Whisker Relics discovery chain from TASK-175. Uses Curiosity meter to pace discoveries ~10 min apart post-Library+Eternity. Each relic unlocks a new mini-mechanic. See agents/designer/output/latest-design.md for full spec.",
+                "acceptanceCriteria": [
+                    "Curiosity meter accumulates based on population, libraries, exploration, season",
+                    "Chain activates when Library , Eternity unlocked, pop , 25+ min played",
+                    "All 6 relics unlock sequentially with chronicle entries",
+                    "Each relic unlocks its specified mechanic",
+                    "Discoveries spaced ~9-12 min apart in typical mid-game",
+                    "State persisted in save data",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T13:16:15.843Z",
+                "completedAt": "2026-03-15T13:19:37.873Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T13:24:20.594Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1378,7 +1380,7 @@
     },
     "meta": {
         "totalCreated": 183,
-        "totalCompleted": 117,
+        "totalCompleted": 118,
         "pendingQuestion": null
     },
     "nextId": 193
