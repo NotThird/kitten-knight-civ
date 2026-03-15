@@ -349,6 +349,18 @@ export function migrateState(s, {
     k._fallbackTo = null;
     k._mentor = null;
     k.blockedCooldown = k.blockedCooldown ?? {};
+
+    // TASK-167 migration: per-kitten memory + thought bubble state.
+    k.memory = (k.memory && typeof k.memory === 'object') ? k.memory : {};
+    k.memory.short = Array.isArray(k.memory.short) ? k.memory.short : [];
+    k.memory.episodic = Array.isArray(k.memory.episodic) ? k.memory.episodic : [];
+    k.memory.bonds = (k.memory.bonds && typeof k.memory.bonds === 'object') ? k.memory.bonds : {};
+    k.memory.beliefs = (k.memory.beliefs && typeof k.memory.beliefs === 'object') ? k.memory.beliefs : { trust: 0.5, friction: 0, dissent: 0 };
+    k.memory.beliefs.trust = (typeof clamp01 === 'function') ? clamp01(Number(k.memory.beliefs.trust ?? 0.5)) : Math.max(0, Math.min(1, Number(k.memory.beliefs.trust ?? 0.5) || 0.5));
+    k.memory.beliefs.friction = (typeof clamp01 === 'function') ? clamp01(Number(k.memory.beliefs.friction ?? 0)) : Math.max(0, Math.min(1, Number(k.memory.beliefs.friction ?? 0) || 0));
+    k.memory.beliefs.dissent = (typeof clamp01 === 'function') ? clamp01(Number(k.memory.beliefs.dissent ?? 0)) : Math.max(0, Math.min(1, Number(k.memory.beliefs.dissent ?? 0) || 0));
+    k.memory.thoughts = Array.isArray(k.memory.thoughts) ? k.memory.thoughts : [];
+    k.memory.thought = (k.memory.thought && typeof k.memory.thought === 'object') ? k.memory.thought : { text:'', tone:'neutral', priority:0, until:0 };
   }
 
   return s;

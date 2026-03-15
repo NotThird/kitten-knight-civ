@@ -1622,6 +1622,16 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Per-kitten life story
       lifeLog: [{ t: t0, type: 'milestone', data: { what: 'Born', detail: 'Joined the colony' } }],
       activityTime: {},
+
+      // Conversational memory (TASK-167): save-safe, lightweight life-sim scaffolding.
+      memory: {
+        short: [],        // rolling recent thoughts/events
+        episodic: [],     // major social moments
+        bonds: {},        // id -> { trust, friction, lastTalkAt }
+        beliefs: { trust: 0.5, friction: 0.0, dissent: 0.0 },
+        thoughts: [],     // UI-facing thought candidates with TTL + priority
+        thought: { text: '', tone: 'neutral', priority: 0, until: 0 }
+      },
     };
   }
 
@@ -1661,6 +1671,118 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
     const bid = Number(k?.buddyId ?? 0);
     if (!bid) return null;
     return (s.kittens ?? []).find(x => Number(x?.id ?? 0) === bid) ?? null;
+  }
+
+  function ensureKittenMemory(k){
+    if (!k || typeof k !== 'object') return;
+    const m = (k.memory && typeof k.memory === 'object') ? k.memory : {};
+    m.short = Array.isArray(m.short) ? m.short : [];
+    m.episodic = Array.isArray(m.episodic) ? m.episodic : [];
+    m.bonds = (m.bonds && typeof m.bonds === 'object') ? m.bonds : {};
+    m.beliefs = (m.beliefs && typeof m.beliefs === 'object') ? m.beliefs : {};
+    m.beliefs.trust = clamp01(Number(m.beliefs.trust ?? 0.5));
+    m.beliefs.friction = clamp01(Number(m.beliefs.friction ?? 0));
+    m.beliefs.dissent = clamp01(Number(m.beliefs.dissent ?? 0));
+    m.thoughts = Array.isArray(m.thoughts) ? m.thoughts : [];
+    m.thought = (m.thought && typeof m.thought === 'object') ? m.thought : { text:'', tone:'neutral', priority:0, until:0 };
+    k.memory = m;
+  }
+
+  function pushThought(k, text, tone, priority, ttlSec, nowT){
+    ensureKittenMemory(k);
+    const m = k.memory;
+    m.thoughts.push({
+      text: String(text ?? ''),
+      tone: String(tone ?? 'neutral'),
+      priority: Number(priority ?? 1) || 1,
+      until: Number(nowT ?? 0) + Math.max(2, Number(ttlSec ?? 8) || 8),
+    });
+    if (m.thoughts.length > 8) m.thoughts.splice(0, m.thoughts.length - 8);
+  }
+
+  function updateThoughtSelection(s){
+    s._thoughtTimer = (s._thoughtTimer ?? 0) + 1;
+    if (s._thoughtTimer < 2) return;
+    s._thoughtTimer = 0;
+    const nowT = Number(s.t ?? 0);
+    for (const k of (s.kittens ?? [])) {
+      ensureKittenMemory(k);
+      const m = k.memory;
+      m.thoughts = m.thoughts.filter(t => Number(t?.until ?? 0) > nowT && String(t?.text ?? '').trim());
+      let best = null;
+      for (const t of m.thoughts) {
+        if (!best || Number(t.priority ?? 0) > Number(best.priority ?? 0)) best = t;
+      }
+      if (best) m.thought = { text:String(best.text), tone:String(best.tone ?? 'neutral'), priority:Number(best.priority ?? 1), until:Number(best.until ?? nowT + 2) };
+      else if (Number(m.thought?.until ?? 0) <= nowT) m.thought = { text:'', tone:'neutral', priority:0, until:0 };
+    }
+  }
+
+  function runConversationScheduler(s){
+    const kittens = Array.isArray(s?.kittens) ? s.kittens : [];
+    if (kittens.length < 2) return;
+    s._convTimer = Number(s._convTimer ?? 0) + 1;
+    if (s._convTimer < 8) return;
+    s._convTimer = 0;
+    const nowT = Number(s.t ?? 0);
+    for (const k of kittens) ensureKittenMemory(k);
+
+    let best = null;
+    for (let i = 0; i < kittens.length; i++) {
+      for (let j = i + 1; j < kittens.length; j++) {
+        const a = kittens[i], b = kittens[j];
+        const aid = Number(a.id ?? 0), bid = Number(b.id ?? 0);
+        if (aid <= 0 || bid <= 0) continue;
+        const ba = a.memory.bonds[String(bid)] ?? { trust:0.5, friction:0, lastTalkAt:-9999 };
+        const bb = b.memory.bonds[String(aid)] ?? { trust:0.5, friction:0, lastTalkAt:-9999 };
+        const recency = Math.max(Number(ba.lastTalkAt ?? -9999), Number(bb.lastTalkAt ?? -9999));
+        if ((nowT - recency) < 16) continue;
+        const moodAvg = (Number(a.mood ?? 0.5) + Number(b.mood ?? 0.5)) * 0.5;
+        const buddyBonus = (Number(a.buddyId ?? 0) === bid || Number(b.buddyId ?? 0) === aid) ? 0.35 : 0;
+        const score = (1 - Math.min(1, (nowT - recency) / 80)) * -0.2 + buddyBonus + (1 - Math.abs(0.5 - moodAvg));
+        if (!best || score > best.score) best = { a, b, aid, bid, score, ba, bb };
+      }
+    }
+    if (!best) return;
+
+    const trust = clamp01((Number(best.ba.trust ?? 0.5) + Number(best.bb.trust ?? 0.5)) * 0.5);
+    const friction = clamp01((Number(best.ba.friction ?? 0) + Number(best.bb.friction ?? 0)) * 0.5);
+    const roll = Math.abs(Math.sin((nowT + best.aid * 13 + best.bid * 17) * 0.31));
+    const tenseCut = 0.24 + friction * 0.40;
+    const positiveCut = 0.62 + trust * 0.26 - friction * 0.22;
+    const outcome = (roll < tenseCut) ? 'tense' : (roll > positiveCut) ? 'positive' : 'neutral';
+
+    const delta = outcome === 'positive' ? { trust:+0.08, friction:-0.04, mood:+0.03, griev:-0.01, dissent:-0.005, tone:'good' }
+      : outcome === 'tense' ? { trust:-0.06, friction:+0.08, mood:-0.03, griev:+0.02, dissent:+0.007, tone:'bad' }
+      : { trust:+0.02, friction:-0.01, mood:+0.005, griev:0, dissent:-0.001, tone:'neutral' };
+
+    for (const [src, tid] of [[best.a,best.bid],[best.b,best.aid]]) {
+      const key = String(tid);
+      const bond = src.memory.bonds[key] ?? { trust:0.5, friction:0, lastTalkAt:0 };
+      bond.trust = clamp01(Number(bond.trust ?? 0.5) + delta.trust);
+      bond.friction = clamp01(Number(bond.friction ?? 0) + delta.friction);
+      bond.lastTalkAt = nowT;
+      src.memory.bonds[key] = bond;
+      src.memory.beliefs.trust = clamp01(Number(src.memory.beliefs.trust ?? 0.5) + delta.trust * 0.25);
+      src.memory.beliefs.friction = clamp01(Number(src.memory.beliefs.friction ?? 0) + delta.friction * 0.25);
+      src.memory.beliefs.dissent = clamp01(Number(src.memory.beliefs.dissent ?? 0) + Math.max(0, delta.dissent) * 8);
+      src.mood = clamp01(Number(src.mood ?? 0.5) + delta.mood);
+      src.grievance = clamp01(Number(src.grievance ?? 0) + delta.griev);
+      src.memory.short.push({ t: nowT, with: tid, outcome });
+      if (src.memory.short.length > 10) src.memory.short.splice(0, src.memory.short.length - 10);
+      if (outcome !== 'neutral') {
+        src.memory.episodic.push({ t: nowT, with: tid, type: outcome === 'positive' ? 'bonded' : 'clash' });
+        if (src.memory.episodic.length > 8) src.memory.episodic.splice(0, src.memory.episodic.length - 8);
+      }
+    }
+
+    s.social = s.social ?? { dissent: 0 };
+    s.social.dissent = clamp01(Number(s.social.dissent ?? 0) + delta.dissent);
+
+    const tA = outcome === 'positive' ? `Great chat with ${best.b.name}.` : outcome === 'tense' ? `That talk with ${best.b.name} stung.` : `Checked in with ${best.b.name}.`;
+    const tB = outcome === 'positive' ? `Feeling closer to ${best.a.name}.` : outcome === 'tense' ? `${best.a.name} rubbed me the wrong way.` : `Quick talk with ${best.a.name}.`;
+    pushThought(best.a, tA, delta.tone, outcome === 'tense' ? 4 : 3, 12, nowT);
+    pushThought(best.b, tB, delta.tone, outcome === 'tense' ? 4 : 3, 12, nowT);
   }
 
   // Buddy need (relationship pressure)
@@ -6794,6 +6916,8 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
       // Aquarium depth: let "coteries" form/shift based on repeated co-work, not just static buddy links.
       updateSharedWorkEdgesPerSecond(state);
       updateRecentWorkMemoryPerSecond(state);
+      runConversationScheduler(state);
+      updateThoughtSelection(state);
     }
 
     runKittensTick(state, dt, {
@@ -10912,6 +11036,12 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
         const reacts = moodReactions[moodBand] ?? ['💬'];
         const reactionText = `${reacts[(Number(k.id ?? 0) + Math.floor(Number(state.t ?? 0) / 7)) % reacts.length]} ${moodFace}`;
 
+        const thought = (k.memory && typeof k.memory === 'object' && k.memory.thought && Number(k.memory.thought.until ?? 0) > Number(state.t ?? 0))
+          ? k.memory.thought
+          : null;
+        const speechText = String(thought?.text ?? speechLine ?? '').trim();
+        const speechTone = String(thought?.tone ?? 'neutral');
+
         // Compact vitals bar (single combined bar)
         const vBarMini = (val, color) => {
           const pct = Math.round(val * 100);
@@ -10930,7 +11060,7 @@ import { renderRadar, renderSkillTrend, renderVitalsTrend, renderActivityBar } f
             </div>
             <span class="kc-mood-react" title="Current mood reaction">${reactionText}</span>
           </div>
-          <div class="kc-speech" title="Kitten personality line">${escapeHtml(speechLine)}</div>
+          <div class="kc-speech tone-${escapeHtml(speechTone)}" title="Kitten thought bubble">${escapeHtml(speechText)}</div>
           <div class="kc-task${blockedFresh ? ' blocked' : ''}">
             <span class="kc-task-label">${taskText}</span>
             ${badges}

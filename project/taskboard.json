@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T09:53:07.531Z",
+    "lastUpdated": "2026-03-15T10:20:01.395Z",
     "columns": {
         "todo": [
             {
@@ -279,22 +279,6 @@
                 "source": "orchestrator"
             },
             {
-                "id": "TASK-165",
-                "title": "Design always-visible kitten life-at-a-glance layer for colony tank",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T09:39:34.977Z",
-                "description": "Critic identifies that kittens rich inner lives (skills, moods, coteries, grievances) are buried behind click-to-inspect. The colony tank should surface kitten individuality WITHOUT clicking. Reference: Cividle shows villagers walking with visible roles. Design a system where the colony tank dot/emoji for each kitten passively communicates: (1) current mood via color/glow, (2) active relationship via proximity clustering, (3) current activity via micro-animation or icon overlay, (4) notable status (sick, in love, grieving) via persistent indicator. Goal: a player glancing at the tank should immediately feel these are individuals not dots.",
-                "acceptanceCriteria": [
-                    "Design doc specifies visual encoding for at least 4 kitten states visible without clicking",
-                    "Design uses only CSS animations and emoji - no canvas or heavy JS",
-                    "Design includes before/after mockup showing how tank reads differently",
-                    "Design addresses visual clutter at 20+ kittens - must scale gracefully"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-166",
                 "title": "Implement animated settlement building construction sequences",
                 "assignee": "developer",
@@ -310,29 +294,118 @@
                     "Performance stays smooth with multiple buildings animating in quick succession"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-168",
+                "title": "Add animated first-birth and first-build spectacle for new players",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:05:16.886Z",
+                "description": "The first 30 seconds need a wow moment. When the very first kitten is born and the first building completes, trigger a special animated sequence: particle burst, zoom effect, celebratory text. Make the opening feel like an EVENT, not a spreadsheet incrementing. Reference TASK-164.",
+                "acceptanceCriteria": [
+                    "First kitten birth triggers a unique animated celebration (particles, glow, text)",
+                    "First building completion triggers a distinct visual reward moment",
+                    "Effects only fire once per save (tracked in save state)",
+                    "Animations are performant and respect reduced-motion preferences",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator"
+            },
+            {
+                "id": "TASK-169",
+                "title": "Design kitten personal goals and aspirations system",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:10:20.937Z",
+                "description": "Kittens need visible GOALS that players can help fulfill. Reference: Dwarf Fortress dwarves have needs/thoughts; Rimworld colonists have mood-affecting aspirations. Design a system where each kitten develops 1-2 personal goals based on personality (Explorer wants to scout, Scholar wants research, Social kitten wants a friend). Goals should be visible on kitten cards, completable through gameplay, and grant bonuses when fulfilled. Failed/ignored goals should affect mood. Tier 1 core gameplay mechanic.",
+                "acceptanceCriteria": [
+                    "Goal types defined (at least 6 archetypes tied to personality traits)",
+                    "Goal lifecycle specified: how goals appear, progress, complete, fail, and rotate",
+                    "Visual spec for goal display on kitten cards (icon + progress + reward preview)",
+                    "Mood/productivity impact of fulfilled vs ignored goals defined",
+                    "Goals interact with existing systems (skills, coteries, buddy bonds)"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-170",
+                "title": "Design active-play golden moments system (wandering visitors, rare discoveries)",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:10:20.986Z",
+                "description": "KKC lacks Cookie Clicker golden cookie equivalents - time-limited active-play rewards that pull the player back. Design random colony moments requiring player attention: wandering trader (limited-time trade), buried artifact discovery (choose how to use), rival settlement envoy (accept/reject alliance), rare resource vein (assign kittens quickly). Appear every 3-8 minutes of active play, visually prominent via event interrupt system, meaningful choices with lasting consequences. Reference: Cookie Clicker golden cookies, NGU IDLE wandoos, Realm Grinder faction visitors.",
+                "acceptanceCriteria": [
+                    "At least 5 golden moment types designed with choice mechanics",
+                    "Timing and frequency system specified (not too rare, not spammy)",
+                    "Each moment has 2-3 player choices with distinct outcomes",
+                    "Visual presentation spec using existing event interrupt FX",
+                    "Rewards scale with colony progress to stay relevant at all stages"
+                ],
+                "source": "strategist"
+            },
+            {
+                "id": "TASK-171",
+                "title": "Implement generation milestones with legacy bonuses and family trees",
+                "assignee": "developer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:10:21.030Z",
+                "description": "When kittens age and have offspring (TASK-153), generational transitions should be DRAMATIC gameplay moments. When first generation dies and second takes over, trigger legacy milestone with permanent colony bonuses. Show brief family tree visualization. Inherited traits highlighted. Each generation milestone unlocks new capability. Reference: Antimatter Dimensions infinity - each reset feels like progress. Transforms aging into a prestige-like mechanic within the colony. Depends on TASK-153.",
+                "acceptanceCriteria": [
+                    "Generation counter tracks which generation the colony is on",
+                    "Generation transition triggers visual milestone event (using TASK-162 interrupt system)",
+                    "Each generation milestone grants permanent colony bonus (stacking)",
+                    "Simple family tree data stored and viewable (parent-child links)",
+                    "At least 3 generation-specific unlocks defined (new building, new role, new resource)"
+                ],
+                "source": "strategist"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-159",
-                "title": "Design kitten memory and conversation system with visible thought bubbles",
+                "id": "TASK-165",
+                "title": "Design always-visible kitten life-at-a-glance layer for colony tank",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T09:09:41.964Z",
-                "description": "Austin wants kittens with REAL inner lives. Design a system where kittens remember significant events (survived a raid, built first hut, lost a friend), reference those memories in thought bubbles, and have visible conversations with nearby kittens. Reference: Dwarf Fortress thought system, RimWorld social logs. Conversations should reveal personality. Memories should decay over time but landmark ones persist. This is the core of the micro universe of growth directive.",
+                "createdAt": "2026-03-15T09:39:34.977Z",
+                "description": "Critic identifies that kittens rich inner lives (skills, moods, coteries, grievances) are buried behind click-to-inspect. The colony tank should surface kitten individuality WITHOUT clicking. Reference: Cividle shows villagers walking with visible roles. Design a system where the colony tank dot/emoji for each kitten passively communicates: (1) current mood via color/glow, (2) active relationship via proximity clustering, (3) current activity via micro-animation or icon overlay, (4) notable status (sick, in love, grieving) via persistent indicator. Goal: a player glancing at the tank should immediately feel these are individuals not dots.",
                 "acceptanceCriteria": [
-                    "Memory data structure defined: event type, timestamp, emotional weight, decay rate",
-                    "Conversation trigger rules specified: proximity, mood thresholds, relationship level",
-                    "At least 8 conversation templates covering different personality archetypes",
-                    "Thought bubble display spec: timing, positioning on kitten cards, fade behavior",
-                    "Memory-driven dialogue examples showing how past events influence conversations"
+                    "Design doc specifies visual encoding for at least 4 kitten states visible without clicking",
+                    "Design uses only CSS animations and emoji - no canvas or heavy JS",
+                    "Design includes before/after mockup showing how tank reads differently",
+                    "Design addresses visual clutter at 20+ kittens - must scale gracefully"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T09:40:27.116Z",
-                "completedAt": "2026-03-15T09:41:52.500Z",
+                "claimedAt": "2026-03-15T10:11:06.195Z",
+                "completedAt": "2026-03-15T10:12:01.756Z",
                 "outputPath": "agents/designer/output/latest-design.md"
+            },
+            {
+                "id": "TASK-167",
+                "title": "Implement kitten memory and conversation system with thought bubbles",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:05:13.067Z",
+                "description": "Implement the full design from TASK-159: per-kitten short/episodic memory, belief drift, deterministic conversation scheduler (every 8s), bond tracking, and always-visible thought bubble pills on kitten cards. See agents/designer/output/latest-design.md for complete spec. This is the core life-sim feature Austin demanded.",
+                "acceptanceCriteria": [
+                    "Each kitten has memory object (short, episodic, bonds, beliefs) initialized on creation and on save load",
+                    "Conversation scheduler runs every 8s, selecting eligible pairs with scored partner selection",
+                    "Conversations produce positive/neutral/tense outcomes affecting mood, friction, trust, dissent",
+                    "Thought bubbles render as visible pills on kitten cards with tone coloring",
+                    "Bubbles auto-select highest priority thought every 2s with proper TTL decay",
+                    "Performance: bubble update under 1ms per frame at pop 20",
+                    "parse_check and replay_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T10:16:18.432Z",
+                "completedAt": "2026-03-15T10:20:01.395Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -768,6 +841,28 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T09:53:07.531Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-159",
+                "title": "Design kitten memory and conversation system with visible thought bubbles",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T09:09:41.964Z",
+                "description": "Austin wants kittens with REAL inner lives. Design a system where kittens remember significant events (survived a raid, built first hut, lost a friend), reference those memories in thought bubbles, and have visible conversations with nearby kittens. Reference: Dwarf Fortress thought system, RimWorld social logs. Conversations should reveal personality. Memories should decay over time but landmark ones persist. This is the core of the micro universe of growth directive.",
+                "acceptanceCriteria": [
+                    "Memory data structure defined: event type, timestamp, emotional weight, decay rate",
+                    "Conversation trigger rules specified: proximity, mood thresholds, relationship level",
+                    "At least 8 conversation templates covering different personality archetypes",
+                    "Thought bubble display spec: timing, positioning on kitten cards, fade behavior",
+                    "Memory-driven dialogue examples showing how past events influence conversations"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T09:40:27.116Z",
+                "completedAt": "2026-03-15T09:41:52.500Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T10:04:32.617Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -846,9 +941,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 160,
-        "totalCompleted": 105,
+        "totalCreated": 165,
+        "totalCompleted": 106,
         "pendingQuestion": null
     },
-    "nextId": 167
+    "nextId": 172
 }
