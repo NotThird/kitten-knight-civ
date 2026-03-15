@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T08:17:33.921Z",
+    "lastUpdated": "2026-03-15T08:22:57.653Z",
     "columns": {
         "todo": [
             {
@@ -233,25 +233,6 @@
                 "claimedAt": "2026-03-15T08:10:20.991Z",
                 "completedAt": "2026-03-15T08:11:23.612Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-149",
-                "title": "Implement visual settlement evolution (clearing to camp to village to town)",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T08:05:21.837Z",
-                "description": "Create a visual settlement illustration using CSS or canvas at the top of the colony panel that evolves based on building count and population milestones. 4 stages from campfire to town. Each stage transitions with a brief animation. Warm colors matching dark theme. Top visual gap per critic.",
-                "acceptanceCriteria": [
-                    "Settlement illustration visible above colony section",
-                    "At least 4 visual stages based on building count",
-                    "Smooth transition animation between stages",
-                    "Matches dark theme with warm accents"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T08:16:16.407Z",
-                "completedAt": "2026-03-15T08:17:33.921Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
@@ -537,6 +518,27 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-14T15:52:57.415Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-149",
+                "title": "Implement visual settlement evolution (clearing to camp to village to town)",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T08:05:21.837Z",
+                "description": "Create a visual settlement illustration using CSS or canvas at the top of the colony panel that evolves based on building count and population milestones. 4 stages from campfire to town. Each stage transitions with a brief animation. Warm colors matching dark theme. Top visual gap per critic.",
+                "acceptanceCriteria": [
+                    "Settlement illustration visible above colony section",
+                    "At least 4 visual stages based on building count",
+                    "Smooth transition animation between stages",
+                    "Matches dark theme with warm accents"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T08:16:16.407Z",
+                "completedAt": "2026-03-15T08:17:33.921Z",
+                "outputPath": "agents/developer/output/latest-code-changes.md",
+                "testedAt": "2026-03-15T08:22:57.653Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -616,7 +618,7 @@
     },
     "meta": {
         "totalCreated": 148,
-        "totalCompleted": 98,
+        "totalCompleted": 99,
         "pendingQuestion": null
     },
     "nextId": 155
