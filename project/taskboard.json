@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T14:20:04.538Z",
+    "lastUpdated": "2026-03-15T14:24:16.203Z",
     "columns": {
         "todo": [
             {
@@ -495,6 +495,28 @@
                     "Naming ceremony design includes trait-preview UI concept"
                 ],
                 "source": "strategist"
+            },
+            {
+                "id": "TASK-190",
+                "title": "BREAKTHROUGH: Implement birth system with trait inheritance and generation tracking",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T13:05:30.477Z",
+                "description": "Second half of TASK-177 aging design: birth eligibility checks (partnered adults, bond>=65, food ratio>=0.85, pop less than capacity+2), birth chance formula with bond/food/crowd/season factors, offspring trait inheritance with dominance weighting and 20% mutation chance, generation tracking (Gen N badges), generation milestone vignettes with Legacy Spark selection. Requires aging system to be in place first.\n\n[REJECTED 2026-03-15T14:24:16.203Z] Milestone timing bug: generation milestone/Legacy Spark triggers at birth, not first adult of new generation (criterion 5 failed).",
+                "acceptanceCriteria": [
+                    "Eligible adult pairs can produce offspring based on birth chance formula",
+                    "Offspring inherit 3 traits using dominance-weighted parent pool + mutation",
+                    "Generation counter increments correctly (max parent gen + 1)",
+                    "Gen badge displays on kitten cards",
+                    "First adult of new generation triggers milestone vignette",
+                    "Legacy Spark selection offered at generation milestones (4 options)",
+                    "Birth cooldown of 12 real minutes per pair enforced",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T14:16:18.249Z",
+                "testVerdict": "REJECTED"
             }
         ],
         "claimed": [],
@@ -518,29 +540,6 @@
                 "claimedAt": "2026-03-15T14:11:55.002Z",
                 "completedAt": "2026-03-15T14:13:14.971Z",
                 "outputPath": "agents/designer/output/latest-design.md"
-            },
-            {
-                "id": "TASK-190",
-                "title": "BREAKTHROUGH: Implement birth system with trait inheritance and generation tracking",
-                "assignee": "developer",
-                "priority": "critical",
-                "type": "feature",
-                "createdAt": "2026-03-15T13:05:30.477Z",
-                "description": "Second half of TASK-177 aging design: birth eligibility checks (partnered adults, bond>=65, food ratio>=0.85, pop less than capacity+2), birth chance formula with bond/food/crowd/season factors, offspring trait inheritance with dominance weighting and 20% mutation chance, generation tracking (Gen N badges), generation milestone vignettes with Legacy Spark selection. Requires aging system to be in place first.",
-                "acceptanceCriteria": [
-                    "Eligible adult pairs can produce offspring based on birth chance formula",
-                    "Offspring inherit 3 traits using dominance-weighted parent pool + mutation",
-                    "Generation counter increments correctly (max parent gen + 1)",
-                    "Gen badge displays on kitten cards",
-                    "First adult of new generation triggers milestone vignette",
-                    "Legacy Spark selection offered at generation milestones (4 options)",
-                    "Birth cooldown of 12 real minutes per pair enforced",
-                    "parse_check and smoke_test pass"
-                ],
-                "source": "orchestrator",
-                "claimedAt": "2026-03-15T14:16:18.249Z",
-                "completedAt": "2026-03-15T14:20:04.538Z",
-                "outputPath": "agents/developer/output/latest-code-changes.md"
             }
         ],
         "done": [
