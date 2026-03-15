@@ -2,7 +2,7 @@
     "version": 1,
     "iteration": 25,
     "maxIterations": 50,
-    "lastUpdated": "2026-03-15T11:23:41.630Z",
+    "lastUpdated": "2026-03-15T11:54:25.973Z",
     "columns": {
         "todo": [
             {
@@ -352,23 +352,6 @@
                 "staleCount": 0
             },
             {
-                "id": "TASK-174",
-                "title": "Design next-unlock breadcrumb system showing players what to aim for",
-                "assignee": "designer",
-                "priority": "high",
-                "type": "feature",
-                "createdAt": "2026-03-15T10:40:20.243Z",
-                "description": "The critic identified that after the first 5 minutes, players lack a clear what-am-I-working-toward-next signal. Great incrementals always show the next carrot: Cookie Clicker shows the next building/upgrade cost, Kittens Game shows greyed-out tech requirements, Antimatter Dimensions shows the next dimension unlock. KKC needs a persistent UI element that dynamically shows the next meaningful unlock based on current progress. This should adapt as the player advances. Reference: NGU IDLE adventure zones showing the next zone as a goal.",
-                "acceptanceCriteria": [
-                    "Design specifies a persistent UI element showing 1-3 upcoming unlocks with progress toward each",
-                    "Each breadcrumb shows what resource or condition is needed and current percentage progress",
-                    "System adapts across game phases (early/mid/late) with different unlock types",
-                    "Includes wireframe showing placement in existing dark-theme layout",
-                    "Specifies how breadcrumbs transition when an unlock is achieved (celebration moment)"
-                ],
-                "source": "strategist"
-            },
-            {
                 "id": "TASK-175",
                 "title": "Design mid-game mystery chain that drip-feeds new mechanics every 10 minutes",
                 "assignee": "designer",
@@ -421,28 +404,46 @@
                 "status": "todo",
                 "createdAt": "2026-03-15T11:10:39.533Z",
                 "staleCount": 0
+            },
+            {
+                "id": "TASK-179",
+                "title": "BREAKTHROUGH: Implement next-goal tracker and mid-game unlock breadcrumbs",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T11:35:25.662Z",
+                "description": "STAGNATION BREAKER. Two-part fix for mid-game content vacuum flagged 4 consecutive cycles. Part 1: Persistent next-goal tracker widget in UI header. Part 2: Mid-game milestone unlocks dripping every 5-10 minutes post-Library. Eliminates the 10+ minute dead zone between Library and Eternity.",
+                "acceptanceCriteria": [
+                    "Persistent goal tracker widget visible in UI header at all times",
+                    "Goal tracker updates dynamically based on closest achievable unlock",
+                    "At least 3 new mid-game milestones unlock between Library and Eternity tiers",
+                    "Each milestone produces a visible notification or event",
+                    "No 10+ minute stretch without new content appearing during active play",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator"
             }
         ],
         "claimed": [],
         "review": [
             {
-                "id": "TASK-170",
-                "title": "Design active-play golden moments system (wandering visitors, rare discoveries)",
+                "id": "TASK-174",
+                "title": "Design next-unlock breadcrumb system showing players what to aim for",
                 "assignee": "designer",
                 "priority": "high",
                 "type": "feature",
-                "createdAt": "2026-03-15T10:10:20.986Z",
-                "description": "KKC lacks Cookie Clicker golden cookie equivalents - time-limited active-play rewards that pull the player back. Design random colony moments requiring player attention: wandering trader (limited-time trade), buried artifact discovery (choose how to use), rival settlement envoy (accept/reject alliance), rare resource vein (assign kittens quickly). Appear every 3-8 minutes of active play, visually prominent via event interrupt system, meaningful choices with lasting consequences. Reference: Cookie Clicker golden cookies, NGU IDLE wandoos, Realm Grinder faction visitors.",
+                "createdAt": "2026-03-15T10:40:20.243Z",
+                "description": "The critic identified that after the first 5 minutes, players lack a clear what-am-I-working-toward-next signal. Great incrementals always show the next carrot: Cookie Clicker shows the next building/upgrade cost, Kittens Game shows greyed-out tech requirements, Antimatter Dimensions shows the next dimension unlock. KKC needs a persistent UI element that dynamically shows the next meaningful unlock based on current progress. This should adapt as the player advances. Reference: NGU IDLE adventure zones showing the next zone as a goal.",
                 "acceptanceCriteria": [
-                    "At least 5 golden moment types designed with choice mechanics",
-                    "Timing and frequency system specified (not too rare, not spammy)",
-                    "Each moment has 2-3 player choices with distinct outcomes",
-                    "Visual presentation spec using existing event interrupt FX",
-                    "Rewards scale with colony progress to stay relevant at all stages"
+                    "Design specifies a persistent UI element showing 1-3 upcoming unlocks with progress toward each",
+                    "Each breadcrumb shows what resource or condition is needed and current percentage progress",
+                    "System adapts across game phases (early/mid/late) with different unlock types",
+                    "Includes wireframe showing placement in existing dark-theme layout",
+                    "Specifies how breadcrumbs transition when an unlock is achieved (celebration moment)"
                 ],
                 "source": "strategist",
-                "claimedAt": "2026-03-15T11:11:34.396Z",
-                "completedAt": "2026-03-15T11:12:57.986Z",
+                "claimedAt": "2026-03-15T11:41:36.994Z",
+                "completedAt": "2026-03-15T11:42:45.545Z",
                 "outputPath": "agents/designer/output/latest-design.md"
             }
         ],
@@ -991,6 +992,51 @@
                 "outputPath": "agents/developer/output/latest-code-changes.md",
                 "testedAt": "2026-03-15T11:23:41.630Z",
                 "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-170",
+                "title": "Design active-play golden moments system (wandering visitors, rare discoveries)",
+                "assignee": "designer",
+                "priority": "high",
+                "type": "feature",
+                "createdAt": "2026-03-15T10:10:20.986Z",
+                "description": "KKC lacks Cookie Clicker golden cookie equivalents - time-limited active-play rewards that pull the player back. Design random colony moments requiring player attention: wandering trader (limited-time trade), buried artifact discovery (choose how to use), rival settlement envoy (accept/reject alliance), rare resource vein (assign kittens quickly). Appear every 3-8 minutes of active play, visually prominent via event interrupt system, meaningful choices with lasting consequences. Reference: Cookie Clicker golden cookies, NGU IDLE wandoos, Realm Grinder faction visitors.",
+                "acceptanceCriteria": [
+                    "At least 5 golden moment types designed with choice mechanics",
+                    "Timing and frequency system specified (not too rare, not spammy)",
+                    "Each moment has 2-3 player choices with distinct outcomes",
+                    "Visual presentation spec using existing event interrupt FX",
+                    "Rewards scale with colony progress to stay relevant at all stages"
+                ],
+                "source": "strategist",
+                "claimedAt": "2026-03-15T11:11:34.396Z",
+                "completedAt": "2026-03-15T11:12:57.986Z",
+                "outputPath": "agents/designer/output/latest-design.md",
+                "testedAt": "2026-03-15T11:34:37.110Z",
+                "testVerdict": "APPROVED"
+            },
+            {
+                "id": "TASK-178",
+                "title": "BREAKTHROUGH: Implement golden moments active-play system from TASK-170 design",
+                "assignee": "developer",
+                "priority": "critical",
+                "type": "feature",
+                "createdAt": "2026-03-15T11:35:25.473Z",
+                "description": "STAGNATION BREAKER. Implement the golden moments system designed in TASK-170. Adds active-play events every 3-8 minutes with meaningful 2-3 choice decisions, reputation tracking, tiered scaling, and visual interrupt presentation. Uses existing event interrupt framework. Single highest-impact engagement feature remaining.",
+                "acceptanceCriteria": [
+                    "At least 4 golden moment types spawn during gameplay with 2-3 choices each",
+                    "Moments appear every 3-8 minutes with pity timer preventing droughts",
+                    "Choices produce distinct outcomes (economy, reputation, risk, chain unlock)",
+                    "Reward scaling adjusts to colony progression tier",
+                    "Visual presentation uses existing event interrupt system with timer ring",
+                    "parse_check and smoke_test pass"
+                ],
+                "source": "orchestrator",
+                "claimedAt": "2026-03-15T11:46:34.794Z",
+                "completedAt": "2026-03-15T11:52:54.880Z",
+                "outputPath": "Implemented golden moments system with 5 types, 3-8 min cadence + pity timer, tier scaling, reputation/risk/chain outcomes, timer ring UI, and event interrupt integration. parse_check + smoke_test pass.",
+                "testedAt": "2026-03-15T11:54:25.973Z",
+                "testVerdict": "APPROVED"
             }
         ],
         "blocked": [
@@ -1069,9 +1115,9 @@
         ]
     },
     "meta": {
-        "totalCreated": 168,
-        "totalCompleted": 110,
+        "totalCreated": 170,
+        "totalCompleted": 112,
         "pendingQuestion": null
     },
-    "nextId": 178
+    "nextId": 180
 }
